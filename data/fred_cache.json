@@ -1,44 +1,4 @@
-      - name: Fetch FRED data (validated)
-        env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-        run: |
-          import json, os, requests
-          from datetime import datetime
-
-          API_KEY = os.environ["FRED_API_KEY"]
-          BASE = "https://api.stlouisfed.org/fred/series/observations"
-
-          def fred_series(sid):
-              r = requests.get(BASE, params={
-                  "api_key": API_KEY,
-                  "file_type": "json",
-                  "series_id": sid
-              })
-              r.raise_for_status()
-              obs = r.json().get("observations", [])
-              clean = []
-              for o in obs:
-                  val = o.get("value")
-                  try:
-                      val = float(val)
-                      clean.append({"date": o["date"], "value": val})
-                  except (ValueError, TypeError):
-                      continue
-              return {"observations": clean}
-
-          data = {
-              "fetched_at_utc": datetime.utcnow().isoformat()+"Z",
-              "series": {
-                  "DGS10": fred_series("DGS10"),
-                  "DGS3MO": fred_series("DGS3MO"),
-                  "BAA": fred_series("BAA"),
-                  "AAA": fred_series("AAA"),
-                  "UNRATE": fred_series("UNRATE"),
-                  "SP500": fred_series("SP500"),
-                  "NFCI": fred_series("NFCI")
-              }
-          }
-
-          os.makedirs("data", exist_ok=True)
-          with open("data/fred_cache.json", "w", encoding="utf-8") as f:
-              json.dump(data, f, ensure_ascii=False, indent=2)
+{
+  "fetched_at_utc": "2025-10-15T00:00:00Z",
+  "series": {}
+}
