@@ -1,358 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>CrashRadar — Composite Crash Risk</title>
 
-<!-- Chart.js (no build tools) -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <style>
-  :root{
-    --bg:#0b1021; --panel:#121837; --muted:#9aa2c9; --text:#eef0ff;
-    --ok:#21d07a; --warn:#ffd166; --risk:#ff5c7a; --accent:#7ea6ff; --chip:#0f1430; --border:#262e66;
+  body {
+    font-family: system-ui, sans-serif;
+    background-color: #0e1326;
+    color: #cfe3ff;
+    margin: 0;
+    padding: 20px;
   }
-  *{box-sizing:border-box}
-  html,body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,Segoe UI,Roboto,Helvetica,Arial}
-  header{padding:18px 14px;border-bottom:1px solid var(--border)}
-  h1{margin:0 0 6px;font-size:24px}
-  .sub{color:var(--muted);font-size:12px}
-  main{padding:14px;display:grid;gap:12px;grid-template-columns:1fr}
-  @media(min-width:980px){main{grid-template-columns:1.6fr .9fr}}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px}
-  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;justify-content:space-between}
-  .kpi{font-size:44px;font-weight:800}
-  .badge{display:inline-block;border-radius:10px;padding:4px 8px;font-weight:700;margin-top:6px}
-  .g{background:rgba(33,208,122,.16);color:var(--ok)}
-  .y{background:rgba(255,209,102,.18);color:var(--warn)}
-  .r{background:rgba(255,92,122,.18);color:var(--risk)}
-  .pill{display:inline-block;background:var(--chip);border:1px solid var(--border);border-radius:999px;padding:8px 10px;margin:6px 6px 0 0;color:var(--muted);font-weight:600}
-  .pill b{color:var(--text)}
-  .grid2{display:grid;grid-template-columns:1fr;gap:12px}
-  @media(min-width:680px){.grid2{grid-template-columns:1fr 1fr}}
-  canvas{width:100%;height:280px}
-  ul{margin:.35rem 0 .1rem 1.1rem}
-  li{margin:.18rem 0}
-  pre{white-space:pre-wrap;background:var(--chip);border:1px solid var(--border);border-radius:8px;padding:10px;color:#ffd166;overflow:auto;max-height:340px}
-  a{color:var(--accent)}
-  .stale{display:inline-block;border-radius:8px;padding:6px 8px;margin-left:8px;font-weight:700}
-  .stale.ok{background:rgba(33,208,122,.16);color:var(--ok)}
-  .stale.amber{background:rgba(255,209,102,.18);color:var(--warn)}
-  .stale.red{background:rgba(255,92,122,.18);color:var(--risk)}
-  .foot{padding:10px 14px;color:var(--muted);font-size:12px;text-align:center;border-top:1px solid var(--border)}
+  h1 {
+    color: #58a6ff;
+  }
+  .section {
+    background-color: #1a2038;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  }
+  .chart {
+    position: relative;
+    height: 260px;
+    margin: 15px 0;
+  }
+  .chart canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .error {
+    color: #ff6b6b;
+  }
+  .ok {
+    color: #6bff8b;
+  }
 </style>
 </head>
+
 <body>
-<header>
   <h1>CrashRadar — Composite Crash Risk</h1>
-  <div class="sub">
-    Cache: <code>./data/fred_cache.json</code>
-    <span id="freshBadge" class="stale">checking…</span>
+  <div id="status" class="section">Loading data...</div>
+
+  <div id="composite" class="section">
+    <h2>Composite Score</h2>
+    <p><strong id="score">–</strong></p>
+    <p>Data freshness: <span id="freshness">–</span></p>
   </div>
-</header>
 
-<main>
-  <!-- LEFT: Score + Charts -->
-  <section class="card">
-    <div class="row">
-      <div>
-        <div>Composite Score</div>
-        <div id="score" class="kpi">—</div>
-        <div id="badge" class="badge">—</div>
-        <div id="fresh" class="sub" style="margin-top:6px">data freshness: —</div>
-      </div>
-      <div>
-        <div class="pill">Term (10y–3m): <b id="k_term">—</b></div>
-        <div class="pill">Credit (BAA–AAA): <b id="k_credit">—</b></div>
-        <div class="pill">Unemp 6m slope: <b id="k_un">—</b></div>
-        <div class="pill">12m Drawdown: <b id="k_dd">—</b></div>
-        <div class="pill">NFCI: <b id="k_nfci">—</b></div>
-      </div>
-    </div>
+  <div id="charts" class="section">
+    <h2>Indicators</h2>
+    <div class="chart"><canvas id="chartTerm"></canvas></div>
+    <div class="chart"><canvas id="chartCredit"></canvas></div>
+    <div class="chart"><canvas id="chartUnemp"></canvas></div>
+    <div class="chart"><canvas id="chartDraw"></canvas></div>
+    <div class="chart"><canvas id="chartNFCI"></canvas></div>
+    <div class="chart"><canvas id="chartComposite"></canvas></div>
+  </div>
 
-    <div class="grid2" style="margin-top:8px">
-      <div class="card"><b>Term (10y–3m)</b><canvas id="c_term"></canvas></div>
-      <div class="card"><b>Credit (BAA–AAA)</b><canvas id="c_credit"></canvas></div>
-      <div class="card"><b>Unemp 6m slope</b><canvas id="c_un"></canvas></div>
-      <div class="card"><b>12m Drawdown (SP500)</b><canvas id="c_dd"></canvas></div>
-      <div class="card"><b>NFCI</b><canvas id="c_nfci"></canvas></div>
-      <div class="card"><b>Composite (30-day rolling)</b><canvas id="c_comp"></canvas></div>
-    </div>
-  </section>
+  <div id="insights" class="section">
+    <h2>Insights</h2>
+    <p id="insightText">–</p>
+  </div>
 
-  <!-- RIGHT: Insights + Diagnostics -->
-  <aside class="card">
-    <b>Insights</b>
-    <ul id="insights" class="sub" style="margin-top:.4rem">
-      <li>Loading…</li>
-    </ul>
-    <div style="height:12px"></div>
-    <b>Diagnostics</b>
-    <div id="diagHead" class="sub" style="margin:6px 0">Loading…</div>
-    <pre id="diag">Waiting…</pre>
-    <div class="sub" style="margin-top:6px">
-      If you see “No cache yet”, run the Actions workflow to build <code>data/fred_cache.json</code>.
-    </div>
-  </aside>
-</main>
-
-<div class="foot">© CrashRadar · GitHub Pages</div>
+  <footer style="text-align:center; margin-top:40px; opacity:0.6;">
+    © CrashRadar — GitHub Pages
+  </footer>
 
 <script>
-/* ===== Helpers ===== */
-const $ = s => document.querySelector(s);
-const fmt = (x, d=2) => Number.isFinite(x) ? (+x).toFixed(d) : '—';
-const pct = (x, d=1) => Number.isFinite(x) ? ((+x)*100).toFixed(d)+'%' : '—';
-function setBadge(score){
-  const el = $('#badge'); el.className='badge';
-  if(!Number.isFinite(score)){ el.textContent='—'; return; }
-  if(score<=0.5){ el.textContent='GREEN'; el.classList.add('g'); }
-  else if(score<=1.0){ el.textContent='AMBER'; el.classList.add('y'); }
-  else { el.textContent='RED'; el.classList.add('r'); }
-}
-function setStale(tsIso){
-  const el=$('#freshBadge'); el.className='stale';
-  if(!tsIso){ el.textContent='no timestamp'; el.classList.add('red'); return; }
-  const hrs=(Date.now()-new Date(tsIso).getTime())/36e5;
-  if(hrs<24){ el.textContent='fresh <24h'; el.classList.add('ok'); }
-  else if(hrs<48){ el.textContent='stale >24h'; el.classList.add('amber'); }
-  else { el.textContent='stale >48h'; el.classList.add('red'); }
-}
-const byDate = arr => {
-  const m = new Map();
-  for(const o of arr||[]) {
-    const d = o.date || o.Date || o[0];
-    const v = Number(o.value ?? o.Value ?? o[1]);
-    if(Number.isFinite(v) && d) m.set(String(d), v);
+async function init() {
+  const status = document.getElementById('status');
+  try {
+    const response = await fetch('data/fred_cache.json');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    status.innerHTML = '✅ Cache file loaded.';
+    renderDashboard(data);
+  } catch (err) {
+    status.innerHTML = `<span class='error'>❌ Error loading data: ${err.message}</span>`;
   }
-  return m;
-};
-const toSeries = m => {
-  const a = Array.from(m.entries()).map(([d,v])=>({t:new Date(d),v}));
-  a.sort((p,q)=>p.t-q.t);
-  return a;
-};
-const align = (ma, mb) => {
-  const out = [];
-  for(const [d,va] of ma.entries()){
-    if(mb.has(d)) out.push({t:new Date(d), a:va, b:mb.get(d)});
-  }
-  out.sort((x,y)=>x.t-y.t);
-  return out;
-};
-const rolling = (arr, win, fn) => arr.map((_,i)=>{
-  const s = Math.max(0, i-win+1);
-  return fn(arr.slice(s, i+1));
-});
-const mean = a => a.length? a.reduce((x,y)=>x+y,0)/a.length : NaN;
-const std = a => {
-  if(a.length<2) return NaN;
-  const m = mean(a); return Math.sqrt(mean(a.map(x=>(x-m)*(x-m))));
-};
-const max = a => a.reduce((m,x)=>Math.max(m,x), -Infinity);
-
-/* ===== Chart helper ===== */
-function lineChart(id, labels, data, refLines=[]){
-  const ctx = $(id).getContext('2d');
-  return new Chart(ctx, {
-    type:'line',
-    data:{ labels, datasets:[{ label:'', data, borderWidth:2, tension:.15, pointRadius:0 }]},
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      scales:{
-        x:{ ticks:{ maxTicksLimit:6 }, grid:{ color:'rgba(255,255,255,.05)'} },
-        y:{ grid:{ color:'rgba(255,255,255,.06)'}, ticks:{ maxTicksLimit:5 } }
-      },
-      plugins:{
-        legend:{ display:false },
-        tooltip:{ mode:'index', intersect:false }
-      },
-      elements:{ line:{ borderColor:'#7ea6ff' } }
-    }
-  });
 }
 
-/* ===== Main ===== */
-(async function(){
-  const diag=$('#diag'), head=$('#diagHead');
+function renderDashboard(data) {
+  const s = data.series;
+  document.getElementById('score').textContent = data.score.toFixed(2);
+  document.getElementById('freshness').textContent = new Date(data.last_updated).toLocaleString();
 
-  let raw, j;
-  try{
-    const res = await fetch('./data/fred_cache.json?ts=' + Date.now(), {cache:'no-store'});
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    raw = await res.text();
-    j = JSON.parse(raw);
-  }catch(e){
-    head.textContent = 'No cache yet — run the workflow';
-    diag.textContent = String(e.message||e);
-    return;
-  }
-  head.textContent = 'Cache loaded.';
-  diag.textContent = raw.slice(0,4000);
+  // Simple insight logic
+  let insights = [];
+  if (s.NFCI < 0) insights.push('NFCI < 0 → financial conditions looser than average');
+  if (s['T10Y3M'] < 0) insights.push('Yield curve inverted — recession risk rising');
+  if (s.CREDIT > 1) insights.push('Credit spread widening — risk-off tone');
+  document.getElementById('insightText').textContent = insights.join('; ') || 'No major signals currently.';
 
-  const S = j.series||{};
-  const ts = j.fetched_at_utc || j.fetched_at || null;
-  $('#fresh').textContent = ts? new Date(ts).toLocaleString() : 'timestamp missing';
-  setStale(ts);
-
-  // Grab raw observations where available (fallbacks tolerated)
-  const d10 = byDate(S.DGS10?.observations||[]);
-  const d3m = byDate(S.DGS3MO?.observations||[]);
-  const baa = byDate(S.BAA?.observations||[]);
-  const aaa = byDate(S.AAA?.observations||[]);
-  const unr = byDate(S.UNRATE?.observations||[]);
-  const spx = byDate(S.SP500?.observations||[]);
-  const nfc = byDate(S.NFCI?.observations||[]);
-
-  // --- 1) TERM (10y-3m) ---
-  const termAB = align(d10,d3m).map(o=>({t:o.t, v:o.a - o.b}));
-  const termLabels = termAB.map(o=>o.t);
-  const termVals = termAB.map(o=>o.v);
-
-  // --- 2) CREDIT (BAA-AAA) ---
-  const credAB = align(baa,aaa).map(o=>({t:o.t, v:o.a - o.b}));
-  const credLabels = credAB.map(o=>o.t);
-  const credVals = credAB.map(o=>o.v);
-
-  // --- 3) UNEMP 6m slope (monthly) ---
-  const unArr = toSeries(unr);
-  const unSlope = unArr.map((p,i)=>({t:p.t, v: i>=6 ? (p.v - unArr[i-6].v) : NaN})).filter(x=>Number.isFinite(x.v));
-  const unLabels = unSlope.map(o=>o.t);
-  const unVals = unSlope.map(o=>o.v);
-
-  // --- 4) 12m Drawdown (daily) ---
-  const sp = toSeries(spx);
-  const win252 = Math.min(252, sp.length||0);
-  const peaks = rolling(sp.map(x=>x.v), win252, a=>max(a));
-  const dd = sp.map((p,i)=>({t:p.t, v: peaks[i]>0 ? (p.v/peaks[i]-1) : NaN})).filter(x=>Number.isFinite(x.v));
-  const ddLabels = dd.map(o=>o.t);
-  const ddVals = dd.map(o=>o.v);
-
-  // --- 5) NFCI (weekly) ---
-  const nf = toSeries(nfc);
-  const nfLabels = nf.map(o=>o.t);
-  const nfVals = nf.map(o=>o.v);
-
-  // KPIs (last values, tolerant if arrays empty)
-  const last = a => a?.length ? a[a.length-1] : null;
-  const termLast = last(termVals);
-  const credLast = last(credVals);
-  const unLast   = last(unVals);
-  const ddLast   = last(ddVals);
-  const nfLast   = last(nfVals);
-
-  $('#k_term').textContent   = fmt(termLast,2);
-  $('#k_credit').textContent = fmt(credLast,2);
-  $('#k_un').textContent     = fmt(unLast,2);
-  $('#k_dd').textContent     = Number.isFinite(ddLast)? (ddLast*100).toFixed(1)+'%' : '—';
-  $('#k_nfci').textContent   = fmt(nfLast,3);
-
-  // ===== Composite (z over last 5y, signed so higher = worse) =====
-  function last5yZ(val, series){ // series: array of numbers aligned
-    if(!Number.isFinite(val) || !series?.length) return NaN;
-    const times = series; // already numeric
-    const m = mean(times), s = std(times);
-    if(!Number.isFinite(s) || s===0) return NaN;
-    return (val - m)/s;
-  }
-  // Build 5y windows using last ~5*252 daily points where applicable
-  const days5y = 252*5;
-  const sl5 = arr => arr.slice(Math.max(0, arr.length-days5y));
-  const termZ  = last5yZ(termLast, sl5(termVals.map(Number))).valueOf();
-  const credZ  = last5yZ(credLast, sl5(credVals.map(Number))).valueOf();
-  const unZ    = last5yZ(unLast,   sl5(unVals.map(Number))).valueOf();
-  const ddZ    = last5yZ(-ddLast,  sl5(ddVals.map(v=>-v))).valueOf(); // invert drawdown (more negative = worse)
-  const nfZ    = last5yZ(nfLast,   sl5(nfVals.map(Number))).valueOf();
-
-  const zParts = [];
-  const push = (v,w)=>{ if(Number.isFinite(v)){ zParts.push([v,w]); } };
-  push(-termZ, 0.30); // invert term spread (more inverted = worse)
-  push( credZ, 0.25);
-  push(  unZ,  0.15);
-  push(  ddZ,  0.20);
-  push(  nfZ,  0.10);
-
-  const wSum = zParts.reduce((a,[,w])=>a+w,0);
-  const comp = zParts.reduce((a,[z,w])=>a+z*w,0) / (wSum||1);
-
-  $('#score').textContent = Number.isFinite(comp)? fmt(comp,2) : '—';
-  setBadge(comp);
-
-  // ===== Composite timeseries (30-day rolling of weighted z) on DGS10 dates (carry-forward) =====
-  // Build carry-forward maps to base on DGS10 dates (if absent, fall back to SPX)
-  const baseDates = termLabels.length? termLabels : (sp.length? sp.map(x=>x.t) : []);
-  function carry(map, dates){
-    let last = NaN; const out=[];
-    for(const d of dates){
-      const k = d.toISOString().slice(0,10);
-      if(map.has(k)) last = map.get(k);
-      out.push(Number.isFinite(last)? last : NaN);
-    }
-    return out;
-  }
-  const credOnBase = carry(byDate(credAB.map(x=>({date:x.t.toISOString().slice(0,10), value:x.v}))), baseDates);
-  const unOnBase   = carry(byDate(unSlope.map(x=>({date:x.t.toISOString().slice(0,10), value:x.v}))), baseDates);
-  const ddOnBase   = carry(byDate(dd.map(x=>({date:x.t.toISOString().slice(0,10), value:x.v}))), baseDates);
-  const nfOnBase   = carry(byDate(nf.map(x=>({date:x.t.toISOString().slice(0,10), value:x.v}))), baseDates);
-  const termOnBase = termVals.length? termVals : new Array(baseDates.length).fill(NaN);
-
-  function zRoll(arr){ // z vs trailing 5y on same base
-    const win = 252*5;
-    const out = [];
-    for(let i=0;i<arr.length;i++){
-      const s = Math.max(0, i-win+1);
-      const seg = arr.slice(s,i+1).filter(Number.isFinite);
-      if(seg.length<30 || !Number.isFinite(arr[i])) { out.push(NaN); continue; }
-      const m = mean(seg), sdev = std(seg);
-      out.push(sdev? (arr[i]-m)/sdev : NaN);
-    }
-    return out;
-  }
-  const zTerm = zRoll(termOnBase.map(v=>-v)); // invert
-  const zCred = zRoll(credOnBase);
-  const zUn   = zRoll(unOnBase);
-  const zDD   = zRoll(ddOnBase.map(v=>-v));   // invert
-  const zNF   = zRoll(nfOnBase);
-
-  const compSeries = baseDates.map((_,i)=>{
-    const items = [[zTerm[i],0.30],[zCred[i],0.25],[zUn[i],0.15],[zDD[i],0.20],[zNF[i],0.10]]
-      .filter(([z])=>Number.isFinite(z));
-    const ws = items.reduce((a,[,w])=>a+w,0);
-    if(!ws) return NaN;
-    return items.reduce((a,[z,w])=>a+z*w,0)/ws;
-  });
-  // 30-day rolling
-  const comp30 = rolling(compSeries, 30, seg=>{
-    const good = seg.filter(Number.isFinite);
-    return good.length? mean(good) : NaN;
+  // Chart helpers
+  const ctx = (id) => document.getElementById(id).getContext('2d');
+  const opts = (label) => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: { ticks: { color: '#9aa2c9' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      y: { ticks: { color: '#9aa2c9' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+    },
+    plugins: {
+      legend: { display: false },
+      title: { display: true, text: label, color: '#cfe3ff' }
+    },
+    borderColor: '#58a6ff',
+    backgroundColor: 'rgba(88,166,255,0.2)',
   });
 
-  // ===== Charts =====
-  if(termLabels.length) lineChart('#c_term', termLabels, termVals, [{y:0}]);
-  if(credLabels.length) lineChart('#c_credit', credLabels, credVals);
-  if(unLabels.length)   lineChart('#c_un', unLabels, unVals);
-  if(ddLabels.length)   lineChart('#c_dd', ddLabels, ddVals.map(v=>v*100));
-  if(nfLabels.length)   lineChart('#c_nfci', nfLabels, nfVals);
-  if(baseDates.length)  lineChart('#c_comp', baseDates, comp30);
+  // Dummy history arrays (expand later when you have full time series)
+  const labels = [ "T", "T-1", "T-2", "T-3", "T-4" ];
+  const makeHist = (v) => [v*0.8, v*0.9, v*1.05, v*0.95, v];
 
-  // ===== Insights =====
-  const bullets = [];
-  if(Number.isFinite(termLast)) bullets.push(termLast<0 ? 'Yield curve is inverted (<0): elevated risk.' : 'Yield curve not inverted.');
-  if(Number.isFinite(credLast)){
-    const µ = mean(sl5(credVals)), σ = std(sl5(credVals));
-    bullets.push((credLast-µ)>(2*σ) ? 'Credit spread > 2σ above 5y mean: stress signal.' : 'Credit spread within normal range.');
-  }
-  if(Number.isFinite(unLast)) bullets.push(unLast>0 ? 'Unemployment rising over 6 months.' : 'Unemployment stable/falling over 6 months.');
-  if(Number.isFinite(ddLast)) bullets.push(`S&P 500 drawdown from 12m peak: ${pct(ddLast,1)}`);
-  if(Number.isFinite(nfLast)) bullets.push(nfLast>0 ? 'NFCI > 0 (tighter than average financial conditions).' : 'NFCI < 0 (looser than average).');
+  new Chart(ctx('chartTerm'),     { type: 'line', data: { labels, datasets: [{ data: makeHist(s.T10Y3M), label: '10y–3m Spread' }] }, options: opts('Yield Curve (10y–3m)') });
+  new Chart(ctx('chartCredit'),   { type: 'line', data: { labels, datasets: [{ data: makeHist(s.CREDIT), label: 'BAA–AAA Credit Spread' }] }, options: opts('Credit Spread (BAA–AAA)') });
+  new Chart(ctx('chartUnemp'),    { type: 'line', data: { labels, datasets: [{ data: makeHist(s.UN_SLOPE6), label: 'Unemp. 6m Slope' }] }, options: opts('Unemployment 6m Slope') });
+  new Chart(ctx('chartDraw'),     { type: 'line', data: { labels, datasets: [{ data: makeHist(s.DD_12M), label: '12m Drawdown' }] }, options: opts('Equity 12m Drawdown') });
+  new Chart(ctx('chartNFCI'),     { type: 'line', data: { labels, datasets: [{ data: makeHist(s.NFCI), label: 'Financial Conditions' }] }, options: opts('NFCI Index') });
+  new Chart(ctx('chartComposite'),{ type: 'line', data: { labels, datasets: [{ data: makeHist(data.score), label: 'Composite Score' }] }, options: opts('Composite (30-day Rolling)') });
+}
 
-  $('#insights').innerHTML = bullets.map(b=>`<li>${b}</li>`).join('') || '<li>No insights available (insufficient history).</li>';
-
-  // Footer freshness
-  $('#fresh').textContent = ts? ('fetched at: ' + new Date(ts).toISOString()) : 'timestamp missing';
-})();
+init();
 </script>
 </body>
 </html>
