@@ -1,4 +1,4 @@
-      - name: Fetch FRED data (with history)
+      - name: Fetch FRED data (validated)
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: |
@@ -16,10 +16,15 @@
               })
               r.raise_for_status()
               obs = r.json().get("observations", [])
-              return {"observations": [
-                  {"date": o["date"], "value": o["value"]}
-                  for o in obs if o.get("value") not in (None, ".", "")
-              ]}
+              clean = []
+              for o in obs:
+                  val = o.get("value")
+                  try:
+                      val = float(val)
+                      clean.append({"date": o["date"], "value": val})
+                  except (ValueError, TypeError):
+                      continue
+              return {"observations": clean}
 
           data = {
               "fetched_at_utc": datetime.utcnow().isoformat()+"Z",
@@ -35,5 +40,5 @@
           }
 
           os.makedirs("data", exist_ok=True)
-          with open("data/fred_cache.json", "w") as f:
-              json.dump(data, f)
+          with open("data/fred_cache.json", "w", encoding="utf-8") as f:
+              json.dump(data, f, ensure_ascii=False, indent=2)
