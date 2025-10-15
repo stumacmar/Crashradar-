@@ -1,142 +1,426 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>CrashRadar v3 — Recession Risk Monitor</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
-<style>
-:root{
-  --bg:#0e1324;--card:#161b3a;--text:#eef0ff;--muted:#9aa2c9;
-  --ok:#21d07a;--warn:#ffd166;--risk:#ff5c7a;
-}
-body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui}
-h1{font-size:24px;margin:12px 0 4px}
-.sub{color:var(--muted);font-size:13px}
-.card{background:var(--card);border-radius:10px;padding:14px;margin:10px auto;max-width:1100px}
-.chart{height:260px;margin:10px 0;background:#10163a;border-radius:8px;padding:6px}
-.gauge{width:200px;height:200px;border-radius:50%;
-  background:conic-gradient(var(--ok) 0deg,#20264a 0deg);
-  display:grid;place-items:center;margin:auto;position:relative}
-.gauge:after{content:"";position:absolute;inset:14px;border-radius:50%;background:#0f1430}
-.gauge-val{position:relative;font-weight:700;font-size:28px}
-.badge{display:inline-block;padding:4px 10px;border-radius:8px;margin-left:6px}
-.g{background:rgba(33,208,122,.15);color:var(--ok)}
-.y{background:rgba(255,209,102,.15);color:var(--warn)}
-.r{background:rgba(255,92,122,.15);color:var(--risk)}
-ul{margin-top:6px;padding-left:18px}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CrashRadar v3 — Research-Driven Composite Index</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1223;
+      --card: #1a1f3d;
+      --text: #eef0ff;
+      --muted: #9aa2c9;
+      --ok: #21d07a;
+      --warn: #ffd166;
+      --risk: #ff5c7a;
+      --ringbg: #1b1e33;
+    }
+    html, body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, sans-serif;
+    }
+    header {
+      padding: 16px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      color: var(--text);
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    main {
+      padding: 12px;
+      max-width: 1080px;
+      margin: auto;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 14px;
+      margin: 12px 0;
+    }
+    .gauge-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 18px;
+    }
+    .gauge {
+      --deg: 0deg;
+      --col: var(--ok);
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: conic-gradient(var(--col) var(--deg), var(--ringbg) var(--deg));
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+    .gauge:after {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border-radius: 50%;
+      background: var(--bg);
+    }
+    .gauge-val {
+      position: relative;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .g { background: rgba(33, 208, 122, 0.15); color: var(--ok); }
+    .y { background: rgba(255, 209, 102, 0.15); color: var(--warn); }
+    .r { background: rgba(255, 92, 122, 0.15); color: var(--risk); }
+
+    .chart {
+      position: relative;
+      height: 260px;
+      margin: 12px 0 8px;
+      background: var(--ringbg);
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .chart canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .blurb {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.4;
+      margin-top: 4px;
+    }
+    .blurb em {
+      color: var(--muted);
+      font-style: normal;
+    }
+
+    details {
+      background: var(--ringbg);
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 12px;
+    }
+    summary {
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text);
+    }
+    pre {
+      white-space: pre-wrap;
+      background: #11152a;
+      border-radius: 6px;
+      padding: 8px;
+      color: #ffd166;
+      max-height: 300px;
+      overflow: auto;
+      margin-top: 8px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 800px) {
+      .row { grid-template-columns: 1fr 1fr; }
+    }
+    .pill {
+      display: inline-block;
+      background: var(--ringbg);
+      border-radius: 999px;
+      padding: 6px 10px;
+      margin: 4px 8px 4px 0;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .pill b {
+      color: var(--text);
+    }
+    .delta-up { color: var(--risk); font-weight: 700; }
+    .delta-down { color: var(--ok); font-weight: 700; }
+
+    .err {
+      color: #ff6b6b;
+    }
+  </style>
 </head>
 <body>
-<div class="card" style="text-align:center">
-  <h1>CrashRadar v3 — Recession Risk (GAR)</h1>
-  <div class="sub">Economist-calibrated composite from FRED data • updated monthly</div>
-</div>
+<header>
+  <h1>CrashRadar v3 — Recession Risk Monitor</h1>
+  <div id="loadStatus" class="sub">Loading <code>data/fred_cache.json</code>…</div>
+</header>
 
-<div class="card" style="text-align:center">
-  <div id="gauge" class="gauge"><div id="gVal" class="gauge-val">—</div></div>
-  <div style="margin-top:8px">
-    <span id="badge" class="badge">—</span><br>
-    <span class="sub">Green ≤ 30 • Amber ≤ 60 • Red > 60  (lower = safer)</span>
-  </div>
-</div>
+<main>
+  <section class="card">
+    <div class="gauge-wrap">
+      <div id="gauge" class="gauge" role="img" aria-label="Composite risk gauge">
+        <div id="gVal" class="gauge-val">—</div>
+      </div>
+    </div>
+    <div style="text-align:center; margin-top:8px;">
+      <span id="badge" class="badge">—</span><br>
+      <span class="sub">Thresholds: Green ≤ 30 • Amber ≤ 60 • Red > 60 (lower = safer)</span>
+    </div>
+  </section>
 
-<div class="card">
-  <canvas id="compChart"></canvas>
-  <div class="sub" style="margin-top:6px">
-    The composite blends <b>Yield Curve (10y–3m)</b>, <b>Baa–10Y Credit Spread</b>,
-    <b>Bank Lending Standards</b>, <b>Initial Claims</b> and
-    <b>Consumer Sentiment</b>. Weighted 0.25/0.25/0.2/0.15/0.15 respectively.
-  </div>
-</div>
+  <section class="card">
+    <canvas id="compTrend"></canvas>
+    <div class="sub" style="margin-top:6px;">
+      Composite = weighted mix of Yield Curve, Credit Spread, Lending Tightness, Claims, Sentiment.
+    </div>
+  </section>
 
-<div class="card" id="insights"><b>Key Insights</b><ul></ul></div>
+  <section class="card">
+    <div class="row">
+      <div>
+        <div class="pill">Term (10y–3m): <b id="k_term">—</b> <span id="d_term" class="sub"></span></div>
+        <div class="chart"><canvas id="cYield"></canvas></div>
+        <div class="blurb"><b>Yield Curve Slope:</b> <em>More negative = higher risk.</em> Inversions historically precede recessions.</div>
+      </div>
+      <div>
+        <div class="pill">Credit Spread: <b id="k_credit">—</b> <span id="d_credit" class="sub"></span></div>
+        <div class="chart"><canvas id="cCredit"></canvas></div>
+        <div class="blurb"><b>Corporate Spread:</b> <em>Wider = more stress.</em> Corporate borrowing risk rises before downturns.</div>
+      </div>
+      <div>
+        <div class="pill">Lending Tightness: <b id="k_lend">—</b> <span id="d_lend" class="sub"></span></div>
+        <div class="chart"><canvas id="cLend"></canvas></div>
+        <div class="blurb"><b>Bank Lending Tightness:</b> <em>Higher = risk.</em> Banks begin restricting credit before stress spreads.</div>
+      </div>
+      <div>
+        <div class="pill">Claims: <b id="k_claims">—</b> <span id="d_claims" class="sub"></span></div>
+        <div class="chart"><canvas id="cClaims"></canvas></div>
+        <div class="blurb"><b>Initial Jobless Claims:</b> <em>Rising = labor stress.</em> Layoffs often surface early in downturns.</div>
+      </div>
+      <div>
+        <div class="pill">Sentiment: <b id="k_sent">—</b> <span id="d_sent" class="sub"></span></div>
+        <div class="chart"><canvas id="cSent"></canvas></div>
+        <div class="blurb"><b>Consumer Sentiment:</b> <em>Lower = weaker demand.</em> Weak confidence often precedes spending pullback.</div>
+      </div>
+    </div>
+  </section>
 
-<div class="card">
-  <b>Indicators</b>
-  <div class="chart"><canvas id="cYield"></canvas></div>
-  <div class="sub">Yield Curve (10y–3m) — Inverted (< 0) = late-cycle risk.</div>
+  <section class="card" id="insights">
+    <b>Insights</b>
+    <ul></ul>
+  </section>
 
-  <div class="chart"><canvas id="cCredit"></canvas></div>
-  <div class="sub">Credit Spread (BAA–10y) — Wider = rising corporate stress.</div>
-
-  <div class="chart"><canvas id="cLend"></canvas></div>
-  <div class="sub">Bank Lending Standards (NFCI Alt) — Higher = tightening credit.</div>
-
-  <div class="chart"><canvas id="cClaims"></canvas></div>
-  <div class="sub">Initial Claims (4-wk avg) — Rising = labor weakness.</div>
-
-  <div class="chart"><canvas id="cSent"></canvas></div>
-  <div class="sub">Consumer Sentiment (Index of Michigan) — Lower = confidence shock.</div>
-</div>
+  <section class="card">
+    <details>
+      <summary>Open JSON / diagnostics</summary>
+      <div id="diagHead" class="sub" style="margin:6px 0;">Loading…</div>
+      <pre id="diag">Waiting…</pre>
+    </details>
+  </section>
+</main>
 
 <script>
-const fmt=x=>Number.isFinite(x)?x.toFixed(2):'—';
-const w={yield:0.25,credit:0.25,lend:0.2,claims:0.15,sent:0.15};
-
-async function load(){
- try{
-  const r=await fetch('data/fred_cache.json');if(!r.ok)throw new Error(r.status);
-  const j=await r.json();
-  const S=j.series||{};
-  const get=(k)=>S[k]?.observations?.map(o=>+o.value).filter(Number.isFinite)||[];
-
-  //--- Pull last values
-  const yld=get("T10Y3M").at(-1);
-  const cred=get("CREDIT").at(-1);
-  const lend=get("LEND")?.at(-1);
-  const claims=get("CLAIMS")?.at(-1);
-  const sent=get("SENT")?.at(-1);
-
-  //--- Normalise to 0-100 risk (economist calibration)
-  function normYield(v){ if(!Number.isFinite(v))return 50; if(v>=2)return 0; if(v<=-1)return 100; return 100*(2-v)/3; }
-  function normCredit(v){ if(!Number.isFinite(v))return 50; return Math.min(100,Math.max(0,(v-1)*50)); }
-  function normLend(v){ if(!Number.isFinite(v))return 50; return Math.min(100,Math.max(0,(v-0)*80)); }
-  function normClaims(v){ if(!Number.isFinite(v))return 50; return Math.min(100,Math.max(0,(v-200)*0.3)); }
-  function normSent(v){ if(!Number.isFinite(v))return 50; return Math.min(100,Math.max(0,(80-v)*2)); }
-
-  const ry=normYield(yld), rc=normCredit(cred), rl=normLend(lend), rj=normClaims(claims), rs=normSent(sent);
-  const composite= (w.yield*ry + w.credit*rc + w.lend*rl + w.claims*rj + w.sent*rs);
-  drawGauge(composite);
-  renderCharts(S);
-  insights({ry,rc,rl,rj,rs});
- }catch(e){console.error(e);}
+// ---------------- Utilities ----------------
+const $ = s => document.querySelector(s);
+const fmt = (x,d=2) => Number.isFinite(x) ? x.toFixed(d) : '—';
+const pct = x => Number.isFinite(x) ? (x*100).toFixed(1) + '%' : '—';
+function deltaStr(curr, prev, worseUp=true) {
+  if (!Number.isFinite(curr) || !Number.isFinite(prev)) return '';
+  const diff = curr - prev;
+  if (Math.abs(diff) < 1e-9) return '';
+  const arrow = diff > 0 ? '▲' : '▼';
+  const cls = (diff > 0) === worseUp ? 'delta-up' : 'delta-down';
+  return ` <span class="${cls}">${arrow} ${Math.abs(diff).toFixed(2)}</span>`;
 }
 
-function drawGauge(score){
- const g=document.getElementById('gauge'),v=document.getElementById('gVal'),b=document.getElementById('badge');
- const deg=Math.min(score,100)*3.6;
- const col=score<=30?'var(--ok)':score<=60?'var(--warn)':'var(--risk)';
- g.style.background=`conic-gradient(${col} ${deg}deg,#2a2f55 ${deg}deg)`;
- v.textContent=fmt(score);
- b.textContent=score<=30?'GREEN':score<=60?'AMBER':'RED';
- b.className='badge '+(score<=30?'g':score<=60?'y':'r');
+// ---------------- Gauge / Badge ----------------
+function setBadge(score) {
+  const b = $('#badge'); b.className = 'badge';
+  if (!Number.isFinite(score)) { b.textContent = '—'; return; }
+  if (score <= 30) { b.textContent = 'GREEN'; b.classList.add('g'); }
+  else if (score <= 60) { b.textContent = 'AMBER'; b.classList.add('y'); }
+  else { b.textContent = 'RED'; b.classList.add('r'); }
+}
+function renderGauge(score) {
+  const g = $('#gauge'), v = $('#gVal');
+  g.style.setProperty('--deg', '0deg');
+  g.style.setProperty('--col', 'var(--ok)');
+  v.textContent = '—';
+  setBadge(NaN);
+  if (!Number.isFinite(score)) return;
+  v.textContent = score.toFixed(1);
+  // Cap 0–100
+  const c = Math.max(0, Math.min(score, 100));
+  const deg = (c / 100) * 360;
+  // pick color zone
+  const col = score <= 30 ? 'var(--ok)' :
+              (score <= 60 ? 'var(--warn)' : 'var(--risk)');
+  g.style.background = `conic-gradient(${col} ${deg}deg, var(--ringbg) ${deg}deg)`;
+  setBadge(score);
 }
 
-function renderCharts(S){
- const cfg=(id,label,vals,col)=>new Chart(document.getElementById(id),{
-  type:'line',data:{labels:Array(vals.length).fill(''),datasets:[{data:vals,borderColor:col,fill:false}]},
-  options:{responsive:true,plugins:{legend:{display:false},title:{display:true,text:label,color:'#cfe3ff'}},
-           scales:{x:{display:false},y:{ticks:{color:'#9aa2c9'},grid:{color:'rgba(255,255,255,.07)'}}}}
- });
- cfg('cYield','Yield Curve',S.T10Y3M?.observations?.map(o=>+o.value)||[],'#66b2ff');
- cfg('cCredit','Credit Spread',S.CREDIT?.observations?.map(o=>+o.value)||[],'#ffb366');
- cfg('cLend','Lending Standards',S.LEND?.observations?.map(o=>+o.value)||[],'#b49eff');
- cfg('cClaims','Initial Claims',S.CLAIMS?.observations?.map(o=>+o.value)||[],'#ff8899');
- cfg('cSent','Sentiment',S.SENT?.observations?.map(o=>+o.value)||[],'#7dd39f');
+// ---------------- Charting ----------------
+function chartOpts(title, yFmt = null) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend:{display:false}, title:{display:true,text:title,color:'#cfe3ff'} },
+    scales: {
+      x: { ticks:{color:'#9aa2c9'}, grid:{color:'rgba(255,255,255,0.06)'} },
+      y: { ticks:{color:'#9aa2c9', callback: yFmt || (v=>v) }, grid:{color:'rgba(255,255,255,0.06)'} }
+    },
+    elements: { line:{tension:0.25}, point:{radius:0} }
+  };
+}
+const charts = {};
+function drawLine(id, title, labels, values, yFmt = null, color = '#7ea6ff') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const ctx = el.getContext('2d');
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{ label: title, data: values, borderColor: color, backgroundColor: 'rgba(126,166,255,0.2)' }] },
+    options: chartOpts(title, yFmt)
+  });
 }
 
-function insights(r){
- const u=document.querySelector('#insights ul');u.innerHTML='';
- const add=t=>{const li=document.createElement('li');li.textContent=t;u.appendChild(li)};
- if(r.ry>70)add('Yield curve remains inverted – policy cycle late.');
- if(r.rc>60)add('Credit spreads elevated – funding stress building.');
- if(r.rl>50)add('Lending standards tight – credit impulse slowing.');
- if(r.rj>50)add('Jobless claims rising – labor market softening.');
- if(r.rs>50)add('Consumer sentiment weak – demand risk ahead.');
- if(!u.children.length)add('Macro and market indicators remain stable.');
+// ---------------- Data to Composite ----------------
+function normYield(v) {
+  if (!Number.isFinite(v)) return NaN;
+  if (v >= 2.0) return 0;
+  if (v <= -1.0) return 100;
+  // linear interpolation between v=2 → score=0 and v=-1 → score=100
+  return ((2 - v) / 3) * 100;
 }
-load();
+function normCredit(v) {
+  if (!Number.isFinite(v)) return NaN;
+  // assume credit spread normally ~0.5→2.5 ; map 1 →0, 3→100
+  return Math.min(100, Math.max(0, (v - 1.0) * 50));
+}
+function normLend(v) {
+  if (!Number.isFinite(v)) return NaN;
+  // if net % tightening: v=0→0, v=1→80+, scale
+  return Math.min(100, v * 80);
+}
+function normClaims(v) {
+  if (!Number.isFinite(v)) return NaN;
+  // assume baseline ~200k, crisis ~500k; map v=200→0, v=500→100
+  return Math.min(100, Math.max(0, (v - 200) * 0.33));
+}
+function normSent(v) {
+  if (!Number.isFinite(v)) return NaN;
+  // higher sentiment = safer; invert: v=80→0 risk, v=50→60+ risk
+  if (v >= 80) return 0;
+  if (v <= 50) return 100;
+  return ((80 - v) / 30) * 100;
+}
+
+// ---------------- Main Logic ----------------
+(async function(){
+  const status = $('#loadStatus'), diag = $('#diag'), head = $('#diagHead');
+  try {
+    const resp = await fetch('data/fred_cache.json', {cache: 'no-store'});
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const txt = await resp.text();
+    let j; try { j = JSON.parse(txt); } catch(e) { throw new Error('Invalid JSON: '+e.message); }
+    if (document.querySelector('#diag')) document.querySelector('#diag').textContent = txt;
+    status.textContent = '✅ Cache loaded';
+
+    const S = j.series || {};
+
+    // helper: get observation array of {date, value}
+    const obs = (k) => S[k]?.observations || [];
+
+    // extract numeric arrays and last value
+    const arrY = obs('T10Y3M').map(o => +o.value).filter(Number.isFinite);
+    const arrC = obs('CREDIT').map(o => +o.value).filter(Number.isFinite);
+    const arrL = obs('LEND').map(o => +o.value).filter(Number.isFinite);
+    const arrJ = obs('CLAIMS').map(o => +o.value).filter(Number.isFinite);
+    const arrS = obs('SENT').map(o => +o.value).filter(Number.isFinite);
+
+    const last = arr => arr.length ? arr.at(-1) : NaN;
+    const prev = arr => arr.length>1 ? arr.at(-2) : NaN;
+
+    const yVal = last(arrY), cVal = last(arrC), lVal = last(arrL), jVal = last(arrJ), sVal = last(arrS);
+    const yPrev = prev(arrY), cPrev = prev(arrC), lPrev = prev(arrL), jPrev = prev(arrJ), sPrev = prev(arrS);
+
+    // show pills & deltas
+    $('#k_term').textContent = fmt(yVal);
+    $('#k_credit').textContent = fmt(cVal);
+    $('#k_lend').textContent = fmt(lVal);
+    $('#k_claims').textContent = fmt(jVal);
+    $('#k_sent').textContent = fmt(sVal);
+
+    $('#d_term').innerHTML = deltaStr(yVal, yPrev, false);
+    $('#d_credit').innerHTML = deltaStr(cVal, cPrev, true);
+    $('#d_lend').innerHTML = deltaStr(lVal, lPrev, true);
+    $('#d_claims').innerHTML = deltaStr(jVal, jPrev, true);
+    $('#d_sent').innerHTML = deltaStr(sPrev, sVal, true);
+
+    // compute normalized risk scores
+    const ry = normYield(yVal), rc = normCredit(cVal), rl = normLend(lVal),
+          rj = normClaims(jVal), rs = normSent(sVal);
+
+    // weights
+    const w = { yield: 0.25, credit: 0.25, lend: 0.20, claims: 0.15, sent: 0.15 };
+    const composite = (w.yield*ry + w.credit*rc + w.lend*rl + w.claims*rj + w.sent*rs);
+
+    renderGauge(composite);
+
+    // draw composite trend
+    const len = Math.max(arrY.length, arrC.length, arrL.length, arrJ.length, arrS.length);
+    const labels = Array(len).fill('').map((_,i)=>i.toString());
+    const compArr = [];
+    for (let i = 0; i < len; i++) {
+      const vY = arrY[i], vC = arrC[i], vL = arrL[i], vJ = arrJ[i], vS = arrS[i];
+      const nY = Number.isFinite(vY) ? normYield(vY) : NaN;
+      const nC = Number.isFinite(vC) ? normCredit(vC) : NaN;
+      const nL = Number.isFinite(vL) ? normLend(vL) : NaN;
+      const nJ = Number.isFinite(vJ) ? normClaims(vJ) : NaN;
+      const nS = Number.isFinite(vS) ? normSent(vS) : NaN;
+      const arr = [nY, nC, nL, nJ, nS].filter(Number.isFinite);
+      compArr.push(arr.length ? (w.yield*nY + w.credit*nC + w.lend*nL + w.claims*nJ + w.sent*nS) : NaN);
+    }
+    drawLine('compTrend', 'Composite Risk Trend', labels, compArr);
+
+    // draw indicator charts
+    drawLine('cYield', 'Yield Curve (10y–3m)', labels, arrY, null, '#66b2ff');
+    drawLine('cCredit', 'Credit Spread', labels, arrC, null, '#ffb366');
+    drawLine('cLend', 'Lending Standard Tightness', labels, arrL, null, '#b49eff');
+    drawLine('cClaims', 'Initial Jobless Claims', labels, arrJ, null, '#ff8899');
+    drawLine('cSent', 'Consumer Sentiment', labels, arrS, null, '#7dd39f');
+
+    // insights
+    const ul = document.querySelector('#insights ul');
+    ul.innerHTML = '';
+    if (ry > 65) ul.appendChild(new Option('Yield curve deeply inverted — strong warning'));
+    if (rc > 60) ul.appendChild(new Option('Credit spreads elevated — corporate stress'));
+    if (rl > 50) ul.appendChild(new Option('Lending standards tightening — credit chokepoint'));
+    if (rj > 60) ul.appendChild(new Option('Jobless claims rising sharply — labor stress'));
+    if (rs > 50) ul.appendChild(new Option('Sentiment weak — demand side pressure'));
+    if (!ul.children.length) {
+      ul.appendChild(new Option('No single indicator is flashing red.' ));
+    }
+
+  } catch(e) {
+    $('#loadStatus').innerHTML = `<span class="err">Error: ${e.message}</span>`;
+    if (document.querySelector('#diag')) document.querySelector('#diag').textContent = e.stack || e;
+  }
+})();
 </script>
+
 </body>
 </html>
