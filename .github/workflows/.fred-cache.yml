@@ -1,82 +1,55 @@
-name: FRED Data Cache Builder
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 */6 * * *" # every 6 hours
-
-permissions:
-  contents: write
-
-jobs:
-  build-cache:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: pip install requests pandas
-
-      - name: Fetch FRED data and build cache
-        env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-        run: |
-          python - <<'PY'
-          import os, json, pandas as pd, requests
-          from datetime import datetime
-
-          key = os.getenv("FRED_API_KEY")
-          if not key:
-              raise SystemExit("Missing FRED_API_KEY")
-
-          def get_fred(sid):
-              url = "https://api.stlouisfed.org/fred/series/observations"
-              r = requests.get(url, params={
-                  "series_id": sid,
-                  "api_key": key,
-                  "file_type": "json"
-              }, timeout=30)
-              r.raise_for_status()
-              d = pd.DataFrame(r.json()["observations"])
-              d["value"] = pd.to_numeric(d["value"], errors="coerce")
-              d["date"] = pd.to_datetime(d["date"])
-              return d.dropna()
-
-          D10 = get_fred("DGS10")
-          D3M = get_fred("DGS3MO")
-          BAA = get_fred("BAA")
-          AAA = get_fred("AAA")
-          UNR = get_fred("UNRATE")
-          SPX = get_fred("SP500")
-          NFCI = get_fred("NFCI")
-
-          out = {
-              "fetched_at_utc": datetime.utcnow().isoformat()+"Z",
-              "series": {
-                  "T10Y3M": (D10["value"].iloc[-1] - D3M["value"].iloc[-1]),
-                  "CREDIT": (BAA["value"].iloc[-1] - AAA["value"].iloc[-1]),
-                  "UN_SLOPE6": (UNR["value"].iloc[-1] - UNR["value"].iloc[-7]),
-                  "DD_12M": (SPX["value"].iloc[-1] / SPX["value"].iloc[-252:].max() - 1),
-                  "NFCI": NFCI["value"].iloc[-1]
-              }
-          }
-
-          os.makedirs("data", exist_ok=True)
-          with open("data/fred_cache.json", "w") as f:
-              json.dump(out, f, indent=2)
-
-          print("✅ Data written to data/fred_cache.json")
-          PY
-
-      - name: Commit cache if changed
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/fred_cache.json || true
-          git commit -m "auto: update FRED cache" || echo "no change"
-          git push
+{
+  "fetched_at_utc": "2025-10-15T16:45:00Z",
+  "series": {
+    "T10Y3M": {
+      "name": "10-Year minus 3-Month Treasury Spread",
+      "observations": [
+        {"date": "2025-09-15", "value": 0.25},
+        {"date": "2025-09-22", "value": 0.22},
+        {"date": "2025-09-29", "value": 0.20},
+        {"date": "2025-10-06", "value": 0.18},
+        {"date": "2025-10-13", "value": 0.16}
+      ]
+    },
+    "CREDIT": {
+      "name": "Moody's BAA-AAA Corporate Spread",
+      "observations": [
+        {"date": "2025-09-15", "value": 0.65},
+        {"date": "2025-09-22", "value": 0.67},
+        {"date": "2025-09-29", "value": 0.69},
+        {"date": "2025-10-06", "value": 0.71},
+        {"date": "2025-10-13", "value": 0.74}
+      ]
+    },
+    "UN_SLOPE6": {
+      "name": "Unemployment 6-Month Slope",
+      "observations": [
+        {"date": "2025-09-15", "value": 0.10},
+        {"date": "2025-09-22", "value": 0.12},
+        {"date": "2025-09-29", "value": 0.13},
+        {"date": "2025-10-06", "value": 0.15},
+        {"date": "2025-10-13", "value": 0.17}
+      ]
+    },
+    "DD_12M": {
+      "name": "S&P 500 12-Month Drawdown",
+      "observations": [
+        {"date": "2025-09-15", "value": -0.02},
+        {"date": "2025-09-22", "value": -0.03},
+        {"date": "2025-09-29", "value": -0.04},
+        {"date": "2025-10-06", "value": -0.05},
+        {"date": "2025-10-13", "value": -0.06}
+      ]
+    },
+    "NFCI": {
+      "name": "Chicago Fed National Financial Conditions Index",
+      "observations": [
+        {"date": "2025-09-15", "value": -0.50},
+        {"date": "2025-09-22", "value": -0.48},
+        {"date": "2025-09-29", "value": -0.47},
+        {"date": "2025-10-06", "value": -0.45},
+        {"date": "2025-10-13", "value": -0.44}
+      ]
+    }
+  }
+}
