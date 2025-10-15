@@ -1,10 +1,67 @@
-{
-  "fetched_at_utc": "2025-10-15T15:10:58.851899Z",
-  "series": {
-    "T10Y3M": 0.03000000000000025,
-    "CREDIT": 0.6200000000000001,
-    "UN_SLOPE6": 0.20000000000000018,
-    "DD_12M": -0.01619996091043152,
-    "NFCI": -0.54613
-  }
-}
+name: FRED Data Cache Builder
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * *"  # daily 09:00 UTC
+
+jobs:
+  update-cache:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch full FRED history
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, requests
+          from datetime import datetime
+
+          BASE = "https://api.stlouisfed.org/fred/series/observations"
+          SERIES = {
+            "DGS10": "10-Year Treasury",
+            "DGS3MO": "3-Month Treasury",
+            "BAA": "Moody Baa",
+            "AAA": "Moody Aaa",
+            "UNRATE": "Unemployment Rate",
+            "SP500": "S&P 500 Index",
+            "NFCI": "Chicago Fed Financial Conditions"
+          }
+
+          def fetch(sid):
+              r = requests.get(BASE, params={
+                  "series_id": sid,
+                  "api_key": os.environ["FRED_API_KEY"],
+                  "file_type": "json",
+                  "observation_start": "2010-01-01"
+              })
+              r.raise_for_status()
+              data = r.json()
+              obs = [
+                  {"date": o["date"], "value": o["value"]}
+                  for o in data.get("observations", [])
+                  if o.get("value") not in (None, ".", "")
+              ]
+              return {"observations": obs}
+
+          out = {
+              "fetched_at_utc": datetime.utcnow().isoformat() + "Z",
+              "series": {sid: fetch(sid) for sid in SERIES.keys()}
+          }
+
+          os.makedirs("data", exist_ok=True)
+          with open("data/fred_cache.json", "w") as f:
+              json.dump(out, f)
+          print("✅ Wrote data/fred_cache.json with full history")
+          PYCODE
+
+      - name: Commit cache
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add data/fred_cache.json
+          git commit -m "update fred_cache.json" || echo "No changes"
+          git push
