@@ -2,134 +2,215 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>CrashRadar — Composite Crash Risk</title>
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <style>
-  body {
-    font-family: system-ui, sans-serif;
-    background-color: #0e1326;
-    color: #cfe3ff;
-    margin: 0;
-    padding: 20px;
+  :root{
+    --bg:#0e1326; --card:#161b3a; --muted:#9aa2c9; --text:#eef0ff; --accent:#58a6ff;
+    --ok:#21d07a; --warn:#ffd166; --risk:#ff5c7a;
   }
-  h1 {
-    color: #58a6ff;
-  }
-  .section {
-    background-color: #1a2038;
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 20px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
-  }
-  .chart {
-    position: relative;
-    height: 260px;
-    margin: 15px 0;
-  }
-  .chart canvas {
-    display: block;
-    width: 100% !important;
-    height: 100% !important;
-  }
-  .error {
-    color: #ff6b6b;
-  }
-  .ok {
-    color: #6bff8b;
-  }
+  html,body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  header{padding:18px 14px}
+  h1{margin:0 0 6px;font-size:26px;color:#7ea6ff}
+  main{padding:0 12px 24px;max-width:920px;margin:0 auto}
+  .card{background:var(--card);border-radius:12px;padding:14px;margin:12px 0}
+  .kpi{font-size:42px;font-weight:800}
+  .sub{color:var(--muted);font-size:12px}
+  .badge{display:inline-block;border-radius:10px;padding:4px 8px;font-weight:700;margin-left:6px}
+  .g{background:rgba(33,208,122,.16);color:var(--ok)}
+  .y{background:rgba(255,209,102,.18);color:var(--warn)}
+  .r{background:rgba(255,92,122,.18);color:var(--risk)}
+  .err{color:#ff6b6b}
+  .ok{color:#6bff8b}
+  .chart{position:relative;height:260px;margin:12px 0}
+  .chart canvas{display:block;width:100% !important;height:100% !important}
+  .row{display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:780px){.row{grid-template-columns:1fr 1fr}}
+  pre{white-space:pre-wrap;background:#0f1430;border-radius:8px;padding:10px;color:#ffd166;overflow:auto;max-height:360px}
 </style>
 </head>
-
 <body>
+<header>
   <h1>CrashRadar — Composite Crash Risk</h1>
-  <div id="status" class="section">Loading data...</div>
+  <div id="loadStatus" class="sub">Reading <code>data/fred_cache.json</code> …</div>
+</header>
 
-  <div id="composite" class="section">
-    <h2>Composite Score</h2>
-    <p><strong id="score">–</strong></p>
-    <p>Data freshness: <span id="freshness">–</span></p>
-  </div>
+<main>
+  <section class="card">
+    <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap">
+      <div>
+        <div>Composite Score <span id="riskBadge" class="badge">—</span></div>
+        <div id="score" class="kpi">—</div>
+        <div id="fresh" class="sub" style="margin-top:6px">Data freshness: —</div>
+      </div>
+    </div>
+  </section>
 
-  <div id="charts" class="section">
-    <h2>Indicators</h2>
-    <div class="chart"><canvas id="chartTerm"></canvas></div>
-    <div class="chart"><canvas id="chartCredit"></canvas></div>
-    <div class="chart"><canvas id="chartUnemp"></canvas></div>
-    <div class="chart"><canvas id="chartDraw"></canvas></div>
-    <div class="chart"><canvas id="chartNFCI"></canvas></div>
-    <div class="chart"><canvas id="chartComposite"></canvas></div>
-  </div>
+  <section class="card">
+    <b>Indicators</b>
+    <div class="row">
+      <div class="chart"><canvas id="cTerm"></canvas></div>
+      <div class="chart"><canvas id="cCredit"></canvas></div>
+      <div class="chart"><canvas id="cUn"></canvas></div>
+      <div class="chart"><canvas id="cDD"></canvas></div>
+      <div class="chart"><canvas id="cNFCI"></canvas></div>
+      <div class="chart"><canvas id="cComp"></canvas></div>
+    </div>
+  </section>
 
-  <div id="insights" class="section">
-    <h2>Insights</h2>
-    <p id="insightText">–</p>
-  </div>
+  <section class="card">
+    <b>Insights</b>
+    <ul id="insights" class="sub" style="margin:.4rem 0 0 .9rem"></ul>
+  </section>
 
-  <footer style="text-align:center; margin-top:40px; opacity:0.6;">
-    © CrashRadar — GitHub Pages
-  </footer>
+  <section class="card">
+    <b>Diagnostics</b>
+    <div id="diagHead" class="sub" style="margin:8px 0 6px">Loading…</div>
+    <pre id="diag">Waiting…</pre>
+  </section>
+</main>
 
 <script>
-async function init() {
-  const status = document.getElementById('status');
-  try {
-    const response = await fetch('data/fred_cache.json');
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    status.innerHTML = '✅ Cache file loaded.';
-    renderDashboard(data);
-  } catch (err) {
-    status.innerHTML = `<span class='error'>❌ Error loading data: ${err.message}</span>`;
+const $ = s => document.querySelector(s);
+const fmt = (x,d=2)=>Number.isFinite(x)?(+x).toFixed(d):'—';
+
+function setBadge(score){
+  const b = $('#riskBadge'); b.className='badge';
+  if(!Number.isFinite(score)){ b.textContent='—'; return; }
+  if(score <= 0.5){ b.textContent='GREEN'; b.classList.add('g'); }
+  else if(score <= 1.0){ b.textContent='AMBER'; b.classList.add('y'); }
+  else { b.textContent='RED'; b.classList.add('r'); }
+}
+
+function chartOptions(title){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, title:{display:true,text:title,color:'#cfe3ff'} },
+    scales:{
+      x:{ ticks:{color:'#9aa2c9',maxRotation:0,autoSkip:true}, grid:{color:'rgba(255,255,255,.06)'} },
+      y:{ ticks:{color:'#9aa2c9'}, grid:{color:'rgba(255,255,255,.06)'} }
+    },
+    elements:{ line:{ tension:0.2 }, point:{ radius:0 } }
+  };
+}
+
+function toSeries(obs, n=180){
+  if(!Array.isArray(obs)) return {labels:[], values:[]};
+  const clean = obs.filter(o => o && o.date && Number.isFinite(+o.value))
+                   .map(o => ({d:o.date, v:+o.value}));
+  const take = clean.slice(-n);
+  return { labels: take.map(x=>x.d), values: take.map(x=>x.v) };
+}
+
+const liveCharts = new Map();
+function drawLine(canvasId, title, labels, values){
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  if(liveCharts.has(canvasId)){ try{ liveCharts.get(canvasId).destroy(); }catch(e){} }
+  liveCharts.set(canvasId, new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[{ label:title, data:values, borderColor:'#7ea6ff', backgroundColor:'rgba(126,166,255,.18)' }] },
+    options: chartOptions(title)
+  }));
+}
+
+(async function(){
+  const status = $('#loadStatus'), diag = $('#diag'), head=$('#diagHead');
+  try{
+    const r = await fetch('data/fred_cache.json', {cache:'no-store'});
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const txt = await r.text();
+    let j;
+    try{ j = JSON.parse(txt); }catch(e){ throw new Error('Invalid JSON: '+e.message); }
+
+    // Diagnostics
+    head.textContent = 'Cache loaded.';
+    diag.textContent = txt;
+
+    // Resolve fields safely based on your JSON shape
+    const fetchedAt = j.fetched_at_utc || j.last_updated || (j.composite_score && j.composite_score.last_updated) || null;
+    const comp = (j.composite_score && typeof j.composite_score.score === 'number')
+                  ? j.composite_score.score
+                  : (typeof j.score === 'number' ? j.score : NaN);
+
+    $('#fresh').textContent = fetchedAt ? new Date(fetchedAt).toLocaleString() : '—';
+    $('#score').textContent = fmt(comp,2);
+    setBadge(comp);
+    status.innerHTML = '✅ Cache file found and parsed.';
+
+    // Series expected
+    const S = j.series || {};
+    const want = [
+      ['T10Y3M','Yield Curve (10y–3m)'],
+      ['CREDIT','Credit Spread (BAA–AAA)'],
+      ['UN_SLOPE6','Unemployment 6m slope'],
+      ['DD_12M','12m Drawdown'],
+      ['NFCI','NFCI']
+    ];
+
+    // Draw indicator charts
+    const idMap = {T10Y3M:'cTerm', CREDIT:'cCredit', UN_SLOPE6:'cUn', DD_12M:'cDD', NFCI:'cNFCI'};
+    for(const [key,title] of want){
+      const obs = S[key]?.observations;
+      const {labels, values} = toSeries(obs, 260);
+      drawLine(idMap[key], title, labels, values);
+    }
+
+    // Composite (rolling) — build a faux series from components if none is supplied
+    // Use a simple weighted blend of normalized values to illustrate trend (dev/demo)
+    const compLabels = (() => {
+      // pick any available series for date labels
+      for (const k of Object.keys(S)){
+        const lbls = toSeries(S[k]?.observations).labels;
+        if(lbls.length) return lbls;
+      }
+      return [];
+    })();
+    const compValues = compLabels.map((_,i)=>{
+      // simple blend on aligned index; if missing use last known
+      function at(arr, idx){ return (arr && idx < arr.length) ? +arr[idx].value : NaN; }
+      const t = S.T10Y3M?.observations || [];
+      const c = S.CREDIT?.observations || [];
+      const u = S.UN_SLOPE6?.observations || [];
+      const d = S.DD_12M?.observations || [];
+      const n = S.NFCI?.observations || [];
+      const vals = [at(t,i), at(c,i), at(u,i), at(d,i), at(n,i)].filter(Number.isFinite);
+      if(!vals.length) return NaN;
+      // quick z-ish scale
+      const m = vals.reduce((a,b)=>a+b,0)/vals.length;
+      return m;
+    }).filter(v=>Number.isFinite(v));
+    drawLine('cComp','Composite (rolling proxy)', compLabels.slice(-compValues.length), compValues);
+
+    // Simple insights
+    const ul = $('#insights'); ul.innerHTML = '';
+    function add(msg){ const li=document.createElement('li'); li.textContent=msg; ul.appendChild(li); }
+    const last = k => {
+      const arr = S[k]?.observations || [];
+      return arr.length ? +arr[arr.length-1].value : NaN;
+    };
+    const vTerm = last('T10Y3M');
+    const vCredit= last('CREDIT');
+    const vUn = last('UN_SLOPE6');
+    const vDD = last('DD_12M');
+    const vN = last('NFCI');
+
+    if(Number.isFinite(vN) && vN < 0) add('NFCI < 0 (looser than average).');
+    if(Number.isFinite(vTerm) && vTerm < 0) add('Yield curve inverted (10y–3m < 0).');
+    if(Number.isFinite(vCredit) && vCredit > 1.0) add('Credit spread > 1.0 — risk rising.');
+    if(Number.isFinite(vUn) && vUn > 0.2) add('Unemployment 6m slope rising.');
+    if(Number.isFinite(vDD) && vDD < -0.1) add('Equities >10% below 12-month peak.');
+    if(!ul.children.length) add('No strong signals from latest readings.');
+
+  }catch(e){
+    $('#loadStatus').innerHTML = `<span class="err">❌ ${e.message}</span>`;
+    $('#diagHead').textContent = 'Error';
+    $('#diag').textContent = String(e.stack || e.message || e);
   }
-}
-
-function renderDashboard(data) {
-  const s = data.series;
-  document.getElementById('score').textContent = data.score.toFixed(2);
-  document.getElementById('freshness').textContent = new Date(data.last_updated).toLocaleString();
-
-  // Simple insight logic
-  let insights = [];
-  if (s.NFCI < 0) insights.push('NFCI < 0 → financial conditions looser than average');
-  if (s['T10Y3M'] < 0) insights.push('Yield curve inverted — recession risk rising');
-  if (s.CREDIT > 1) insights.push('Credit spread widening — risk-off tone');
-  document.getElementById('insightText').textContent = insights.join('; ') || 'No major signals currently.';
-
-  // Chart helpers
-  const ctx = (id) => document.getElementById(id).getContext('2d');
-  const opts = (label) => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      x: { ticks: { color: '#9aa2c9' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-      y: { ticks: { color: '#9aa2c9' }, grid: { color: 'rgba(255,255,255,0.05)' } }
-    },
-    plugins: {
-      legend: { display: false },
-      title: { display: true, text: label, color: '#cfe3ff' }
-    },
-    borderColor: '#58a6ff',
-    backgroundColor: 'rgba(88,166,255,0.2)',
-  });
-
-  // Dummy history arrays (expand later when you have full time series)
-  const labels = [ "T", "T-1", "T-2", "T-3", "T-4" ];
-  const makeHist = (v) => [v*0.8, v*0.9, v*1.05, v*0.95, v];
-
-  new Chart(ctx('chartTerm'),     { type: 'line', data: { labels, datasets: [{ data: makeHist(s.T10Y3M), label: '10y–3m Spread' }] }, options: opts('Yield Curve (10y–3m)') });
-  new Chart(ctx('chartCredit'),   { type: 'line', data: { labels, datasets: [{ data: makeHist(s.CREDIT), label: 'BAA–AAA Credit Spread' }] }, options: opts('Credit Spread (BAA–AAA)') });
-  new Chart(ctx('chartUnemp'),    { type: 'line', data: { labels, datasets: [{ data: makeHist(s.UN_SLOPE6), label: 'Unemp. 6m Slope' }] }, options: opts('Unemployment 6m Slope') });
-  new Chart(ctx('chartDraw'),     { type: 'line', data: { labels, datasets: [{ data: makeHist(s.DD_12M), label: '12m Drawdown' }] }, options: opts('Equity 12m Drawdown') });
-  new Chart(ctx('chartNFCI'),     { type: 'line', data: { labels, datasets: [{ data: makeHist(s.NFCI), label: 'Financial Conditions' }] }, options: opts('NFCI Index') });
-  new Chart(ctx('chartComposite'),{ type: 'line', data: { labels, datasets: [{ data: makeHist(data.score), label: 'Composite Score' }] }, options: opts('Composite (30-day Rolling)') });
-}
-
-init();
+})();
 </script>
 </body>
 </html>
