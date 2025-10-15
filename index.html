@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CrashRadar — Composite Crash Risk</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #0d1117;
+      color: #f0f6fc;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #58a6ff;
+      margin-bottom: 10px;
+    }
+    .section {
+      background: #161b22;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .label {
+      font-weight: bold;
+      display: inline-block;
+      min-width: 160px;
+    }
+    .value {
+      color: #d2a8ff;
+    }
+    .loading {
+      color: #ffa657;
+    }
+  </style>
+</head>
+<body>
+  <h1>CrashRadar — Composite Crash Risk</h1>
+  <p>Reading <code>data/fred_cache.json</code> … <span id="status" class="loading">checking…</span></p>
+
+  <div class="section">
+    <h2>Composite Score</h2>
+    <p id="score" class="value">—</p>
+    <p>data freshness: <span id="freshness" class="value">—</span></p>
+  </div>
+
+  <div class="section">
+    <div><span class="label">Term (10y–3m):</span> <span id="term" class="value">—</span></div>
+    <div><span class="label">Credit (BAA–AAA):</span> <span id="credit" class="value">—</span></div>
+    <div><span class="label">Unemp 6m slope:</span> <span id="unemp" class="value">—</span></div>
+    <div><span class="label">12m Drawdown:</span> <span id="draw" class="value">—</span></div>
+    <div><span class="label">NFCI:</span> <span id="nfci" class="value">—</span></div>
+  </div>
+
+  <div class="section">
+    <h3>Diagnostics</h3>
+    <p id="diag" class="loading">Waiting…</p>
+  </div>
+
+  <script>
+    async function loadFRED() {
+      const status = document.getElementById("status");
+      const diag = document.getElementById("diag");
+
+      try {
+        const res = await fetch("data/fred_cache.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        status.textContent = "✅ loaded";
+        diag.textContent = "Cache file found and parsed.";
+
+        // show freshness
+        document.getElementById("freshness").textContent = new Date(data.fetched_at_utc).toLocaleString();
+
+        // example: if DGS10 exists, display last value
+        if (data.series?.DGS10?.last?.value) {
+          document.getElementById("term").textContent = data.series.DGS10.last.value + "%";
+        }
+
+        // example placeholder composite score
+        document.getElementById("score").textContent = "Calculating…";
+        const v = data.series?.DGS10?.last?.value ?? 0;
+        const composite = (5 - v).toFixed(2);
+        document.getElementById("score").textContent = composite;
+      } catch (err) {
+        status.textContent = "⚠️ no cache or read error";
+        diag.textContent = "Error: " + err.message;
+      }
+    }
+
+    loadFRED();
+  </script>
+</body>
+</html>
