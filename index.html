@@ -3,23 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CrashRadar — Safe Index</title>
+<title>CrashRadar v4 — Recession Risk Composite</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-  :root{
-    --bg:#0e1326; --card:#161b3a; --ring:#0f1430;
+  :root {
+    --bg:#0b0f24; --card:#161b3a; --ring:#0f1430;
     --text:#eef0ff; --muted:#9aa2c9;
     --ok:#21d07a; --warn:#ffd166; --risk:#ff5c7a;
   }
   html,body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,Segoe UI,Roboto,Helvetica,Arial}
-  header{padding:16px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
-  h1{margin:0 0 6px;font-size:22px}
+  header{padding:16px;text-align:center;border-bottom:1px solid rgba(255,255,255,.08)}
+  h1{margin:0;font-size:22px}
   .sub{color:var(--muted);font-size:12px}
-  main{padding:12px;max-width:1100px;margin:0 auto}
-  .card{background:#161b3a;border-radius:12px;padding:14px;margin:10px 0}
+  main{padding:12px;max-width:1100px;margin:auto}
+  .card{background:var(--card);border-radius:12px;padding:14px;margin:10px 0}
   .row{display:grid;grid-template-columns:1fr;gap:12px}
   @media(min-width:900px){.row{grid-template-columns:1.3fr 1fr}}
-  .pill{display:inline-block;background:#0f1430;border-radius:999px;padding:8px 10px;margin:6px 8px 0 0;color:var(--muted);font-weight:600}
+  .pill{display:inline-block;background:var(--ring);border-radius:999px;padding:8px 10px;margin:6px 8px 0 0;color:var(--muted);font-weight:600}
   .pill b{color:var(--text)}
   .badge{display:inline-block;border-radius:10px;padding:4px 8px;font-weight:700;margin-left:8px}
   .g{background:rgba(33,208,122,.16);color:var(--ok)}
@@ -39,7 +39,7 @@
 </head>
 <body>
 <header>
-  <h1>CrashRadar — Recession Risk</h1>
+  <h1>CrashRadar v4 — Recession Risk Composite</h1>
   <div id="status" class="sub">Loading <code>data/fred_cache.json</code>…</div>
 </header>
 
@@ -53,157 +53,106 @@
       </div>
     </div>
     <div>
-      <b>Latest</b>
-      <div class="pill">Term (10y–3m): <b id="k_term">—</b></div>
-      <div class="pill">Credit (BAA–AAA or BAA–10y): <b id="k_credit">—</b></div>
-      <div class="pill">Unemp 6m slope / Claims: <b id="k_labor">—</b></div>
-      <div class="pill">12m Drawdown: <b id="k_dd">—</b></div>
-      <div class="pill">NFCI / Lending: <b id="k_nfci">—</b></div>
+      <b>Key Inputs</b>
+      <div class="pill">Yield (10y–3m): <b id="k_term">—</b></div>
+      <div class="pill">Credit (BAA–AAA): <b id="k_credit">—</b></div>
+      <div class="pill">Unemployment Δ6m: <b id="k_un">—</b></div>
+      <div class="pill">Drawdown 12m: <b id="k_dd">—</b></div>
+      <div class="pill">NFCI: <b id="k_nfci">—</b></div>
       <div id="fresh" class="sub" style="margin-top:8px">Data freshness: —</div>
     </div>
   </section>
 
   <section class="card" id="charts">
-    <b>Trends</b>
-    <div class="chart" id="compWrap" hidden><canvas id="cComp"></canvas></div>
-    <div class="chart" id="termWrap" hidden><canvas id="cTerm"></canvas></div>
-    <div class="chart" id="creditWrap" hidden><canvas id="cCredit"></canvas></div>
-    <div class="chart" id="laborWrap" hidden><canvas id="cLabor"></canvas></div>
-    <div class="chart" id="ddWrap" hidden><canvas id="cDD"></canvas></div>
-    <div class="chart" id="nfciWrap" hidden><canvas id="cNFCI"></canvas></div>
-    <div class="sub" id="noCharts" hidden>No history in cache — charts hidden (gauge + KPIs still live).</div>
+    <b>Composite & Indicators</b>
+    <div class="chart" id="compWrap"><canvas id="cComp"></canvas></div>
+    <div class="chart" id="termWrap"><canvas id="cTerm"></canvas></div>
+    <div class="chart" id="creditWrap"><canvas id="cCredit"></canvas></div>
+    <div class="chart" id="unWrap"><canvas id="cUn"></canvas></div>
+    <div class="chart" id="ddWrap"><canvas id="cDD"></canvas></div>
+    <div class="chart" id="nfciWrap"><canvas id="cNFCI"></canvas></div>
   </section>
 
   <section class="card">
     <b>Diagnostics</b>
-    <details>
-      <summary>Open raw JSON</summary>
-      <pre id="diag">Waiting…</pre>
-    </details>
+    <details><summary>Open raw JSON</summary><pre id="diag">Waiting…</pre></details>
   </section>
 </main>
 
 <script>
-const $ = s => document.querySelector(s);
-const fmt = (x,d=2)=>Number.isFinite(x)?(+x).toFixed(d):'—';
+const $=s=>document.querySelector(s);
+const fmt=(x,d=2)=>Number.isFinite(x)?(+x).toFixed(d):'—';
 function setBadge(score){
   const b=$('#badge'); b.className='badge';
   if(!Number.isFinite(score)){ b.textContent='—'; return; }
   if(score<=30){ b.textContent='GREEN'; b.classList.add('g'); }
   else if(score<=60){ b.textContent='AMBER'; b.classList.add('y'); }
-  else { b.textContent='RED'; b.classList.add('r'); }
+  else{ b.textContent='RED'; b.classList.add('r'); }
 }
 function renderGauge(score){
-  const g=$('#gauge'), v=$('#gval');
-  const s=Number.isFinite(score)? Math.max(0,Math.min(score,100)) : NaN;
-  v.textContent=Number.isFinite(s)? s.toFixed(1) : '—';
-  const deg=Number.isFinite(s)? (s/100)*360 : 0;
-  const col = !Number.isFinite(s)? 'var(--ok)' : (s<=30?'var(--ok)': s<=60?'var(--warn)':'var(--risk)');
-  g.style.background = `conic-gradient(${col} ${deg}deg, #2a2f55 ${deg}deg)`;
+  const g=$('#gauge'),v=$('#gval');
+  const s=Number.isFinite(score)?Math.max(0,Math.min(score,100)):NaN;
+  v.textContent=Number.isFinite(s)?s.toFixed(1):'—';
+  const deg=Number.isFinite(s)?(s/100)*360:0;
+  const col=!Number.isFinite(s)?'var(--ok)':(s<=30?'var(--ok)':s<=60?'var(--warn)':'var(--risk)');
+  g.style.background=`conic-gradient(${col} ${deg}deg, #2a2f55 ${deg}deg)`;
   setBadge(s);
 }
-function arrFrom(obj){ // supports {observations:[{date,value}]} or {last: num}
-  if(obj?.observations && Array.isArray(obj.observations)){
-    const a = obj.observations.filter(o=>o && o.date!=null && o.value!=null)
-                              .map(o=>({d:String(o.date), v:+o.value}))
-                              .filter(o=>Number.isFinite(o.v));
-    return a;
-  }
-  if(typeof obj?.last === 'number'){
-    return [{d:'latest', v:obj.last}];
-  }
-  return [];
-}
+function arrFrom(o){return o?.observations?.map(x=>({d:x.date,v:+x.value})).filter(x=>Number.isFinite(x.v))||[];}
 function drawLine(id,title,points,color='#7ea6ff',yFmt=null){
-  const wrap = document.getElementById(id+'Wrap');
-  const cvs = document.getElementById(id);
-  if(!wrap||!cvs || !points.length) return (wrap&&(wrap.hidden=true));
-  wrap.hidden=false;
-  const labels = points.map(p=>p.d);
-  const values = points.map(p=>p.v);
-  if(cvs._chart){ try{ cvs._chart.destroy(); }catch(e){} }
-  cvs._chart = new Chart(cvs.getContext('2d'),{
-    type:'line',
-    data:{ labels, datasets:[{ data:values, borderColor:color, backgroundColor:'rgba(126,166,255,.16)', fill:false, tension:.25, pointRadius:0}] },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, title:{display:true,text:title,color:'#cfe3ff'} },
-      scales:{
-        x:{ ticks:{color:'#9aa2c9', maxRotation:0, autoSkip:true}, grid:{color:'rgba(255,255,255,.06)'} },
-        y:{ ticks:{color:'#9aa2c9', callback:yFmt||((v)=>v) }, grid:{color:'rgba(255,255,255,.06)'} }
-      }
-    }
-  });
+  if(!points.length)return;
+  const ctx=document.getElementById(id).getContext('2d');
+  new Chart(ctx,{type:'line',data:{labels:points.map(p=>p.d),datasets:[{data:points.map(p=>p.v),borderColor:color,fill:false,tension:.25,pointRadius:0}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:title,color:'#cfe3ff'}},
+  scales:{x:{ticks:{color:'#9aa2c9'},grid:{color:'rgba(255,255,255,.06)'}},y:{ticks:{color:'#9aa2c9',callback:yFmt||((v)=>v)},grid:{color:'rgba(255,255,255,.06)'}}}}});
 }
 
-(async function(){
-  try{
-    const r = await fetch('data/fred_cache.json',{cache:'no-store'});
-    if(!r.ok) throw new Error(`HTTP ${r.status}`);
-    const txt = await r.text();
-    $('#diag').textContent = txt;
-    const j = JSON.parse(txt);
-    $('#status').textContent = '✅ Cache loaded';
+// === Econometric Normalisation ===
+function normYield(v){return (!Number.isFinite(v))?NaN:v>=2?0:v<=-1?100:((2-v)/3)*100;}
+function normCredit(v){return (!Number.isFinite(v))?NaN:Math.min(100,Math.max(0,(v-1)*50));}
+function normUn(v){return (!Number.isFinite(v))?NaN:v<=0?0:v>=1?80:v*80;}
+function normDD(v){return (!Number.isFinite(v))?NaN:Math.min(100,Math.max(0,(-v)*300));}
+function normNFCI(v){return (!Number.isFinite(v))?NaN:v<=-0.5?0:v>=1?100:(v+0.5)*66;}
 
-    const S = j.series || {};
-    // try both composite locations
-    const comp = Number.isFinite(j?.composite_score?.score) ? j.composite_score.score
-                : Number.isFinite(j?.composite) ? j.composite
-                : Number.isFinite(j?.score) ? j.score : NaN;
-    renderGauge(Number(comp));
+// === Main ===
+(async()=>{
+try{
+  const r=await fetch('data/fred_cache.json',{cache:'no-store'});
+  const txt=await r.text(); $('#diag').textContent=txt;
+  const j=JSON.parse(txt),S=j.series||{};
+  $('#status').textContent='✅ Cache loaded';
+  $('#fresh').textContent=j.fetched_at_utc?new Date(j.fetched_at_utc).toLocaleString():'—';
 
-    // freshness
-    const ts = j.fetched_at_utc || j.last_updated || j?.composite_score?.last_updated || null;
-    $('#fresh').textContent = ts ? (new Date(ts).toLocaleString()) : '—';
+  const sY=arrFrom(S.T10Y3M||{}), sC=arrFrom(S.CREDIT||{}), sU=arrFrom(S.UN_SLOPE6||{}), sD=arrFrom(S.DD_12M||{}), sN=arrFrom(S.NFCI||{});
+  const y=Number.isFinite(+S.T10Y3M?.last)?+S.T10Y3M.last:(sY.at(-1)?.v??NaN);
+  const c=Number.isFinite(+S.CREDIT?.last)?+S.CREDIT.last:(sC.at(-1)?.v??NaN);
+  const u=Number.isFinite(+S.UN_SLOPE6?.last)?+S.UN_SLOPE6.last:(sU.at(-1)?.v??NaN);
+  const d=Number.isFinite(+S.DD_12M?.last)?+S.DD_12M.last:(sD.at(-1)?.v??NaN);
+  const n=Number.isFinite(+S.NFCI?.last)?+S.NFCI.last:(sN.at(-1)?.v??NaN);
 
-    // map fields (support both naming styles)
-    const series = {
-      term:   S.T10Y3M || S.TERM || null,
-      credit: S.CREDIT || S.BAA10Y || S.BAA_AAA || null,
-      labor:  S.UN_SLOPE6 || S.CLAIMS || null,
-      dd:     S.DD_12M || null,
-      nfci:   S.NFCI || S.LEND || null,
-      compHist: S.COMPOSITE || null
-    };
+  $('#k_term').textContent=fmt(y);
+  $('#k_credit').textContent=fmt(c);
+  $('#k_un').textContent=fmt(u);
+  $('#k_dd').textContent=(Number.isFinite(d)?(d*100).toFixed(1)+'%':'—');
+  $('#k_nfci').textContent=fmt(n);
 
-    // KPIs from last values if available
-    const aTerm = arrFrom(series.term);
-    const aCred = arrFrom(series.credit);
-    const aLab  = arrFrom(series.labor);
-    const aDD   = arrFrom(series.dd);
-    const aNFCI = arrFrom(series.nfci);
+  const ry=normYield(y),rc=normCredit(c),ru=normUn(u),rd=normDD(d),rn=normNFCI(n);
+  const composite=(ry*0.25)+(rc*0.25)+(ru*0.2)+(rd*0.15)+(rn*0.15);
+  renderGauge(composite);
 
-    const last = a => a.length ? a[a.length-1].v : NaN;
+  // Charts
+  drawLine('cComp','Composite (norm.)',[{d:'Now',v:composite}],'#a7c4ff');
+  if(sY.length)drawLine('cTerm','Yield Curve',sY,'#66b2ff');
+  if(sC.length)drawLine('cCredit','Credit Spread',sC,'#ffb366');
+  if(sU.length)drawLine('cUn','Unemployment Δ6m',sU,'#ff8899');
+  if(sD.length)drawLine('cDD','Drawdown 12m',sD,'#b49eff',(v)=>(v*100).toFixed(0)+'%');
+  if(sN.length)drawLine('cNFCI','NFCI',sN,'#7dd39f',(v)=>v.toFixed(2));
 
-    $('#k_term').textContent  = fmt(last(aTerm));
-    $('#k_credit').textContent= fmt(last(aCred));
-    const labVal = last(aLab);
-    $('#k_labor').textContent = Number.isFinite(labVal) ? fmt(labVal) : '—';
-    const ddVal = last(aDD);
-    $('#k_dd').textContent    = Number.isFinite(ddVal)? (ddVal*100).toFixed(1)+'%' : '—';
-    $('#k_nfci').textContent  = fmt(last(aNFCI));
-
-    // Charts (only if have history > 2)
-    let anyCharts = false;
-    const hasHist = a => a.length > 2 && a[0].d!=='latest';
-
-    // composite trend if present in cache (otherwise skip)
-    const compHist = series.compHist ? arrFrom(series.compHist) : [];
-    if (hasHist(compHist)) { anyCharts=true; drawLine('cComp','Composite (from cache)', compHist,'#a7c4ff'); }
-
-    if (hasHist(aTerm))  { anyCharts=true; drawLine('cTerm','Term (10y–3m)', aTerm,'#68c1ff'); }
-    if (hasHist(aCred))  { anyCharts=true; drawLine('cCredit','Credit Spread', aCred,'#ffbb66'); }
-    if (hasHist(aLab))   { anyCharts=true; drawLine('cLabor','Labor slope / claims', aLab,'#ff8899'); }
-    if (hasHist(aDD))    { anyCharts=true; drawLine('cDD','12m Drawdown', aDD,'#a089ff', (v)=> (v*100).toFixed(0)+'%'); }
-    if (hasHist(aNFCI))  { anyCharts=true; drawLine('cNFCI','NFCI / Lending', aNFCI,'#7dd39f', (v)=> v.toFixed(2)); }
-
-    if (!anyCharts) $('#noCharts').hidden = false;
-
-  }catch(e){
-    $('#status').textContent = `❌ ${e.message}`;
-    $('#diag').textContent = e.stack || String(e);
-    renderGauge(NaN);
-  }
+}catch(e){
+  $('#status').textContent='❌ '+e.message;
+  $('#diag').textContent=e.stack||String(e);
+  renderGauge(NaN);
+}
 })();
 </script>
 </body>
