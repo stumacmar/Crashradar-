@@ -1,49 +1,57 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CrashRadar v4 — Recession Risk Composite</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CrashRadar — Recession Risk Composite</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-  :root {
-    --bg:#0b0f24; --card:#161b3a; --ring:#0f1430;
-    --text:#eef0ff; --muted:#9aa2c9;
-    --ok:#21d07a; --warn:#ffd166; --risk:#ff5c7a;
+  :root{
+    --bg:#0b0f24; --card:#161b3a; --panel:#10163a;
+    --text:#eef0ff; --muted:#a7b0d9;
+    --ok:#2dd17f; --warn:#ffd166; --risk:#ff5c7a;
+    --grid:#2a315d;
   }
-  html,body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,Segoe UI,Roboto,Helvetica,Arial}
-  header{padding:16px;text-align:center;border-bottom:1px solid rgba(255,255,255,.08)}
-  h1{margin:0;font-size:22px}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font:15px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+  header{padding:16px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+  h1{margin:0;font-size:22px;line-height:1.2}
   .sub{color:var(--muted);font-size:12px}
-  main{padding:12px;max-width:1100px;margin:auto}
+  main{max-width:1100px;margin:auto;padding:12px}
   .card{background:var(--card);border-radius:12px;padding:14px;margin:10px 0}
-  .row{display:grid;grid-template-columns:1fr;gap:12px}
-  @media(min-width:900px){.row{grid-template-columns:1.3fr 1fr}}
-  .pill{display:inline-block;background:var(--ring);border-radius:999px;padding:8px 10px;margin:6px 8px 0 0;color:var(--muted);font-weight:600}
+  .row{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:900px){.row{grid-template-columns:1.1fr 1fr}}
+  .pill{display:inline-block;background:#0f1430;color:var(--muted);font-weight:600;
+    border-radius:999px;padding:8px 10px;margin:6px 8px 0 0}
   .pill b{color:var(--text)}
+  .gauge{--deg:0;--col:var(--ok);width:180px;height:180px;border-radius:50%;
+    background:conic-gradient(var(--col) var(--deg), #2a2f55 var(--deg));
+    position:relative;margin:auto;display:grid;place-items:center}
+  .gauge:after{content:"";position:absolute;inset:12px;border-radius:50%;background:#0f1430}
+  .gauge-val{position:relative;font-weight:800;font-size:28px}
   .badge{display:inline-block;border-radius:10px;padding:4px 8px;font-weight:700;margin-left:8px}
-  .g{background:rgba(33,208,122,.16);color:var(--ok)}
+  .g{background:rgba(45,209,127,.16);color:var(--ok)}
   .y{background:rgba(255,209,102,.18);color:var(--warn)}
   .r{background:rgba(255,92,122,.18);color:var(--risk)}
-  .gauge{--deg:0deg;--col:var(--ok);width:180px;height:180px;border-radius:50%;
-         background:conic-gradient(var(--col) var(--deg), #2a2f55 var(--deg));
-         display:grid;place-items:center;margin:auto;position:relative}
-  .gauge:after{content:"";position:absolute;inset:12px;border-radius:50%;background:var(--ring)}
-  .gauge-val{position:relative;font-weight:800;font-size:28px}
-  .chart{position:relative;height:260px;margin:10px 0;background:#10163a;border-radius:10px;padding:8px}
-  .chart canvas{width:100% !important;height:100% !important;display:block}
-  details{background:#10163a;padding:10px;border-radius:8px}
+  .chart{background:var(--panel);border-radius:10px;padding:8px;margin-top:10px;position:relative;height:280px}
+  .chart canvas{width:100%!important;height:100%!important;display:block}
+  .legend{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--muted);margin-top:6px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .dot.g{background:var(--ok)} .dot.y{background:var(--warn)} .dot.r{background:var(--risk)}
+  .expl{margin:8px 2px 0;color:var(--muted);font-size:13px;line-height:1.35}
+  details{background:#0f1430;padding:10px;border-radius:8px}
   summary{cursor:pointer}
   pre{white-space:pre-wrap;background:#0f1430;border-radius:8px;padding:10px;color:#ffd166;overflow:auto;max-height:360px;margin:8px 0 0}
 </style>
 </head>
 <body>
 <header>
-  <h1>CrashRadar v4 — Recession Risk Composite</h1>
+  <h1>CrashRadar — Composite Crash Risk</h1>
   <div id="status" class="sub">Loading <code>data/fred_cache.json</code>…</div>
 </header>
 
 <main>
+  <!-- Gauged composite + KPIs -->
   <section class="card row">
     <div>
       <div class="gauge" id="gauge"><div id="gval" class="gauge-val">—</div></div>
@@ -53,24 +61,66 @@
       </div>
     </div>
     <div>
-      <b>Key Inputs</b>
-      <div class="pill">Yield (10y–3m): <b id="k_term">—</b></div>
-      <div class="pill">Credit (BAA–AAA): <b id="k_credit">—</b></div>
-      <div class="pill">Unemployment Δ6m: <b id="k_un">—</b></div>
-      <div class="pill">Drawdown 12m: <b id="k_dd">—</b></div>
-      <div class="pill">NFCI: <b id="k_nfci">—</b></div>
+      <b>Key inputs</b><br>
+      <span class="pill">Yield (10y–3m): <b id="k_term">—</b></span>
+      <span class="pill">Credit (BAA–AAA): <b id="k_credit">—</b></span>
+      <span class="pill">Unemp Δ6m: <b id="k_un">—</b></span>
+      <span class="pill">Drawdown 12m: <b id="k_dd">—</b></span>
+      <span class="pill">NFCI: <b id="k_nfci">—</b></span>
       <div id="fresh" class="sub" style="margin-top:8px">Data freshness: —</div>
     </div>
   </section>
 
-  <section class="card" id="charts">
-    <b>Composite & Indicators</b>
-    <div class="chart" id="compWrap"><canvas id="cComp"></canvas></div>
-    <div class="chart" id="termWrap"><canvas id="cTerm"></canvas></div>
-    <div class="chart" id="creditWrap"><canvas id="cCredit"></canvas></div>
-    <div class="chart" id="unWrap"><canvas id="cUn"></canvas></div>
-    <div class="chart" id="ddWrap"><canvas id="cDD"></canvas></div>
-    <div class="chart" id="nfciWrap"><canvas id="cNFCI"></canvas></div>
+  <!-- Composite -->
+  <section class="card">
+    <b>Composite (normalised 0–100)</b>
+    <div class="legend">
+      <span class="dot g"></span>Green
+      <span class="dot y"></span>Amber
+      <span class="dot r"></span>Red
+    </div>
+    <div class="chart"><canvas id="cComp"></canvas></div>
+    <p class="expl"><b>What it means:</b> A weighted blend of yield curve, credit spread, unemployment momentum, equity drawdown and financial conditions, converted to a 0–100 risk scale (higher = worse). <b>Impact:</b> when the composite sits in Red and rising, de-risking a pension allocation is favoured; Green and falling supports re-risking.</p>
+  </section>
+
+  <!-- Yield -->
+  <section class="card">
+    <b>Yield Curve (10y–3m)</b>
+    <div class="legend"><span class="dot g"></span>≥ 0.5 • <span class="dot y"></span>0–0.5 • <span class="dot r"></span>&lt; 0</div>
+    <div class="chart"><canvas id="cTerm"></canvas></div>
+    <p class="expl"><b>What it means:</b> Inversions (below 0) usually precede recessions/drawdowns with a long and variable lag. <b>Impact:</b> deeper/longer inversion raises crash odds and tightens financial conditions later.</p>
+  </section>
+
+  <!-- Credit -->
+  <section class="card">
+    <b>Credit Spread (Moody’s BAA–AAA)</b>
+    <div class="legend"><span class="dot g"></span>≤ 0.60 • <span class="dot y"></span>0.60–0.80 • <span class="dot r"></span>&gt; 0.80</div>
+    <div class="chart"><canvas id="cCredit"></canvas></div>
+    <p class="expl"><b>What it means:</b> Wider spreads signal rising default risk/credit stress. <b>Impact:</b> persistent widening is a late-cycle warning; re-risking is lower odds in Red.</p>
+  </section>
+
+  <!-- Unemployment -->
+  <section class="card">
+    <b>Unemployment Δ6m</b>
+    <div class="legend"><span class="dot g"></span>≤ 0 • <span class="dot y"></span>0–0.20 • <span class="dot r"></span>&gt; 0.20</div>
+    <div class="chart"><canvas id="cUn"></canvas></div>
+    <p class="expl"><b>What it means:</b> Six-month rise in unemployment rates. <b>Impact:</b> accelerating increases tend to correlate with equity bear phases; Red zone argues for caution.</p>
+  </section>
+
+  <!-- Drawdown -->
+  <section class="card">
+    <b>12-month Drawdown (S&amp;P vs 1-yr peak)</b>
+    <div class="legend"><span class="dot g"></span>&gt; −2% • <span class="dot y"></span>−2%…−8% • <span class="dot r"></span>&lt; −8%</div>
+    <div class="chart"><canvas id="cDD"></canvas></div>
+    <p class="expl"><b>What it means:</b> Market-price stress complementing macro. <b>Impact:</b> deepening drawdowns while macro worsens often precede larger cascades.</p>
+  </section>
+
+  <!-- NFCI -->
+  <section class="card">
+    <b>Chicago Fed NFCI</b>
+    <div class="legend"><span class="dot g"></span>≤ 0 • <span class="dot y"></span>0–0.5 • <span class="dot r"></span>&gt; 0.5</div>
+    <div class="chart"><canvas id="cNFCI"></canvas></div>
+    <p class="expl"><b>What it means:</b> Overall financial conditions (rates, credit, funding, vol). <b>Impact:</b> rising and positive = tighter/worse; reduces odds of successful re-risking.</p>
   </section>
 
   <section class="card">
@@ -80,14 +130,16 @@
 </main>
 
 <script>
+/* ---------- helpers ---------- */
 const $=s=>document.querySelector(s);
 const fmt=(x,d=2)=>Number.isFinite(x)?(+x).toFixed(d):'—';
+const gbDate = (iso)=> new Date(iso).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 function setBadge(score){
   const b=$('#badge'); b.className='badge';
-  if(!Number.isFinite(score)){ b.textContent='—'; return; }
-  if(score<=30){ b.textContent='GREEN'; b.classList.add('g'); }
-  else if(score<=60){ b.textContent='AMBER'; b.classList.add('y'); }
-  else{ b.textContent='RED'; b.classList.add('r'); }
+  if(!Number.isFinite(score)){b.textContent='—';return;}
+  if(score<=30){b.textContent='GREEN';b.classList.add('g');}
+  else if(score<=60){b.textContent='AMBER';b.classList.add('y');}
+  else{b.textContent='RED';b.classList.add('r');}
 }
 function renderGauge(score){
   const g=$('#gauge'),v=$('#gval');
@@ -98,61 +150,206 @@ function renderGauge(score){
   g.style.background=`conic-gradient(${col} ${deg}deg, #2a2f55 ${deg}deg)`;
   setBadge(s);
 }
-function arrFrom(o){return o?.observations?.map(x=>({d:x.date,v:+x.value})).filter(x=>Number.isFinite(x.v))||[];}
-function drawLine(id,title,points,color='#7ea6ff',yFmt=null){
-  if(!points.length)return;
-  const ctx=document.getElementById(id).getContext('2d');
-  new Chart(ctx,{type:'line',data:{labels:points.map(p=>p.d),datasets:[{data:points.map(p=>p.v),borderColor:color,fill:false,tension:.25,pointRadius:0}]},
-  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:title,color:'#cfe3ff'}},
-  scales:{x:{ticks:{color:'#9aa2c9'},grid:{color:'rgba(255,255,255,.06)'}},y:{ticks:{color:'#9aa2c9',callback:yFmt||((v)=>v)},grid:{color:'rgba(255,255,255,.06)'}}}}});
+function seriesToPoints(s){
+  return (s?.observations||[]).map(o=>({d:o.date,v:Number(o.value)})).filter(p=>Number.isFinite(p.v));
 }
 
-// === Econometric Normalisation ===
+/* ---------- risk normalisation (0–100) ---------- */
 function normYield(v){return (!Number.isFinite(v))?NaN:v>=2?0:v<=-1?100:((2-v)/3)*100;}
 function normCredit(v){return (!Number.isFinite(v))?NaN:Math.min(100,Math.max(0,(v-1)*50));}
-function normUn(v){return (!Number.isFinite(v))?NaN:v<=0?0:v>=1?80:v*80;}
-function normDD(v){return (!Number.isFinite(v))?NaN:Math.min(100,Math.max(0,(-v)*300));}
+function normUn(v){return (!Number.isFinite(v))?NaN:v<=0?0:v>=0.6?100:(v/0.6)*100;}
+function normDD(v){return (!Number.isFinite(v))?NaN:Math.min(100,Math.max(0,(-v)*500));}
 function normNFCI(v){return (!Number.isFinite(v))?NaN:v<=-0.5?0:v>=1?100:(v+0.5)*66;}
 
-// === Main ===
-(async()=>{
-try{
-  const r=await fetch('data/fred_cache.json',{cache:'no-store'});
-  const txt=await r.text(); $('#diag').textContent=txt;
-  const j=JSON.parse(txt),S=j.series||{};
-  $('#status').textContent='✅ Cache loaded';
-  $('#fresh').textContent=j.fetched_at_utc?new Date(j.fetched_at_utc).toLocaleString():'—';
+/* ---------- Chart.js plugin: shaded GAR bands + latest marker ---------- */
+const yBandsPlugin = {
+  id:'yBands',
+  beforeDraw(chart, args, opts){
+    const {ctx, chartArea:{top,bottom,left,right}, scales:{y}} = chart;
+    if(!y) return;
+    (opts?.zones||[]).forEach(z=>{
+      const y1 = y.getPixelForValue(z.to);
+      const y2 = y.getPixelForValue(z.from);
+      ctx.save();
+      ctx.fillStyle=z.color; ctx.globalAlpha=z.alpha??0.12;
+      ctx.fillRect(left, Math.min(y1,y2), right-left, Math.abs(y2-y1));
+      ctx.restore();
+    });
+  },
+  afterDatasetsDraw(chart, args, opts){
+    const {ctx, chartArea:{left,right}, scales:{y}} = chart;
+    const lv = opts?.latest;
+    if(!Number.isFinite(lv) || !y) return;
+    const py = y.getPixelForValue(lv);
+    ctx.save();
+    ctx.strokeStyle = '#ffffff55'; ctx.setLineDash([6,4]);
+    ctx.beginPath(); ctx.moveTo(left,py); ctx.lineTo(right,py); ctx.stroke();
+    ctx.restore();
+  }
+};
+Chart.register(yBandsPlugin);
 
-  const sY=arrFrom(S.T10Y3M||{}), sC=arrFrom(S.CREDIT||{}), sU=arrFrom(S.UN_SLOPE6||{}), sD=arrFrom(S.DD_12M||{}), sN=arrFrom(S.NFCI||{});
-  const y=Number.isFinite(+S.T10Y3M?.last)?+S.T10Y3M.last:(sY.at(-1)?.v??NaN);
-  const c=Number.isFinite(+S.CREDIT?.last)?+S.CREDIT.last:(sC.at(-1)?.v??NaN);
-  const u=Number.isFinite(+S.UN_SLOPE6?.last)?+S.UN_SLOPE6.last:(sU.at(-1)?.v??NaN);
-  const d=Number.isFinite(+S.DD_12M?.last)?+S.DD_12M.last:(sD.at(-1)?.v??NaN);
-  const n=Number.isFinite(+S.NFCI?.last)?+S.NFCI.last:(sN.at(-1)?.v??NaN);
-
-  $('#k_term').textContent=fmt(y);
-  $('#k_credit').textContent=fmt(c);
-  $('#k_un').textContent=fmt(u);
-  $('#k_dd').textContent=(Number.isFinite(d)?(d*100).toFixed(1)+'%':'—');
-  $('#k_nfci').textContent=fmt(n);
-
-  const ry=normYield(y),rc=normCredit(c),ru=normUn(u),rd=normDD(d),rn=normNFCI(n);
-  const composite=(ry*0.25)+(rc*0.25)+(ru*0.2)+(rd*0.15)+(rn*0.15);
-  renderGauge(composite);
-
-  // Charts
-  drawLine('cComp','Composite (norm.)',[{d:'Now',v:composite}],'#a7c4ff');
-  if(sY.length)drawLine('cTerm','Yield Curve',sY,'#66b2ff');
-  if(sC.length)drawLine('cCredit','Credit Spread',sC,'#ffb366');
-  if(sU.length)drawLine('cUn','Unemployment Δ6m',sU,'#ff8899');
-  if(sD.length)drawLine('cDD','Drawdown 12m',sD,'#b49eff',(v)=>(v*100).toFixed(0)+'%');
-  if(sN.length)drawLine('cNFCI','NFCI',sN,'#7dd39f',(v)=>v.toFixed(2));
-
-}catch(e){
-  $('#status').textContent='❌ '+e.message;
-  $('#diag').textContent=e.stack||String(e);
-  renderGauge(NaN);
+/* ---------- draw a chart (line or bar) with UK dates + bands ---------- */
+function drawChart(cfg){
+  const {canvasId, title, type='line', points=[], zones=[], latest} = cfg;
+  if(!points.length) return;
+  const labels = points.map(p=>gbDate(p.d));
+  const data = points.map(p=>p.v);
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  new Chart(ctx,{
+    type,
+    data:{labels,datasets:[{
+      label:title,data,
+      borderColor:'#9dbaff',backgroundColor:'#9dbaff33',
+      tension:.25,pointRadius:0
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        title:{display:true,text:title,color:'#cfe3ff'},
+        yBands:{zones, latest}
+      },
+      scales:{
+        x:{ticks:{color:'#a7b0d9',maxRotation:0,autoSkip:true,maxTicksLimit:6},
+           grid:{color:'rgba(255,255,255,.06)'}},
+        y:{ticks:{color:'#a7b0d9'},grid:{color:'rgba(255,255,255,.06)'}}
+      }
+    }
+  });
 }
+
+/* ---------- main ---------- */
+(async()=>{
+  try{
+    const res = await fetch('data/fred_cache.json',{cache:'no-store'});
+    const txt = await res.text();
+    $('#diag').textContent = txt;
+    const j = JSON.parse(txt), S = j.series||{};
+    $('#status').textContent = '✅ Cache loaded';
+    $('#fresh').textContent = j.fetched_at_utc? new Date(j.fetched_at_utc).toLocaleString('en-GB'): '—';
+
+    // series
+    const sY = seriesToPoints(S.T10Y3M);   // yield
+    const sC = seriesToPoints(S.CREDIT);   // credit
+    const sU = seriesToPoints(S.UN_SLOPE6);// unemployment slope
+    const sD = seriesToPoints(S.DD_12M);   // drawdown (negative)
+    const sN = seriesToPoints(S.NFCI);     // nfci
+
+    // latest values (fallback to last obs if .last missing)
+    const last = (arr)=>arr.length?arr[arr.length-1].v:NaN;
+    const y = Number(S.T10Y3M?.last) ?? last(sY);
+    const c = Number(S.CREDIT?.last) ?? last(sC);
+    const u = Number(S.UN_SLOPE6?.last) ?? last(sU);
+    const d = Number(S.DD_12M?.last) ?? last(sD);
+    const n = Number(S.NFCI?.last) ?? last(sN);
+
+    // header KPIs
+    $('#k_term').textContent = fmt(y);
+    $('#k_credit').textContent = fmt(c);
+    $('#k_un').textContent = fmt(u);
+    $('#k_dd').textContent = Number.isFinite(d)? (d*100).toFixed(1)+'%':'—';
+    $('#k_nfci').textContent = fmt(n);
+
+    // composite
+    const comp = (normYield(y)*0.25)+(normCredit(c)*0.25)+(normUn(u)*0.20)+(normDD(d)*0.15)+(normNFCI(n)*0.15);
+    renderGauge(comp);
+
+    // build a short rolling proxy for composite (normalised)
+    const len = Math.min(sY.length, sC.length, sU.length, sD.length, sN.length);
+    const compSeries = [];
+    for(let i=Math.max(0,len-24); i<len; i++){
+      const vy=sY[i]?.v, vc=sC[i]?.v, vu=sU[i]?.v, vd=sD[i]?.v, vn=sN[i]?.v;
+      if([vy,vc,vu,vd,vn].every(Number.isFinite)){
+        const val=(normYield(vy)*0.25)+(normCredit(vc)*0.25)+(normUn(vu)*0.20)+(normDD(vd)*0.15)+(normNFCI(vn)*0.15);
+        compSeries.push({d:sY[i].d, v:val});
+      }
+    }
+
+    // === charts (with GAR bands + latest marker) ===
+    drawChart({
+      canvasId:'cComp',
+      title:'Composite (0–100 risk)',
+      type:'line',
+      points:compSeries.length?compSeries:[{d: j.fetched_at_utc||new Date().toISOString(), v: comp}],
+      zones:[
+        {from:0, to:30, color:'var(--ok)'},
+        {from:30, to:60, color:'var(--warn)'},
+        {from:60, to:100, color:'var(--risk)'}
+      ],
+      latest: comp
+    });
+
+    drawChart({
+      canvasId:'cTerm',
+      title:'Yield Curve (10y–3m)',
+      type:'line',
+      points:sY,
+      zones:[
+        {from:0.5, to:10, color:'var(--ok)'},
+        {from:0, to:0.5, color:'var(--warn)'},
+        {from:-5, to:0, color:'var(--risk)'}
+      ],
+      latest:y
+    });
+
+    drawChart({
+      canvasId:'cCredit',
+      title:'Credit Spread (BAA–AAA)',
+      type:'bar',
+      points:sC,
+      zones:[
+        {from:-10, to:0.60, color:'var(--ok)'},
+        {from:0.60, to:0.80, color:'var(--warn)'},
+        {from:0.80, to:5, color:'var(--risk)'}
+      ],
+      latest:c
+    });
+
+    drawChart({
+      canvasId:'cUn',
+      title:'Unemployment Δ6m',
+      type:'bar',
+      points:sU,
+      zones:[
+        {from:-5, to:0, color:'var(--ok)'},
+        {from:0, to:0.20, color:'var(--warn)'},
+        {from:0.20, to:5, color:'var(--risk)'}
+      ],
+      latest:u
+    });
+
+    drawChart({
+      canvasId:'cDD',
+      title:'12-month Drawdown',
+      type:'line',
+      points:sD,
+      zones:[
+        {from:-0.02, to:1, color:'var(--ok)'},
+        {from:-0.08, to:-0.02, color:'var(--warn)'},
+        {from:-5, to:-0.08, color:'var(--risk)'}
+      ],
+      latest:d
+    });
+
+    drawChart({
+      canvasId:'cNFCI',
+      title:'NFCI',
+      type:'line',
+      points:sN,
+      zones:[
+        {from:-5, to:0, color:'var(--ok)'},
+        {from:0, to:0.5, color:'var(--warn)'},
+        {from:0.5, to:5, color:'var(--risk)'}
+      ],
+      latest:n
+    });
+
+  }catch(e){
+    $('#status').textContent = '❌ ' + e.message;
+    $('#diag').textContent = e.stack || String(e);
+    renderGauge(NaN);
+  }
 })();
 </script>
 </body>
