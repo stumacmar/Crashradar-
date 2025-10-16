@@ -1,227 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CrashRadar — Composite Crash Risk</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <style>
+    :root {
+      --bg:#0f1320; --card:#171c2f; --muted:#8ea2c2; --text:#e8ecf7;
+      --ok:#26c281; --warn:#f3c969; --bad:#ff6b6b; --line:#6ea8fe;
+      --ring:#334; --ringFill:#6ea8fe;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 var(--sans)}
+    .wrap{max-width:980px;margin:0 auto;padding:24px 14px 80px}
+    h1{font-weight:800;letter-spacing:.2px;margin:0 0 12px;font-size: clamp(28px, 4.5vw, 40px);}
+    .status{display:flex;align-items:center;gap:8px;margin:4px 0 20px}
+    .badge{width:12px;height:12px;border-radius:50%}
+    .ok{background:var(--ok)} .warn{background:var(--warn)} .bad{background:var(--bad)}
+    .card{background:var(--card);border-radius:16px;padding:18px 16px;margin:14px 0;box-shadow:0 1px 0 rgba(255,255,255,.03) inset}
+    .grid{display:grid;gap:12px}
+    @media(min-width:760px){ .grid.cols-2{grid-template-columns:1fr 1fr} }
+    .meta{color:var(--muted);font-size:14px}
+    .kpis{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+    .pill{background:#111727;border:1px solid #27324a;color:#cfe0ff;border-radius:12px;padding:8px 12px;font-size:14px}
+    canvas{width:100%;height:260px}
+    .gaugeWrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+    .gauge{width:140px;height:140px;position:relative}
+    .gauge svg{transform:rotate(-90deg)}
+    .gauge .center{position:absolute;inset:0;display:grid;place-items:center;font-weight:700}
+    .legend{font-size:14px;color:var(--muted)}
+    .diag pre{white-space:pre-wrap;word-break:break-word;background:#0b0f1a;border:1px solid #24314a;border-radius:12px;padding:12px;color:#b7c8e8;font-family:var(--mono);font-size:12px}
+    a{color:#a7c5ff;text-decoration:none}
+  </style>
+  <!-- Chart.js (no SRI to avoid hash mismatch issues on some CDNs) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <h1>CrashRadar — Composite Crash Risk</h1>
+  <div class="status"><span id="statusDot" class="badge warn"></span><span id="statusText" class="meta">Loading…</span></div>
+
+  <!-- Gauge + basics -->
+  <div class="card">
+    <div class="gaugeWrap">
+      <div class="gauge" aria-label="Composite gauge">
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="44" stroke="var(--ring)" stroke-width="10" fill="none"/>
+          <circle id="gArc" cx="50" cy="50" r="44" stroke="var(--ringFill)" stroke-width="10" fill="none"
+                  stroke-linecap="round" stroke-dasharray="276" stroke-dashoffset="276"/>
+        </svg>
+        <div class="center" id="gCenter">—</div>
+      </div>
+      <div>
+        <div style="font-weight:800;font-size:20px;margin-bottom:4px">Composite Score <span id="riskTag" class="pill">—</span></div>
+        <div class="legend">Lower is safer. Thresholds: <strong>Green ≤ 30</strong>, <strong>Amber ≤ 60</strong>, <strong>Red &gt; 60</strong>.</div>
+        <div id="stamp" class="meta" style="margin-top:8px">—</div>
+        <div class="kpis" id="kpis"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid cols-2">
+    <div class="card"><canvas id="chartComposite"></canvas><div class="legend">Composite (30-day rolling). Smoothed view of overall risk mix using recent readings.</div></div>
+    <div class="card"><canvas id="chartYield"></canvas><div class="legend"><strong>Yield Curve (10y–3m spread).</strong> More negative = worse. Inversions tend to precede recessions/drawdowns.</div></div>
+    <div class="card"><canvas id="chartCredit"></canvas><div class="legend"><strong>Credit Spread (BAA–AAA).</strong> Wider = worse. Rising costs for lower-grade borrowers reflect stress in corporate credit.</div></div>
+    <div class="card"><canvas id="chartUnemp"></canvas><div class="legend"><strong>Unemployment 6-month slope.</strong> Rising = worse. Early deterioration in labour markets is a classic late-cycle signal.</div></div>
+    <div class="card"><canvas id="chartDraw"></canvas><div class="legend"><strong>12-month Drawdown (S&P vs 1-yr peak).</strong> More negative = worse. Captures market-price stress, complementing macro/credit indicators.</div></div>
+    <div class="card"><canvas id="chartNfci"></canvas><div class="legend"><strong>Chicago Fed NFCI.</strong> Higher = tighter/worse. Summarises overall financial conditions (rates, credit, funding, volatility).</div></div>
+  </div>
+
+  <!-- Diagnostics -->
+  <div class="card diag">
+    <div style="font-weight:800;margin-bottom:6px">Diagnostics</div>
+    <div id="diagMsg" class="meta">Waiting…</div>
+    <pre id="diagBlob" hidden></pre>
+  </div>
+</div>
+
 <script>
-/* ---------- helpers ---------- */
-const $=s=>document.querySelector(s);
-const fmt=(x,d=2)=>Number.isFinite(x)?(+x).toFixed(d):'—';
-const gbDate = (iso)=> new Date(iso).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-function setBadge(score){
-  const b=$('#badge'); b.className='badge';
-  if(!Number.isFinite(score)){b.textContent='—';return;}
-  if(score<=30){b.textContent='GREEN';b.classList.add('g');}
-  else if(score<=60){b.textContent='AMBER';b.classList.add('y');}
-  else{b.textContent='RED';b.classList.add('r');}
-}
-function renderGauge(score){
-  const g=$('#gauge'),v=$('#gval');
-  const s=Number.isFinite(score)?Math.max(0,Math.min(score,100)):NaN;
-  v.textContent=Number.isFinite(s)?s.toFixed(1):'—';
-  const deg=Number.isFinite(s)?(s/100)*360:0;
-  const col=!Number.isFinite(s)?'var(--ok)':(s<=30?'var(--ok)':s<=60?'var(--warn)':'var(--risk)');
-  g.style.background=`conic-gradient(${col} ${deg}deg, #2a2f55 ${deg}deg)`;
-  setBadge(s);
-}
-function seriesToPoints(s){
-  return (s?.observations||[]).map(o=>({d:o.date,v:Number(o.value)})).filter(p=>Number.isFinite(p.v));
-}
-/* SAFE latest value: prefer .last if finite, else last observation */
-function getLastVal(seriesObj, points){
-  const raw = seriesObj?.last;
-  const n = Number(raw);
-  if (Number.isFinite(n)) return n;
-  return points?.length ? points[points.length-1].v : NaN;
-}
+(function(){
+  // ------- tiny helpers (never throw if node missing) -------
+  const $ = s => document.querySelector(s);
+  const setText = (sel, v) => { const el = $(sel); if (el) el.textContent = v; };
+  const setHTML = (sel, v) => { const el = $(sel); if (el) el.innerHTML = v; };
+  const show = (sel, on=true) => { const el = $(sel); if (el) el.hidden = !on; };
+  const setClass = (sel, cls) => { const el = $(sel); if (el) el.className = cls; };
 
-/* ---------- risk normalisation (0–100) ---------- */
-function normYield(v){return (!Number.isFinite(v))?NaN:v>=2?0:v<=-1?100:((2-v)/3)*100;}
-function normCredit(v){return (!Number.isFinite(v))?NaN:Math.min(100,Math.max(0,(v-1)*50));}
-function normUn(v){return (!Number.isFinite(v))?NaN:v<=0?0:v>=0.6?100:(v/0.6)*100;}
-function normDD(v){return (!Number.isFinite(v))?NaN:Math.min(100,Math.max(0,(-v)*500));}
-function normNFCI(v){return (!Number.isFinite(v))?NaN:v<=-0.5?0:v>=1?100:(v+0.5)*66;}
+  // ------- figure correct data path for project pages -------
+  // Works whether the site is served at / or /Crashradar-/
+  const basePath = location.pathname.endsWith('/') ? location.pathname : location.pathname.replace(/[^/]+$/, '');
+  const dataURL = basePath + 'data/fred_cache.json';
 
-/* ---------- Chart.js plugin: shaded GAR bands + latest marker ---------- */
-const yBandsPlugin = {
-  id:'yBands',
-  beforeDraw(chart, args, opts){
-    const {ctx, chartArea:{top,bottom,left,right}, scales:{y}} = chart;
-    if(!y) return;
-    (opts?.zones||[]).forEach(z=>{
-      const y1 = y.getPixelForValue(z.to);
-      const y2 = y.getPixelForValue(z.from);
-      ctx.save();
-      ctx.fillStyle=z.color; ctx.globalAlpha=z.alpha??0.12;
-      ctx.fillRect(left, Math.min(y1,y2), right-left, Math.abs(y2-y1));
-      ctx.restore();
-    });
-  },
-  afterDatasetsDraw(chart, args, opts){
-    const {ctx, chartArea:{left,right}, scales:{y}} = chart;
-    const lv = opts?.latest;
-    if(!Number.isFinite(lv) || !y) return;
-    const py = y.getPixelForValue(lv);
-    ctx.save();
-    ctx.strokeStyle = '#ffffff55'; ctx.setLineDash([6,4]);
-    ctx.beginPath(); ctx.moveTo(left,py); ctx.lineTo(right,py); ctx.stroke();
-    ctx.restore();
-  }
-};
-Chart.register(yBandsPlugin);
+  const diag = (msg, blob) => {
+    setText('#diagMsg', msg);
+    if (blob) { const pre = $('#diagBlob'); if (pre){ pre.textContent = blob; pre.hidden = false; } }
+  };
 
-/* ---------- draw a chart (line or bar) with UK dates + bands ---------- */
-function drawChart(cfg){
-  const {canvasId, title, type='line', points=[], zones=[], latest} = cfg;
-  if(!points.length) return;
-  const labels = points.map(p=>gbDate(p.d));
-  const data = points.map(p=>p.v);
-  const ctx = document.getElementById(canvasId).getContext('2d');
-  new Chart(ctx,{
-    type,
-    data:{labels,datasets:[{
-      label:title,data,
-      borderColor:'#9dbaff',backgroundColor:type==='bar'?'#9dbaff77':'#9dbaff33',
-      tension:.25,pointRadius:0
-    }]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
-        title:{display:true,text:title,color:'#cfe3ff'},
-        yBands:{zones, latest}
+  const riskZone = (score0to100) => {
+    if (score0to100 == null || isNaN(score0to100)) return {label:'—', color:'warn'};
+    if (score0to100 <= 30) return {label:'GREEN', color:'ok'};
+    if (score0to100 <= 60) return {label:'AMBER', color:'warn'};
+    return {label:'RED', color:'bad'};
+  };
+
+  const fmtDate = iso => {
+    try {
+      // dd/mm/yyyy, 24h (UK-style)
+      const d = new Date(iso);
+      return new Intl.DateTimeFormat('en-GB', { dateStyle:'short', timeStyle:'short', hour12:false }).format(d);
+    } catch { return iso || '—'; }
+  };
+
+  const drawGauge = (score) => {
+    const arc = $('#gArc'); const center = $('#gCenter'); const tag = $('#riskTag'); const dot = $('#statusDot');
+    if (!arc || !center || !tag || !dot) return;
+    const circum = 2 * Math.PI * 44; // 276
+    const clamped = Math.max(0, Math.min(100, Number(score)||0));
+    const offset = circum - (circum * clamped / 100);
+    arc.setAttribute('stroke-dasharray', circum);
+    arc.setAttribute('stroke-dashoffset', offset);
+    center.textContent = isFinite(clamped) ? Math.round(clamped) : '—';
+    const rz = riskZone(clamped);
+    tag.textContent = rz.label;
+    tag.style.borderColor = getComputedStyle(document.documentElement)
+      .getPropertyValue(rz.color==='ok'?'--ok':rz.color==='warn'?'--warn':'--bad');
+    setClass('#statusDot', 'badge ' + rz.color);
+    setText('#statusText', 'Cache file found and parsed.');
+  };
+
+  const makeChart = (canvasId, label, labels, values, thresholdBands) => {
+    const ctx = $(canvasId);
+    if (!ctx || !window.Chart) return;
+    new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label, data: values, borderWidth: 2, tension: .25 }] },
+      options: {
+        maintainAspectRatio:false,
+        scales: {
+          x: { ticks:{ maxRotation:0, autoSkip:true }, time: undefined },
+          y: { beginAtZero:false }
+        },
+        plugins: {
+          legend: { display:false },
+          annotation: thresholdBands ? {
+            annotations: thresholdBands
+          } : {}
+        }
       },
-      scales:{
-        x:{ticks:{color:'#a7b0d9',maxRotation:0,autoSkip:true,maxTicksLimit:6},
-           grid:{color:'rgba(255,255,255,.06)'}},
-        y:{ticks:{color:'#a7b0d9'},grid:{color:'rgba(255,255,255,.06)'}}
-      }
-    }
+      plugins: []
+    });
+  };
+
+  const toLabels = arr => (arr||[]).map(o => {
+    try { return new Intl.DateTimeFormat('en-GB').format(new Date(o.date)); } catch { return o.date; }
   });
-}
 
-/* ---------- main ---------- */
-(async()=>{
-  try{
-    const res = await fetch('data/fred_cache.json',{cache:'no-store'});
-    const txt = await res.text();
-    $('#diag')?.textContent !== undefined && ($('#diag').textContent = txt);
-    const j = JSON.parse(txt), S = j.series||{};
-    $('#status').textContent = '✅ Cache loaded';
-    $('#fresh').textContent = j.fetched_at_utc? new Date(j.fetched_at_utc).toLocaleString('en-GB'): '—';
+  const toValues = arr => (arr||[]).map(o => Number(o.value));
 
-    // series -> points
-    const sY = seriesToPoints(S.T10Y3M || S.T10Y3m || S.TERM);
-    const sC = seriesToPoints(S.CREDIT);
-    const sU = seriesToPoints(S.UN_SLOPE6 || S.UNEMP_SLOPE6);
-    const sD = seriesToPoints(S.DD_12M || S.DD12M);
-    const sN = seriesToPoints(S.NFCI);
+  const renderKPIs = (data) => {
+    const k = $('#kpis'); if (!k) return;
+    const items = [
+      ['Yield (10y–3m):', data?.series?.T10Y3M?.last],
+      ['Credit (BAA–AAA):', data?.series?.CREDIT?.last],
+      ['Unemp Δ6m:', data?.series?.UN_SLOPE6?.last],
+      ['Drawdown 12m:', data?.series?.DD_12M?.last],
+      ['NFCI:', data?.series?.NFCI?.last],
+    ].map(([label, v]) => `<span class="pill"><strong>${label}</strong> ${v ?? '—'}</span>`).join('');
+    k.innerHTML = items;
+  };
 
-    // SAFE latest values (use .last if finite, else last observation)
-    const y = getLastVal(S.T10Y3M || S.T10Y3m || S.TERM, sY);
-    const c = getLastVal(S.CREDIT, sC);
-    const u = getLastVal(S.UN_SLOPE6 || S.UNEMP_SLOPE6, sU);
-    const d = getLastVal(S.DD_12M || S.DD12M, sD);
-    const n = getLastVal(S.NFCI, sN);
+  const start = async () => {
+    try {
+      setText('#statusText', 'Loading…');
+      const res = await fetch(dataURL, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${dataURL}`);
+      const txt = await res.text();
+      let data;
+      try { data = JSON.parse(txt); }
+      catch(e){ throw new Error('JSON parse failed: ' + e.message + '\n\nSnippet:\n' + txt.slice(0, 400)); }
 
-    // header KPIs
-    $('#k_term').textContent = fmt(y);
-    $('#k_credit').textContent = fmt(c);
-    $('#k_un').textContent = fmt(u);
-    $('#k_dd').textContent = Number.isFinite(d)? (d*100).toFixed(1)+'%':'—';
-    $('#k_nfci').textContent = fmt(n);
+      // Basic fields expected (defensive)
+      const score = Number(data?.score ?? data?.Z ?? data?.composite ?? 0);
+      const stamp = data?.fetched_at_utc || data?.last_updated || '';
 
-    // composite (0–100)
-    const comp = (normYield(y)*0.25)+(normCredit(c)*0.25)+(normUn(u)*0.20)+(normDD(d)*0.15)+(normNFCI(n)*0.15);
-    renderGauge(comp);
+      // UI
+      setText('#stamp', fmtDate(stamp));
+      renderKPIs(data);
+      drawGauge(score);
 
-    // composite mini-series (last ~24 aligned points, where available)
-    const len = Math.min(sY.length, sC.length, sU.length, sD.length, sN.length);
-    const compSeries = [];
-    for(let i=Math.max(0,len-24); i<len; i++){
-      const vy=sY[i]?.v, vc=sC[i]?.v, vu=sU[i]?.v, vd=sD[i]?.v, vn=sN[i]?.v;
-      if([vy,vc,vu,vd,vn].every(Number.isFinite)){
-        const val=(normYield(vy)*0.25)+(normCredit(vc)*0.25)+(normUn(vu)*0.20)+(normDD(vd)*0.15)+(normNFCI(vn)*0.15);
-        compSeries.push({d:sY[i].d, v:val});
+      // Series -> charts (defensive reads)
+      const S = data?.series || {};
+      const dComp = (data?.rolling || []).slice(-60); // optional rolling series
+      if (dComp.length) {
+        makeChart('#chartComposite', 'Composite (rolling)', toLabels(dComp), toValues(dComp));
       }
-    }
-    if(!compSeries.length && Number.isFinite(comp)){
-      compSeries.push({d: j.fetched_at_utc || new Date().toISOString(), v: comp});
-    }
+      if (S.T10Y3M?.observations) {
+        makeChart('#chartYield', 'Yield curve', toLabels(S.T10Y3M.observations), toValues(S.T10Y3M.observations));
+      }
+      if (S.CREDIT?.observations) {
+        makeChart('#chartCredit', 'Credit spread', toLabels(S.CREDIT.observations), toValues(S.CREDIT.observations));
+      }
+      if (S.UN_SLOPE6?.observations) {
+        makeChart('#chartUnemp', 'Unemp slope', toLabels(S.UN_SLOPE6.observations), toValues(S.UN_SLOPE6.observations));
+      }
+      if (S.DD_12M?.observations) {
+        makeChart('#chartDraw', 'Drawdown 12m', toLabels(S.DD_12M.observations), toValues(S.DD_12M.observations));
+      }
+      if (S.NFCI?.observations) {
+        makeChart('#chartNfci', 'NFCI', toLabels(S.NFCI.observations), toValues(S.NFCI.observations));
+      }
 
-    // === charts ===
-    drawChart({
-      canvasId:'cComp',
-      title:'Composite (0–100 risk)',
-      type:'line',
-      points:compSeries,
-      zones:[
-        {from:0, to:30, color:'var(--ok)'},
-        {from:30, to:60, color:'var(--warn)'},
-        {from:60, to:100, color:'var(--risk)'}
-      ],
-      latest: comp
-    });
-    drawChart({
-      canvasId:'cTerm',
-      title:'Yield Curve (10y–3m)',
-      type:'line',
-      points:sY,
-      zones:[
-        {from:0.5, to:10, color:'var(--ok)'},
-        {from:0, to:0.5, color:'var(--warn)'},
-        {from:-5, to:0, color:'var(--risk)'}
-      ],
-      latest:y
-    });
-    drawChart({
-      canvasId:'cCredit',
-      title:'Credit Spread (BAA–AAA)',
-      type:'bar',
-      points:sC,
-      zones:[
-        {from:-10, to:0.60, color:'var(--ok)'},
-        {from:0.60, to:0.80, color:'var(--warn)'},
-        {from:0.80, to:5, color:'var(--risk)'}
-      ],
-      latest:c
-    });
-    drawChart({
-      canvasId:'cUn',
-      title:'Unemployment Δ6m',
-      type:'bar',
-      points:sU,
-      zones:[
-        {from:-5, to:0, color:'var(--ok)'},
-        {from:0, to:0.20, color:'var(--warn)'},
-        {from:0.20, to:5, color:'var(--risk)'}
-      ],
-      latest:u
-    });
-    drawChart({
-      canvasId:'cDD',
-      title:'12-month Drawdown',
-      type:'line',
-      points:sD,
-      zones:[
-        {from:-0.02, to:1, color:'var(--ok)'},
-        {from:-0.08, to:-0.02, color:'var(--warn)'},
-        {from:-5, to:-0.08, color:'var(--risk)'}
-      ],
-      latest:d
-    });
-    drawChart({
-      canvasId:'cNFCI',
-      title:'NFCI',
-      type:'line',
-      points:sN,
-      zones:[
-        {from:-5, to:0, color:'var(--ok)'},
-        {from:0, to:0.5, color:'var(--warn)'},
-        {from:0.5, to:5, color:'var(--risk)'}
-      ],
-      latest:n
-    });
+      diag('Cache loaded.');
+      const pre = $('#diagBlob'); if (pre){ pre.textContent = JSON.stringify({
+        stamp, score, keys:Object.keys(S)
+      }, null, 2); pre.hidden = false; }
+    } catch (err) {
+      setClass('#statusDot','badge bad');
+      setText('#statusText','Error loading cache.');
+      diag(err.message);
+    }
+  };
 
-  }catch(e){
-    $('#status').textContent = '❌ ' + e.message;
-    const d=$('#diag'); if(d) d.textContent = e.stack || String(e);
-    renderGauge(NaN);
-  }
+  start();
 })();
 </script>
+</body>
+</html>
