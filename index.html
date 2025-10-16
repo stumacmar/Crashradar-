@@ -5,116 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="CrashRadar monitors financial market crash risk using multiple economic indicators including yield curve, credit spreads, unemployment, and market drawdowns." />
   <title>CrashRadar — Composite Crash Risk Dashboard</title>
-  
-  <!-- Preload critical resources -->
+
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-  
+
   <style>
-    :root {
-      --bg: #0f1421; --panel: #161c2e; --muted: #9aa6bf;
-      --text: #e8eeff; --accent: #7da6ff; 
-      --green: #1ec28b; --amber: #ffc247; --red: #ff6070;
-      --radius: 16px; --transition: all 0.2s ease;
+    :root{
+      --bg:#0f1421; --panel:#161c2e; --muted:#9aa6bf; --text:#e8eeff; --accent:#7da6ff;
+      --green:#1ec28b; --amber:#ffc247; --red:#ff6070; --radius:16px; --t:all .2s ease;
     }
-    
-    /* Base styles */
-    * { box-sizing: border-box; }
-    html, body { margin: 0; background: var(--bg); color: var(--text); 
-                font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial; }
-    
-    /* Focus management */
-    :focus { outline: 2px solid var(--accent); outline-offset: 2px; }
-    :focus:not(:focus-visible) { outline: none; }
-    
-    /* Layout */
-    .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 64px; }
-    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; 
-               clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-    
-    /* Typography */
-    h1 { font-size: clamp(28px, 5.5vw, 44px); line-height: 1.1; margin: 0 0 8px; }
-    .sub { color: var(--muted); margin: 6px 0 18px; font-size: 14px; }
-    
-    /* Status colors */
-    .ok { color: var(--green); } 
-    .warn { color: var(--amber); } 
-    .bad { color: var(--red); }
-    
-    /* Cards */
-    .card { background: var(--panel); border-radius: var(--radius); padding: 20px; 
-            margin: 16px 0; box-shadow: 0 0 0 1px rgba(255,255,255,0.03) inset; 
-            transition: var(--transition); }
-    .card:hover { box-shadow: 0 0 0 1px rgba(125, 166, 255, 0.1) inset; }
-    
-    /* Pills */
-    .pill { display: inline-flex; align-items: center; background: #13192a; 
-            border: 1px solid #1f2740; color: var(--text); padding: 8px 12px; 
-            border-radius: 999px; font-weight: 600; margin: 6px 8px 0 0; 
-            transition: var(--transition); }
-    .pill:hover { border-color: var(--accent); transform: translateY(-1px); }
-    
-    /* Meta text */
-    .meta { color: var(--muted); font-size: 13px; }
-    
-    /* Gauge component */
-    .gauge { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
-    .ringwrap { position: relative; width: 180px; height: 180px; flex-shrink: 0; }
-    .ring { position: absolute; inset: 0; border-radius: 50%; isolation: isolate; z-index: 0;
-            background: conic-gradient(var(--green) 0deg 120deg, var(--amber) 120deg 216deg, var(--red) 216deg 360deg); }
-    .ring::after { content: ""; position: absolute; inset: 20px; border-radius: 50%; background: var(--panel); z-index: 0; }
-    .score { position: absolute; inset: 0; display: grid; place-items: center; 
-             font-weight: 800; font-size: 36px; z-index: 2; }
-    
-    /* Badges */
-    .badge { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 10px; 
-             font-weight: 800; letter-spacing: .4px; margin-left: 12px; }
-    .badge.green { background: rgba(30,194,139,.15); color: var(--green); border: 1px solid rgba(30,194,139,.35); }
-    .badge.amber { background: rgba(255,194,71,.15); color: var(--amber); border: 1px solid rgba(255,194,71,.35); }
-    .badge.red { background: rgba(255,96,112,.17); color: var(--red); border: 1px solid rgba(255,96,112,.35); }
-    
-    /* Callouts */
-    .callout { font-size: 14px; color: var(--muted); line-height: 1.4; }
-    
-    /* Charts */
-    .chart { position: relative; height: 300px; }
-    canvas { width: 100% !important; height: 100% !important; }
-    
-    /* Footer */
-    .foot { margin-top: 24px; }
-    
-    /* Error states */
-    .err { background: #2b1620; color: #ffdbe0; border: 1px solid #57313f; 
-           padding: 12px; border-radius: 10px; }
-    
-    /* Loading states */
-    .loading { opacity: 0.6; pointer-events: none; position: relative; }
-    .loading::after { content: ""; position: absolute; top: 50%; left: 50%; 
-                     width: 20px; height: 20px; margin: -10px 0 0 -10px;
-                     border: 2px solid transparent; border-top: 2px solid var(--accent);
-                     border-radius: 50%; animation: spin 1s linear infinite; }
-    
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    
-    /* Tooltip */
-    .tooltip { position: relative; display: inline-block; cursor: help; }
-    .tooltip::after { content: attr(data-tooltip); position: absolute; bottom: 125%; left: 50%;
-                     transform: translateX(-50%); padding: 8px 12px; background: rgba(0,0,0,0.8);
-                     color: white; border-radius: 6px; font-size: 12px; white-space: nowrap;
-                     opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 1000; }
-    .tooltip:hover::after { opacity: 1; }
-    
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-      .gauge { justify-content: center; text-align: center; }
-      .ringwrap { width: 140px; height: 140px; }
-      .score { font-size: 28px; }
-    }
-    
-    @media (max-width: 480px) {
-      .card { padding: 16px; }
-      .pill { display: block; margin: 6px 0; width: 100%; }
-    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial}
+    :focus{outline:2px solid var(--accent);outline-offset:2px}
+    :focus:not(:focus-visible){outline:none}
+    .wrap{max-width:980px;margin:0 auto;padding:20px 16px 64px}
+    h1{font-size:clamp(28px,5.5vw,44px);line-height:1.1;margin:0 0 8px}
+    .sub{color:var(--muted);margin:6px 0 18px;font-size:14px}
+    .ok{color:var(--green)} .warn{color:var(--amber)} .bad{color:var(--red)}
+    .card{background:var(--panel);border-radius:var(--radius);padding:20px;margin:16px 0;box-shadow:0 0 0 1px rgba(255,255,255,.03) inset;transition:var(--t)}
+    .card:hover{box-shadow:0 0 0 1px rgba(125,166,255,.1) inset}
+    .pill{display:inline-flex;align-items:center;background:#13192a;border:1px solid #1f2740;color:var(--text);padding:8px 12px;border-radius:999px;font-weight:600;margin:6px 8px 0 0;transition:var(--t)}
+    .pill:hover{border-color:var(--accent);transform:translateY(-1px)}
+    .meta{color:var(--muted);font-size:13px}
+    .gauge{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+    .ringwrap{position:relative;width:180px;height:180px;flex-shrink:0}
+    .ring{position:absolute;inset:0;border-radius:50%;isolation:isolate;z-index:0;
+      background:conic-gradient(var(--green) 0deg 120deg, var(--amber) 120deg 216deg, var(--red) 216deg 360deg)}
+    .ring::after{content:"";position:absolute;inset:20px;border-radius:50%;background:var(--panel);z-index:0}
+    .score{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-size:36px;z-index:2}
+    .badge{display:inline-flex;align-items:center;padding:6px 12px;border-radius:10px;font-weight:800;letter-spacing:.4px;margin-left:12px}
+    .badge.green{background:rgba(30,194,139,.15);color:var(--green);border:1px solid rgba(30,194,139,.35)}
+    .badge.amber{background:rgba(255,194,71,.15);color:var(--amber);border:1px solid rgba(255,194,71,.35)}
+    .badge.red{background:rgba(255,96,112,.17);color:var(--red);border:1px solid rgba(255,96,112,.35)}
+    .callout{font-size:14px;color:var(--muted);line-height:1.4}
+    .chart{position:relative;height:300px}
+    canvas{width:100%!important;height:100%!important}
+    .foot{margin-top:24px}
+    .err{background:#2b1620;color:#ffdbe0;border:1px solid #57313f;padding:12px;border-radius:10px}
+    @media (max-width:768px){.gauge{justify-content:center;text-align:center}.ringwrap{width:140px;height:140px}.score{font-size:28px}}
+    @media (max-width:480px){.card{padding:16px}.pill{display:block;margin:6px 0;width:100%}}
   </style>
 </head>
 <body>
@@ -133,14 +62,11 @@
           </div>
           <div>
             <h2 id="composite-heading" style="margin:0 0 6px;font-size:26px">
-              Composite Score 
-              <span id="garBadge" class="badge" aria-live="polite">—</span>
+              Composite Score <span id="garBadge" class="badge">—</span>
             </h2>
             <div class="callout">
-              Lower scores indicate safer conditions. 
-              <span class="tooltip" data-tooltip="These thresholds are based on historical market stress periods">
-                Risk thresholds: <b class="ok">Green ≤ 30</b>, <b class="warn">Amber ≤ 60</b>, <b class="bad">Red &gt; 60</b>
-              </span>.
+              Lower scores indicate safer conditions.
+              Risk thresholds: <b class="ok">Green ≤ 30</b>, <b class="warn">Amber ≤ 60</b>, <b class="bad">Red &gt; 60</b>.
             </div>
             <div class="meta" id="freshness" style="margin-top:8px">—</div>
             <div style="margin-top:16px" role="list">
@@ -156,17 +82,9 @@
 
       <section aria-labelledby="composite-chart-heading" class="card">
         <h3 id="composite-chart-heading" style="margin:0 0 8px">Composite Risk History (normalised 0–100)</h3>
-        <div class="meta">
-          Legend: <span class="ok">●</span> Green (Low Risk) &nbsp; 
-          <span class="warn">●</span> Amber (Medium Risk) &nbsp; 
-          <span class="bad">●</span> Red (High Risk)
-        </div>
-        <div class="chart">
-          <canvas id="compChart" aria-label="Composite risk score over time"></canvas>
-        </div>
-        <div class="callout">
-          Composite (30-day rolling average). Shows smoothed view of overall risk using recent market data readings.
-        </div>
+        <div class="meta">Legend: <span class="ok">●</span> Green &nbsp; <span class="warn">●</span> Amber &nbsp; <span class="bad">●</span> Red</div>
+        <div class="chart"><canvas id="compChart" aria-label="Composite risk score over time"></canvas></div>
+        <div class="callout">Composite (30-day rolling average). Smoothed view of overall risk using recent readings.</div>
       </section>
 
       <div id="charts"></div>
@@ -175,144 +93,78 @@
     <footer class="card foot" role="contentinfo">
       <h3 style="margin:0 0 12px;">Data & Diagnostics</h3>
       <details>
-        <summary style="cursor: pointer; margin-bottom: 8px; font-weight: 600;">Technical Details</summary>
+        <summary style="cursor:pointer;margin-bottom:8px;font-weight:600;">Technical Details</summary>
         <pre id="diag" style="white-space:pre-wrap;word-break:break-word;color:#ffdca8;background:#241d12;border:1px solid #4a3e20;border-radius:10px;padding:12px;max-height:420px;overflow:auto;margin:0;font-size:12px;"></pre>
       </details>
-      <div class="meta" style="margin-top: 12px;">
-        Data sourced from FRED. Last updated: <span id="update-time">—</span>
-      </div>
+      <div class="meta" style="margin-top:12px;">Data sourced from FRED. Last updated: <span id="update-time">—</span></div>
     </footer>
   </div>
 
-  <!-- Chart.js + annotation plugin -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.1/dist/chartjs-plugin-annotation.min.js"></script>
 
   <script>
   class CrashRadar {
-    constructor() {
-      this.STATUS = {
-        series: ['T10Y3M', 'CREDIT', 'UN_SLOPE6', 'DD_12M', 'NFCI'],
-        scales: {
-          T10Y3M: v => this.clamp(this.map(v, 1.0, -2.0)),
-          CREDIT: v => this.clamp(this.map(v, 0.3, 1.0)),
-          UN_SLOPE6: v => this.clamp(this.map(v, 0.0, 0.6)),
-          DD_12M: v => this.clamp(this.map(v, 0.0, -0.30)),
-          NFCI: v => this.clamp(this.map(v, -0.8, 1.0)),
-        },
-        weights: { T10Y3M: 0.25, CREDIT: 0.25, UN_SLOPE6: 0.20, DD_12M: 0.20, NFCI: 0.10 }
+    constructor(){
+      this.keys = ['T10Y3M','CREDIT','UN_SLOPE6','DD_12M','NFCI'];
+      this.scales = {
+        T10Y3M: v => this.clamp(this.map(v, 1.0, -2.0)),
+        CREDIT: v => this.clamp(this.map(v, 0.3, 1.0)),
+        UN_SLOPE6: v => this.clamp(this.map(v, 0.0, 0.6)),
+        DD_12M: v => this.clamp(this.map(v, 0.0, -0.30)),
+        NFCI: v => this.clamp(this.map(v, -0.8, 1.0)),
       };
-      
-      this.data = {
-        raw: null,
-        series: {},
-        latest: {}
-      };
-      
+      this.weights = {T10Y3M:0.25, CREDIT:0.25, UN_SLOPE6:0.20, DD_12M:0.20, NFCI:0.10};
+      this.data = {raw:null, series:{}, latest:{}, composite:null};
       this.init();
     }
 
-    init() {
+    // utils
+    setStatus(msg, cls=''){ const el=document.getElementById('status'); el.textContent=msg; el.className='sub '+cls; }
+    gbDate(d){ return new Date(d).toLocaleDateString('en-GB',{year:'numeric',month:'short',day:'2-digit'}); }
+    safeNum(v){ return (v===null||v===undefined||isNaN(+v)) ? null : +v; }
+    last(a){ return (a&&a.length)?a[a.length-1]:null; }
+    clamp(x){ return Math.max(0, Math.min(100,x)); }
+    map(val, good, bad){ if(val==null) return 50; const t=(val-good)/(bad-bad?bad-good:1); return t*100; } // guard div/0
+    zoneOf(s){ return s<=30?'green':(s<=60?'amber':'red'); }
+
+    async init(){
       this.setStatus('Loading market data…');
-      this.loadData();
-    }
-
-    setStatus(message, type = '') {
-      const statusEl = document.getElementById('status');
-      statusEl.textContent = message;
-      statusEl.className = `sub ${type}`;
-      statusEl.setAttribute('aria-live', 'assertive');
-    }
-
-    gbDate(date) {
-      return new Date(date).toLocaleDateString('en-GB', {
-        year: 'numeric',
-        month: 'short',
-        day: '2-digit'
-      });
-    }
-
-    safeNum(value) {
-      return (value === null || value === undefined || isNaN(+value)) ? null : +value;
-    }
-
-    last(array) {
-      return (array && array.length) ? array[array.length - 1] : null;
-    }
-
-    clamp(x) {
-      return Math.max(0, Math.min(100, x));
-    }
-
-    map(val, good, bad) {
-      if (val == null) return 50;
-      const t = (val - good) / (bad - good);
-      return t * 100;
-    }
-
-    zoneOf(score) {
-      return score <= 30 ? 'green' : (score <= 60 ? 'amber' : 'red');
-    }
-
-    async loadData() {
-      try {
-        const response = await fetch('data/fred_cache.json', { cache: 'no-cache' });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        this.data.raw = await response.json();
-        this.setStatus('Market data loaded successfully', 'ok');
-        this.processData();
-        
-      } catch (error) {
-        console.error('Data loading error:', error);
-        this.setStatus('Failed to load market data. Please try again later.', 'bad');
-        this.showError('Load error: ' + error.message);
+      try{
+        const res = await fetch('data/fred_cache.json',{cache:'no-cache'});
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        this.data.raw = await res.json();
+        this.setStatus('Cache file found and parsed.','ok');
+        this.process(); this.render();
+      }catch(e){
+        this.setStatus('No cache yet — run the workflow','bad');
+        document.getElementById('diag').textContent = 'Load error: '+e.message;
       }
     }
 
-    processData() {
+    process(){
       const S = this.data.raw?.series || {};
-      
-      // Process each series
-      this.STATUS.series.forEach(key => {
-        this.data.series[key] = this.processSeries(S[key]);
-        this.data.latest[key] = this.last(this.data.series[key].ys);
-      });
-
-      this.calculateComposite();
-      this.renderDashboard();
+      for(const k of this.keys){
+        const obs = S[k]?.observations || [];
+        const xs=[], ys=[];
+        for(const o of obs){
+          const v = this.safeNum(o.value);
+          if(v==null || !o.date) continue;
+          xs.push(this.gbDate(o.date)); ys.push(v);
+        }
+        this.data.series[k] = {xs,ys};
+        this.data.latest[k] = this.last(ys);
+      }
+      // composite now
+      let comp=0;
+      for(const k of this.keys){
+        const sv = this.scales[k](this.data.latest[k]);
+        comp += (isFinite(sv)?sv:50) * (this.weights[k]||0);
+      }
+      this.data.composite = Math.round(comp*10)/10;
     }
 
-    processSeries(seriesData) {
-      const observations = seriesData?.observations || [];
-      const xs = [], ys = [];
-      
-      observations.forEach(obs => {
-        const value = this.safeNum(obs.value);
-        if (value === null || !obs.date) return;
-        
-        xs.push(this.gbDate(obs.date));
-        ys.push(value);
-      });
-      
-      return { xs, ys };
-    }
-
-    calculateComposite() {
-      let composite = 0;
-      
-      this.STATUS.series.forEach(key => {
-        const scaledValue = this.STATUS.scales[key](this.data.latest[key]);
-        composite += (isFinite(scaledValue) ? scaledValue : 50) * this.STATUS.weights[key];
-      });
-      
-      this.data.composite = Math.round(composite * 10) / 10;
-    }
-
-    renderDashboard() {
+    render(){
       this.renderGauge();
       this.renderPills();
       this.renderCompositeChart();
@@ -320,257 +172,134 @@
       this.renderDiagnostics();
     }
 
-    renderGauge() {
-      const composite = this.data.composite;
-      const zone = this.zoneOf(composite);
-      
-      const badge = document.getElementById('garBadge');
-      badge.className = `badge ${zone}`;
-      badge.textContent = zone.toUpperCase();
-      
-      document.getElementById('scoreText').textContent = isFinite(composite) ? Math.round(composite) : '–';
-      document.getElementById('scoreText').setAttribute('aria-label', `Composite score: ${composite}, ${zone} risk level`);
-      
-      const timestamp = this.data.raw.fetched_at_utc ? new Date(this.data.raw.fetched_at_utc) : null;
-      const freshnessEl = document.getElementById('freshness');
-      
-      if (timestamp) {
-        freshnessEl.textContent = `Last updated: ${this.gbDate(timestamp)} ${timestamp.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+    renderGauge(){
+      const c = this.data.composite, z=this.zoneOf(c);
+      const badge = document.getElementById('garBadge'); badge.className='badge '+z; badge.textContent=z.toUpperCase();
+      const scoreEl = document.getElementById('scoreText'); scoreEl.textContent=isFinite(c)?Math.round(c):'–';
+      const ts = this.data.raw?.fetched_at_utc ? new Date(this.data.raw.fetched_at_utc) : null;
+      document.getElementById('freshness').textContent = ts ? this.gbDate(ts)+' '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '—';
+    }
+
+    renderPills(){
+      // explicit ID map (fixes the DeepSeek mismatch)
+      const mapId = {
+        T10Y3M:'pill_t10y3m',
+        CREDIT:'pill_credit',
+        UN_SLOPE6:'pill_un',
+        DD_12M:'pill_dd',
+        NFCI:'pill_nfci'
+      };
+      const labels = {
+        T10Y3M:'Yield (10y–3m)',
+        CREDIT:'Credit (BAA–AAA)',
+        UN_SLOPE6:'Unemp Δ6m',
+        DD_12M:'Drawdown 12m',
+        NFCI:'NFCI'
+      };
+      const fmt = {
+        T10Y3M:v=>v.toFixed(2),
+        CREDIT:v=>v.toFixed(2),
+        UN_SLOPE6:v=>v.toFixed(2),
+        DD_12M:v=>(v*100).toFixed(1)+'%',
+        NFCI:v=>v.toFixed(3)
+      };
+      for(const k of this.keys){
+        const el = document.getElementById(mapId[k]);
+        if(!el) continue; // defensive
+        const v = this.data.latest[k];
+        el.textContent = `${labels[k]}: ${v==null?'—':fmt[k](v)}`;
       }
     }
 
-    renderPills() {
-      const formats = {
-        T10Y3M: v => v.toFixed(2),
-        CREDIT: v => v.toFixed(2),
-        UN_SLOPE6: v => v.toFixed(2),
-        DD_12M: v => (v * 100).toFixed(1) + '%',
-        NFCI: v => v.toFixed(3)
-      };
-      
-      const labels = {
-        T10Y3M: 'Yield (10y–3m)',
-        CREDIT: 'Credit (BAA–AAA)',
-        UN_SLOPE6: 'Unemp Δ6m',
-        DD_12M: 'Drawdown 12m',
-        NFCI: 'NFCI'
-      };
-      
-      this.STATUS.series.forEach(key => {
-        const element = document.getElementById(`pill_${key.toLowerCase()}`);
-        const value = this.data.latest[key];
-        element.textContent = `${labels[key]}: ${value == null ? '—' : formats[key](value)}`;
-        element.setAttribute('aria-label', `${labels[key]}: ${value == null ? 'No data' : formats[key](value)}`);
-      });
-    }
-
-    renderCompositeChart() {
-      const chartElement = document.getElementById('compChart');
-      const minLen = Math.min(...this.STATUS.series.map(k => this.data.series[k].ys.length || Infinity));
-      
-      if (!isFinite(minLen) || minLen < 3) {
-        chartElement.closest('.card').innerHTML = `
-          <div class="err">
-            <h3 style="margin:0 0 8px">Composite Risk History</h3>
-            <p>Not enough overlapping historical data available yet to generate composite chart.</p>
-            <p class="meta">Check back in a few days as more data accumulates.</p>
-          </div>
-        `;
+    renderCompositeChart(){
+      const el = document.getElementById('compChart');
+      const minLen = Math.min(...this.keys.map(k=>this.data.series[k].ys.length||Infinity));
+      if(!isFinite(minLen) || minLen<3){
+        el.closest('.card').querySelector('.chart').innerHTML = '<div class="err">Not enough overlapping history yet to draw composite.</div>';
         return;
       }
-      
-      const tail = minLen;
-      const compXs = this.data.series.T10Y3M.xs.slice(-tail);
-      const compYs = [];
-      
-      for (let i = -tail; i < 0; i++) {
-        let compositeValue = 0;
-        this.STATUS.series.forEach(key => {
-          compositeValue += this.STATUS.scales[key](this.data.series[key].ys.at(i)) * this.STATUS.weights[key];
-        });
-        compYs.push(Math.round(compositeValue * 10) / 10);
+      const tail=minLen, xs=this.data.series.T10Y3M.xs.slice(-tail), ys=[];
+      for(let i=-tail;i<0;i++){
+        let v=0;
+        for(const k of this.keys){
+          v += this.scales[k](this.data.series[k].ys.at(i))*(this.weights[k]||0);
+        }
+        ys.push(Math.round(v*10)/10);
       }
-      
-      this.createChart(chartElement, {
-        type: 'line',
-        data: {
-          labels: compXs,
-          datasets: [{
-            data: compYs,
-            borderColor: '#7da6ff',
-            backgroundColor: 'transparent',
-            fill: false
-          }]
-        },
-        options: this.getBaseChartOptions({
-          scales: {
-            y: { min: 0, max: 100 }
-          },
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: (context) => `Composite: ${context.parsed.y}`
-              }
-            }
-          }
-        })
+      this.makeChart(el,{
+        type:'line',
+        data:{labels:xs,datasets:[{data:ys,borderColor:'#7da6ff',backgroundColor:'transparent'}]},
+        options:this.baseOpts({scales:{y:{min:0,max:100}}})
       });
     }
 
-    renderIndicatorCharts() {
-      const chartsConfig = [
-        {
-          key: 'T10Y3M',
-          title: 'Yield Curve (10y–3m)',
-          description: '<b>More negative = worse</b>. Inversions (below zero) often precede recessions and major drawdowns.',
-          color: '#6bb9ff'
-        },
-        {
-          key: 'CREDIT',
-          title: 'Credit Spread (BAA–AAA)',
-          description: '<b>Wider = worse</b>. Rising lower-grade vs top-tier borrowing costs signal stress in corporate credit.',
-          color: '#ffb36b'
-        },
-        {
-          key: 'UN_SLOPE6',
-          title: 'Unemployment 6-month Slope',
-          description: '<b>Rising = worse</b>. Early labour-market deterioration is a classic late-cycle signal.',
-          color: '#ffa0b5'
-        },
-        {
-          key: 'DD_12M',
-          title: '12-month Drawdown (S&P vs 1-yr peak)',
-          description: '<b>More negative = worse</b>. Captures market-price stress, complementing macro/credit indicators.',
-          color: '#a6c7ff'
-        },
-        {
-          key: 'NFCI',
-          title: 'Chicago Fed NFCI',
-          description: '<b>Higher = tighter/worse</b>. Summarises overall financial conditions (rates, credit, funding, volatility).',
-          color: '#9bd3c1'
-        }
+    renderIndicatorCharts(){
+      const cfgs=[
+        {k:'T10Y3M', title:'Yield Curve (10y–3m)', desc:'<b>More negative = worse</b>. Inversions (below zero) often precede recessions and major drawdowns.', color:'#6bb9ff'},
+        {k:'CREDIT', title:'Credit Spread (BAA–AAA)', desc:'<b>Wider = worse</b>. Rising lower-grade vs top-tier borrowing costs signal stress in corporate credit.', color:'#ffb36b'},
+        {k:'UN_SLOPE6', title:'Unemployment 6-month slope', desc:'<b>Rising = worse</b>. Early labour-market deterioration is a classic late-cycle signal.', color:'#ffa0b5'},
+        {k:'DD_12M', title:'12-month Drawdown (S&P vs 1-yr peak)', desc:'<b>More negative = worse</b>. Captures market-price stress, complementing macro/credit indicators.', color:'#a6c7ff'},
+        {k:'NFCI', title:'Chicago Fed NFCI', desc:'<b>Higher = tighter/worse</b>. Summarises overall financial conditions (rates, credit, funding, volatility).', color:'#9bd3c1'}
       ];
-      
-      const chartsContainer = document.getElementById('charts');
-      
-      chartsConfig.forEach(config => {
-        const card = document.createElement('section');
-        card.className = 'card';
-        card.setAttribute('aria-labelledby', `chart-${config.key}`);
-        
-        card.innerHTML = `
-          <h3 id="chart-${config.key}" style="margin:0 0 8px">${config.title}</h3>
-          <div class="chart">
-            <canvas id="c_${config.key}" aria-label="${config.title} over time"></canvas>
-          </div>
-          <div class="callout">${config.description}</div>
-        `;
-        
-        chartsContainer.appendChild(card);
-        
-        if (!this.data.series[config.key].ys.length) {
-          card.querySelector('.chart').innerHTML = `
-            <div class="err">No data available for ${config.title}</div>
-          `;
-          return;
-        }
-        
-        this.createChart(document.getElementById(`c_${config.key}`), {
-          type: 'line',
-          data: {
-            labels: this.data.series[config.key].xs,
-            datasets: [{
-              data: this.data.series[config.key].ys,
-              borderColor: config.color,
-              backgroundColor: 'transparent',
-              fill: false
-            }]
-          },
-          options: this.getBaseChartOptions()
+      const host=document.getElementById('charts');
+      for(const c of cfgs){
+        const sec=document.createElement('section'); sec.className='card'; sec.setAttribute('aria-labelledby','chart-'+c.k);
+        sec.innerHTML = `<h3 id="chart-${c.k}" style="margin:0 0 8px">${c.title}</h3>
+          <div class="chart"><canvas id="c_${c.k}" aria-label="${c.title} over time"></canvas></div>
+          <div class="callout">${c.desc}</div>`;
+        host.appendChild(sec);
+        const s=this.data.series[c.k];
+        if(!s.ys.length){ sec.querySelector('.chart').innerHTML=`<div class="err">No data available for ${c.title}</div>`; continue; }
+        this.makeChart(document.getElementById('c_'+c.k),{
+          type:'line',
+          data:{labels:s.xs,datasets:[{data:s.ys,borderColor:c.color,backgroundColor:'transparent'}]},
+          options:this.baseOpts()
         });
-      });
-    }
-
-    getBaseChartOptions(overrides = {}) {
-      const baseOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            grid: { color: 'rgba(255,255,255,0.04)' },
-            ticks: { color: '#9aa6bf', maxRotation: 0, autoSkip: true }
-          },
-          y: {
-            grid: { color: 'rgba(255,255,255,0.04)' },
-            ticks: { color: '#9aa6bf' }
-          }
-        },
-        plugins: {
-          legend: { display: false },
-          tooltip: { enabled: true }
-        },
-        elements: {
-          line: { tension: 0.35, borderWidth: 2 },
-          point: { radius: 2, hitRadius: 8 }
-        }
-      };
-      
-      return { ...baseOptions, ...overrides };
-    }
-
-    createChart(element, config) {
-      try {
-        // Register annotation plugin if available
-        if (window.Chart) {
-          const annotationPlugin = window.ChartAnnotation || window['chartjs-plugin-annotation'];
-          if (annotationPlugin && !Chart.registry.getPlugin('annotation')) {
-            Chart.register(annotationPlugin);
-          }
-        }
-        
-        return new Chart(element, config);
-      } catch (error) {
-        console.error('Chart creation error:', error);
-        element.closest('.card').classList.add('err');
-        element.innerHTML = `<div class="err">Chart rendering error: ${error.message}</div>`;
       }
     }
 
-    renderDiagnostics() {
-      const diagElement = document.getElementById('diag');
-      const diagnostics = {
-        fetched_at_utc: this.data.raw.fetched_at_utc || null,
-        latest_values: Object.fromEntries(
-          this.STATUS.series.map(k => [k, this.data.latest[k]])
-        ),
-        sample_sizes: Object.fromEntries(
-          this.STATUS.series.map(k => [k, this.data.series[k].ys.length])
-        ),
-        composite: this.data.composite,
-        calculation_timestamp: new Date().toISOString()
+    baseOpts(ovr={}){
+      const base={
+        responsive:true,maintainAspectRatio:false,
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9aa6bf',maxRotation:0,autoSkip:true}},
+          y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9aa6bf'}}
+        },
+        plugins:{legend:{display:false},tooltip:{enabled:true}},
+        elements:{line:{tension:.35,borderWidth:2},point:{radius:2,hitRadius:8}}
       };
-      
-      diagElement.textContent = JSON.stringify(diagnostics, null, 2);
-      
-      // Update footer timestamp
-      const updateTime = document.getElementById('update-time');
-      updateTime.textContent = new Date().toLocaleTimeString('en-GB', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      return {...base,...ovr,scales:{...base.scales,...(ovr.scales||{})}};
     }
 
-    showError(message) {
-      const diagElement = document.getElementById('diag');
-      diagElement.textContent = message;
-      diagElement.style.display = 'block';
+    makeChart(el, cfg){
+      try{
+        // register annotation plugin defensively (won’t crash if missing)
+        try{
+          const ap = (window.ChartAnnotation || window['chartjs-plugin-annotation']);
+          if(ap) Chart.register(ap);
+        }catch(e){}
+        return new Chart(el,cfg);
+      }catch(e){
+        console.error(e);
+        el.closest('.chart').innerHTML = `<div class="err">Chart error: ${e.message}</div>`;
+      }
+    }
+
+    renderDiagnostics(){
+      const diag=document.getElementById('diag');
+      const out={
+        fetched_at_utc:this.data.raw?.fetched_at_utc||null,
+        latest_values:Object.fromEntries(this.keys.map(k=>[k,this.data.latest[k]])),
+        sample_sizes:Object.fromEntries(this.keys.map(k=>[k,this.data.series[k].ys.length])),
+        composite:this.data.composite
+      };
+      diag.textContent = JSON.stringify(out,null,2);
+      document.getElementById('update-time').textContent =
+        new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     }
   }
 
-  // Initialize the application
-  document.addEventListener('DOMContentLoaded', () => {
-    new CrashRadar();
-  });
+  document.addEventListener('DOMContentLoaded',()=>new CrashRadar());
   </script>
 </body>
 </html>
