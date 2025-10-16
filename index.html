@@ -13,6 +13,7 @@
     :root{
       --bg:#0f1421; --panel:#161c2e; --muted:#9aa6bf; --text:#e8eeff; --accent:#7da6ff;
       --green:#1ec28b; --amber:#ffc247; --red:#ff6070; --radius:16px; --t:all .2s ease;
+      --ring-size: 180px; --ring-size-mobile: 140px;
     }
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial}
@@ -24,11 +25,11 @@
     .ok{color:var(--green)} .warn{color:var(--amber)} .bad{color:var(--red)}
     .card{background:var(--panel);border-radius:var(--radius);padding:20px;margin:16px 0;box-shadow:0 0 0 1px rgba(255,255,255,.03) inset;transition:var(--t)}
     .card:hover{box-shadow:0 0 0 1px rgba(125,166,255,.1) inset}
-    .pill{display:inline-flex;align-items:center;background:#13192a;border:1px solid #1f2740;color:var(--text);padding:8px 12px;border-radius:999px;font-weight:600;margin:6px 8px 0 0;transition:var(--t)}
+    .pill{display:inline-flex;align-items:center;background:#13192a;border:1px solid #1f2740;color:var(--text);padding:8px 12px;border-radius:999px;font-weight:600;margin:6px 8px 0 0;transition:var(--t);cursor:help}
     .pill:hover{border-color:var(--accent);transform:translateY(-1px)}
     .meta{color:var(--muted);font-size:13px}
     .gauge{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
-    .ringwrap{position:relative;width:180px;height:180px;flex-shrink:0}
+    .ringwrap{position:relative;width:var(--ring-size);height:var(--ring-size);flex-shrink:0}
     .ring{position:absolute;inset:0;border-radius:50%;isolation:isolate;z-index:0;
       background:conic-gradient(var(--green) 0deg 120deg, var(--amber) 120deg 216deg, var(--red) 216deg 360deg)}
     .ring::after{content:"";position:absolute;inset:20px;border-radius:50%;background:var(--panel);z-index:0}
@@ -42,8 +43,20 @@
     canvas{width:100%!important;height:100%!important}
     .foot{margin-top:24px}
     .err{background:#2b1620;color:#ffdbe0;border:1px solid #57313f;padding:12px;border-radius:10px}
-    @media (max-width:768px){.gauge{justify-content:center;text-align:center}.ringwrap{width:140px;height:140px}.score{font-size:28px}}
-    @media (max-width:480px){.card{padding:16px}.pill{display:block;margin:6px 0;width:100%}}
+    .skeleton{background:linear-gradient(90deg, #161c2e 25%, #1a2238 50%, #161c2e 75%);background-size:200% 100%;animation:loading 1.5s infinite}
+    @keyframes loading{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .tooltip{position:relative;cursor:help;border-bottom:1px dotted var(--muted)}
+    .tooltip:hover::after{content:attr(data-tooltip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:white;padding:8px 12px;border-radius:6px;font-size:12px;white-space:nowrap;z-index:1000}
+    .risk-explanation{margin-top:12px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid var(--accent)}
+    @media (max-width:768px){
+      .gauge{justify-content:center;text-align:center}
+      .ringwrap{width:var(--ring-size-mobile);height:var(--ring-size-mobile)}
+      .score{font-size:28px}
+    }
+    @media (max-width:480px){
+      .card{padding:16px}
+      .pill{display:block;margin:6px 0;width:100%}
+    }
   </style>
 </head>
 <body>
@@ -69,12 +82,16 @@
               Risk thresholds: <b class="ok">Green ≤ 30</b>, <b class="warn">Amber ≤ 60</b>, <b class="bad">Red &gt; 60</b>.
             </div>
             <div class="meta" id="freshness" style="margin-top:8px">—</div>
+            <div id="riskExplanation" class="risk-explanation" style="display:none">
+              <strong id="riskTitle">Risk Assessment</strong>
+              <div id="riskDescription" class="meta" style="margin-top:4px"></div>
+            </div>
             <div style="margin-top:16px" role="list">
-              <span class="pill" id="pill_t10y3m" role="listitem">Yield (10y–3m): —</span>
-              <span class="pill" id="pill_credit" role="listitem">Credit (BAA–AAA): —</span>
-              <span class="pill" id="pill_un" role="listitem">Unemp Δ6m: —</span>
-              <span class="pill" id="pill_dd" role="listitem">Drawdown 12m: —</span>
-              <span class="pill" id="pill_nfci" role="listitem">NFCI: —</span>
+              <span class="pill" id="pill_t10y3m" role="listitem" data-tooltip="10-year minus 3-month Treasury yield spread">Yield (10y–3m): —</span>
+              <span class="pill" id="pill_credit" role="listitem" data-tooltip="BAA corporate bond yield minus AAA yield">Credit (BAA–AAA): —</span>
+              <span class="pill" id="pill_un" role="listitem" data-tooltip="6-month change in unemployment rate">Unemp Δ6m: —</span>
+              <span class="pill" id="pill_dd" role="listitem" data-tooltip="S&P 500 drawdown from 12-month high">Drawdown 12m: —</span>
+              <span class="pill" id="pill_nfci" role="listitem" data-tooltip="National Financial Conditions Index">NFCI: —</span>
             </div>
           </div>
         </div>
@@ -116,173 +133,146 @@
       };
       this.weights = {T10Y3M:0.25, CREDIT:0.25, UN_SLOPE6:0.20, DD_12M:0.20, NFCI:0.10};
       this.data = {raw:null, series:{}, latest:{}, composite:null};
+      this.charts = new Map();
       this.init();
     }
 
-    // utils
     setStatus(msg, cls=''){ const el=document.getElementById('status'); el.textContent=msg; el.className='sub '+cls; }
-    gbDate(d){ return new Date(d).toLocaleDateString('en-GB',{year:'numeric',month:'short',day:'2-digit'}); }
-    safeNum(v){ return (v===null||v===undefined||isNaN(+v)) ? null : +v; }
+    gbDate(d){ try{return new Date(d).toLocaleDateString('en-GB',{year:'numeric',month:'short',day:'2-digit'})}catch{return 'Invalid Date'} }
+    safeNum(v){ return (v===null||v===undefined||isNaN(+v))?null:+v; }
     last(a){ return (a&&a.length)?a[a.length-1]:null; }
     clamp(x){ return Math.max(0, Math.min(100,x)); }
-    map(val, good, bad){ if(val==null) return 50; const t=(val-good)/(bad-bad?bad-good:1); return t*100; } // guard div/0
+    map(val, good, bad){ if(val==null) return 50; const denom=bad-good; if(Math.abs(denom)<1e-10) return 50; return ((val-good)/denom)*100; }
     zoneOf(s){ return s<=30?'green':(s<=60?'amber':'red'); }
+
+    getRiskExplanation(score, zone){
+      const x={
+        green:{title:'Low Risk Environment',description:'Market conditions look benign. Indicators show limited stress.'},
+        amber:{title:'Moderate Risk Environment',description:'Some stress signals are active. Monitor for further deterioration.'},
+        red:{title:'High Risk Environment',description:'Multiple stress signals. Risk of turbulence/contracting conditions is elevated.'}
+      }; return x[zone]||x.green;
+    }
 
     async init(){
       this.setStatus('Loading market data…');
+      document.querySelectorAll('.pill, .score, .badge').forEach(el=>el.classList.add('skeleton'));
       try{
-        const res = await fetch('data/fred_cache.json',{cache:'no-cache'});
-        if(!res.ok) throw new Error(`HTTP ${res.status}`);
-        this.data.raw = await res.json();
-        this.setStatus('Cache file found and parsed.','ok');
+        const controller=new AbortController(); const t=setTimeout(()=>controller.abort(),10000);
+        const res=await fetch('data/fred_cache.json',{cache:'no-cache',signal:controller.signal}); clearTimeout(t);
+        if(!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        this.data.raw=await res.json(); this.setStatus('Market data loaded successfully','ok');
         this.process(); this.render();
       }catch(e){
-        this.setStatus('No cache yet — run the workflow','bad');
-        document.getElementById('diag').textContent = 'Load error: '+e.message;
+        this.setStatus(e.name==='AbortError'?'Request timeout — please try again':'Failed to load data','bad');
+        document.getElementById('diag').textContent='Load error: '+e.message;
+        const card=document.querySelector('.gauge').closest('.card');
+        card.insertAdjacentHTML('beforeend',`<div class="err" style="margin-top:16px"><strong>Unable to load market data</strong><div style="margin-top:8px;font-size:14px">Check connection or run the workflow to build <code>data/fred_cache.json</code>.</div></div>`);
       }
     }
 
     process(){
-      const S = this.data.raw?.series || {};
+      const S=this.data.raw?.series||{};
       for(const k of this.keys){
-        const obs = S[k]?.observations || [];
-        const xs=[], ys=[];
-        for(const o of obs){
-          const v = this.safeNum(o.value);
-          if(v==null || !o.date) continue;
-          xs.push(this.gbDate(o.date)); ys.push(v);
-        }
-        this.data.series[k] = {xs,ys};
-        this.data.latest[k] = this.last(ys);
+        const obs=S[k]?.observations||[], xs=[], ys=[];
+        for(const o of obs){ const v=this.safeNum(o.value); if(v==null||!o.date) continue; xs.push(this.gbDate(o.date)); ys.push(v); }
+        this.data.series[k]={xs,ys}; this.data.latest[k]=this.last(ys);
       }
-      // composite now
-      let comp=0;
-      for(const k of this.keys){
-        const sv = this.scales[k](this.data.latest[k]);
-        comp += (isFinite(sv)?sv:50) * (this.weights[k]||0);
-      }
-      this.data.composite = Math.round(comp*10)/10;
+      let comp=0, wsum=0;
+      for(const k of this.keys){ const sv=this.scales[k](this.data.latest[k]); if(isFinite(sv)){ comp+=sv*(this.weights[k]||0); wsum+=this.weights[k]||0; } }
+      this.data.composite = (wsum>0)? Math.round((comp/wsum)*10)/10 : null;
     }
 
     render(){
-      this.renderGauge();
-      this.renderPills();
-      this.renderCompositeChart();
-      this.renderIndicatorCharts();
-      this.renderDiagnostics();
+      this.renderGauge(); this.renderPills(); this.renderCompositeChart(); this.renderIndicatorCharts(); this.renderDiagnostics();
     }
 
     renderGauge(){
-      const c = this.data.composite, z=this.zoneOf(c);
-      const badge = document.getElementById('garBadge'); badge.className='badge '+z; badge.textContent=z.toUpperCase();
-      const scoreEl = document.getElementById('scoreText'); scoreEl.textContent=isFinite(c)?Math.round(c):'–';
-      const ts = this.data.raw?.fetched_at_utc ? new Date(this.data.raw.fetched_at_utc) : null;
-      document.getElementById('freshness').textContent = ts ? this.gbDate(ts)+' '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '—';
+      const c=this.data.composite, z=this.zoneOf(c||50);
+      const badge=document.getElementById('garBadge'); badge.className='badge '+z; badge.textContent=z.toUpperCase(); badge.classList.remove('skeleton');
+      const scoreEl=document.getElementById('scoreText'); scoreEl.textContent=isFinite(c)?Math.round(c):'–'; scoreEl.classList.remove('skeleton');
+      const ts=this.data.raw?.fetched_at_utc?new Date(this.data.raw.fetched_at_utc):null;
+      document.getElementById('freshness').textContent=ts? this.gbDate(ts)+' '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'—';
+      const ex=this.getRiskExplanation(c,z); const riskEl=document.getElementById('riskExplanation'); document.getElementById('riskTitle').textContent=ex.title; document.getElementById('riskDescription').textContent=ex.description; riskEl.style.display='block';
     }
 
     renderPills(){
-      // explicit ID map (fixes the DeepSeek mismatch)
-      const mapId = {
-        T10Y3M:'pill_t10y3m',
-        CREDIT:'pill_credit',
-        UN_SLOPE6:'pill_un',
-        DD_12M:'pill_dd',
-        NFCI:'pill_nfci'
-      };
-      const labels = {
-        T10Y3M:'Yield (10y–3m)',
-        CREDIT:'Credit (BAA–AAA)',
-        UN_SLOPE6:'Unemp Δ6m',
-        DD_12M:'Drawdown 12m',
-        NFCI:'NFCI'
-      };
-      const fmt = {
-        T10Y3M:v=>v.toFixed(2),
-        CREDIT:v=>v.toFixed(2),
-        UN_SLOPE6:v=>v.toFixed(2),
-        DD_12M:v=>(v*100).toFixed(1)+'%',
-        NFCI:v=>v.toFixed(3)
-      };
-      for(const k of this.keys){
-        const el = document.getElementById(mapId[k]);
-        if(!el) continue; // defensive
-        const v = this.data.latest[k];
-        el.textContent = `${labels[k]}: ${v==null?'—':fmt[k](v)}`;
-      }
+      const id={T10Y3M:'pill_t10y3m',CREDIT:'pill_credit',UN_SLOPE6:'pill_un',DD_12M:'pill_dd',NFCI:'pill_nfci'};
+      const label={T10Y3M:'Yield (10y–3m)',CREDIT:'Credit (BAA–AAA)',UN_SLOPE6:'Unemp Δ6m',DD_12M:'Drawdown 12m',NFCI:'NFCI'};
+      const fmt={T10Y3M:v=>v.toFixed(2),CREDIT:v=>v.toFixed(2),UN_SLOPE6:v=>v.toFixed(2),DD_12M:v=>(v*100).toFixed(1)+'%',NFCI:v=>v.toFixed(3)};
+      for(const k of this.keys){ const el=document.getElementById(id[k]); if(!el) continue; const v=this.data.latest[k]; el.textContent=`${label[k]}: ${v==null?'—':fmt[k](v)}`; el.classList.remove('skeleton'); }
     }
 
     renderCompositeChart(){
-      const el = document.getElementById('compChart');
-      const minLen = Math.min(...this.keys.map(k=>this.data.series[k].ys.length||Infinity));
-      if(!isFinite(minLen) || minLen<3){
-        el.closest('.card').querySelector('.chart').innerHTML = '<div class="err">Not enough overlapping history yet to draw composite.</div>';
-        return;
-      }
-      const tail=minLen, xs=this.data.series.T10Y3M.xs.slice(-tail), ys=[];
-      for(let i=-tail;i<0;i++){
-        let v=0;
-        for(const k of this.keys){
-          v += this.scales[k](this.data.series[k].ys.at(i))*(this.weights[k]||0);
-        }
-        ys.push(Math.round(v*10)/10);
-      }
+      const el=document.getElementById('compChart');
+      const minLen=Math.min(...this.keys.map(k=>this.data.series[k].ys.length||Infinity));
+      if(!isFinite(minLen)||minLen<3){ el.closest('.card').querySelector('.chart').innerHTML='<div class="err">Not enough overlapping history yet to draw composite chart.</div>'; return; }
+      const tail=Math.min(minLen,90), xs=this.data.series.T10Y3M.xs.slice(-tail), ys=[];
+      for(let i=-tail;i<0;i++){ let v=0; for(const k of this.keys){ v+=this.scales[k](this.data.series[k].ys.at(i))*(this.weights[k]||0); } ys.push(Math.round(v*10)/10); }
       this.makeChart(el,{
         type:'line',
-        data:{labels:xs,datasets:[{data:ys,borderColor:'#7da6ff',backgroundColor:'transparent'}]},
-        options:this.baseOpts({scales:{y:{min:0,max:100}}})
+        data:{ labels:xs, datasets:[{ data:ys, borderColor:'#7da6ff', backgroundColor:'transparent', fill:false, tension:.4 }]},
+        options:this.baseOpts({
+          scales:{ y:{min:0,max:100} },
+          plugins:{
+            tooltip:{callbacks:{label:(c)=>`Composite: ${c.parsed.y}`}},
+            // RAG guide-lines
+            annotation:{
+              annotations:{
+                green:{ type:'line', yMin:30, yMax:30, borderColor:'rgba(30,194,139,.6)', borderDash:[6,4], borderWidth:1 },
+                amber:{ type:'line', yMin:60, yMax:60, borderColor:'rgba(255,194,71,.7)', borderDash:[6,4], borderWidth:1 }
+              }
+            }
+          }
+        })
       });
     }
 
     renderIndicatorCharts(){
       const cfgs=[
-        {k:'T10Y3M', title:'Yield Curve (10y–3m)', desc:'<b>More negative = worse</b>. Inversions (below zero) often precede recessions and major drawdowns.', color:'#6bb9ff'},
-        {k:'CREDIT', title:'Credit Spread (BAA–AAA)', desc:'<b>Wider = worse</b>. Rising lower-grade vs top-tier borrowing costs signal stress in corporate credit.', color:'#ffb36b'},
-        {k:'UN_SLOPE6', title:'Unemployment 6-month slope', desc:'<b>Rising = worse</b>. Early labour-market deterioration is a classic late-cycle signal.', color:'#ffa0b5'},
-        {k:'DD_12M', title:'12-month Drawdown (S&P vs 1-yr peak)', desc:'<b>More negative = worse</b>. Captures market-price stress, complementing macro/credit indicators.', color:'#a6c7ff'},
-        {k:'NFCI', title:'Chicago Fed NFCI', desc:'<b>Higher = tighter/worse</b>. Summarises overall financial conditions (rates, credit, funding, volatility).', color:'#9bd3c1'}
+        {k:'T10Y3M', title:'Yield Curve (10y–3m)', desc:'<b>More negative = worse</b>. Inversions (below zero) often precede recessions and major drawdowns.', color:'#6bb9ff', zero:true},
+        {k:'CREDIT', title:'Credit Spread (BAA–AAA)', desc:'<b>Wider = worse</b>. Rising lower-grade vs top-tier borrowing costs signal stress in corporate credit.', color:'#ffb36b', zero:false},
+        {k:'UN_SLOPE6', title:'Unemployment 6-month slope', desc:'<b>Rising = worse</b>. Early labour-market deterioration is a classic late-cycle signal.', color:'#ffa0b5', zero:true},
+        {k:'DD_12M', title:'12-month Drawdown (S&P vs 1-yr peak)', desc:'<b>More negative = worse</b>. Captures market-price stress, complementing macro/credit indicators.', color:'#a6c7ff', zero:true},
+        {k:'NFCI', title:'Chicago Fed NFCI', desc:'<b>Higher = tighter/worse</b>. Summarises overall financial conditions (rates, credit, funding, volatility).', color:'#9bd3c1', zero:true}
       ];
       const host=document.getElementById('charts');
       for(const c of cfgs){
         const sec=document.createElement('section'); sec.className='card'; sec.setAttribute('aria-labelledby','chart-'+c.k);
-        sec.innerHTML = `<h3 id="chart-${c.k}" style="margin:0 0 8px">${c.title}</h3>
+        sec.innerHTML=`<h3 id="chart-${c.k}" style="margin:0 0 8px">${c.title}</h3>
           <div class="chart"><canvas id="c_${c.k}" aria-label="${c.title} over time"></canvas></div>
           <div class="callout">${c.desc}</div>`;
         host.appendChild(sec);
-        const s=this.data.series[c.k];
-        if(!s.ys.length){ sec.querySelector('.chart').innerHTML=`<div class="err">No data available for ${c.title}</div>`; continue; }
+        const s=this.data.series[c.k]; if(!s.ys.length){ sec.querySelector('.chart').innerHTML=`<div class="err">No data available for ${c.title}</div>`; continue; }
         this.makeChart(document.getElementById('c_'+c.k),{
           type:'line',
-          data:{labels:s.xs,datasets:[{data:s.ys,borderColor:c.color,backgroundColor:'transparent'}]},
-          options:this.baseOpts()
+          data:{ labels:s.xs.slice(-90), datasets:[{ data:s.ys.slice(-90), borderColor:c.color, backgroundColor:'transparent', fill:false, tension:.4 }]},
+          options:this.baseOpts({
+            plugins: c.zero ? { annotation:{ annotations:{ zero:{ type:'line', yMin:0, yMax:0, borderColor:'rgba(154,166,191,.6)', borderDash:[4,4], borderWidth:1 }}}} : {}
+          })
         });
       }
     }
 
     baseOpts(ovr={}){
       const base={
-        responsive:true,maintainAspectRatio:false,
+        responsive:true, maintainAspectRatio:false,
         scales:{
-          x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9aa6bf',maxRotation:0,autoSkip:true}},
-          y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9aa6bf'}}
+          x:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{ color:'#9aa6bf', maxRotation:0, autoSkip:true, maxTicksLimit:8 } },
+          y:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{ color:'#9aa6bf' } }
         },
-        plugins:{legend:{display:false},tooltip:{enabled:true}},
-        elements:{line:{tension:.35,borderWidth:2},point:{radius:2,hitRadius:8}}
+        plugins:{ legend:{display:false}, tooltip:{enabled:true} },
+        elements:{ line:{tension:.4,borderWidth:2}, point:{radius:2,hitRadius:8,hoverRadius:6} },
+        animation:{ duration:1000, easing:'easeOutQuart' }
       };
-      return {...base,...ovr,scales:{...base.scales,...(ovr.scales||{})}};
+      return {...base, ...ovr, scales:{...base.scales, ...(ovr.scales||{})}, plugins:{...base.plugins, ...(ovr.plugins||{})}};
     }
 
-    makeChart(el, cfg){
+    makeChart(el,cfg){
       try{
-        // register annotation plugin defensively (won’t crash if missing)
-        try{
-          const ap = (window.ChartAnnotation || window['chartjs-plugin-annotation']);
-          if(ap) Chart.register(ap);
-        }catch(e){}
-        return new Chart(el,cfg);
-      }catch(e){
-        console.error(e);
-        el.closest('.chart').innerHTML = `<div class="err">Chart error: ${e.message}</div>`;
-      }
+        if(this.charts.has(el)) this.charts.get(el).destroy();
+        try{ const ap=(window.ChartAnnotation||window['chartjs-plugin-annotation']); if(ap && !Chart.registry.getPlugin('annotation')) Chart.register(ap); }catch(e){}
+        const chart=new Chart(el,cfg); this.charts.set(el,chart); return chart;
+      }catch(e){ console.error('Chart error:',e); el.closest('.chart').innerHTML=`<div class="err">Chart error: ${e.message}</div>`; return null;}
     }
 
     renderDiagnostics(){
@@ -291,15 +281,17 @@
         fetched_at_utc:this.data.raw?.fetched_at_utc||null,
         latest_values:Object.fromEntries(this.keys.map(k=>[k,this.data.latest[k]])),
         sample_sizes:Object.fromEntries(this.keys.map(k=>[k,this.data.series[k].ys.length])),
-        composite:this.data.composite
+        composite:this.data.composite,
+        calculation_timestamp:new Date().toISOString()
       };
-      diag.textContent = JSON.stringify(out,null,2);
-      document.getElementById('update-time').textContent =
-        new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+      diag.textContent=JSON.stringify(out,null,2);
+      document.getElementById('update-time').textContent=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     }
+
+    destroy(){ this.charts.forEach(c=>c.destroy()); this.charts.clear(); }
   }
 
-  document.addEventListener('DOMContentLoaded',()=>new CrashRadar());
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',()=>new CrashRadar()); } else { new CrashRadar(); }
   </script>
 </body>
 </html>
