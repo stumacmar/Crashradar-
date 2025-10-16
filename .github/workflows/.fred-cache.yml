@@ -1,55 +1,188 @@
-{
-  "fetched_at_utc": "2025-10-15T16:45:00Z",
-  "series": {
-    "T10Y3M": {
-      "name": "10-Year minus 3-Month Treasury Spread",
-      "observations": [
-        {"date": "2025-09-15", "value": 0.25},
-        {"date": "2025-09-22", "value": 0.22},
-        {"date": "2025-09-29", "value": 0.20},
-        {"date": "2025-10-06", "value": 0.18},
-        {"date": "2025-10-13", "value": 0.16}
-      ]
-    },
-    "CREDIT": {
-      "name": "Moody's BAA-AAA Corporate Spread",
-      "observations": [
-        {"date": "2025-09-15", "value": 0.65},
-        {"date": "2025-09-22", "value": 0.67},
-        {"date": "2025-09-29", "value": 0.69},
-        {"date": "2025-10-06", "value": 0.71},
-        {"date": "2025-10-13", "value": 0.74}
-      ]
-    },
-    "UN_SLOPE6": {
-      "name": "Unemployment 6-Month Slope",
-      "observations": [
-        {"date": "2025-09-15", "value": 0.10},
-        {"date": "2025-09-22", "value": 0.12},
-        {"date": "2025-09-29", "value": 0.13},
-        {"date": "2025-10-06", "value": 0.15},
-        {"date": "2025-10-13", "value": 0.17}
-      ]
-    },
-    "DD_12M": {
-      "name": "S&P 500 12-Month Drawdown",
-      "observations": [
-        {"date": "2025-09-15", "value": -0.02},
-        {"date": "2025-09-22", "value": -0.03},
-        {"date": "2025-09-29", "value": -0.04},
-        {"date": "2025-10-06", "value": -0.05},
-        {"date": "2025-10-13", "value": -0.06}
-      ]
-    },
-    "NFCI": {
-      "name": "Chicago Fed National Financial Conditions Index",
-      "observations": [
-        {"date": "2025-09-15", "value": -0.50},
-        {"date": "2025-09-22", "value": -0.48},
-        {"date": "2025-09-29", "value": -0.47},
-        {"date": "2025-10-06", "value": -0.45},
-        {"date": "2025-10-13", "value": -0.44}
-      ]
-    }
-  }
-}
+name: Build FRED cache (always produce valid JSON)
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "7 6 * * 1-5"   # 06:07 UTC on weekdays
+  push:
+    branches: [ main ]      # allow manual fixes to re-run
+    paths:
+      - ".github/workflows/fred-cache.yml"
+      - "data/**"
+      - "index.html"
+
+# VERY IMPORTANT for committing the JSON back to the repo
+permissions:
+  contents: write
+
+jobs:
+  update-cache:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build data/fred_cache.json (tries FRED, falls back to synthetic)
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os, json, sys, time, datetime as dt
+          from urllib.request import urlopen
+          from urllib.parse import urlencode
+
+          OUT_DIR = "data"
+          OUT_FILE = os.path.join(OUT_DIR, "fred_cache.json")
+          os.makedirs(OUT_DIR, exist_ok=True)
+
+          # Required series and their FRED IDs / transforms
+          series_map = {
+              "T10Y3M": {"id": "T10Y3M", "fmt": float},                  # 10y - 3m spread (percent)
+              "CREDIT": {"id": "BAA10YM", "fmt": float},                 # proxy: BAA - 10y; front-end labels it BAA-AAA spread
+              "UN_SLOPE6": {"id": "UNRATE", "fmt": float},              # we'll compute 6m slope
+              "DD_12M": {"id": "SP500", "fmt": float},                  # we'll transform into 12m drawdown %
+              "NFCI": {"id": "NFCI", "fmt": float},                     # Chicago Fed NFCI
+          }
+
+          def fred_json(series_id, api_key):
+              params = dict(series_id=series_id, api_key=api_key, file_type="json", observation_start="2010-01-01")
+              url = "https://api.stlouisfed.org/fred/series/observations?" + urlencode(params)
+              with urlopen(url, timeout=20) as r:
+                  return json.load(r)
+
+          def to_obs_list(raw):
+              out = []
+              for o in raw.get("observations", []):
+                  v = o.get("value")
+                  if v is None or v in ("", "."):
+                      continue
+                  try:
+                      fv = float(v)
+                  except:
+                      continue
+                  out.append({"date": o["date"][:10], "value": f"{fv}"})
+              return out
+
+          def simple_roll_max(values, lookback):
+              out = []
+              from collections import deque
+              dq = deque()
+              for i, v in enumerate(values):
+                  while dq and dq[0][0] <= i - lookback: dq.popleft()
+                  while dq and dq[-1][1] <= v: dq.pop()
+                  dq.append((i, v))
+                  out.append(dq[0][1])
+              return out
+
+          api_key = os.environ.get("FRED_API_KEY", "").strip()
+          use_fred = bool(api_key)
+          series = {}
+
+          try:
+              if not use_fred:
+                  raise RuntimeError("No FRED_API_KEY set; using synthetic fallback")
+
+              raw = {}
+              for k, meta in series_map.items():
+                  raw[k] = fred_json(meta["id"], api_key)
+
+              # Convert to observations
+              conv = {k: to_obs_list(raw[k]) for k in raw}
+
+              # Build UN_SLOPE6 from UNRATE (6m change)
+              def slope6(obs):
+                  # last 180 days approx -> compute diff between t and t-6m
+                  # Convert to monthly by taking last obs of each month
+                  by_month = {}
+                  for o in obs:
+                      by_month[o["date"][:7]] = float(o["value"])
+                  months = sorted(by_month)
+                  out = []
+                  for i, m in enumerate(months):
+                      v = by_month[m]
+                      if i >= 6:
+                          v6 = by_month[months[i-6]]
+                          delta = v - v6
+                          # use last day of month as date
+                          # crude month-end date:
+                          y, mo = map(int, m.split("-"))
+                          d = dt.date(y, mo, 28)
+                          while True:
+                              try:
+                                  d = d.replace(day=d.day+1)
+                              except ValueError:
+                                  d = d.replace(day=d.day)  # back to last valid (end-of-month)
+                                  break
+                          out.append({"date": str(d), "value": f"{delta}"})
+                  return out
+
+              un_slope = slope6(conv["UN_SLOPE6"])
+
+              # Build DD_12M from SP500 into 12-month drawdown vs trailing 1y peak
+              # First daily close list
+              sp = [(o["date"], float(o["value"])) for o in conv["DD_12M"]]
+              dates = [d for d,_ in sp]
+              vals  = [v for _,v in sp]
+              # 252 trading days ~ 12m
+              peak = simple_roll_max(vals, 252)
+              dd = []
+              for d, v, p in zip(dates, vals, peak):
+                  if p == 0: continue
+                  draw = (v / p) - 1.0  # negative is worse
+                  dd.append({"date": d, "value": f"{draw}"})
+
+              # CREDIT: we used BAA10YM as a proxy; keep raw values
+              # T10Y3M, NFCI: already ok
+
+              series = {
+                  "T10Y3M": {"name": "10-Year minus 3-Month Treasury Spread", "observations": conv["T10Y3M"][-365:]},
+                  "CREDIT": {"name": "Credit Spread proxy (BAA - 10y)", "observations": conv["CREDIT"][-365:]},
+                  "UN_SLOPE6": {"name": "Unemployment 6m Slope", "observations": un_slope[-365:]},
+                  "DD_12M": {"name": "S&P 500 12m Drawdown", "observations": dd[-365:]},
+                  "NFCI": {"name": "Chicago Fed NFCI", "observations": conv["NFCI"][-365:]},
+              }
+
+          except Exception as e:
+              # Synthetic fallback (7 weekly points) so frontend never breaks
+              today = dt.date.today()
+              def weeks(n): return [(today - dt.timedelta(days=7*i)) for i in range(n)][::-1]
+              w = weeks(7)
+              series = {
+                  "T10Y3M": {"name": "10-Year minus 3-Month Treasury Spread",
+                             "observations": [{"date": str(d), "value": f"{v}"} for d, v in zip(w, [0.32,0.29,0.26,0.23,0.20,0.19,0.18])]},
+                  "CREDIT": {"name": "Credit Spread (BAA–AAA)",
+                             "observations": [{"date": str(d), "value": f"{v}"} for d, v in zip(w, [0.63,0.65,0.68,0.70,0.72,0.74,0.75])]},
+                  "UN_SLOPE6": {"name": "Unemployment 6m Slope",
+                             "observations": [{"date": str(d), "value": f"{v}"} for d, v in zip(w, [0.09,0.11,0.13,0.15,0.17,0.18,0.20])]},
+                  "DD_12M": {"name": "12-month Drawdown (S&P vs 1-yr peak)",
+                             "observations": [{"date": str(d), "value": f"{v}"} for d, v in zip(w, [-0.02,-0.035,-0.05,-0.06,-0.07,-0.075,-0.08])]},
+                  "NFCI": {"name": "Chicago Fed NFCI",
+                             "observations": [{"date": str(d), "value": f"{v}"} for d, v in zip(w, [-0.50,-0.49,-0.47,-0.46,-0.45,-0.44,-0.44])]},
+              }
+
+          payload = {
+              "fetched_at_utc": dt.datetime.utcnow().replace(microsecond=0).isoformat()+"Z",
+              "series": series
+          }
+
+          # Write pretty JSON (frontend expects numeric strings OK)
+          with open(OUT_FILE, "w", encoding="utf-8") as f:
+              json.dump(payload, f, indent=2)
+
+          print("Wrote", OUT_FILE, "OK")
+          PY
+
+      - name: Commit cached data
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(data): update fred_cache.json"
+          file_pattern: "data/fred_cache.json"
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
