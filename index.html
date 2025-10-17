@@ -124,6 +124,11 @@
   class CrashRadar {
     constructor(){
       this.keys = ['T10Y3M','CREDIT','UN_SLOPE6','DD_12M','NFCI'];
+
+      // NEW: composite modes (actionable by default)
+      this.MODES = { STRICT:'strict', ASOF:'asof' };
+      this.mode = this.MODES.ASOF;
+
       this.scales = {
         T10Y3M: v => this.clamp(this.map(v, 1.0, -2.0)),
         CREDIT: v => this.clamp(this.map(v, 0.3, 1.0)),
@@ -132,11 +137,22 @@
         NFCI: v => this.clamp(this.map(v, -0.8, 1.0)),
       };
       this.weights = {T10Y3M:0.25, CREDIT:0.25, UN_SLOPE6:0.20, DD_12M:0.20, NFCI:0.10};
-      this.data = {raw:null, series:{}, latest:{}, composite:null};
+
+      this.data = {
+        raw:null,
+        series:{},         // { key: { xs, ys, datesISO } }
+        latest:{},         // { key: number }
+        latestISO:{},      // { key: 'YYYY-MM-DD' }
+        freshness:{},      // { key: { ageDays, latestISO } }
+        commonISO:null,    // latest ISO date common to all series
+        composite:null,    // current mode
+        composite_strict:null
+      };
       this.charts = new Map();
       this.init();
     }
 
+    /* ---------- utils ---------- */
     setStatus(msg, cls=''){ const el=document.getElementById('status'); el.textContent=msg; el.className='sub '+cls; }
     gbDate(d){ try{return new Date(d).toLocaleDateString('en-GB',{year:'numeric',month:'short',day:'2-digit'})}catch{return 'Invalid Date'} }
     safeNum(v){ return (v===null||v===undefined||isNaN(+v))?null:+v; }
@@ -144,6 +160,8 @@
     clamp(x){ return Math.max(0, Math.min(100,x)); }
     map(val, good, bad){ if(val==null) return 50; const denom=bad-good; if(Math.abs(denom)<1e-10) return 50; return ((val-good)/denom)*100; }
     zoneOf(s){ return s<=30?'green':(s<=60?'amber':'red'); }
+    toISO(d){ return new Date(d).toISOString().slice(0,10); }
+    daysBetween(aISO,bISO){ const a=new Date(aISO+"T00:00:00Z"), b=new Date(bISO+"T00:00:00Z"); return Math.round((b-a)/86400000); }
 
     getRiskExplanation(score, zone){
       const x={
@@ -170,42 +188,136 @@
       }
     }
 
+    /* ---------- ingest + dates ---------- */
     process(){
       const S=this.data.raw?.series||{};
+      const dateSets=[];
+
       for(const k of this.keys){
-        const obs=S[k]?.observations||[], xs=[], ys=[];
-        for(const o of obs){ const v=this.safeNum(o.value); if(v==null||!o.date) continue; xs.push(this.gbDate(o.date)); ys.push(v); }
-        this.data.series[k]={xs,ys}; this.data.latest[k]=this.last(ys);
+        const obs=S[k]?.observations||[], xs=[], ys=[], iso=[];
+        for(const o of obs){
+          const v=this.safeNum(o.value); if(v==null||!o.date) continue;
+          const dISO=this.toISO(o.date); iso.push(dISO);
+          xs.push(this.gbDate(dISO)); ys.push(v);
+        }
+        this.data.series[k]={xs,ys,datesISO:iso};
+        this.data.latest[k]=this.last(ys);
+        this.data.latestISO[k]=this.last(iso);
+        dateSets.push(new Set(iso));
       }
-      let comp=0, wsum=0;
-      for(const k of this.keys){ const sv=this.scales[k](this.data.latest[k]); if(isFinite(sv)){ comp+=sv*(this.weights[k]||0); wsum+=this.weights[k]||0; } }
-      this.data.composite = (wsum>0)? Math.round((comp/wsum)*10)/10 : null;
+
+      // latest common ISO across all series
+      const shortest = this.keys.slice().sort((a,b)=>(
+        this.data.series[a].datesISO.length - this.data.series[b].datesISO.length
+      ))[0];
+      let common=null;
+      for(let i=this.data.series[shortest].datesISO.length-1;i>=0;i--){
+        const d=this.data.series[shortest].datesISO[i];
+        if(this.keys.every((k,idx)=>dateSets[idx].has(d))){ common=d; break; }
+      }
+      this.data.commonISO=common;
+
+      // freshness ages vs today
+      const todayISO=this.toISO(new Date());
+      for(const k of this.keys){
+        const d=this.data.latestISO[k];
+        const age=(d? this.daysBetween(d,todayISO) : null);
+        this.data.freshness[k]={ageDays:age, latestISO:d};
+      }
+
+      // composites
+      this.data.composite_strict = this.computeComposite(this.MODES.STRICT);
+      this.data.composite = this.computeComposite(this.mode);
     }
 
+    computeComposite(mode){
+      let num=0, denom=0;
+
+      if(mode===this.MODES.STRICT){
+        if(!this.data.commonISO) return null;
+        const d=this.data.commonISO;
+        for(const k of this.keys){
+          const idx=this.data.series[k].datesISO.lastIndexOf(d);
+          if(idx===-1) return null;
+          const val=this.data.series[k].ys[idx];
+          const scaled=this.scales[k](val);
+          if(isFinite(scaled)){ num+=scaled*(this.weights[k]||0); denom+=(this.weights[k]||0); }
+        }
+      } else { // AS-OF (actionable)
+        const todayISO=this.toISO(new Date());
+        for(const k of this.keys){
+          const val=this.data.latest[k];
+          const scaled=this.scales[k](val);
+          if(!isFinite(scaled)) continue;
+          const age=this.data.freshness[k].ageDays ?? 99;
+          // freshness: <=1d → 1.0, 7+d → 0.4
+          const freshness=Math.max(0.4, Math.min(1, 1 - (age/7)));
+          const w=(this.weights[k]||0)*freshness;
+          num+=scaled*w; denom+=w;
+        }
+      }
+      if(denom===0) return null;
+      return Math.round((num/denom)*10)/10;
+    }
+
+    /* ---------- render ---------- */
     render(){
       this.renderGauge(); this.renderPills(); this.renderCompositeChart(); this.renderIndicatorCharts(); this.renderDiagnostics();
     }
 
     renderGauge(){
-      const c=this.data.composite, z=this.zoneOf(c||50);
-      const badge=document.getElementById('garBadge'); badge.className='badge '+z; badge.textContent=z.toUpperCase(); badge.classList.remove('skeleton');
-      const scoreEl=document.getElementById('scoreText'); scoreEl.textContent=isFinite(c)?Math.round(c):'–'; scoreEl.classList.remove('skeleton');
+      const c=this.data.composite, z=this.zoneOf(c??50);
+      const badge=document.getElementById('garBadge');
+      const modeLabel=(this.mode===this.MODES.STRICT?'STRICT':'AS-OF TODAY');
+      badge.className='badge '+z;
+      badge.textContent=`${modeLabel} · ${z.toUpperCase()}`;
+      badge.classList.remove('skeleton');
+
+      const scoreEl=document.getElementById('scoreText');
+      scoreEl.textContent=isFinite(c)?Math.round(c):'–';
+      scoreEl.classList.remove('skeleton');
+
       const ts=this.data.raw?.fetched_at_utc?new Date(this.data.raw.fetched_at_utc):null;
-      document.getElementById('freshness').textContent=ts? this.gbDate(ts)+' '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'—';
-      const ex=this.getRiskExplanation(c,z); const riskEl=document.getElementById('riskExplanation'); document.getElementById('riskTitle').textContent=ex.title; document.getElementById('riskDescription').textContent=ex.description; riskEl.style.display='block';
+      const commonTxt=this.data.commonISO?`Data through (STRICT): ${this.gbDate(this.data.commonISO)}`:'Data through (STRICT): —';
+      const fetchedTxt=ts? `${this.gbDate(this.toISO(ts))} ${ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}` : '—';
+      document.getElementById('freshness').textContent=
+        `${commonTxt} • Cache built: ${fetchedTxt} • FRED posts with ~1 business-day lag`;
+
+      const ex=this.getRiskExplanation(c??50,z);
+      const riskEl=document.getElementById('riskExplanation');
+      document.getElementById('riskTitle').textContent=ex.title;
+      document.getElementById('riskDescription').textContent=ex.description;
+      riskEl.style.display='block';
+
+      // warn if any series is stale (≥7d)
+      const stale=this.keys.filter(k=> (this.data.freshness[k].ageDays??0) >= 7);
+      if(stale.length){ this.setStatus(`Market data loaded (note: ${stale.length} series ≥7d old)`, 'warn'); }
+      else{ this.setStatus('Market data loaded successfully','ok'); }
     }
 
     renderPills(){
       const id={T10Y3M:'pill_t10y3m',CREDIT:'pill_credit',UN_SLOPE6:'pill_un',DD_12M:'pill_dd',NFCI:'pill_nfci'};
       const label={T10Y3M:'Yield (10y–3m)',CREDIT:'Credit (BAA–AAA)',UN_SLOPE6:'Unemp Δ6m',DD_12M:'Drawdown 12m',NFCI:'NFCI'};
       const fmt={T10Y3M:v=>v.toFixed(2),CREDIT:v=>v.toFixed(2),UN_SLOPE6:v=>v.toFixed(2),DD_12M:v=>(v*100).toFixed(1)+'%',NFCI:v=>v.toFixed(3)};
-      for(const k of this.keys){ const el=document.getElementById(id[k]); if(!el) continue; const v=this.data.latest[k]; el.textContent=`${label[k]}: ${v==null?'—':fmt[k](v)}`; el.classList.remove('skeleton'); }
+      for(const k of this.keys){
+        const el=document.getElementById(id[k]); if(!el) continue;
+        const v=this.data.latest[k];
+        const d=this.data.freshness[k].latestISO || '—';
+        const age=this.data.freshness[k].ageDays;
+        const ageTxt=(age==null)?'':` · ${age}d old`;
+        el.textContent=`${label[k]}: ${v==null?'—':fmt[k](v)} (${this.gbDate(d)}${ageTxt})`;
+        el.classList.remove('skeleton');
+        el.title=`${label[k]} latest: ${d} (${age} days old)`;
+      }
     }
 
     renderCompositeChart(){
       const el=document.getElementById('compChart');
       const minLen=Math.min(...this.keys.map(k=>this.data.series[k].ys.length||Infinity));
-      if(!isFinite(minLen)||minLen<3){ el.closest('.card').querySelector('.chart').innerHTML='<div class="err">Not enough overlapping history yet to draw composite chart.</div>'; return; }
+      if(!isFinite(minLen)||minLen<3){
+        el.closest('.card').querySelector('.chart').innerHTML='<div class="err">Not enough overlapping history yet to draw composite chart.</div>';
+        return;
+      }
       const tail=Math.min(minLen,90), xs=this.data.series.T10Y3M.xs.slice(-tail), ys=[];
       for(let i=-tail;i<0;i++){ let v=0; for(const k of this.keys){ v+=this.scales[k](this.data.series[k].ys.at(i))*(this.weights[k]||0); } ys.push(Math.round(v*10)/10); }
       this.makeChart(el,{
@@ -215,7 +327,6 @@
           scales:{ y:{min:0,max:100} },
           plugins:{
             tooltip:{callbacks:{label:(c)=>`Composite: ${c.parsed.y}`}},
-            // RAG guide-lines
             annotation:{
               annotations:{
                 green:{ type:'line', yMin:30, yMax:30, borderColor:'rgba(30,194,139,.6)', borderDash:[6,4], borderWidth:1 },
@@ -280,8 +391,11 @@
       const out={
         fetched_at_utc:this.data.raw?.fetched_at_utc||null,
         latest_values:Object.fromEntries(this.keys.map(k=>[k,this.data.latest[k]])),
-        sample_sizes:Object.fromEntries(this.keys.map(k=>[k,this.data.series[k].ys.length])),
-        composite:this.data.composite,
+        latest_dates:Object.fromEntries(this.keys.map(k=>[k,this.data.latestISO[k]])),
+        freshness_days:Object.fromEntries(this.keys.map(k=>[k,this.data.freshness[k].ageDays])),
+        strict_common_date:this.data.commonISO,
+        composite_asof:this.data.composite,
+        composite_strict:this.data.composite_strict,
         calculation_timestamp:new Date().toISOString()
       };
       diag.textContent=JSON.stringify(out,null,2);
@@ -291,7 +405,11 @@
     destroy(){ this.charts.forEach(c=>c.destroy()); this.charts.clear(); }
   }
 
-  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',()=>new CrashRadar()); } else { new CrashRadar(); }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>{ window.crash = new CrashRadar(); });
+  } else {
+    window.crash = new CrashRadar();
+  }
   </script>
 </body>
 </html>
