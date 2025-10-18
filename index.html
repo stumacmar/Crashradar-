@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="CrashRadar monitors financial market crash risk using multiple economic indicators including yield curve, credit spreads, unemployment, and market drawdowns." />
-  <title>CrashRadar — Composite Crash Risk Dashboard</title>
+  <meta name="description" content="CrashRadar Lite — a 7-signal, FRED-based composite of macro and market stress for long-only investors." />
+  <title>CrashRadar — Composite Crash Risk (Lite)</title>
 
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -99,12 +99,16 @@
               <strong id="riskTitle">Risk Assessment</strong>
               <div id="riskDescription" class="meta" style="margin-top:4px"></div>
             </div>
+
+            <!-- 7-signal pills -->
             <div style="margin-top:16px" role="list">
-              <span class="pill" id="pill_t10y3m" role="listitem" data-tooltip="10-year minus 3-month Treasury yield spread">Yield (10y–3m): —</span>
-              <span class="pill" id="pill_credit" role="listitem" data-tooltip="BAA corporate bond yield minus AAA yield">Credit (BAA–AAA): —</span>
-              <span class="pill" id="pill_un" role="listitem" data-tooltip="6-month change in unemployment rate">Unemp Δ6m: —</span>
-              <span class="pill" id="pill_dd" role="listitem" data-tooltip="S&P 500 drawdown from 12-month high">Drawdown 12m: —</span>
-              <span class="pill" id="pill_nfci" role="listitem" data-tooltip="National Financial Conditions Index">NFCI: —</span>
+              <span class="pill" id="pill_t10y3m" role="listitem" data-tooltip="10y minus 3m Treasury. More negative = worse.">Yield (10y–3m): —</span>
+              <span class="pill" id="pill_hyoas" role="listitem" data-tooltip="ICE BofA US High Yield OAS. Higher = worse.">HY OAS: —</span>
+              <span class="pill" id="pill_nfci" role="listitem" data-tooltip="Chicago Fed National Financial Conditions Index. Higher = tighter/worse.">NFCI: —</span>
+              <span class="pill" id="pill_icsa" role="listitem" data-tooltip="Initial jobless claims, 13-week % change. Higher = worse.">Claims Δ13w: —</span>
+              <span class="pill" id="pill_mkt" role="listitem" data-tooltip="Average of VIX risk and S&P 12m drawdown risk (0–100).">Market stress: —</span>
+              <span class="pill" id="pill_t10yie" role="listitem" data-tooltip="10y breakeven inflation. Higher can imply tighter policy risk.">10y BE (T10YIE): —</span>
+              <span class="pill" id="pill_sahm" role="listitem" data-tooltip="Sahm Rule (current). Higher = recession confirmation.">Sahm: —</span>
             </div>
           </div>
         </div>
@@ -136,15 +140,23 @@
   <script>
   class CrashRadar {
     constructor(){
-      this.keys = ['T10Y3M','CREDIT','UN_SLOPE6','DD_12M','NFCI'];
+      // Core 7-signal lite model
+      this.keys = ['T10Y3M','HYOAS','NFCI','ICSA_D13W','MKT_STRESS','T10YIE','SAHM'];
+
+      // Piecewise mappings via linear helper (good→bad).
       this.scales = {
-        T10Y3M: v => this.clamp(this.map(v, 1.0, -2.0)),
-        CREDIT: v => this.clamp(this.map(v, 0.3, 1.0)),
-        UN_SLOPE6: v => this.clamp(this.map(v, 0.0, 0.6)),
-        DD_12M: v => this.clamp(this.map(v, 0.0, -0.30)),
-        NFCI: v => this.clamp(this.map(v, -0.8, 1.0)),
+        T10Y3M: v => this.clamp(this.map(v, +1.5, -0.75)),   // +150bp -> 0,  -75bp -> 100
+        HYOAS:  v => this.clamp(this.map(v, 3.0,  8.0)),     // 300bp -> 0,   800bp -> 100
+        NFCI:   v => this.clamp(this.map(v, -0.5, +1.0)),    // -0.5 -> 0,    +1.0 -> 100
+        ICSA_D13W: v => this.clamp(this.map(v, -0.10, +0.40)), // -10% -> 0,  +40% -> 100
+        MKT_STRESS: v => this.clamp(v),                      // 0–100 already
+        T10YIE: v => this.clamp(this.map(v, 1.5, 3.5)),      // 1.5% -> 0,    3.5% -> 100
+        SAHM:   v => this.clamp(this.map(v, 0.20, 0.60)),    // 0.20 -> 0,    0.60 -> 100
       };
-      this.weights = {T10Y3M:0.25, CREDIT:0.25, UN_SLOPE6:0.20, DD_12M:0.20, NFCI:0.10};
+
+      // Weights (sum 100) — can later be replaced by model-derived weights
+      this.weights = {T10Y3M:15, HYOAS:25, NFCI:20, ICSA_D13W:15, MKT_STRESS:15, T10YIE:5, SAHM:5};
+
       this.data = {raw:null, series:{}, latest:{}, composite:null};
       this.charts = new Map();
       this.init();
@@ -152,24 +164,22 @@
 
     // ---------- utils ----------
     setStatus(msg, cls=''){ const el=document.getElementById('status'); el.textContent=msg; el.className='sub '+cls; }
-    gbDate(d){ try{return new Date(d).toLocaleDateString('en-GB',{year:'numeric',month:'short',day:'2-digit'})}catch{return 'Invalid Date'} }
+    gbDate(d){ try{return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short'})}catch{return 'Invalid Date'} }
     safeNum(v){ return (v===null||v===undefined||isNaN(+v))?null:+v; }
     last(a){ return (a&&a.length)?a[a.length-1]:null; }
     clamp(x){ return Math.max(0, Math.min(100,x)); }
     map(val, good, bad){ if(val==null) return 50; const denom=bad-good; if(Math.abs(denom)<1e-10) return 50; return ((val-good)/denom)*100; }
     zoneOf(s){ return s<=30?'green':(s<=60?'amber':'red'); }
-
-    // Needle helpers
     scoreToAngle(s){ return (Math.max(0,Math.min(100,s))/100)*360; }
     setNeedle(score){ const n=document.getElementById('needle'); if(n) n.style.setProperty('--angle', this.scoreToAngle(score)+'deg'); }
 
-    // 4-week (≈20 trading days) delta for NFCI (direction: higher=tighter)
-    delta28(series){
+    // 13-week % change for claims (weekly series)
+    pctChange13w(series){
       const ys = series?.ys || [];
-      if (ys.length < 21) return null;
-      const last = ys[ys.length-1];
-      const prior = ys[ys.length-21];
-      return last - prior;
+      if (ys.length < 14) return null;
+      const last = ys[ys.length-1], prior = ys[ys.length-14];
+      if (prior===0 || prior==null || last==null) return null;
+      return (last - prior) / prior;
     }
 
     async init(){
@@ -183,72 +193,137 @@
         this.process(); this.render();
       }catch(e){
         this.setStatus(e.name==='AbortError'?'Request timeout — please try again':'Failed to load data','bad');
-        document.getElementById('diag').textContent='Load error: '+e.message;
-        const card=document.querySelector('.gauge').closest('.card');
-        card.insertAdjacentHTML('beforeend',`<div class="err" style="margin-top:16px"><strong>Unable to load market data</strong><div style="margin-top:8px;font-size:14px">Check connection or run the workflow to build <code>data/fred_cache.json</code>.</div></div>`);
+        const diag=document.getElementById('diag'); if(diag) diag.textContent='Load error: '+e.message;
+        const card=document.querySelector('.gauge')?.closest('.card');
+        if(card) card.insertAdjacentHTML('beforeend',`<div class="err" style="margin-top:16px"><strong>Unable to load market data</strong><div style="margin-top:8px;font-size:14px">Check connection or rebuild <code>data/fred_cache.json</code>.</div></div>`);
       }
     }
 
     process(){
       const S=this.data.raw?.series||{};
-      for(const k of this.keys){
-        const obs=S[k]?.observations||[], xs=[], ys=[];
+      const pull = (key) => {
+        const obs=S[key]?.observations||[], xs=[], ys=[];
         for(const o of obs){ const v=this.safeNum(o.value); if(v==null||!o.date) continue; xs.push(this.gbDate(o.date)); ys.push(v); }
-        this.data.series[k]={xs,ys}; this.data.latest[k]=this.last(ys);
-      }
+        return {xs,ys};
+      };
+
+      // Load series (expects these keys in fred_cache.json)
+      const t10y3m = this.data.series.T10Y3M = pull('T10Y3M');
+      const hyoas  = this.data.series.HYOAS  = pull('BAMLH0A0HYM2');  // HY OAS
+      const nfci   = this.data.series.NFCI   = pull('NFCI');
+      const icsa   = this.data.series.ICSA   = pull('ICSA');
+      const vix    = this.data.series.VIXCLS = pull('VIXCLS');
+      const dd12m  = this.data.series.DD_12M = pull('DD_12M');        // derived from SP500
+      const t10yie = this.data.series.T10YIE = pull('T10YIE');
+      const sahm   = this.data.series.SAHM   = pull('SAHMCURRENT');
+
+      // Latest raw values
+      this.data.latest.T10Y3M    = this.last(t10y3m.ys);
+      this.data.latest.HYOAS     = this.last(hyoas.ys);
+      this.data.latest.NFCI      = this.last(nfci.ys);
+      this.data.latest.ICSA_D13W = this.pctChange13w(icsa);
+      this.data.latest.T10YIE    = this.last(t10yie.ys);
+      this.data.latest.SAHM      = this.last(sahm.ys);
+
+      // Market stress = average of VIX risk and 12m drawdown risk (0–100)
+      const vixRisk = this.scalesFromVIX(this.last(vix.ys));
+      const ddRisk  = this.scalesFromDrawdown(this.last(dd12m.ys));
+      this.data.latest.MKT_STRESS = (vixRisk!=null && ddRisk!=null) ? (vixRisk + ddRisk)/2 : null;
+
+      // Composite
       let comp=0, wsum=0;
-      for(const k of this.keys){ const sv=this.scales[k](this.data.latest[k]); if(isFinite(sv)){ comp+=sv*(this.weights[k]||0); wsum+=this.weights[k]||0; } }
+      for(const k of this.keys){
+        const raw = this.data.latest[k];
+        const sv = (raw==null) ? NaN : this.scales[k](raw);
+        if(isFinite(sv)){ comp+=sv*(this.weights[k]||0); wsum+=this.weights[k]||0; }
+      }
       this.data.composite = (wsum>0)? Math.round((comp/wsum)*10)/10 : null;
     }
+
+    // Risk maps for components inside MKT_STRESS
+    scalesFromVIX(v){ if(v==null) return null; return this.clamp(this.map(v, 12, 35)); }          // 12→0, 35→100
+    scalesFromDrawdown(v){ if(v==null) return null; return this.clamp(this.map(v, 0.0, -0.25)); } // 0→0, -25%→100
 
     render(){
       this.renderGauge(); this.renderPills(); this.renderCompositeChart(); this.renderIndicatorCharts(); this.renderDiagnostics();
     }
 
     renderGauge(){
-      const c=this.data.composite, z=this.zoneOf(c||50);
+      const c=this.data.composite, z=this.zoneOf(c ?? 50);
       const badge=document.getElementById('garBadge'); badge.className='badge '+z; badge.textContent=z.toUpperCase(); badge.classList.remove('skeleton');
-      // Hide the badge label if you prefer only the needle + number:
+      // Hide text badge to keep the UI clean — needle + number is enough
       badge.style.display = 'none';
 
       const scoreEl=document.getElementById('scoreText'); scoreEl.textContent=isFinite(c)?Math.round(c):'–'; scoreEl.classList.remove('skeleton');
-
-      // Set donut needle
       this.setNeedle(c ?? 50);
 
       const ts=this.data.raw?.fetched_at_utc?new Date(this.data.raw.fetched_at_utc):null;
-      document.getElementById('freshness').textContent=ts? this.gbDate(ts)+' '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'—';
-      const ex={green:{title:'Low Risk Environment',description:'Market conditions look benign. Indicators show limited stress.'},
-                amber:{title:'Moderate Risk Environment',description:'Some stress signals are active. Monitor for further deterioration.'},
-                red:{title:'High Risk Environment',description:'Multiple stress signals. Risk of turbulence/contracting conditions is elevated.'}}[z];
-      const riskEl=document.getElementById('riskExplanation'); document.getElementById('riskTitle').textContent=ex.title; document.getElementById('riskDescription').textContent=ex.description; riskEl.style.display='block';
+      document.getElementById('freshness').textContent=ts? `${ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})} ${ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:'—';
+
+      const ex={green:{title:'Low Risk Environment',description:'Signals look benign; limited systemic stress.'},
+                amber:{title:'Moderate Risk Environment',description:'Some stress building. Monitor for deterioration.'},
+                red:{title:'High Risk Environment',description:'Multiple stress signals elevated; turbulence risk high.'}}[z];
+      const riskEl=document.getElementById('riskExplanation');
+      document.getElementById('riskTitle').textContent=ex.title;
+      document.getElementById('riskDescription').textContent=ex.description;
+      riskEl.style.display='block';
     }
 
     renderPills(){
-      const id={T10Y3M:'pill_t10y3m',CREDIT:'pill_credit',UN_SLOPE6:'pill_un',DD_12M:'pill_dd',NFCI:'pill_nfci'};
-      const label={T10Y3M:'Yield (10y–3m)',CREDIT:'Credit (BAA–AAA)',UN_SLOPE6:'Unemp Δ6m',DD_12M:'Drawdown 12m',NFCI:'NFCI'};
-      const fmt={T10Y3M:v=>v.toFixed(2),CREDIT:v=>v.toFixed(2),UN_SLOPE6:v=>v.toFixed(2),DD_12M:v=>(v*100).toFixed(1)+'%',NFCI:v=>v.toFixed(3)};
+      const id={T10Y3M:'pill_t10y3m',HYOAS:'pill_hyoas',NFCI:'pill_nfci',ICSA_D13W:'pill_icsa',MKT_STRESS:'pill_mkt',T10YIE:'pill_t10yie',SAHM:'pill_sahm'};
+      const label={T10Y3M:'Yield (10y–3m)',HYOAS:'HY OAS',NFCI:'NFCI',ICSA_D13W:'Claims Δ13w',MKT_STRESS:'Market stress',T10YIE:'10y BE',SAHM:'Sahm'};
+      const fmt={
+        T10Y3M:v=>v!=null? v.toFixed(2) : '—',
+        HYOAS:v=>v!=null? Math.round(v*100)+'bp' : '—',
+        NFCI:v=>v!=null? v.toFixed(3) : '—',
+        ICSA_D13W:v=>v!=null? (v*100).toFixed(1)+'%' : '—',
+        MKT_STRESS:v=>v!=null? Math.round(v)+'/100' : '—',
+        T10YIE:v=>v!=null? v.toFixed(2)+'%' : '—',
+        SAHM:v=>v!=null? v.toFixed(2) : '—'
+      };
       for(const k of this.keys){
         const el=document.getElementById(id[k]); if(!el) continue;
-        const v=this.data.latest[k];
-        let txt = `${label[k]}: ${v==null?'—':fmt[k](v)}`;
-        if (k==='NFCI'){
-          const d=this.delta28(this.data.series.NFCI);
-          if (d!=null){
-            const dir = d>0 ? '▲ tighter' : (d<0 ? '▼ easier' : '• flat');
-            txt += `  (${dir})`;
-          }
-        }
-        el.textContent=txt; el.classList.remove('skeleton');
+        el.textContent = `${label[k]}: ${fmt[k](this.data.latest[k])}`;
+        el.classList.remove('skeleton');
       }
     }
 
     renderCompositeChart(){
       const el=document.getElementById('compChart');
-      const minLen=Math.min(...this.keys.map(k=>this.data.series[k].ys.length||Infinity));
+      const minLen=Math.min(
+        this.data.series.T10Y3M?.ys.length||Infinity,
+        this.data.series.HYOAS?.ys.length||Infinity,
+        this.data.series.NFCI?.ys.length||Infinity,
+        this.data.series.ICSA?.ys.length||Infinity,
+        this.data.series.VIXCLS?.ys.length||Infinity,
+        this.data.series.DD_12M?.ys.length||Infinity,
+        this.data.series.T10YIE?.ys.length||Infinity,
+        this.data.series.SAHM?.ys.length||Infinity
+      );
       if(!isFinite(minLen)||minLen<3){ el.closest('.card').querySelector('.chart').innerHTML='<div class="err">Not enough overlapping history yet to draw composite chart.</div>'; return; }
-      const tail=Math.min(minLen,90), xs=this.data.series.T10Y3M.xs.slice(-tail), ys=[];
-      for(let i=-tail;i<0;i++){ let v=0; for(const k of this.keys){ v+=this.scales[k](this.data.series[k].ys.at(i))*(this.weights[k]||0); } ys.push(Math.round(v*10)/10); }
+
+      const tail=Math.min(minLen,90);
+      const xs=this.data.series.T10Y3M.xs.slice(-tail), ys=[];
+      for(let i=-tail;i<0;i++){
+        const point={
+          T10Y3M: this.scales.T10Y3M(this.data.series.T10Y3M.ys.at(i)),
+          HYOAS:  this.scales.HYOAS(this.data.series.HYOAS.ys.at(i)),
+          NFCI:   this.scales.NFCI(this.data.series.NFCI.ys.at(i)),
+          ICSA_D13W: this.scales.ICSA_D13W(this.pctChange13w({ys:this.data.series.ICSA.ys.slice(0,this.data.series.ICSA.ys.length+i)})),
+          MKT_STRESS: (()=>{
+            const vix=this.scalesFromVIX(this.data.series.VIXCLS.ys.at(i));
+            const dd =this.scalesFromDrawdown(this.data.series.DD_12M.ys.at(i));
+            if(vix==null||dd==null) return null;
+            return (vix+dd)/2;
+          })(),
+          T10YIE: this.scales.T10YIE(this.data.series.T10YIE.ys.at(i)),
+          SAHM:   this.scales.SAHM(this.data.series.SAHM.ys.at(i))
+        };
+        let v=0,w=0;
+        for(const k of this.keys){ const sv=point[k]; if(sv!=null && isFinite(sv)){ v+=sv*(this.weights[k]||0); w+=this.weights[k]||0; } }
+        ys.push(w>0? Math.round((v/w)*10)/10 : null);
+      }
+
       this.makeChart(el,{
         type:'line',
         data:{ labels:xs, datasets:[{ data:ys, borderColor:'#7da6ff', backgroundColor:'transparent', fill:false, tension:.4 }]},
@@ -269,20 +344,48 @@
 
     renderIndicatorCharts(){
       const cfgs=[
-        {k:'T10Y3M', title:'Yield Curve (10y–3m)', desc:'<b>More negative = worse</b>. Inversions (below zero) often precede recessions and major drawdowns.', color:'#6bb9ff', zero:true},
-        {k:'CREDIT', title:'Credit Spread (BAA–AAA)', desc:'<b>Wider = worse</b>. Rising lower-grade vs top-tier borrowing costs signal stress in corporate credit.', color:'#ffb36b', zero:false},
-        {k:'UN_SLOPE6', title:'Unemployment 6-month slope', desc:'<b>Rising = worse</b>. Early labour-market deterioration is a classic late-cycle signal.', color:'#ffa0b5', zero:true},
-        {k:'DD_12M', title:'12-month Drawdown (S&P vs 1-yr peak)', desc:'<b>More negative = worse</b>. Captures market-price stress, complementing macro/credit indicators.', color:'#a6c7ff', zero:true},
-        {k:'NFCI', title:'Chicago Fed NFCI', desc:'<b>Higher = tighter/worse</b>. Summarises overall financial conditions (rates, credit, funding, volatility).', color:'#9bd3c1', zero:true}
+        {k:'T10Y3M', title:'Yield Curve (10y–3m)', desc:'<b>More negative = worse</b>. Inversions often precede recessions.', color:'#6bb9ff', zero:true},
+        {k:'HYOAS',  title:'High Yield OAS (bps)', desc:'<b>Wider = worse</b>. Fast, contemporaneous credit stress.', color:'#ffb36b', zero:false,
+          buildSeries:()=>({xs:this.data.series.HYOAS.xs, ys:this.data.series.HYOAS.ys.map(v=>v!=null? v*100 : v)})},
+        {k:'NFCI',   title:'Chicago Fed NFCI', desc:'<b>Higher = tighter/worse</b>. Financial conditions composite.', color:'#9bd3c1', zero:true},
+        {k:'ICSA_D13W', title:'Initial Claims (13-week % change)', desc:'<b>Higher = worse</b>. Early labour-market deterioration.', color:'#ffa0b5', zero:true,
+          buildSeries:()=>{
+            const s=this.data.series.ICSA, xs=[], ys=[];
+            for(let i=13;i<s.ys.length;i++){
+              const prior=s.ys[i-13], cur=s.ys[i];
+              if(prior!=null && cur!=null && prior!==0){ xs.push(s.xs[i]); ys.push((cur-prior)/prior); }
+            }
+            return {xs, ys};
+          },
+          fmt:(v)=> (v!=null? (v*100).toFixed(1)+'%' : '—')
+        },
+        {k:'MKT_STRESS', title:'Market Stress (VIX + 12m Drawdown)', desc:'Average of VIX-risk and SPX drawdown-risk (0–100).', color:'#a6c7ff', zero:false,
+          buildSeries:()=>{
+            const n=Math.min(this.data.series.VIXCLS.ys.length, this.data.series.DD_12M.ys.length);
+            const xs=this.data.series.VIXCLS.xs.slice(-n), ys=[];
+            for(let i=0;i<n;i++){
+              const vix=this.scalesFromVIX(this.data.series.VIXCLS.ys[i]);
+              const dd =this.scalesFromDrawdown(this.data.series.DD_12M.ys[i]);
+              ys.push( (vix!=null && dd!=null)? (vix+dd)/2 : null );
+            }
+            return {xs, ys};
+          }
+        },
+        {k:'T10YIE', title:'10y Breakeven Inflation (%)', desc:'Inflation expectations context; higher can imply tighter policy risk.', color:'#c6b5ff', zero:false},
+        {k:'SAHM', title:'Sahm Rule (current)', desc:'Recession confirmation; kept at low weight to avoid whipsaw.', color:'#e7c676', zero:false}
       ];
-      const host=document.getElementById('charts');
+
+      const host=document.getElementById('charts'); host.innerHTML='';
       for(const c of cfgs){
         const sec=document.createElement('section'); sec.className='card'; sec.setAttribute('aria-labelledby','chart-'+c.k);
         sec.innerHTML=`<h3 id="chart-${c.k}" style="margin:0 0 8px">${c.title}</h3>
           <div class="chart"><canvas id="c_${c.k}" aria-label="${c.title} over time"></canvas></div>
           <div class="callout">${c.desc}</div>`;
         host.appendChild(sec);
-        const s=this.data.series[c.k]; if(!s.ys.length){ sec.querySelector('.chart').innerHTML=`<div class="err">No data available for ${c.title}</div>`; continue; }
+
+        const s = c.buildSeries ? c.buildSeries() : (this.data.series[c.k] || {xs:[],ys:[]});
+        if(!s.ys?.length){ sec.querySelector('.chart').innerHTML=`<div class="err">No data available for ${c.title}</div>`; continue; }
+
         this.makeChart(document.getElementById('c_'+c.k),{
           type:'line',
           data:{ labels:s.xs.slice(-90), datasets:[{ data:s.ys.slice(-90), borderColor:c.color, backgroundColor:'transparent', fill:false, tension:.4 }]},
@@ -308,9 +411,7 @@
               callback:function(value,index,ticks){
                 const raw = ticks?.[index]?.label ?? '';
                 const d = new Date(raw);
-                if(!isNaN(d)) return d.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}).replace(' ', " ’");
-                const parts = String(raw).split(' ');
-                if(parts.length>=3) return `${parts[1].slice(0,3)} ’${parts[2].slice(-2)}`;
+                if(!isNaN(d)) return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); // dd-Mon
                 return raw;
               }
             }
@@ -337,12 +438,22 @@
       const out={
         fetched_at_utc:this.data.raw?.fetched_at_utc||null,
         latest_values:Object.fromEntries(this.keys.map(k=>[k,this.data.latest[k]])),
-        sample_sizes:Object.fromEntries(this.keys.map(k=>[k,this.data.series[k].ys.length])),
+        sample_sizes:{
+          T10Y3M:this.data.series.T10Y3M?.ys.length||0,
+          HYOAS:this.data.series.HYOAS?.ys.length||0,
+          NFCI:this.data.series.NFCI?.ys.length||0,
+          ICSA:this.data.series.ICSA?.ys.length||0,
+          VIXCLS:this.data.series.VIXCLS?.ys.length||0,
+          DD_12M:this.data.series.DD_12M?.ys.length||0,
+          T10YIE:this.data.series.T10YIE?.ys.length||0,
+          SAHM:this.data.series.SAHM?.ys.length||0
+        },
         composite:this.data.composite,
         calculation_timestamp:new Date().toISOString()
       };
-      diag.textContent=JSON.stringify(out,null,2);
-      document.getElementById('update-time').textContent=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+      if(diag) diag.textContent=JSON.stringify(out,null,2);
+      const ut=document.getElementById('update-time');
+      if(ut) ut.textContent=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     }
 
     destroy(){ this.charts.forEach(c=>c.destroy()); this.charts.clear(); }
