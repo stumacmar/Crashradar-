@@ -12,52 +12,82 @@
   <style>
     :root{
       --bg:#0f1421; --panel:#161c2e; --muted:#9aa6bf; --text:#e8eeff; --accent:#7da6ff;
-      --green:#1ec28b; --amber:#ffc247; --red:#ff6070; --radius:16px; --t:all .2s ease;
-      --ring-size: 180px; --ring-size-mobile: 140px;
+      --green:#1ec28b; --amber:#FFB000; --red:#ff6070; --radius:16px; --t:all .2s ease;
+      --ring-size:180px; --ring-size-mobile:140px;
+
+      /* Type scale */
+      --fs-display:clamp(28px,5.5vw,44px);
+      --fs-headline:32px; --lh-headline:1.2;
+      --fs-title:20px; --lh-title:1.3;
+      --fs-body:16px; --lh-body:1.5;
+      --fs-label:12px; --lh-label:1.35;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial}
+    html,body{margin:0;background:var(--bg);color:var(--text);font:var(--fs-body)/var(--lh-body) system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial}
+    h1{font-size:var(--fs-display);line-height:1.1;margin:0 0 8px}
+    h2{font-size:var(--fs-headline);line-height:var(--lh-headline);margin:0 0 6px}
+    h3{font-size:var(--fs-title);line-height:var(--lh-title);margin:0 0 8px}
+    .sub{color:var(--muted);margin:6px 0 18px;font-size:var(--fs-label);line-height:var(--lh-label)}
+    .ok{color:var(--green)} .warn{color:var(--amber)} .bad{color:var(--red)}
     :focus{outline:2px solid var(--accent);outline-offset:2px}
     :focus:not(:focus-visible){outline:none}
     .wrap{max-width:980px;margin:0 auto;padding:20px 16px 64px}
-    h1{font-size:clamp(28px,5.5vw,44px);line-height:1.1;margin:0 0 8px}
-    .sub{color:var(--muted);margin:6px 0 18px;font-size:14px}
-    .ok{color:var(--green)} .warn{color:var(--amber)} .bad{color:var(--red)}
-    .card{background:var(--panel);border-radius:var(--radius);padding:20px;margin:16px 0;box-shadow:0 0 0 1px rgba(255,255,255,.03) inset;transition:var(--t)}
+
+    .card{background:var(--panel);border-radius:var(--radius);padding:20px;margin:16px 0;
+      box-shadow:0 0 0 1px rgba(255,255,255,.03) inset;transition:var(--t)}
     .card:hover{box-shadow:0 0 0 1px rgba(125,166,255,.1) inset}
-    .pill{display:inline-flex;align-items:center;background:#13192a;border:1px solid #1f2740;color:var(--text);padding:8px 12px;border-radius:999px;font-weight:600;margin:6px 8px 0 0;transition:var(--t);cursor:help}
+
+    .pill{display:inline-flex;align-items:center;background:#13192a;border:1px solid #1f2740;
+      color:var(--text);padding:8px 12px;border-radius:999px;font-weight:600;margin:6px 8px 0 0;
+      transition:var(--t);cursor:help;font-size:14px}
     .pill:hover{border-color:var(--accent);transform:translateY(-1px)}
-    .meta{color:var(--muted);font-size:13px}
+
+    .meta{color:var(--muted);font-size:var(--fs-label);line-height:var(--lh-label)}
     .gauge{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
     .ringwrap{position:relative;width:var(--ring-size);height:var(--ring-size);flex-shrink:0}
     .ring{position:absolute;inset:0;border-radius:50%;isolation:isolate;z-index:0;
       background:conic-gradient(var(--green) 0deg 120deg, var(--amber) 120deg 216deg, var(--red) 216deg 360deg)}
     .ring::after{content:"";position:absolute;inset:20px;border-radius:50%;background:var(--panel);z-index:0}
     .score{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-size:40px;z-index:2}
+    .statusstrip{margin-top:6px}
+
     .badge{display:inline-flex;align-items:center;padding:6px 12px;border-radius:10px;font-weight:800;letter-spacing:.4px;margin-left:12px}
-    .badge.green{background:rgba(30,194,139,.15);color:var(--green);border:1px solid rgba(30,194,139,.35)}
-    .badge.amber{background:rgba(255,194,71,.15);color:var(--amber);border:1px solid rgba(255,194,71,.35)}
-    .badge.red{background:rgba(255,96,112,.17);color:var(--red);border:1px solid rgba(255,96,112,.35)}
+    .badge.green{background:#0E2D25;color:var(--green);border:1px solid var(--green)}
+    .badge.amber{background:#2E2410;color:var(--amber);border:1px solid var(--amber)}
+    .badge.red{background:#321018;color:var(--red);border:1px solid var(--red)}
+
     .callout{font-size:14px;color:var(--muted);line-height:1.4}
     .chart{position:relative;height:300px}
     canvas{width:100%!important;height:100%!important}
+
     .foot{margin-top:24px}
     .err{background:#2b1620;color:#ffdbe0;border:1px solid #57313f;padding:12px;border-radius:10px}
-    .skeleton{background:linear-gradient(90deg, #161c2e 25%, #1a2238 50%, #161c2e 75%);background-size:200% 100%;animation:loading 1.5s infinite}
+
+    .skeleton{background:linear-gradient(90deg, #161c2e 25%, #1a2238 50%, #161c2e 75%);
+      background-size:200% 100%;animation:loading 1.5s infinite;color:transparent!important}
     @keyframes loading{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
     .tooltip{position:relative;cursor:help;border-bottom:1px dotted var(--muted)}
-    .tooltip:hover::after{content:attr(data-tooltip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:white;padding:8px 12px;border-radius:6px;font-size:12px;white-space:nowrap;z-index:1000}
+    .tooltip:hover::after{content:attr(data-tooltip);position:absolute;bottom:100%;left:50%;
+      transform:translateX(-50%);background:rgba(0,0,0,.9);color:#fff;padding:8px 12px;border-radius:6px;
+      font-size:12px;white-space:nowrap;z-index:1000}
+
     .risk-explanation{margin-top:12px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid var(--accent)}
 
     /* Donut needle */
     .needle { position:absolute; inset:0; pointer-events:none; z-index:1; }
     .needle::after{
-      content:"";
-      width:8px; height:8px; border-radius:50%;
+      content:""; width:8px; height:8px; border-radius:50%;
       background:#7da6ff; box-shadow:0 0 0 3px rgba(125,166,255,.25);
       transform: rotate(var(--angle,0deg)) translateY(calc(-1 * (var(--ring-size)/2 - 10px)));
-      transform-origin: center center;
-      display:block; margin:auto;
+      transform-origin: center center; display:block; margin:auto;
+    }
+
+    /* Accessibility helpers */
+    .visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+      clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    @media (prefers-reduced-motion: reduce){
+      *{animation:none!important;transition:none!important}
     }
 
     @media (max-width:768px){
@@ -84,34 +114,40 @@
           <div class="ringwrap" aria-hidden="true">
             <div class="ring"></div>
             <div id="needle" class="needle"></div>
-            <div id="scoreText" class="score">–</div>
+            <div id="scoreText" class="score" aria-describedby="scoreHelp">–</div>
           </div>
           <div>
-            <h2 id="composite-heading" style="margin:0 0 6px;font-size:26px">
-              Composite Score <span id="garBadge" class="badge">—</span>
+            <h2 id="composite-heading">Composite Score
+              <span id="garBadge" class="badge" aria-live="polite">—</span>
             </h2>
+            <p id="scoreHelp" class="visually-hidden">
+              Lower scores indicate safer conditions. Green ≤ 30, Amber ≤ 60, Red greater than 60.
+            </p>
             <div class="callout">
               Lower scores indicate safer conditions.
-              Risk thresholds: <b class="ok">Green ≤ 30</b>, <b class="warn">Amber ≤ 60</b>, <b class="bad">Red &gt; 60</b>.
+              Thresholds: <b class="ok">Green ≤ 30</b>, <b class="warn">Amber ≤ 60</b>, <b class="bad">Red &gt; 60</b>.
             </div>
             <div class="meta" id="freshness" style="margin-top:8px">—</div>
+            <div id="statusStrip" class="meta statusstrip" aria-live="polite">—</div>
+
             <div id="riskExplanation" class="risk-explanation" style="display:none">
               <strong id="riskTitle">Risk Assessment</strong>
               <div id="riskDescription" class="meta" style="margin-top:4px"></div>
             </div>
-            <div style="margin-top:16px" role="list">
-              <span class="pill" id="pill_t10y3m" role="listitem" data-tooltip="10-year minus 3-month Treasury yield spread">Yield (10y–3m): —</span>
-              <span class="pill" id="pill_credit" role="listitem" data-tooltip="BAA corporate bond yield minus AAA yield">Credit (BAA–AAA): —</span>
-              <span class="pill" id="pill_un" role="listitem" data-tooltip="6-month change in unemployment rate">Unemp Δ6m: —</span>
-              <span class="pill" id="pill_dd" role="listitem" data-tooltip="S&P 500 drawdown from 12-month high">Drawdown 12m: —</span>
-              <span class="pill" id="pill_nfci" role="listitem" data-tooltip="National Financial Conditions Index">NFCI: —</span>
+
+            <div style="margin-top:16px" role="list" aria-label="Key drivers">
+              <span class="pill" id="pill_t10y3m" role="listitem" data-tooltip="10-year minus 3-month Treasury yield spread">Yield curve (10y–3m): —</span>
+              <span class="pill" id="pill_credit" role="listitem" data-tooltip="BAA corporate bond yield minus AAA yield">Credit spread (BAA–AAA): —</span>
+              <span class="pill" id="pill_un" role="listitem" data-tooltip="6-month change in unemployment rate">Unemployment (6-month change): —</span>
+              <span class="pill" id="pill_dd" role="listitem" data-tooltip="S&P 500 drawdown from prior 12-month high">S&P drawdown (12-month): —</span>
+              <span class="pill" id="pill_nfci" role="listitem" data-tooltip="Chicago Fed National Financial Conditions Index">NFCI: —</span>
             </div>
           </div>
         </div>
       </section>
 
       <section aria-labelledby="composite-chart-heading" class="card">
-        <h3 id="composite-chart-heading" style="margin:0 0 8px">Composite Risk History (normalised 0–100)</h3>
+        <h3 id="composite-chart-heading">Composite Risk History (normalised 0–100)</h3>
         <div class="meta">Legend: <span class="ok">●</span> Green &nbsp; <span class="warn">●</span> Amber &nbsp; <span class="bad">●</span> Red</div>
         <div class="chart"><canvas id="compChart" aria-label="Composite risk score over time"></canvas></div>
         <div class="callout">Composite (30-day rolling average). Smoothed view of overall risk using recent readings.</div>
@@ -138,11 +174,11 @@
     constructor(){
       this.keys = ['T10Y3M','CREDIT','UN_SLOPE6','DD_12M','NFCI'];
       this.scales = {
-        T10Y3M: v => this.clamp(this.map(v, 1.0, -2.0)),
-        CREDIT: v => this.clamp(this.map(v, 0.3, 1.0)),
-        UN_SLOPE6: v => this.clamp(this.map(v, 0.0, 0.6)),
-        DD_12M: v => this.clamp(this.map(v, 0.0, -0.30)),
-        NFCI: v => this.clamp(this.map(v, -0.8, 1.0)),
+        T10Y3M: v => this.clamp(this.map(v, 1.0, -2.0)),   // higher spread = safer
+        CREDIT: v => this.clamp(this.map(v, 0.3, 1.0)),    // wider = worse
+        UN_SLOPE6: v => this.clamp(this.map(v, 0.0, 0.6)), // rising = worse
+        DD_12M: v => this.clamp(this.map(v, 0.0, -0.30)),  // more negative = worse
+        NFCI: v => this.clamp(this.map(v, -0.8, 1.0))      // higher = tighter/worse
       };
       this.weights = {T10Y3M:0.25, CREDIT:0.25, UN_SLOPE6:0.20, DD_12M:0.20, NFCI:0.10};
       this.data = {raw:null, series:{}, latest:{}, composite:null};
@@ -158,12 +194,10 @@
     clamp(x){ return Math.max(0, Math.min(100,x)); }
     map(val, good, bad){ if(val==null) return 50; const denom=bad-good; if(Math.abs(denom)<1e-10) return 50; return ((val-good)/denom)*100; }
     zoneOf(s){ return s<=30?'green':(s<=60?'amber':'red'); }
-
-    // Needle helpers
     scoreToAngle(s){ return (Math.max(0,Math.min(100,s))/100)*360; }
     setNeedle(score){ const n=document.getElementById('needle'); if(n) n.style.setProperty('--angle', this.scoreToAngle(score)+'deg'); }
 
-    // 4-week (≈20 trading days) delta for NFCI (direction: higher=tighter)
+    // 4-week delta for NFCI (higher = tighter)
     delta28(series){
       const ys = series?.ys || [];
       if (ys.length < 21) return null;
@@ -185,7 +219,7 @@
         this.setStatus(e.name==='AbortError'?'Request timeout — please try again':'Failed to load data','bad');
         document.getElementById('diag').textContent='Load error: '+e.message;
         const card=document.querySelector('.gauge').closest('.card');
-        card.insertAdjacentHTML('beforeend',`<div class="err" style="margin-top:16px"><strong>Unable to load market data</strong><div style="margin-top:8px;font-size:14px">Check connection or run the workflow to build <code>data/fred_cache.json</code>.</div></div>`);
+        card.insertAdjacentHTML('beforeend',`<div class="err" style="margin-top:16px"><strong>Unable to load market data</strong><div style="margin-top:8px;font-size:14px">Check connection or build <code>data/fred_cache.json</code>.</div></div>`);
       }
     }
 
@@ -202,22 +236,62 @@
     }
 
     render(){
-      this.renderGauge(); this.renderPills(); this.renderCompositeChart(); this.renderIndicatorCharts(); this.renderDiagnostics();
+      this.renderGauge();
+      this.renderPills();
+      this.renderCompositeChart();
+
+      // Lazy-render the heavier indicator charts when near viewport
+      const host = document.getElementById('charts');
+      const io = new IntersectionObserver((entries, obs)=>{
+        entries.forEach(e=>{
+          if(e.isIntersecting){ this.renderIndicatorCharts(); obs.disconnect(); }
+        });
+      },{rootMargin:'200px'});
+      io.observe(host);
+
+      this.renderDiagnostics();
+    }
+
+    deltaDay(){
+      // composite yesterday using -1 offset on each series (if available)
+      let compY=0, wsum=0;
+      for(const k of this.keys){
+        const arr=this.data.series[k]?.ys||[];
+        if(arr.length<2) continue;
+        const y = arr[arr.length-2];
+        if(y!=null){ compY += this.scales[k](y)*(this.weights[k]||0); wsum += (this.weights[k]||0); }
+      }
+      return (wsum>0) ? (Math.round((this.data.composite - compY)*10)/10) : null;
     }
 
     renderGauge(){
-      const c=this.data.composite, z=this.zoneOf(c||50);
-      const badge=document.getElementById('garBadge'); badge.className='badge '+z; badge.textContent=z.toUpperCase(); badge.classList.remove('skeleton');
-      // Hide the badge label if you prefer only the needle + number:
-      badge.style.display = 'none';
+      const c=this.data.composite ?? 50;
+      const z=this.zoneOf(c);
+      const badge=document.getElementById('garBadge'); badge.className='badge '+z; badge.textContent=z[0].toUpperCase()+z.slice(1); badge.classList.remove('skeleton');
 
       const scoreEl=document.getElementById('scoreText'); scoreEl.textContent=isFinite(c)?Math.round(c):'–'; scoreEl.classList.remove('skeleton');
-
-      // Set donut needle
-      this.setNeedle(c ?? 50);
+      this.setNeedle(c);
 
       const ts=this.data.raw?.fetched_at_utc?new Date(this.data.raw.fetched_at_utc):null;
       document.getElementById('freshness').textContent=ts? this.gbDate(ts)+' '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'—';
+
+      // Drivers (direction and badness)
+      const drivers = this.keys.map(k=>{
+        const arr=this.data.series[k].ys; if(arr.length<2) return null;
+        const d = arr.at(-1) - arr.at(-2);
+        const arrow = d>0 ? '▲' : (d<0?'▼':'•');
+        const name = ({T10Y3M:'Yield curve',CREDIT:'Credit',UN_SLOPE6:'Unemp',DD_12M:'Drawdown',NFCI:'NFCI'})[k];
+        // whether up is worse
+        const upIsWorse = (k==='CREDIT'||k==='UN_SLOPE6'||k==='NFCI');
+        const worse = (upIsWorse? d>0 : d<0) ? ' worse' : '';
+        return `${name} ${arrow}${worse}`;
+      }).filter(Boolean).slice(0,3).join(', ');
+
+      const dd = this.deltaDay();
+      const tstamp = document.getElementById('freshness').textContent?.split(' ').slice(-1) || '';
+      document.getElementById('statusStrip').textContent =
+        `${Math.round(c)} • ${badge.textContent} • Updated ${tstamp} • Drivers: ${drivers}${dd==null?'':` • Δd/d ${dd>0?`▲+${dd}`:`▼${dd}`}`}`;
+
       const ex={green:{title:'Low Risk Environment',description:'Market conditions look benign. Indicators show limited stress.'},
                 amber:{title:'Moderate Risk Environment',description:'Some stress signals are active. Monitor for further deterioration.'},
                 red:{title:'High Risk Environment',description:'Multiple stress signals. Risk of turbulence/contracting conditions is elevated.'}}[z];
@@ -226,8 +300,8 @@
 
     renderPills(){
       const id={T10Y3M:'pill_t10y3m',CREDIT:'pill_credit',UN_SLOPE6:'pill_un',DD_12M:'pill_dd',NFCI:'pill_nfci'};
-      const label={T10Y3M:'Yield (10y–3m)',CREDIT:'Credit (BAA–AAA)',UN_SLOPE6:'Unemp Δ6m',DD_12M:'Drawdown 12m',NFCI:'NFCI'};
       const fmt={T10Y3M:v=>v.toFixed(2),CREDIT:v=>v.toFixed(2),UN_SLOPE6:v=>v.toFixed(2),DD_12M:v=>(v*100).toFixed(1)+'%',NFCI:v=>v.toFixed(3)};
+      const label={T10Y3M:'Yield curve (10y–3m)',CREDIT:'Credit spread (BAA–AAA)',UN_SLOPE6:'Unemployment (6-month change)',DD_12M:'S&P drawdown (12-month)',NFCI:'NFCI'};
       for(const k of this.keys){
         const el=document.getElementById(id[k]); if(!el) continue;
         const v=this.data.latest[k];
@@ -235,11 +309,14 @@
         if (k==='NFCI'){
           const d=this.delta28(this.data.series.NFCI);
           if (d!=null){
-            const dir = d>0 ? '▲ tighter' : (d<0 ? '▼ easier' : '• flat');
-            txt += `  (${dir})`;
+            const dir = d>0 ? '▲ tighter/worse' : (d<0 ? '▼ easier' : '• flat');
+            txt += ` (${dir})`;
           }
         }
         el.textContent=txt; el.classList.remove('skeleton');
+        // augment tooltip with source id + last date
+        const lastDate = this.data.series[k].xs.at(-1) || '';
+        el.setAttribute('data-tooltip', `${el.getAttribute('data-tooltip')} • Last: ${lastDate} • Source: FRED ${k}`);
       }
     }
 
@@ -259,7 +336,7 @@
             annotation:{
               annotations:{
                 green:{ type:'line', yMin:30, yMax:30, borderColor:'rgba(30,194,139,.6)', borderDash:[6,4], borderWidth:1 },
-                amber:{ type:'line', yMin:60, yMax:60, borderColor:'rgba(255,194,71,.7)', borderDash:[6,4], borderWidth:1 }
+                amber:{ type:'line', yMin:60, yMax:60, borderColor:'rgba(255,176,0,.8)', borderDash:[6,4], borderWidth:1 }
               }
             }
           }
@@ -269,16 +346,19 @@
 
     renderIndicatorCharts(){
       const cfgs=[
-        {k:'T10Y3M', title:'Yield Curve (10y–3m)', desc:'<b>More negative = worse</b>. Inversions (below zero) often precede recessions and major drawdowns.', color:'#6bb9ff', zero:true},
-        {k:'CREDIT', title:'Credit Spread (BAA–AAA)', desc:'<b>Wider = worse</b>. Rising lower-grade vs top-tier borrowing costs signal stress in corporate credit.', color:'#ffb36b', zero:false},
-        {k:'UN_SLOPE6', title:'Unemployment 6-month slope', desc:'<b>Rising = worse</b>. Early labour-market deterioration is a classic late-cycle signal.', color:'#ffa0b5', zero:true},
-        {k:'DD_12M', title:'12-month Drawdown (S&P vs 1-yr peak)', desc:'<b>More negative = worse</b>. Captures market-price stress, complementing macro/credit indicators.', color:'#a6c7ff', zero:true},
-        {k:'NFCI', title:'Chicago Fed NFCI', desc:'<b>Higher = tighter/worse</b>. Summarises overall financial conditions (rates, credit, funding, volatility).', color:'#9bd3c1', zero:true}
+        {k:'T10Y3M', title:'Yield Curve (10y–3m)', desc:'<b>More negative = worse</b>. Inversions (below zero) often precede recessions and major drawdowns.', color:'#6bb9ff', zero:true, fmt:(v)=>v.toFixed(2)},
+        {k:'CREDIT', title:'Credit Spread (BAA–AAA)', desc:'<b>Wider = worse</b>. Rising lower-grade vs top-tier borrowing costs signal stress in corporate credit.', color:'#ffb36b', zero:false, fmt:(v)=>v.toFixed(2)},
+        {k:'UN_SLOPE6', title:'Unemployment — 6-month change', desc:'<b>Rising = worse</b>. Early labour-market deterioration is a classic late-cycle signal.', color:'#ffa0b5', zero:true, fmt:(v)=>v.toFixed(2)},
+        {k:'DD_12M', title:'12-month Drawdown (S&P vs 1-yr peak)', desc:'<b>More negative = worse</b>. Captures market-price stress, complementing macro/credit indicators.', color:'#a6c7ff', zero:true, fmt:(v)=>(v*100).toFixed(1)+'%'},
+        {k:'NFCI', title:'Chicago Fed NFCI', desc:'<b>Higher = tighter/worse</b>. Summarises overall financial conditions (rates, credit, funding, volatility).', color:'#9bd3c1', zero:true, fmt:(v)=>v.toFixed(3)}
       ];
       const host=document.getElementById('charts');
       for(const c of cfgs){
         const sec=document.createElement('section'); sec.className='card'; sec.setAttribute('aria-labelledby','chart-'+c.k);
+        const latestVal = this.data.latest[c.k];
+        const latestTxt = latestVal==null?'—':c.fmt(latestVal);
         sec.innerHTML=`<h3 id="chart-${c.k}" style="margin:0 0 8px">${c.title}</h3>
+          <div class="meta" style="margin-bottom:6px">Last: ${latestTxt} • Date: ${this.data.series[c.k].xs.at(-1) || '—'} • Source: FRED ${c.k}</div>
           <div class="chart"><canvas id="c_${c.k}" aria-label="${c.title} over time"></canvas></div>
           <div class="callout">${c.desc}</div>`;
         host.appendChild(sec);
@@ -336,16 +416,14 @@
       const diag=document.getElementById('diag');
       const out={
         fetched_at_utc:this.data.raw?.fetched_at_utc||null,
-        latest_values:Object.fromEntries(this.keys.map(k=>[k,this.data.latest[k]])),
-        sample_sizes:Object.fromEntries(this.keys.map(k=>[k,this.data.series[k].ys.length])),
+        latest_values:Object.fromEntries(this.keys.map(k=>[k:this.data.latest[k]])),
+        sample_sizes:Object.fromEntries(this.keys.map(k=>[k:this.data.series[k].ys.length])),
         composite:this.data.composite,
         calculation_timestamp:new Date().toISOString()
       };
       diag.textContent=JSON.stringify(out,null,2);
       document.getElementById('update-time').textContent=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     }
-
-    destroy(){ this.charts.forEach(c=>c.destroy()); this.charts.clear(); }
   }
 
   if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',()=>new CrashRadar()); } else { new CrashRadar(); }
