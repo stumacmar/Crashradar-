@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="CrashRadar — Composite Crash Risk with Sahm Rule (live FRED cache, freshness, episodes, per-indicator charts)." />
+  <meta name="description" content="CrashRadar — Composite Crash Risk (live FRED cache, Sahm Rule, freshness, episodes, per-indicator charts)." />
   <title>CrashRadar — Composite Crash Risk</title>
+
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <style>
     :root{
@@ -17,7 +18,6 @@
     h1{font-size:clamp(28px,5.5vw,44px);line-height:1.1;margin:0 0 8px}
     .sub{color:var(--muted);margin:6px 0 18px;font-size:14px}
     .card{background:var(--panel);border-radius:var(--radius);padding:20px;margin:16px 0;box-shadow:0 0 0 1px rgba(255,255,255,.05) inset}
-    .alert{background:#2b1620;color:#ffdbe0;border:1px solid #57313f;padding:12px;border-radius:10px;margin-top:8px}
     /* Gauge */
     .gauge{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
     .ringwrap{position:relative;width:var(--ring);height:var(--ring)}
@@ -53,7 +53,6 @@
     <header>
       <h1>CrashRadar — Composite Crash Risk</h1>
       <div id="status" class="sub" aria-live="polite">Loading market data…</div>
-      <div id="hardError" class="alert" style="display:none"></div>
     </header>
 
     <main>
@@ -113,19 +112,20 @@
 
   <script>
   // ====================== MODEL (Sahm replaces employment slope) ======================
-  // REQUIRED inputs (Sahm is mandatory; if missing, we stop with a clear error)
+  // Existing set was: T10Y3M, CREDIT, UN_SLOPE6, DD_12M, NFCI
+  // New set swaps UN_SLOPE6 -> SAHMCURRENT
   const KEYS = ['T10Y3M','CREDIT','SAHMCURRENT','DD_12M','NFCI'];
 
-  // 0–100 risk mappings (good -> bad). Sahm ≥0.50 = very bad.
+  // 0–100 risk mappings (good -> bad). Sahm ≥0.50 ~ recession trigger (bad).
   const SCALE = {
     T10Y3M:     v => clamp(map01(v,  1.0, -2.0)),   // ↓ worse
     CREDIT:     v => clamp(map01(v,  0.30, 1.00)),  // ↑ worse
-    SAHMCURRENT:v => clamp(map01(v,  0.10, 0.50)),  // ↑ worse
+    SAHMCURRENT:v => clamp(map01(v,  0.10, 0.50)),  // ↑ worse (0.5 threshold)
     DD_12M:     v => clamp(map01(v,  0.00, -0.20)), // ↓ worse
-    NFCI:       v => clamp(map01(v, -0.80, 0.40))   // ↑ worse
+    NFCI:       v => clamp(map01(v, -0.80, 0.40))   // ↑ worse (>0 tighter)
   };
 
-  // Weights (sum=1). Labour (Sahm) equals original employment weight.
+  // Weights: keep total=1; Sahm gets similar weight to the prior labour signal
   const W = { T10Y3M:0.26, CREDIT:0.18, SAHMCURRENT:0.16, DD_12M:0.25, NFCI:0.15 };
 
   // Freshness penalties & cadences
@@ -138,7 +138,7 @@
     return 0.70;
   }
 
-  // Delta boosts for fast movers (Sahm is slow → no boost)
+  // Delta boosts for fast movers (unchanged; Sahm is slow so no boost)
   const DELTA_RULES = {
     NFCI:  { lookbackDays:28, th:+0.15, add:+4 },
     DD_12M:{ lookbackDays:14, th:-0.05, add:+3 },
@@ -180,26 +180,14 @@
         const res = await fetch('data/fred_cache.json',{cache:'no-cache',signal:ctl.signal}); clearTimeout(t);
         if(!res.ok) throw new Error(`HTTP ${res.status}`);
         this.raw = await res.json();
+        this.setStatus('Ready');
       }catch(e){
-        this.hardFail('Failed to load data', [e.message]);
+        this.setStatus('Failed to load data');
+        document.getElementById('diag').textContent = 'Load error: '+e.message;
         return;
       }
-
-      // Schema / presence check
-      const missing = [];
-      for(const k of KEYS){ if(!this.raw?.series?.[k]?.observations?.length) missing.push(k); }
-      if(missing.length){ this.hardFail('Missing required series in fred_cache.json', missing); return; }
-
-      this.setStatus('Ready');
       this.process();
       this.renderAll();
-    },
-
-    hardFail(title, items){
-      document.getElementById('status').textContent='Error';
-      const box=document.getElementById('hardError');
-      box.style.display='block';
-      box.innerHTML = `<strong>${title}</strong><br>Missing/Issue: ${items.map(x=>`<code>${x}</code>`).join(', ')}`;
     },
 
     setStatus(msg){ const el=document.getElementById('status'); if(el) el.textContent=msg; },
