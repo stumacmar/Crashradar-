@@ -3,352 +3,498 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="CrashRadar monitors financial market crash risk using multiple economic indicators including yield curve, credit spreads, unemployment, and market drawdowns." />
-  <title>CrashRadar — Composite Crash Risk Dashboard</title>
+  <meta name="description" content="CrashRadar — 7-signal composite crash-risk dashboard (fast, reproducible, FRED-hosted series with clear mappings and weights)." />
+  <title>CrashRadar — Composite Crash Risk</title>
 
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-
   <style>
     :root{
       --bg:#0f1421; --panel:#161c2e; --muted:#9aa6bf; --text:#e8eeff; --accent:#7da6ff;
-      --green:#1ec28b; --amber:#ffc247; --red:#ff6070; --radius:16px; --t:all .2s ease;
-      --ring-size: 180px; --ring-size-mobile: 140px;
+      --green:#1ec28b; --amber:#ffc247; --red:#ff6070; --radius:16px;
+      --ring:180px; --ring-m:140px;
     }
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial}
-    :focus{outline:2px solid var(--accent);outline-offset:2px}
-    :focus:not(:focus-visible){outline:none}
     .wrap{max-width:980px;margin:0 auto;padding:20px 16px 64px}
-    h1{font-size:clamp(28px,5.5vw,44px);line-height:1.1;margin:0 0 8px}
+    h1{margin:0 0 8px;font-size:clamp(28px,5.5vw,44px);line-height:1.1}
     .sub{color:var(--muted);margin:6px 0 18px;font-size:14px}
-    .ok{color:var(--green)} .warn{color:var(--amber)} .bad{color:var(--red)}
-    .card{background:var(--panel);border-radius:var(--radius);padding:20px;margin:16px 0;box-shadow:0 0 0 1px rgba(255,255,255,.03) inset;transition:var(--t)}
-    .card:hover{box-shadow:0 0 0 1px rgba(125,166,255,.1) inset}
-    .pill{display:inline-flex;align-items:center;background:#13192a;border:1px solid #1f2740;color:var(--text);padding:8px 12px;border-radius:999px;font-weight:600;margin:6px 8px 0 0;transition:var(--t);cursor:help}
-    .pill:hover{border-color:var(--accent);transform:translateY(-1px)}
-    .meta{color:var(--muted);font-size:13px}
+    .card{background:var(--panel);border-radius:var(--radius);padding:20px;margin:16px 0;box-shadow:0 0 0 1px rgba(255,255,255,.04) inset}
     .gauge{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
-    .ringwrap{position:relative;width:var(--ring-size);height:var(--ring-size);flex-shrink:0}
-    .ring{position:absolute;inset:0;border-radius:50%;isolation:isolate;z-index:0;
-      background:conic-gradient(var(--green) 0deg 120deg, var(--amber) 120deg 216deg, var(--red) 216deg 360deg)}
-    .ring::after{content:"";position:absolute;inset:20px;border-radius:50%;background:var(--panel);z-index:0}
-    .score{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-size:40px;z-index:2}
-    .badge{display:inline-flex;align-items:center;padding:6px 12px;border-radius:10px;font-weight:800;letter-spacing:.4px;margin-left:12px}
-    .badge.green{background:rgba(30,194,139,.15);color:var(--green);border:1px solid rgba(30,194,139,.35)}
-    .badge.amber{background:rgba(255,194,71,.15);color:var(--amber);border:1px solid rgba(255,194,71,.35)}
-    .badge.red{background:rgba(255,96,112,.17);color:var(--red);border:1px solid rgba(255,96,112,.35)}
-    .callout{font-size:14px;color:var(--muted);line-height:1.4}
+    .ringwrap{position:relative;width:var(--ring);height:var(--ring)}
+    .ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--green) 0deg 120deg, var(--amber) 120deg 216deg, var(--red) 216deg 360deg)}
+    .ring::after{content:"";position:absolute;inset:20px;border-radius:50%;background:var(--panel)}
+    .needle{position:absolute;inset:0;pointer-events:none}
+    .needle::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);
+      transform:rotate(var(--angle,0deg)) translateY(calc(-1 * (var(--ring)/2 - 10px)));
+      transform-origin:center center;display:block;margin:auto}
+    .score{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-size:40px}
+    .pill{display:inline-flex;align-items:center;gap:8px;background:#13192a;border:1px solid #1f2740;color:var(--text);padding:8px 12px;border-radius:999px;font-weight:600;margin:6px 8px 0 0}
+    .dot{width:8px;height:8px;border-radius:50%}
+    .meta{color:var(--muted);font-size:13px}
     .chart{position:relative;height:300px}
     canvas{width:100%!important;height:100%!important}
-    .foot{margin-top:24px}
-    .err{background:#2b1620;color:#ffdbe0;border:1px solid #57313f;padding:12px;border-radius:10px}
-    .skeleton{background:linear-gradient(90deg, #161c2e 25%, #1a2238 50%, #161c2e 75%);background-size:200% 100%;animation:loading 1.5s infinite}
-    @keyframes loading{0%{background-position:200% 0}100%{background-position:-200% 0}}
-    .tooltip{position:relative;cursor:help;border-bottom:1px dotted var(--muted)}
-    .tooltip:hover::after{content:attr(data-tooltip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:white;padding:8px 12px;border-radius:6px;font-size:12px;white-space:nowrap;z-index:1000}
-    .risk-explanation{margin-top:12px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid var(--accent)}
-
-    /* Donut needle */
-    .needle { position:absolute; inset:0; pointer-events:none; z-index:1; }
-    .needle::after{
-      content:"";
-      width:8px; height:8px; border-radius:50%;
-      background:#7da6ff; box-shadow:0 0 0 3px rgba(125,166,255,.25);
-      transform: rotate(var(--angle,0deg)) translateY(calc(-1 * (var(--ring-size)/2 - 10px)));
-      transform-origin: center center;
-      display:block; margin:auto;
-    }
-
-    @media (max-width:768px){
+    .callout{font-size:14px;color:var(--muted)}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left}
+    details summary{cursor:pointer;font-weight:600}
+    @media(max-width:768px){
       .gauge{justify-content:center;text-align:center}
-      .ringwrap{width:var(--ring-size-mobile);height:var(--ring-size-mobile)}
+      .ringwrap{width:var(--ring-m);height:var(--ring-m)}
       .score{font-size:32px}
-    }
-    @media (max-width:480px){
-      .card{padding:16px}
-      .pill{display:block;margin:6px 0;width:100%}
+      .pill{display:block}
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header role="banner">
+    <header>
       <h1>CrashRadar — Composite Crash Risk</h1>
       <div id="status" class="sub" aria-live="polite">Loading market data…</div>
     </header>
 
-    <main role="main">
-      <section aria-labelledby="composite-heading" class="card">
+    <main>
+      <section class="card">
         <div class="gauge">
-          <div class="ringwrap" aria-hidden="true">
+          <div class="ringwrap">
             <div class="ring"></div>
             <div id="needle" class="needle"></div>
-            <div id="scoreText" class="score">–</div>
+            <div id="score" class="score">–</div>
           </div>
           <div>
-            <h2 id="composite-heading" style="margin:0 0 6px;font-size:26px">
-              Composite Score <span id="garBadge" class="badge">—</span>
-            </h2>
-            <div class="callout">
-              Lower scores indicate safer conditions.
-              Risk thresholds: <b class="ok">Green ≤ 30</b>, <b class="warn">Amber ≤ 60</b>, <b class="bad">Red &gt; 60</b>.
-            </div>
-            <div class="meta" id="freshness" style="margin-top:8px">—</div>
-            <div id="riskExplanation" class="risk-explanation" style="display:none">
-              <strong id="riskTitle">Risk Assessment</strong>
-              <div id="riskDescription" class="meta" style="margin-top:4px"></div>
-            </div>
-            <div style="margin-top:16px" role="list">
-              <span class="pill" id="pill_t10y3m" role="listitem" data-tooltip="10-year minus 3-month Treasury yield spread">Yield (10y–3m): —</span>
-              <span class="pill" id="pill_credit" role="listitem" data-tooltip="BAA corporate bond yield minus AAA yield">Credit (BAA–AAA): —</span>
-              <span class="pill" id="pill_un" role="listitem" data-tooltip="6-month change in unemployment rate">Unemp Δ6m: —</span>
-              <span class="pill" id="pill_dd" role="listitem" data-tooltip="S&P 500 drawdown from 12-month high">Drawdown 12m: —</span>
-              <span class="pill" id="pill_nfci" role="listitem" data-tooltip="National Financial Conditions Index">NFCI: —</span>
-            </div>
+            <h2 style="margin:0 0 6px;font-size:26px">Composite Score</h2>
+            <div class="callout">Lower = safer. Thresholds: <b style="color:var(--green)">≤30 Green</b>, <b style="color:var(--amber)">≤60 Amber</b>, <b style="color:var(--red)">&gt;60 Red</b>.</div>
+            <div id="freshness" class="meta" style="margin-top:6px">—</div>
           </div>
         </div>
       </section>
 
-      <section aria-labelledby="composite-chart-heading" class="card">
-        <h3 id="composite-chart-heading" style="margin:0 0 8px">Composite Risk History (normalised 0–100)</h3>
-        <div class="meta">Legend: <span class="ok">●</span> Green &nbsp; <span class="warn">●</span> Amber &nbsp; <span class="bad">●</span> Red</div>
-        <div class="chart"><canvas id="compChart" aria-label="Composite risk score over time"></canvas></div>
-        <div class="callout">Composite (30-day rolling average). Smoothed view of overall risk using recent readings.</div>
+      <section class="card">
+        <h3 style="margin:0 0 8px">Indicators</h3>
+        <div id="pills" role="list"></div>
       </section>
 
-      <div id="charts"></div>
-    </main>
+      <section class="card">
+        <h3 style="margin:0 0 6px">Composite History (7-day MA)</h3>
+        <div class="meta">Bands: 0–30 (Green), 30–60 (Amber), 60–100 (Red). Aligned AS-OF values across mixed cadences with forward-fill.</div>
+        <div class="chart"><canvas id="compChart" aria-label="Composite risk 7-day moving average"></canvas></div>
+      </section>
 
-    <footer class="card foot" role="contentinfo">
-      <h3 style="margin:0 0 12px;">Data & Diagnostics</h3>
-      <details>
-        <summary style="cursor:pointer;margin-bottom:8px;font-weight:600;">Technical Details</summary>
-        <pre id="diag" style="white-space:pre-wrap;word-break:break-word;color:#ffdca8;background:#241d12;border:1px solid #4a3e20;border-radius:10px;padding:12px;max-height:420px;overflow:auto;margin:0;font-size:12px;"></pre>
-      </details>
-      <div class="meta" style="margin-top:12px;">Data sourced from FRED. Last updated: <span id="update-time">—</span></div>
-    </footer>
+      <section class="card">
+        <h3 style="margin:0 0 8px">Data & Diagnostics</h3>
+        <details>
+          <summary>Technical Details</summary>
+          <pre id="diag" style="white-space:pre-wrap;word-break:break-word;color:#ffdca8;background:#241d12;border:1px solid #4a3e20;border-radius:10px;padding:12px;max-height:360px;overflow:auto;margin:10px 0;font-size:12px;"></pre>
+        </details>
+        <div id="episodesWrap" style="margin-top:8px;display:none">
+          <h4 style="margin:0 0 6px">Regime Episodes</h4>
+          <table id="episodesTable">
+            <thead><tr><th>Date</th><th>From</th><th>To</th><th>Composite</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="meta" style="margin-top:8px;">Data primarily from FRED. If the network fetch fails, embedded sample data is used for demonstration.</div>
+      </section>
+    </main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.1/dist/chartjs-plugin-annotation.min.js"></script>
-
   <script>
-  class CrashRadar {
-    constructor(){
-      this.keys = ['T10Y3M','CREDIT','UN_SLOPE6','DD_12M','NFCI'];
-      this.scales = {
-        T10Y3M: v => this.clamp(this.map(v, 1.0, -2.0)),
-        CREDIT: v => this.clamp(this.map(v, 0.3, 1.0)),
-        UN_SLOPE6: v => this.clamp(this.map(v, 0.0, 0.6)),
-        DD_12M: v => this.clamp(this.map(v, 0.0, -0.30)),
-        NFCI: v => this.clamp(this.map(v, -0.8, 1.0)),
-      };
-      this.weights = {T10Y3M:0.25, CREDIT:0.25, UN_SLOPE6:0.20, DD_12M:0.20, NFCI:0.10};
-      this.data = {raw:null, series:{}, latest:{}, composite:null};
-      this.charts = new Map();
-      this.init();
+  // ------------------------ Config: indicators, mappings, weights ------------------------
+  // Each indicator defines: id, label, cadence ("daily"|"weekly"|"monthly"), value() accessor (if derived),
+  // map() => 0..100 risk, weight, tooltip, freshness thresholds (days).
+  const INDICATORS = [
+    {
+      id:'T10Y3M', label:'Yield (10y–3m)', cadence:'daily',
+      tooltip:'More negative = worse (inversions often precede recessions). ↓ worse.',
+      map:(v)=>scale(v, 1.0, -2.0), weight:0.15, worse:'down'
+    },
+    {
+      id:'BAMLH0A0HYM2', label:'HY OAS', cadence:'daily',
+      tooltip:'High-yield OAS (ICE BofA). Wider = worse. ↑ worse.',
+      map:(v)=>scale(v, 3.0, 7.5), weight:0.20, worse:'up'
+    },
+    {
+      id:'NFCI', label:'NFCI', cadence:'weekly',
+      tooltip:'Chicago Fed Financial Conditions Index. >0 = tighter than average. ↑ worse.',
+      map:(v)=>scale(v, -0.8, 0.5), weight:0.10, worse:'up'
+    },
+    {
+      id:'ICSA', label:'Claims Δ13w', cadence:'weekly',
+      tooltip:'Initial claims: 13-week change (%). Rising claims = worse. ↑ worse.',
+      // Compute % change vs 13 weeks ago; if missing baseline, treat as 0
+      derive:(series, idxByDate, date)=> {
+        const vNow = latestOnOrBefore(series, date);
+        const date13 = addDays(date, -7*13);
+        const vPast = latestOnOrBefore(series, date13);
+        if (vNow==null || vPast==null || vPast===0) return null;
+        return (vNow - vPast) / vPast; // proportion
+      },
+      map:(delta)=>scale(delta??0, 0.0, 0.30), weight:0.10, worse:'up'
+    },
+    {
+      id:'VIXCLS', label:'VIX', cadence:'daily',
+      tooltip:'Equity implied volatility. ↑ worse.',
+      map:(v)=>scale(v, 13, 30), weight:0.15, worse:'up'
+    },
+    {
+      id:'SP500', label:'Drawdown 6m', cadence:'daily',
+      tooltip:'S&P 500 drawdown from 6-month high. More negative = worse. ↓ worse.',
+      derive_dd6m:(series, idxByDate, date)=>{
+        const d6m = addDays(date,-183);
+        const max = maxOnRange(series, d6m, date);
+        const last = latestOnOrBefore(series, date);
+        if (last==null || max==null || max===0) return 0;
+        return (last / max) - 1; // negative when below peak
+      },
+      map:(dd)=>scale(dd??0, 0.0, -0.20), weight:0.15, worse:'down'
+    },
+    {
+      id:'T10YIE', label:'10y Breakeven', cadence:'daily',
+      tooltip:'Inflation expectations (10y breakeven). ↑ worse at extremes.',
+      map:(v)=>scale(v, 1.5, 3.5), weight:0.05, worse:'up'
+    },
+    {
+      id:'SAHMCURRENT', label:'Sahm Rule', cadence:'monthly',
+      tooltip:'3-mo avg UNRATE vs 12-mo low. ≥0.5 has historically signaled recession. ↑ worse.',
+      map:(v)=>scale(v, 0.10, 0.50), weight:0.10, worse:'up'
     }
+  ];
+  const GREEN=30, AMBER=60;
 
-    // ---------- utils ----------
-    setStatus(msg, cls=''){ const el=document.getElementById('status'); el.textContent=msg; el.className='sub '+cls; }
-    gbDate(d){ try{return new Date(d).toLocaleDateString('en-GB',{year:'numeric',month:'short',day:'2-digit'})}catch{return 'Invalid Date'} }
-    safeNum(v){ return (v===null||v===undefined||isNaN(+v))?null:+v; }
-    last(a){ return (a&&a.length)?a[a.length-1]:null; }
-    clamp(x){ return Math.max(0, Math.min(100,x)); }
-    map(val, good, bad){ if(val==null) return 50; const denom=bad-good; if(Math.abs(denom)<1e-10) return 50; return ((val-good)/denom)*100; }
-    zoneOf(s){ return s<=30?'green':(s<=60?'amber':'red'); }
+  // Freshness penalty settings
+  const FRESHNESS = {
+    daily:  { ok:7, warn:30 },   // days
+    weekly: { ok:7, warn:30 },
+    monthly:{ ok:30, warn:60 }
+  };
+  function freshnessPenalty(days, cadence){
+    const lim = FRESHNESS[cadence]||FRESHNESS.daily;
+    if (days<=lim.ok) return 1.0;
+    if (days<=lim.warn) return 0.85;
+    return 0.70;
+  }
 
-    // Needle helpers
-    scoreToAngle(s){ return (Math.max(0,Math.min(100,s))/100)*360; }
-    setNeedle(score){ const n=document.getElementById('needle'); if(n) n.style.setProperty('--angle', this.scoreToAngle(score)+'deg'); }
-
-    // 4-week (≈20 trading days) delta for NFCI (direction: higher=tighter)
-    delta28(series){
-      const ys = series?.ys || [];
-      if (ys.length < 21) return null;
-      const last = ys[ys.length-1];
-      const prior = ys[ys.length-21];
-      return last - prior;
+  // ------------------------ Fallback sample data (for file:// or fetch fail) ------------------------
+  const FALLBACK = {
+    fetched_at_utc: "2025-10-19T08:42:00Z",
+    series: {
+      T10Y3M: { observations:[
+        {date:"2025-08-15",value:"0.90"}, {date:"2025-09-15",value:"0.65"}, {date:"2025-10-15",value:"0.40"} ]},
+      BAMLH0A0HYM2: { observations:[
+        {date:"2025-08-15",value:"3.6"}, {date:"2025-09-15",value:"4.4"}, {date:"2025-10-15",value:"5.6"} ]},
+      NFCI: { observations:[
+        {date:"2025-09-06",value:"-0.40"}, {date:"2025-09-13",value:"-0.33"}, {date:"2025-09-20",value:"-0.20"}, {date:"2025-09-27",value:"-0.12"}, {date:"2025-10-04",value:"0.02"} ]},
+      ICSA: { observations:[
+        {date:"2025-07-18",value:"220"}, {date:"2025-08-15",value:"235"}, {date:"2025-09-12",value:"255"}, {date:"2025-10-10",value:"285"} ]},
+      VIXCLS: { observations:[
+        {date:"2025-09-20",value:"14.2"}, {date:"2025-10-01",value:"18.5"}, {date:"2025-10-15",value:"24.0"} ]},
+      SP500: { observations:[
+        {date:"2025-04-15",value:"5200"}, {date:"2025-07-15",value:"5400"}, {date:"2025-09-10",value:"5100"}, {date:"2025-10-15",value:"4950"} ]},
+      T10YIE: { observations:[
+        {date:"2025-09-01",value:"2.25"}, {date:"2025-10-01",value:"2.40"} ]},
+      SAHMCURRENT: { observations:[
+        {date:"2025-08-01",value:"0.12"}, {date:"2025-09-01",value:"0.14"} ]}
     }
+  };
+
+  // ------------------------ Utilities ------------------------
+  const dParse = d => new Date(d+"T00:00:00Z");
+  const dGB = d => d ? new Date(d).toLocaleDateString('en-GB',{year:'numeric',month:'short',day:'2-digit'}) : '—';
+  const daysBetween = (a,b)=> Math.round((a-b)/(1000*60*60*24));
+  const addDays = (d, n)=> new Date(d.getTime() + n*24*60*60*1000);
+
+  function clamp(x){ return Math.max(0, Math.min(100, x)); }
+  // Linear piecewise mapping: map val from "good" to "bad" → 0..100 risk
+  function scale(val, good, bad){
+    if (val==null || !isFinite(val)) return 50;
+    const denom = (bad - good);
+    if (Math.abs(denom) < 1e-9) return 50;
+    return clamp(( (val - good) / denom ) * 100);
+  }
+
+  // Look up latest observation on or before a date
+  function latestOnOrBefore(series, date){
+    if (!series?.length) return null;
+    let best=null;
+    for (let i=0;i<series.length;i++){
+      const d=dParse(series[i].date);
+      if (d<=date) best=series[i];
+      else break;
+    }
+    return best? +series[series.indexOf(best)].value : null;
+  }
+  function maxOnRange(series, dFrom, dTo){
+    if (!series?.length) return null;
+    let m = null;
+    for (const o of series){
+      const d=dParse(o.date);
+      if (d>=dFrom && d<=dTo){
+        const v=+o.value; if(!isNaN(v)) m = (m==null? v : Math.max(m,v));
+      }
+    }
+    return m;
+  }
+
+  function uniqDatesFromSeries(allSeries){
+    const set = new Set();
+    for (const s of Object.values(allSeries)){
+      for (const o of (s?.observations||[])){ set.add(dParse(o.date).toISOString()); }
+    }
+    return Array.from(set).map(x=>new Date(x)).sort((a,b)=>a-b);
+  }
+
+  function movingAvg(arr, k){
+    if (!arr.length) return [];
+    const out=[]; let sum=0;
+    for (let i=0;i<arr.length;i++){
+      sum += arr[i];
+      if (i>=k) sum -= arr[i-k];
+      out.push( i>=k-1 ? +(sum/k).toFixed(1) : null );
+    }
+    return out;
+  }
+
+  function zoneOf(s){ return s<=GREEN?'green':(s<=AMBER?'amber':'red'); }
+  function zoneName(z){ return z==='green'?'Green':z==='amber'?'Amber':'Red'; }
+
+  // ------------------------ Main ------------------------
+  const App = {
+    data:{raw:null, series:{}, alignedDates:[], perDate:{}, latest:{}, composite:{raw:null, ma7:null}},
+    charts:new Map(),
 
     async init(){
       this.setStatus('Loading market data…');
-      document.querySelectorAll('.pill, .score, .badge').forEach(el=>el.classList.add('skeleton'));
+      const src = await this.fetchData();
+      this.data.raw = src;
+      this.prepare();
+      this.renderAll();
+      this.setStatus('Ready');
+    },
+
+    async fetchData(){
       try{
-        const controller=new AbortController(); const t=setTimeout(()=>controller.abort(),10000);
-        const res=await fetch('data/fred_cache.json',{cache:'no-cache',signal:controller.signal}); clearTimeout(t);
-        if(!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        this.data.raw=await res.json(); this.setStatus('Market data loaded successfully','ok');
-        this.process(); this.render();
+        const ctrl = new AbortController(); const to=setTimeout(()=>ctrl.abort(), 9000);
+        const res = await fetch('data/fred_cache.json',{cache:'no-cache',signal:ctrl.signal});
+        clearTimeout(to);
+        if (!res.ok) throw new Error('HTTP '+res.status);
+        const json = await res.json();
+        return json;
       }catch(e){
-        this.setStatus(e.name==='AbortError'?'Request timeout — please try again':'Failed to load data','bad');
-        document.getElementById('diag').textContent='Load error: '+e.message;
-        const card=document.querySelector('.gauge').closest('.card');
-        card.insertAdjacentHTML('beforeend',`<div class="err" style="margin-top:16px"><strong>Unable to load market data</strong><div style="margin-top:8px;font-size:14px">Check connection or run the workflow to build <code>data/fred_cache.json</code>.</div></div>`);
+        // Fallback for file:// and offline
+        return FALLBACK;
       }
-    }
+    },
 
-    process(){
-      const S=this.data.raw?.series||{};
-      for(const k of this.keys){
-        const obs=S[k]?.observations||[], xs=[], ys=[];
-        for(const o of obs){ const v=this.safeNum(o.value); if(v==null||!o.date) continue; xs.push(this.gbDate(o.date)); ys.push(v); }
-        this.data.series[k]={xs,ys}; this.data.latest[k]=this.last(ys);
+    prepare(){
+      const S = this.data.raw?.series || {};
+      // Normalize series: ensure chronological, numeric
+      for (const k of Object.keys(S)){
+        const obs = (S[k]?.observations||[]).slice().sort((a,b)=> dParse(a.date)-dParse(b.date));
+        this.data.series[k] = { observations: obs.filter(o=> o.date && !isNaN(+o.value)) };
       }
-      let comp=0, wsum=0;
-      for(const k of this.keys){ const sv=this.scales[k](this.data.latest[k]); if(isFinite(sv)){ comp+=sv*(this.weights[k]||0); wsum+=this.weights[k]||0; } }
-      this.data.composite = (wsum>0)? Math.round((comp/wsum)*10)/10 : null;
-    }
+      // Build aligned date grid from all series
+      const dates = uniqDatesFromSeries(this.data.series);
+      // keep last 240 points for the UI
+      this.data.alignedDates = dates.slice(-240);
 
-    render(){
-      this.renderGauge(); this.renderPills(); this.renderCompositeChart(); this.renderIndicatorCharts(); this.renderDiagnostics();
-    }
+      // Precompute last-value / freshness per indicator
+      const fetchedAt = this.data.raw?.fetched_at_utc ? new Date(this.data.raw.fetched_at_utc) : new Date();
+      for (const ind of INDICATORS){
+        const obs = this.data.series[ind.id]?.observations||[];
+        const last = obs.length? obs[obs.length-1] : null;
+        const lastDate = last? dParse(last.date) : null;
+        const ageDays = lastDate? Math.max(0, daysBetween(fetchedAt, lastDate)) : Infinity;
+        this.data.latest[ind.id] = { value: last? +last.value : null, date: last? last.date : null, ageDays, cadence: ind.cadence };
+      }
+
+      // Build per-date composite (AS-OF, with forward-fill + deriveds)
+      const perDate = [];
+      for (const date of this.data.alignedDates){
+        let wsum=0, sum=0;
+        const contributions = {};
+        for (const ind of INDICATORS){
+          const ser = this.data.series[ind.id]?.observations||[];
+          let val = null;
+
+          // base or derived value for this date
+          if (ind.derive){
+            val = ind.derive(ser, null, date);
+          } else if (ind.derive_dd6m){
+            val = ind.derive_dd6m(ser, null, date);
+          } else {
+            val = latestOnOrBefore(ser, date);
+          }
+
+          // risk score + freshness penalty
+          const risk = ind.map(val);
+          // compute age relative to date (not fetchedAt) for proper as-of penalty
+          const asOfObs = latestOnOrBefore(ser, date);
+          const obsDate = (()=> {
+            let d=null;
+            for (let i=ser.length-1;i>=0;i--){
+              if (+ser[i].value === asOfObs){ d = dParse(ser[i].date); break; }
+            }
+            return d;
+          })();
+          let ageDays = obsDate? Math.max(0, daysBetween(date, obsDate)) : Infinity;
+          const penalty = freshnessPenalty(ageDays, ind.cadence);
+          const adj = risk * penalty;
+
+          sum += adj * ind.weight;
+          wsum += ind.weight;
+          contributions[ind.id] = {val, risk, adj, ageDays};
+        }
+        const composite = wsum>0 ? +( (sum/wsum).toFixed(1) ) : null;
+        perDate.push({date, composite, parts:contributions});
+      }
+
+      // 7-day MA for history
+      const rawArr = perDate.map(d=> d.composite ?? 50);
+      const ma7 = movingAvg(rawArr, 7);
+
+      this.data.perDate = perDate;
+      this.data.composite.raw = (perDate.length? perDate[perDate.length-1].composite : null);
+      this.data.composite.ma7 = ma7;
+    },
+
+    renderAll(){
+      this.renderGauge();
+      this.renderPills();
+      this.renderCompositeChart();
+      this.renderDiagnostics();
+      this.renderEpisodes();
+    },
+
+    setStatus(msg){ const el=document.getElementById('status'); if(el) el.textContent=msg; },
+    setNeedle(score){ const n=document.getElementById('needle'); if(n) n.style.setProperty('--angle', ((Math.max(0,Math.min(100,score))/100)*360)+'deg'); },
 
     renderGauge(){
-      const c=this.data.composite, z=this.zoneOf(c||50);
-      const badge=document.getElementById('garBadge'); badge.className='badge '+z; badge.textContent=z.toUpperCase(); badge.classList.remove('skeleton');
-      // Hide the badge label if you prefer only the needle + number:
-      badge.style.display = 'none';
+      const c = this.data.composite.raw;
+      document.getElementById('score').textContent = isFinite(c)? Math.round(c) : '–';
+      this.setNeedle(isFinite(c)? c : 50);
 
-      const scoreEl=document.getElementById('scoreText'); scoreEl.textContent=isFinite(c)?Math.round(c):'–'; scoreEl.classList.remove('skeleton');
-
-      // Set donut needle
-      this.setNeedle(c ?? 50);
-
-      const ts=this.data.raw?.fetched_at_utc?new Date(this.data.raw.fetched_at_utc):null;
-      document.getElementById('freshness').textContent=ts? this.gbDate(ts)+' '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'—';
-      const ex={green:{title:'Low Risk Environment',description:'Market conditions look benign. Indicators show limited stress.'},
-                amber:{title:'Moderate Risk Environment',description:'Some stress signals are active. Monitor for further deterioration.'},
-                red:{title:'High Risk Environment',description:'Multiple stress signals. Risk of turbulence/contracting conditions is elevated.'}}[z];
-      const riskEl=document.getElementById('riskExplanation'); document.getElementById('riskTitle').textContent=ex.title; document.getElementById('riskDescription').textContent=ex.description; riskEl.style.display='block';
-    }
+      const ts = this.data.raw?.fetched_at_utc? new Date(this.data.raw.fetched_at_utc) : null;
+      const txt = ts ? `${ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})} ${ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}` : '—';
+      document.getElementById('freshness').textContent = `AS-OF ${txt}`;
+    },
 
     renderPills(){
-      const id={T10Y3M:'pill_t10y3m',CREDIT:'pill_credit',UN_SLOPE6:'pill_un',DD_12M:'pill_dd',NFCI:'pill_nfci'};
-      const label={T10Y3M:'Yield (10y–3m)',CREDIT:'Credit (BAA–AAA)',UN_SLOPE6:'Unemp Δ6m',DD_12M:'Drawdown 12m',NFCI:'NFCI'};
-      const fmt={T10Y3M:v=>v.toFixed(2),CREDIT:v=>v.toFixed(2),UN_SLOPE6:v=>v.toFixed(2),DD_12M:v=>(v*100).toFixed(1)+'%',NFCI:v=>v.toFixed(3)};
-      for(const k of this.keys){
-        const el=document.getElementById(id[k]); if(!el) continue;
-        const v=this.data.latest[k];
-        let txt = `${label[k]}: ${v==null?'—':fmt[k](v)}`;
-        if (k==='NFCI'){
-          const d=this.delta28(this.data.series.NFCI);
-          if (d!=null){
-            const dir = d>0 ? '▲ tighter' : (d<0 ? '▼ easier' : '• flat');
-            txt += `  (${dir})`;
-          }
-        }
-        el.textContent=txt; el.classList.remove('skeleton');
+      const host = document.getElementById('pills');
+      host.innerHTML = '';
+      for (const ind of INDICATORS){
+        const last = this.data.latest[ind.id]||{};
+        const dot = document.createElement('span'); dot.className='dot'; dot.style.background = this.freshColor(last.ageDays, ind.cadence);
+        const pill = document.createElement('span'); pill.className='pill'; pill.title = ind.tooltip;
+        const valStr = this.formatValue(ind.id, last.value);
+        pill.append(dot, document.createTextNode(`${ind.label}: ${valStr}`));
+        host.appendChild(pill);
       }
-    }
+    },
+
+    freshColor(days, cadence){
+      const lim = FRESHNESS[cadence]||FRESHNESS.daily;
+      if (days<=lim.ok) return 'var(--green)';
+      if (days<=lim.warn) return 'var(--amber)';
+      return 'var(--red)';
+    },
+
+    formatValue(id, v){
+      if (v==null || !isFinite(v)) return '—';
+      if (id==='SP500') return v.toFixed(0);
+      if (id==='T10Y3M' || id==='BAMLH0A0HYM2' || id==='T10YIE') return (+v).toFixed(2);
+      if (id==='NFCI') return (+v).toFixed(3);
+      if (id==='VIXCLS') return (+v).toFixed(1);
+      if (id==='SAHMCURRENT') return (+v).toFixed(2);
+      if (id==='ICSA') return (+v).toFixed(0);
+      return String(v);
+    },
 
     renderCompositeChart(){
-      const el=document.getElementById('compChart');
-      const minLen=Math.min(...this.keys.map(k=>this.data.series[k].ys.length||Infinity));
-      if(!isFinite(minLen)||minLen<3){ el.closest('.card').querySelector('.chart').innerHTML='<div class="err">Not enough overlapping history yet to draw composite chart.</div>'; return; }
-      const tail=Math.min(minLen,90), xs=this.data.series.T10Y3M.xs.slice(-tail), ys=[];
-      for(let i=-tail;i<0;i++){ let v=0; for(const k of this.keys){ v+=this.scales[k](this.data.series[k].ys.at(i))*(this.weights[k]||0); } ys.push(Math.round(v*10)/10); }
-      this.makeChart(el,{
+      const el = document.getElementById('compChart');
+      if (!this.data.perDate.length){ el.closest('.chart').innerHTML='<div class="meta">No data.</div>'; return; }
+      const xs = this.data.perDate.map(d=> d.date.toISOString().slice(0,10));
+      const ma7 = this.data.composite.ma7;
+
+      const cfg = {
         type:'line',
-        data:{ labels:xs, datasets:[{ data:ys, borderColor:'#7da6ff', backgroundColor:'transparent', fill:false, tension:.4 }]},
-        options:this.baseOpts({
-          scales:{ y:{min:0,max:100} },
+        data:{
+          labels: xs,
+          datasets:[
+            {label:'Composite (7-day MA)', data: ma7, borderColor:'#7da6ff', backgroundColor:'transparent', spanGaps:true, tension:.35}
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          scales:{
+            y:{min:0,max:100,grid:{color:'rgba(255,255,255,.06)'}, ticks:{color:'#9aa6bf'}},
+            x:{grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'#9aa6bf', maxTicksLimit:6, callback:(val,idx,ticks)=>{
+              const raw = ticks?.[idx]?.label ?? ''; const d = new Date(raw+'T00:00:00Z');
+              if (!isNaN(d)) return d.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}).replace(' ',' ’');
+              return raw;
+            }}}
+          },
           plugins:{
-            tooltip:{callbacks:{label:(c)=>`Composite: ${c.parsed.y}`}},
+            legend:{display:false},
             annotation:{
               annotations:{
-                green:{ type:'line', yMin:30, yMax:30, borderColor:'rgba(30,194,139,.6)', borderDash:[6,4], borderWidth:1 },
-                amber:{ type:'line', yMin:60, yMax:60, borderColor:'rgba(255,194,71,.7)', borderDash:[6,4], borderWidth:1 }
-              }
-            }
-          }
-        })
-      });
-    }
-
-    renderIndicatorCharts(){
-      const cfgs=[
-        {k:'T10Y3M', title:'Yield Curve (10y–3m)', desc:'<b>More negative = worse</b>. Inversions (below zero) often precede recessions and major drawdowns.', color:'#6bb9ff', zero:true},
-        {k:'CREDIT', title:'Credit Spread (BAA–AAA)', desc:'<b>Wider = worse</b>. Rising lower-grade vs top-tier borrowing costs signal stress in corporate credit.', color:'#ffb36b', zero:false},
-        {k:'UN_SLOPE6', title:'Unemployment 6-month slope', desc:'<b>Rising = worse</b>. Early labour-market deterioration is a classic late-cycle signal.', color:'#ffa0b5', zero:true},
-        {k:'DD_12M', title:'12-month Drawdown (S&P vs 1-yr peak)', desc:'<b>More negative = worse</b>. Captures market-price stress, complementing macro/credit indicators.', color:'#a6c7ff', zero:true},
-        {k:'NFCI', title:'Chicago Fed NFCI', desc:'<b>Higher = tighter/worse</b>. Summarises overall financial conditions (rates, credit, funding, volatility).', color:'#9bd3c1', zero:true}
-      ];
-      const host=document.getElementById('charts');
-      for(const c of cfgs){
-        const sec=document.createElement('section'); sec.className='card'; sec.setAttribute('aria-labelledby','chart-'+c.k);
-        sec.innerHTML=`<h3 id="chart-${c.k}" style="margin:0 0 8px">${c.title}</h3>
-          <div class="chart"><canvas id="c_${c.k}" aria-label="${c.title} over time"></canvas></div>
-          <div class="callout">${c.desc}</div>`;
-        host.appendChild(sec);
-        const s=this.data.series[c.k]; if(!s.ys.length){ sec.querySelector('.chart').innerHTML=`<div class="err">No data available for ${c.title}</div>`; continue; }
-        this.makeChart(document.getElementById('c_'+c.k),{
-          type:'line',
-          data:{ labels:s.xs.slice(-90), datasets:[{ data:s.ys.slice(-90), borderColor:c.color, backgroundColor:'transparent', fill:false, tension:.4 }]},
-          options:this.baseOpts({
-            plugins: c.zero ? { annotation:{ annotations:{ zero:{ type:'line', yMin:0, yMax:0, borderColor:'rgba(154,166,191,.6)', borderDash:[4,4], borderWidth:1 }}}} : {}
-          })
-        });
-      }
-    }
-
-    baseOpts(ovr={}){
-      const base={
-        responsive:true, maintainAspectRatio:false,
-        scales:{
-          x:{
-            grid:{color:'rgba(255,255,255,.04)'},
-            ticks:{
-              color:'#9aa6bf',
-              font:{size:10},
-              maxRotation:0,
-              autoSkip:true,
-              maxTicksLimit:6,
-              callback:function(value,index,ticks){
-                const raw = ticks?.[index]?.label ?? '';
-                const d = new Date(raw);
-                if(!isNaN(d)) return d.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}).replace(' ', " ’");
-                const parts = String(raw).split(' ');
-                if(parts.length>=3) return `${parts[1].slice(0,3)} ’${parts[2].slice(-2)}`;
-                return raw;
+                g:{type:'box',yMin:0,yMax:GREEN,backgroundColor:'rgba(30,194,139,.06)',borderWidth:0},
+                a:{type:'box',yMin:GREEN,yMax:AMBER,backgroundColor:'rgba(255,194,71,.05)',borderWidth:0},
+                r:{type:'box',yMin:AMBER,yMax:100,backgroundColor:'rgba(255,96,112,.05)',borderWidth:0},
+                gline:{type:'line',yMin:GREEN,yMax:GREEN,borderColor:'rgba(30,194,139,.65)',borderDash:[6,4]},
+                aline:{type:'line',yMin:AMBER,yMax:AMBER,borderColor:'rgba(255,194,71,.75)',borderDash:[6,4]},
               }
             }
           },
-          y:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{ color:'#9aa6bf' } }
-        },
-        plugins:{ legend:{display:false}, tooltip:{enabled:true} },
-        elements:{ line:{tension:.4,borderWidth:2}, point:{radius:2,hitRadius:8,hoverRadius:6} },
-        animation:{ duration:800, easing:'easeOutQuart' }
+          elements:{point:{radius:0}}
+        }
       };
-      return {...base, ...ovr, scales:{...base.scales, ...(ovr.scales||{})}, plugins:{...base.plugins, ...(ovr.plugins||{})}};
-    }
 
-    makeChart(el,cfg){
-      try{
-        if(this.charts.has(el)) this.charts.get(el).destroy();
-        try{ const ap=(window.ChartAnnotation||window['chartjs-plugin-annotation']); if(ap && !Chart.registry.getPlugin('annotation')) Chart.register(ap); }catch(e){}
-        const chart=new Chart(el,cfg); this.charts.set(el,chart); return chart;
-      }catch(e){ console.error('Chart error:',e); el.closest('.chart').innerHTML=`<div class="err">Chart error: ${e.message}</div>`; return null;}
-    }
+      // Ensure annotation plugin (Chart.js v4) if available
+      try{ const ap=(window.ChartAnnotation||window['chartjs-plugin-annotation']); if(ap && !Chart.registry.getPlugin('annotation')) Chart.register(ap); }catch(e){}
+      const prev = App.charts.get(el); if(prev) prev.destroy();
+      const chart = new Chart(el, cfg); App.charts.set(el, chart);
+    },
 
     renderDiagnostics(){
-      const diag=document.getElementById('diag');
-      const out={
-        fetched_at_utc:this.data.raw?.fetched_at_utc||null,
-        latest_values:Object.fromEntries(this.keys.map(k=>[k,this.data.latest[k]])),
-        sample_sizes:Object.fromEntries(this.keys.map(k=>[k,this.data.series[k].ys.length])),
-        composite:this.data.composite,
-        calculation_timestamp:new Date().toISOString()
+      const diag = document.getElementById('diag');
+      const latest = Object.fromEntries(INDICATORS.map(ind=>[ind.label, this.data.latest[ind.id]]));
+      const out = {
+        fetched_at_utc: this.data.raw?.fetched_at_utc || null,
+        indicators: INDICATORS.map(ind=>({id:ind.id,label:ind.label,weight:ind.weight,cadence:ind.cadence})),
+        latest,
+        composite_latest: this.data.composite.raw,
+        dates: this.data.alignedDates.length
       };
-      diag.textContent=JSON.stringify(out,null,2);
-      document.getElementById('update-time').textContent=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+      diag.textContent = JSON.stringify(out,null,2);
+    },
+
+    renderEpisodes(){
+      const tbody = document.querySelector('#episodesTable tbody');
+      const wrap = document.getElementById('episodesWrap');
+      tbody.innerHTML='';
+      const arr = this.data.composite.ma7;
+      if (!arr || !arr.length) { wrap.style.display='none'; return; }
+
+      let prevZone=null;
+      for (let i=0;i<arr.length;i++){
+        const v = arr[i];
+        if (v==null) continue;
+        const z = zoneOf(v);
+        if (prevZone==null){ prevZone=z; continue; }
+        if (z!==prevZone){
+          const tr=document.createElement('tr');
+          const dt=this.data.alignedDates[i];
+          tr.innerHTML=`<td>${dGB(dt)}</td><td>${zoneName(prevZone)}</td><td>${zoneName(z)}</td><td>${v.toFixed(1)}</td>`;
+          tbody.appendChild(tr);
+          prevZone=z;
+        }
+      }
+      wrap.style.display = tbody.children.length? 'block':'none';
     }
+  };
 
-    destroy(){ this.charts.forEach(c=>c.destroy()); this.charts.clear(); }
-  }
-
-  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',()=>new CrashRadar()); } else { new CrashRadar(); }
+  // ------------------------ Boot ------------------------
+  (async ()=>{ await App.init(); })();
   </script>
 </body>
 </html>
