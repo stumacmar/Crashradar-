@@ -3,26 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="CrashRadar — Composite Crash Risk (live FRED cache, freshness, episodes, per-indicator charts)." />
+  <meta name="description" content="CrashRadar — Composite Crash Risk with Sahm Rule (live FRED cache, freshness, episodes, per-indicator charts)." />
   <title>CrashRadar — Composite Crash Risk</title>
-
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-
   <style>
     :root{
       --bg:#0f1421; --panel:#161c2e; --muted:#9aa6bf; --text:#e8eeff; --accent:#7da6ff;
-      --green:#1ec28b; --amber:#ffc247; --red:#ff6070; --radius:16px;
-      --ring:180px; --ring-m:140px;
+      --green:#1ec28b; --amber:#ffc247; --red:#ff6070; --radius:16px; --ring:180px; --ring-m:140px;
     }
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial}
     .wrap{max-width:980px;margin:0 auto;padding:20px 16px 64px}
     h1{font-size:clamp(28px,5.5vw,44px);line-height:1.1;margin:0 0 8px}
     .sub{color:var(--muted);margin:6px 0 18px;font-size:14px}
-
-    .card{background:var(--panel);border-radius:var(--radius);padding:20px;margin:16px 0;
-      box-shadow:0 0 0 1px rgba(255,255,255,.05) inset}
-
+    .card{background:var(--panel);border-radius:var(--radius);padding:20px;margin:16px 0;box-shadow:0 0 0 1px rgba(255,255,255,.05) inset}
+    .alert{background:#2b1620;color:#ffdbe0;border:1px solid #57313f;padding:12px;border-radius:10px;margin-top:8px}
     /* Gauge */
     .gauge{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
     .ringwrap{position:relative;width:var(--ring);height:var(--ring)}
@@ -34,22 +29,17 @@
       transform:rotate(var(--angle,0deg)) translateY(calc(-1 * (var(--ring)/2 - 10px)));
       transform-origin:center center;display:block;margin:auto}
     .score{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-size:40px}
-
     /* Pills */
-    .pill{display:inline-flex;align-items:center;gap:8px;background:#13192a;border:1px solid #1f2740;
-      color:var(--text);padding:8px 12px;border-radius:999px;font-weight:600;margin:6px 8px 0 0}
+    .pill{display:inline-flex;align-items:center;gap:8px;background:#13192a;border:1px solid #1f2740;color:var(--text);padding:8px 12px;border-radius:999px;font-weight:600;margin:6px 8px 0 0}
     .dot{width:8px;height:8px;border-radius:50%}
     .meta{color:var(--muted);font-size:13px}
-
     /* Charts */
     .chart{position:relative;height:300px}
     canvas{width:100%!important;height:100%!important}
-
     /* Table */
     table{width:100%;border-collapse:collapse;font-size:13px}
     th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left}
     details summary{cursor:pointer;font-weight:600}
-
     @media (max-width:768px){
       .gauge{justify-content:center;text-align:center}
       .ringwrap{width:var(--ring-m);height:var(--ring-m)}
@@ -63,6 +53,7 @@
     <header>
       <h1>CrashRadar — Composite Crash Risk</h1>
       <div id="status" class="sub" aria-live="polite">Loading market data…</div>
+      <div id="hardError" class="alert" style="display:none"></div>
     </header>
 
     <main>
@@ -91,7 +82,7 @@
       <!-- Composite -->
       <section class="card">
         <h3 style="margin:0 0 6px">Composite History (7-day MA)</h3>
-        <div class="meta">Bands: 0–30 (Green), 30–60 (Amber), 60–100 (Red). Aligned to your cache; gauge = raw latest.</div>
+        <div class="meta">Bands: 0–30 (Green), 30–60 (Amber), 60–100 (Red). Gauge = raw latest.</div>
         <div class="chart"><canvas id="compChart" aria-label="Composite risk 7-day moving average"></canvas></div>
       </section>
 
@@ -105,7 +96,6 @@
           <summary>Technical Details</summary>
           <pre id="diag" style="white-space:pre-wrap;word-break:break-word;color:#ffdca8;background:#241d12;border:1px solid #4a3e20;border-radius:10px;padding:12px;max-height:360px;overflow:auto;margin:10px 0;font-size:12px;"></pre>
         </details>
-
         <div id="episodesWrap" style="margin-top:8px;display:none">
           <h4 style="margin:0 0 6px">Regime Episodes</h4>
           <table id="episodesTable">
@@ -113,35 +103,34 @@
             <tbody></tbody>
           </table>
         </div>
-
         <div class="meta" style="margin-top:8px;">Live data source: <code>data/fred_cache.json</code>.</div>
       </section>
     </main>
   </div>
 
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.1/dist/chartjs-plugin-annotation.min.js"></script>
 
   <script>
-  // ====================== MODEL (uses your existing 5-series cache) ======================
-  const KEYS = ['T10Y3M','CREDIT','UN_SLOPE6','DD_12M','NFCI'];
+  // ====================== MODEL (Sahm replaces employment slope) ======================
+  // REQUIRED inputs (Sahm is mandatory; if missing, we stop with a clear error)
+  const KEYS = ['T10Y3M','CREDIT','SAHMCURRENT','DD_12M','NFCI'];
 
-  // 0–100 risk mappings (good -> bad) — tightened for responsiveness
+  // 0–100 risk mappings (good -> bad). Sahm ≥0.50 = very bad.
   const SCALE = {
-    T10Y3M:   v => clamp(map01(v,  1.0, -2.0)),     // ↓ worse
-    CREDIT:   v => clamp(map01(v,  0.30, 1.00)),    // ↑ worse (BAA–AAA)
-    UN_SLOPE6:v => clamp(map01(v,  0.05, 0.50)),    // ↑ worse (min sensitivity 0.05)
-    DD_12M:   v => clamp(map01(v,  0.00, -0.20)),   // ↓ worse (−20% = red)
-    NFCI:     v => clamp(map01(v, -0.80, 0.40))     // ↑ worse (>0 tighter)
+    T10Y3M:     v => clamp(map01(v,  1.0, -2.0)),   // ↓ worse
+    CREDIT:     v => clamp(map01(v,  0.30, 1.00)),  // ↑ worse
+    SAHMCURRENT:v => clamp(map01(v,  0.10, 0.50)),  // ↑ worse
+    DD_12M:     v => clamp(map01(v,  0.00, -0.20)), // ↓ worse
+    NFCI:       v => clamp(map01(v, -0.80, 0.40))   // ↑ worse
   };
 
-  // Weights (sum=1): more weight to faster/market series
-  const W = { T10Y3M:0.26, CREDIT:0.18, UN_SLOPE6:0.16, DD_12M:0.25, NFCI:0.15 };
+  // Weights (sum=1). Labour (Sahm) equals original employment weight.
+  const W = { T10Y3M:0.26, CREDIT:0.18, SAHMCURRENT:0.16, DD_12M:0.25, NFCI:0.15 };
 
-  // Freshness penalties (applied per-series)
+  // Freshness penalties & cadences
   const FRESH = { daily:{ok:7,warn:30}, weekly:{ok:7,warn:30}, monthly:{ok:30,warn:60} };
-  const CADENCE = {T10Y3M:'daily',CREDIT:'monthly',UN_SLOPE6:'monthly',DD_12M:'daily',NFCI:'weekly'};
+  const CADENCE = {T10Y3M:'daily',CREDIT:'monthly',SAHMCURRENT:'monthly',DD_12M:'daily',NFCI:'weekly'};
   function freshnessPenalty(days, cadence){
     const lim = FRESH[cadence]||FRESH.daily;
     if (days<=lim.ok) return 1.00;
@@ -149,11 +138,11 @@
     return 0.70;
   }
 
-  // Small delta boosts to catch fast moves
+  // Delta boosts for fast movers (Sahm is slow → no boost)
   const DELTA_RULES = {
-    NFCI:  { lookbackDays:28, th:+0.15, add:+4 },   // tightening quickly
-    DD_12M:{ lookbackDays:14, th:-0.05, add:+3 },   // quick slide lower
-    T10Y3M:{ lookbackDays:14, th:-0.25, add:+3 }    // curve plunges
+    NFCI:  { lookbackDays:28, th:+0.15, add:+4 },
+    DD_12M:{ lookbackDays:14, th:-0.05, add:+3 },
+    T10Y3M:{ lookbackDays:14, th:-0.25, add:+3 }
   };
 
   // ====================== UTILS ======================
@@ -170,9 +159,7 @@
     const L=latest(series); if(!L) return Infinity;
     return Math.max(0, Math.round((new Date(fetchedAt)-d(L.date))/(1000*60*60*24)));
   }
-
-  // Align on common tail (your cache arrays are same length & dates in STRICT mode)
-  function alignedTail(S, keys, tail=180){
+  function alignedTail(S, keys, tail=240){
     const arrays = keys.map(k => (S[k]?.observations||[]));
     const minLen = Math.min(...arrays.map(a=>a.length||0));
     const n = Math.min(minLen, tail);
@@ -193,14 +180,26 @@
         const res = await fetch('data/fred_cache.json',{cache:'no-cache',signal:ctl.signal}); clearTimeout(t);
         if(!res.ok) throw new Error(`HTTP ${res.status}`);
         this.raw = await res.json();
-        this.setStatus('Ready');
       }catch(e){
-        this.setStatus('Failed to load data','bad');
-        document.getElementById('diag').textContent = 'Load error: '+e.message;
+        this.hardFail('Failed to load data', [e.message]);
         return;
       }
+
+      // Schema / presence check
+      const missing = [];
+      for(const k of KEYS){ if(!this.raw?.series?.[k]?.observations?.length) missing.push(k); }
+      if(missing.length){ this.hardFail('Missing required series in fred_cache.json', missing); return; }
+
+      this.setStatus('Ready');
       this.process();
       this.renderAll();
+    },
+
+    hardFail(title, items){
+      document.getElementById('status').textContent='Error';
+      const box=document.getElementById('hardError');
+      box.style.display='block';
+      box.innerHTML = `<strong>${title}</strong><br>Missing/Issue: ${items.map(x=>`<code>${x}</code>`).join(', ')}`;
     },
 
     setStatus(msg){ const el=document.getElementById('status'); if(el) el.textContent=msg; },
@@ -217,7 +216,7 @@
         this.ages[k] = seriesAgeDays(S[k], fetchedAt);
       }
 
-      // latest composite (with freshness & delta boosts)
+      // latest composite with freshness & delta boosts
       let wsum=0, sum=0;
       for(const k of KEYS){
         const v = this.latestVals[k];
@@ -231,7 +230,7 @@
                  + this.deltaBoost('T10Y3M', DELTA_RULES.T10Y3M);
       this.compLatest = Math.round(Math.min(100, Math.max(0,(sum/wsum) + boosts)));
 
-      // composite history (aligned tail), then 7-day MA
+      // composite history
       const {xs,byKey,n} = alignedTail(S, KEYS, 240);
       const comp=[];
       for(let i=0;i<n;i++){
@@ -243,32 +242,24 @@
       this.compMA7 = movingAvg(comp, 7);
 
       this.fetchedAt = fetchedAt;
-      this.alignedXs = xs;  // ISO dates
+      this.alignedXs = xs;
     },
 
     deltaBoost(key, rule){
       const S=this.raw?.series?.[key]?.observations||[];
       if(!S.length) return 0;
       const last=S[S.length-1]; const lb = new Date(new Date(last.date+"T00:00:00Z").getTime()-rule.lookbackDays*864e5);
-      // find observation on/just before lookback
       let base=+S[S.length-1].value;
       for(let i=S.length-1;i>=0;i--){
         const di = new Date(S[i].date+"T00:00:00Z");
         if(di<=lb){ base = +S[i].value; break; }
       }
       const chg = (+last.value) - base;
-      if(key==='DD_12M'){ return (chg<=rule.th) ? rule.add : 0; } // more negative quickly
+      if(key==='DD_12M'){ return (chg<=rule.th) ? rule.add : 0; }
       return (chg>=rule.th) ? rule.add : 0;
     },
 
-    renderAll(){
-      this.renderGauge();
-      this.renderPills();
-      this.renderCompositeChart();
-      this.renderIndicatorCharts();
-      this.renderDiagnostics();
-      this.renderEpisodes();
-    },
+    renderAll(){ this.renderGauge(); this.renderPills(); this.renderCompositeChart(); this.renderIndicatorCharts(); this.renderDiagnostics(); this.renderEpisodes(); },
 
     renderGauge(){
       document.getElementById('scoreText').textContent = isFinite(this.compLatest)? this.compLatest : '–';
@@ -287,18 +278,18 @@
 
     renderPills(){
       const host=document.getElementById('pills'); host.innerHTML='';
-      const label={T10Y3M:'Yield (10y–3m)',CREDIT:'Credit (BAA–AAA)',UN_SLOPE6:'Unemp Δ6m',DD_12M:'Drawdown 12m',NFCI:'NFCI'};
-      const fmt={T10Y3M:v=>v?.toFixed(2),CREDIT:v=>v?.toFixed(2),UN_SLOPE6:v=>v?.toFixed(2),DD_12M:v=>((v??0)*100).toFixed(1)+'%',NFCI:v=>v?.toFixed(3)};
+      const label={T10Y3M:'Yield (10y–3m)',CREDIT:'Credit (BAA–AAA)',SAHMCURRENT:'Sahm Rule',DD_12M:'Drawdown 12m',NFCI:'NFCI'};
+      const fmt={T10Y3M:v=>v?.toFixed(2),CREDIT:v=>v?.toFixed(2),SAHMCURRENT:v=>v?.toFixed(2),DD_12M:v=>((v??0)*100).toFixed(1)+'%',NFCI:v=>v?.toFixed(3)};
+      const tip={
+        T10Y3M:'More negative = worse (inversions often precede recessions).',
+        CREDIT:'Wider = worse (lower-grade vs AAA).',
+        SAHMCURRENT:'3-mo avg unemployment minus its 12-mo low; ≥0.5 historically signals recession.',
+        DD_12M:'More negative = worse (price stress).',
+        NFCI:'Higher = tighter/worse; >0 tighter than average.'
+      };
       for(const k of KEYS){
-        const pill=document.createElement('span'); pill.className='pill'; pill.title={
-          T10Y3M:'More negative = worse (inversions often precede recessions).',
-          CREDIT:'Wider = worse (lower-grade vs AAA).',
-          UN_SLOPE6:'Rising unemployment over 6 months = worse.',
-          DD_12M:'More negative = worse (price stress).',
-          NFCI:'Higher = tighter/worse; >0 tighter than average.'
-        }[k] || '';
-        const dot=document.createElement('span'); dot.className='dot';
-        dot.style.background=this.pillDot(this.ages[k], CADENCE[k]);
+        const pill=document.createElement('span'); pill.className='pill'; pill.title=tip[k]||'';
+        const dot=document.createElement('span'); dot.className='dot'; dot.style.background=this.pillDot(this.ages[k], CADENCE[k]);
         const val=this.latestVals[k];
         pill.append(dot, document.createTextNode(`${label[k]}: ${val==null?'—':fmt[k](val)}`));
         host.appendChild(pill);
@@ -308,25 +299,16 @@
     renderCompositeChart(){
       const el=document.getElementById('compChart');
       if(!this.compMA7.length){ el.closest('.chart').innerHTML='<div class="meta">No data.</div>'; return; }
-
-      // Register annotation plugin if available
       try{ const ap=(window.ChartAnnotation||window['chartjs-plugin-annotation']); if(ap && !Chart.registry.getPlugin('annotation')) Chart.register(ap); }catch(e){}
-
-      const xs = this.alignedXs.map(s=>{
-        const D=new Date(s+"T00:00:00Z");
-        return !isNaN(D) ? D.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}).replace(' ',' ’') : s;
-      });
-
+      const xs = this.alignedXs.map(s=>{ const D=new Date(s+"T00:00:00Z"); return !isNaN(D)? D.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}).replace(' ',' ’') : s; });
       const prev=App.charts.get(el); if(prev) prev.destroy();
       const chart=new Chart(el,{
         type:'line',
         data:{labels:xs, datasets:[{label:'Composite (7-day MA)', data:this.compMA7, borderColor:'#7da6ff', backgroundColor:'transparent', tension:.35, spanGaps:true, pointRadius:0}]},
         options:{
           responsive:true, maintainAspectRatio:false,
-          scales:{
-            y:{min:0,max:100,grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#9aa6bf'}},
-            x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9aa6bf',maxTicksLimit:6}}
-          },
+          scales:{ y:{min:0,max:100,grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#9aa6bf'}},
+                   x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9aa6bf',maxTicksLimit:6}}},
           plugins:{legend:{display:false},annotation:{annotations:{
             g:{type:'box',yMin:0,yMax:30,backgroundColor:'rgba(30,194,139,.06)',borderWidth:0},
             a:{type:'box',yMin:30,yMax:60,backgroundColor:'rgba(255,194,71,.05)',borderWidth:0},
@@ -334,7 +316,6 @@
             gl:{type:'line',yMin:30,yMax:30,borderColor:'rgba(30,194,139,.6)',borderDash:[6,4]},
             al:{type:'line',yMin:60,yMax:60,borderColor:'rgba(255,194,71,.7)',borderDash:[6,4]}
           }}}
-        }
       });
       App.charts.set(el,chart);
     },
@@ -344,7 +325,7 @@
       const cfgs=[
         {k:'T10Y3M', title:'Yield Curve (10y–3m)', desc:'More negative = worse.', color:'#6bb9ff', zero:true},
         {k:'CREDIT', title:'Credit Spread (BAA–AAA)', desc:'Wider = worse.', color:'#ffb36b', zero:false},
-        {k:'UN_SLOPE6', title:'Unemployment 6-month slope', desc:'Rising = worse.', color:'#ffa0b5', zero:true},
+        {k:'SAHMCURRENT', title:'Sahm Rule', desc:'Higher = worse; ≥0.5 has historically signaled recession.', color:'#ff9fc1', zero:true},
         {k:'DD_12M', title:'12-month Drawdown (S&P vs 1-yr peak)', desc:'More negative = worse.', color:'#a6c7ff', zero:true},
         {k:'NFCI', title:'Chicago Fed NFCI', desc:'Higher = tighter/worse.', color:'#9bd3c1', zero:true}
       ];
@@ -355,23 +336,18 @@
           <div class="chart"><canvas id="c_${c.k}" aria-label="${c.title} over time"></canvas></div>
           <div class="callout">${c.desc}</div>`;
         host.appendChild(sec);
-
         const obs=(S[c.k]?.observations||[]).slice(-180);
         if(!obs.length){ sec.querySelector('.chart').innerHTML='<div class="meta">No data.</div>'; continue; }
         const xs=obs.map(o=>o.date); const ys=obs.map(o=>+o.value);
-
         const el=document.getElementById(`c_${c.k}`);
         const prev=App.charts.get(el); if(prev) prev.destroy();
         const chart=new Chart(el,{
           type:'line',
-          data:{labels:xs, datasets:[{data:ys, borderColor:c.color, backgroundColor:'transparent', pointRadius:0, tension:.35}]},
-          options:{
-            responsive:true, maintainAspectRatio:false,
-            scales:{
-              x:{grid:{color:'rgba(255,255,255,.04)'},
-                 ticks:{color:'#9aa6bf',maxTicksLimit:6,callback:(v,i,t)=>{const raw=t?.[i]?.label||''; const D=new Date(raw); return !isNaN(D)? D.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}).replace(' ',' ’'):raw;}}},
-              y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#9aa6bf'}}
-            },
+          data:{labels:xs,datasets:[{data:ys,borderColor:c.color,backgroundColor:'transparent',pointRadius:0,tension:.35}]},
+          options:{responsive:true, maintainAspectRatio:false,
+            scales:{ x:{grid:{color:'rgba(255,255,255,.04)'},
+                        ticks:{color:'#9aa6bf',maxTicksLimit:6,callback:(v,i,t)=>{const raw=t?.[i]?.label||''; const D=new Date(raw); return !isNaN(D)? D.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}).replace(' ',' ’'):raw;}},
+                     y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#9aa6bf'}}},
             plugins:{legend:{display:false},annotation:c.zero?{annotations:{z:{type:'line',yMin:0,yMax:0,borderColor:'rgba(154,166,191,.6)',borderDash:[4,4]}}}:{}}}
         });
         App.charts.set(el,chart);
@@ -399,7 +375,6 @@
       tbody.innerHTML='';
       const arr=this.compMA7;
       if(!arr || !arr.length){ wrap.style.display='none'; return; }
-
       let prevZone=null;
       for(let i=0;i<arr.length;i++){
         const v=arr[i]; if(v==null) continue;
@@ -417,7 +392,6 @@
     }
   };
 
-  // ====================== BOOT ======================
   (async ()=>{ await App.init(); })();
   </script>
 </body>
