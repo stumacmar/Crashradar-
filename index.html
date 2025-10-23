@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Enhanced CrashRadar — Advanced Financial Stability Monitor with Sahm Rule & Regime Detection" />
-  <title>Enhanced CrashRadar — Financial Stability Monitor</title>
+  <meta name="description" content="CrashRadar — Composite Crash Risk (live FRED cache, freshness, episodes, per-indicator charts)." />
+  <title>CrashRadar — Composite Crash Risk</title>
 
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
@@ -13,16 +13,16 @@
       --bg:#0f1421; --panel:#161c2e; --muted:#9aa6bf; --text:#e8eeff; --accent:#7da6ff;
       --green:#1ec28b; --amber:#ffc247; --red:#ff6070; --radius:16px;
       --ring:180px; --ring-m:140px;
-      --expansion:#1ec28b; --downturn:#ffc247; --recession:#ff6070;
     }
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial}
-    .wrap{max-width:1080px;margin:0 auto;padding:20px 16px 64px}
+    .wrap{max-width:980px;margin:0 auto;padding:20px 16px 64px}
     h1{font-size:clamp(28px,5.5vw,44px);line-height:1.1;margin:0 0 8px}
     .sub{color:var(--muted);margin:6px 0 18px;font-size:14px}
 
     .card{background:var(--panel);border-radius:var(--radius);padding:20px;margin:16px 0;
       box-shadow:0 0 0 1px rgba(255,255,255,.05) inset}
+    .alert{background:#2b1f12;border:1px solid #4d3817;color:#ffdca8;padding:10px;border-radius:10px;margin-top:8px}
 
     /* Gauge */
     .gauge{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
@@ -51,19 +51,6 @@
     th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left}
     details summary{cursor:pointer;font-weight:600}
 
-    /* Regime indicators */
-    .regime-pill{display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600;margin:0 4px}
-    .regime-expansion{background:var(--expansion);color:#0f1421}
-    .regime-downturn{background:var(--downturn);color:#0f1421}
-    .regime-recession{background:var(--recession);color:#fff}
-
-    /* Model confidence */
-    .confidence-bar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin-top:4px}
-    .confidence-fill{height:100%;border-radius:3px;transition:width 0.5s ease}
-    .confidence-high{background:var(--green)}
-    .confidence-medium{background:var(--amber)}
-    .confidence-low{background:var(--red)}
-
     @media (max-width:768px){
       .gauge{justify-content:center;text-align:center}
       .ringwrap{width:var(--ring-m);height:var(--ring-m)}
@@ -75,12 +62,13 @@
 <body>
   <div class="wrap">
     <header>
-      <h1>Enhanced CrashRadar — Financial Stability Monitor</h1>
-      <div id="status" class="sub" aria-live="polite">Loading enhanced market data…</div>
+      <h1>CrashRadar — Composite Crash Risk</h1>
+      <div id="status" class="sub" aria-live="polite">Loading market data…</div>
+      <div id="labourBanner" class="alert" style="display:none"></div>
     </header>
 
     <main>
-      <!-- Gauge with enhanced metrics -->
+      <!-- Gauge -->
       <section class="card">
         <div class="gauge">
           <div class="ringwrap">
@@ -89,53 +77,46 @@
             <div id="scoreText" class="score">–</div>
           </div>
           <div>
-            <h2 style="margin:0 0 6px;font-size:26px">Stability Score</h2>
-            <div class="meta">
-              <div>Lower = safer. Dynamic thresholds based on regime.</div>
-              <div id="regimeIndicator" style="margin-top:4px"></div>
-              <div id="modelConfidence" style="margin-top:6px">
-                Model Confidence: <span id="confidenceText">—</span>
-                <div class="confidence-bar"><div id="confidenceFill" class="confidence-fill" style="width:0%"></div></div>
-              </div>
-            </div>
+            <h2 style="margin:0 0 6px;font-size:26px">Composite Score</h2>
+            <div class="meta">Lower = safer. Thresholds: <b style="color:var(--green)">≤30 Green</b>, <b style="color:var(--amber)">≤60 Amber</b>, <b style="color:var(--red)">&gt;60 Red</b>.</div>
             <div id="freshness" class="meta" style="margin-top:6px">—</div>
           </div>
         </div>
       </section>
 
-      <!-- Enhanced Indicator Pills -->
+      <!-- Pills -->
       <section class="card">
-        <h3 style="margin:0 0 8px">Enhanced Indicators</h3>
+        <h3 style="margin:0 0 8px">Indicators</h3>
         <div id="pills" role="list"></div>
       </section>
 
-      <!-- Composite with regime bands -->
+      <!-- Composite -->
       <section class="card">
-        <h3 style="margin:0 0 6px">Stability Index (7-day MA) with Regime Detection</h3>
-        <div class="meta">Dynamic bands based on detected market regime. Gauge = raw latest with momentum adjustment.</div>
-        <div class="chart"><canvas id="compChart" aria-label="Enhanced stability index with regime detection"></canvas></div>
+        <h3 style="margin:0 0 6px">Composite History (7-day MA)</h3>
+        <div class="meta">Bands: 0–30 (Green), 30–60 (Amber), 60–100 (Red). Aligned to your cache; gauge = raw latest.</div>
+        <div class="chart"><canvas id="compChart" aria-label="Composite risk 7-day moving average"></canvas></div>
       </section>
 
-      <!-- Enhanced indicator charts -->
+      <!-- Indicator charts -->
       <div id="charts"></div>
 
-      <!-- Advanced Diagnostics -->
+      <!-- Diagnostics -->
       <section class="card">
-        <h3 style="margin:0 0 8px">Advanced Diagnostics & Model Validation</h3>
+        <h3 style="margin:0 0 8px">Data & Diagnostics</h3>
         <details>
-          <summary>Technical Details & Model Performance</summary>
+          <summary>Technical Details</summary>
           <pre id="diag" style="white-space:pre-wrap;word-break:break-word;color:#ffdca8;background:#241d12;border:1px solid #4a3e20;border-radius:10px;padding:12px;max-height:360px;overflow:auto;margin:10px 0;font-size:12px;"></pre>
         </details>
 
-        <div id="episodesWrap" style="margin-top:12px;display:none">
-          <h4 style="margin:0 0 6px">Regime Change Episodes</h4>
+        <div id="episodesWrap" style="margin-top:8px;display:none">
+          <h4 style="margin:0 0 6px">Regime Episodes</h4>
           <table id="episodesTable">
-            <thead><tr><th>Date</th><th>From</th><th>To</th><th>Stability</th><th>Probability</th></tr></thead>
+            <thead><tr><th>Date</th><th>From</th><th>To</th><th>Composite</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
 
-        <div class="meta" style="margin-top:8px;">Enhanced model with Sahm Rule, regime detection, and cross-validation.</div>
+        <div class="meta" style="margin-top:8px;">Live data source: <code>data/fred_cache.json</code>.</div>
       </section>
     </main>
   </div>
@@ -145,417 +126,220 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.1/dist/chartjs-plugin-annotation.min.js"></script>
 
   <script>
-  // ====================== ENHANCED MODEL ======================
-  const KEYS = ['T10Y3M','CREDIT','SAHM_RULE','DD_12M','NFCI','VIX'];
+  // ====================== CONFIG (dynamic labour signal) ======================
+  // Fixed core signals
+  const CORE_KEYS = ['T10Y3M','CREDIT','DD_12M','NFCI']; // always required
+  // Labour will be chosen dynamically: SAHMCURRENT preferred, else UN_SLOPE6 (fallback).
 
-  // Enhanced 0–100 risk mappings with regime-aware scaling
+  // 0–100 risk mappings (good -> bad)
   const SCALE = {
-    T10Y3M:   (v, regime) => {
-      // Regime-aware yield curve sensitivity
-      const thresholds = regime === 'expansion' ? [1.2, -1.0] : 
-                        regime === 'downturn' ? [0.8, -1.5] : [0.5, -2.0];
-      return clamp(map01(v, thresholds[0], thresholds[1]));
-    },
-    CREDIT:   (v, regime) => {
-      // Credit spreads widen faster in downturns
-      const thresholds = regime === 'expansion' ? [0.25, 0.80] : 
-                        regime === 'downturn' ? [0.30, 1.00] : [0.35, 1.20];
-      return clamp(map01(v, thresholds[0], thresholds[1]));
-    },
-    SAHM_RULE: (v, regime) => {
-      // Sahm Rule: 0.5+ threshold for recession signal
-      // Enhanced with momentum weighting
-      return clamp(map01(v, 0.0, 0.5)) * (regime === 'recession' ? 1.2 : 1.0);
-    },
-    DD_12M:   (v, regime) => {
-      // Drawdown sensitivity increases in stress periods
-      const thresholds = regime === 'expansion' ? [0.00, -0.15] : 
-                        regime === 'downturn' ? [0.00, -0.18] : [0.00, -0.25];
-      return clamp(map01(v, thresholds[0], thresholds[1]));
-    },
-    NFCI:     (v, regime) => {
-      // Financial conditions tighten faster in stress
-      const thresholds = regime === 'expansion' ? [-0.60, 0.30] : 
-                        regime === 'downturn' ? [-0.70, 0.40] : [-0.80, 0.50];
-      return clamp(map01(v, thresholds[0], thresholds[1]));
-    },
-    VIX:      (v, regime) => {
-      // Volatility regime scaling
-      const thresholds = regime === 'expansion' ? [12, 25] : 
-                        regime === 'downturn' ? [15, 35] : [20, 45];
-      return clamp(map01(v, thresholds[0], thresholds[1]));
-    }
+    T10Y3M:     v => clamp(map01(v,  1.0, -2.0)),   // ↓ worse
+    CREDIT:     v => clamp(map01(v,  0.30, 1.00)),  // ↑ worse (BAA–AAA)
+    SAHMCURRENT:v => clamp(map01(v,  0.10, 0.50)),  // ↑ worse; ~0.5 => red trigger
+    UN_SLOPE6:  v => clamp(map01(v,  0.05, 0.50)),  // ↑ worse (legacy)
+    DD_12M:     v => clamp(map01(v,  0.00, -0.20)), // ↓ worse
+    NFCI:       v => clamp(map01(v, -0.80, 0.40))   // ↑ worse (>0 tighter)
   };
 
-  // Dynamic weights based on regime and cross-correlation
-  const WEIGHTS = {
-    expansion: { T10Y3M:0.22, CREDIT:0.18, SAHM_RULE:0.16, DD_12M:0.20, NFCI:0.14, VIX:0.10 },
-    downturn:  { T10Y3M:0.20, CREDIT:0.20, SAHM_RULE:0.18, DD_12M:0.22, NFCI:0.12, VIX:0.08 },
-    recession: { T10Y3M:0.18, CREDIT:0.22, SAHM_RULE:0.20, DD_12M:0.24, NFCI:0.10, VIX:0.06 }
+  // Weights (sum≈1). Labour gets 0.16 either way.
+  const W_BASE = { T10Y3M:0.26, CREDIT:0.18, LABOUR:0.16, DD_12M:0.25, NFCI:0.15 };
+
+  // Freshness penalties
+  const FRESH = { daily:{ok:7,warn:30}, weekly:{ok:7,warn:30}, monthly:{ok:30,warn:60} };
+  const CADENCE_BASE = {T10Y3M:'daily',CREDIT:'monthly',DD_12M:'daily',NFCI:'weekly'};
+  const CADENCE_LABOUR = {SAHMCURRENT:'monthly', UN_SLOPE6:'monthly'};
+  function freshnessPenalty(days, cadence){
+    const lim = FRESH[cadence]||FRESH.daily;
+    if (days<=lim.ok) return 1.00;
+    if (days<=lim.warn) return 0.85;
+    return 0.70;
+  }
+
+  // Small delta boosts to catch fast moves (labour excluded)
+  const DELTA_RULES = {
+    NFCI:  { lookbackDays:28, th:+0.15, add:+4 },   // tightening quickly
+    DD_12M:{ lookbackDays:14, th:-0.05, add:+3 },   // quick slide lower
+    T10Y3M:{ lookbackDays:14, th:-0.25, add:+3 }    // curve plunges
   };
 
-  // Enhanced freshness penalties with regime consideration
-  const FRESH = { daily:{ok:5,warn:20}, weekly:{ok:7,warn:25}, monthly:{ok:20,warn:45} };
-  const CADENCE = {
-    T10Y3M:'daily', CREDIT:'monthly', SAHM_RULE:'monthly', 
-    DD_12M:'daily', NFCI:'weekly', VIX:'daily'
-  };
-
-  // Enhanced momentum detection
-  const MOMENTUM_RULES = {
-    NFCI:      { lookbackDays:21, th:+0.12, add:+5 },
-    DD_12M:    { lookbackDays:14, th:-0.06, add:+4 },
-    T10Y3M:    { lookbackDays:14, th:-0.30, add:+4 },
-    SAHM_RULE: { lookbackDays:60, th:+0.15, add:+8 }, // Sahm Rule momentum is critical
-    VIX:       { lookbackDays:10, th:+8, add:+3 }
-  };
-
-  // ====================== ADVANCED UTILS ======================
-  function getDynamicThresholds(regime) {
-    // Adaptive thresholds based on market regime
-    switch(regime) {
-      case 'expansion': return { green: 25, amber: 50 };
-      case 'downturn': return { green: 30, amber: 55 };
-      case 'recession': return { green: 35, amber: 60 };
-      default: return { green: 30, amber: 60 };
-    }
+  // ====================== UTILS ======================
+  const GREEN=30, AMBER=60;
+  const d = s => new Date(s+"T00:00:00Z");
+  function gbDate(D){return D? D.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—'}
+  function clamp(x){ return Math.max(0, Math.min(100,x)); }
+  function map01(val, good, bad){ if(val==null) return 50; const denom=bad-good; if(Math.abs(denom)<1e-9) return 50; return ((val-good)/denom)*100; }
+  function zoneOf(s){ return s<=GREEN?'green':(s<=AMBER?'amber':'red'); }
+  function zoneName(z){ return z==='green'?'Green':z==='amber'?'Amber':'Red'; }
+  function movingAvg(a,k){ const out=[]; let sum=0; for(let i=0;i<a.length;i++){ sum+=a[i]; if(i>=k) sum-=a[i-k]; out.push(i>=k-1? +(sum/k).toFixed(1):null);} return out; }
+  function latest(series){ const obs=series?.observations||[]; if(!obs.length) return null; const o=obs[obs.length-1]; return {value:+o.value,date:o.date}; }
+  function seriesAgeDays(series, fetchedAt){
+    const L=latest(series); if(!L) return Infinity;
+    return Math.max(0, Math.round((new Date(fetchedAt)-d(L.date))/(1000*60*60*24)));
+  }
+  function alignedTail(S, keys, tail=240){
+    const arrays = keys.map(k => (S[k]?.observations||[]));
+    const minLen = Math.min(...arrays.map(a=>a.length||0));
+    const n = Math.min(minLen, tail);
+    const byKey = {};
+    keys.forEach((k,i)=> byKey[k] = arrays[i].slice(-n).map(o=>({date:o.date, value:+o.value})));
+    const xs = byKey[keys[0]].map(o=> o.date);
+    return {xs,byKey,n};
   }
 
-  function zoneOf(score, regime) {
-    const { green, amber } = getDynamicThresholds(regime);
-    return score <= green ? 'green' : (score <= amber ? 'amber' : 'red');
-  }
-
-  function zoneName(z) { 
-    return z === 'green' ? 'Stable' : z === 'amber' ? 'Elevated' : 'Critical'; 
-  }
-
-  function regimeName(r) {
-    return r === 'expansion' ? 'Expansion' : r === 'downturn' ? 'Downturn' : 'Recession';
-  }
-
-  function regimeColor(r) {
-    return r === 'expansion' ? 'var(--expansion)' : 
-           r === 'downturn' ? 'var(--downturn)' : 'var(--recession)';
-  }
-
-  // Enhanced moving average with outlier detection
-  function robustMovingAvg(a, k) {
-    const out = [];
-    for(let i = 0; i < a.length; i++) {
-      if(i < k-1) { out.push(null); continue; }
-      
-      const window = a.slice(i-k+1, i+1).filter(x => x != null);
-      if(window.length < k/2) { out.push(null); continue; }
-      
-      // Remove outliers (outside 1.5 IQR)
-      const q1 = quantile(window, 0.25);
-      const q3 = quantile(window, 0.75);
-      const iqr = q3 - q1;
-      const filtered = window.filter(x => 
-        x >= q1 - 1.5*iqr && x <= q3 + 1.5*iqr
-      );
-      
-      out.push(+(filtered.reduce((s,x) => s+x, 0) / filtered.length).toFixed(1));
-    }
-    return out;
-  }
-
-  function quantile(arr, q) {
-    const sorted = [...arr].sort((a,b) => a-b);
-    const pos = (sorted.length - 1) * q;
-    const base = Math.floor(pos);
-    const rest = pos - base;
-    if (sorted[base + 1] !== undefined) {
-      return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
-    } else {
-      return sorted[base];
-    }
-  }
-
-  // Regime detection using multiple indicators
-  function detectRegime(seriesData, currentDate) {
-    const signals = {
-      sahm: false,
-      yieldInversion: false,
-      creditStress: false,
-      marketStress: false
-    };
-    
-    // Sahm Rule detection
-    const sahmSeries = seriesData.SAHM_RULE || [];
-    if(sahmSeries.length > 0) {
-      const recentSahm = sahmSeries.slice(-3).map(o => +o.value);
-      signals.sahm = recentSahm.some(v => v >= 0.5) || 
-                    (recentSahm.length > 0 && recentSahm[recentSahm.length-1] >= 0.4);
-    }
-    
-    // Yield curve inversion
-    const yieldSeries = seriesData.T10Y3M || [];
-    if(yieldSeries.length > 0) {
-      const recentYield = yieldSeries.slice(-10).map(o => +o.value);
-      signals.yieldInversion = recentYield.filter(v => v < 0).length >= 6;
-    }
-    
-    // Credit stress
-    const creditSeries = seriesData.CREDIT || [];
-    if(creditSeries.length > 0) {
-      const recentCredit = creditSeries.slice(-3).map(o => +o.value);
-      signals.creditStress = recentCredit.some(v => v > 0.8) ||
-                           (recentCredit.length > 0 && recentCredit[recentCredit.length-1] > 0.7);
-    }
-    
-    // Market stress (drawdown + VIX)
-    const ddSeries = seriesData.DD_12M || [];
-    const vixSeries = seriesData.VIX || [];
-    if(ddSeries.length > 0 && vixSeries.length > 0) {
-      const recentDD = ddSeries.slice(-2).map(o => +o.value);
-      const recentVIX = vixSeries.slice(-5).map(o => +o.value);
-      signals.marketStress = (recentDD.some(v => v < -0.15)) || 
-                           (recentVIX.filter(v => v > 25).length >= 3);
-    }
-    
-    // Determine regime based on signal combinations
-    if(signals.sahm || (signals.yieldInversion && signals.creditStress)) {
-      return 'recession';
-    } else if(signals.yieldInversion || signals.creditStress || signals.marketStress) {
-      return 'downturn';
-    } else {
-      return 'expansion';
-    }
-  }
-
-  // Model confidence calculation
-  function calculateConfidence(seriesData, ages, regime) {
-    let score = 100;
-    
-    // Freshness penalty
-    for(const k of KEYS) {
-      const age = ages[k];
-      const cadence = CADENCE[k];
-      const lim = FRESH[cadence] || FRESH.daily;
-      
-      if(age > lim.warn) score -= 8;
-      else if(age > lim.ok) score -= 4;
-    }
-    
-    // Data coverage penalty
-    const coverage = KEYS.filter(k => (seriesData[k]?.observations?.length || 0) > 50).length / KEYS.length;
-    score *= coverage;
-    
-    // Regime stability bonus (if we've been in this regime for a while)
-    if(regime === 'expansion') score += 5;
-    
-    return Math.max(20, Math.min(100, Math.round(score)));
-  }
-
-  // ====================== ENHANCED APP ======================
+  // ====================== APP ======================
   const App = {
-    raw: null,
-    compLatest: null,
-    compMA7: [],
-    compRaw: [],
-    latestVals: {},
-    ages: {},
-    regime: 'expansion',
-    modelConfidence: 80,
-    charts: new Map(),
+    raw:null, keys:[], labourKey:null, weights:{}, cadence:{},
+    compLatest:null, compMA7:[], compRaw:[], latestVals:{}, ages:{}, charts:new Map(),
 
-    async init() {
-      this.setStatus('Loading enhanced market data…');
-      try {
-        const ctl = new AbortController();
-        const t = setTimeout(() => ctl.abort(), 10000);
-        const res = await fetch('data/fred_cache.json', { cache: 'no-cache', signal: ctl.signal });
-        clearTimeout(t);
+    async init(){
+      this.setStatus('Loading market data…');
+      try{
+        const ctl = new AbortController(); const t=setTimeout(()=>ctl.abort(),10000);
+        const res = await fetch('data/fred_cache.json',{cache:'no-cache',signal:ctl.signal}); clearTimeout(t);
         if(!res.ok) throw new Error(`HTTP ${res.status}`);
         this.raw = await res.json();
-        this.setStatus('Enhanced model ready');
-      } catch(e) {
-        this.setStatus('Failed to load data', 'bad');
-        document.getElementById('diag').textContent = 'Load error: ' + e.message;
+        this.setStatus('Ready');
+      }catch(e){
+        this.setStatus('Failed to load data');
+        console.error(e);
         return;
       }
+
+      // Decide labour signal based on availability
+      const S = this.raw?.series || {};
+      this.labourKey = S['SAHMCURRENT']?.observations?.length ? 'SAHMCURRENT'
+                       : (S['UN_SLOPE6']?.observations?.length ? 'UN_SLOPE6' : null);
+      if(!this.labourKey){
+        // Neither labour series present — we still render the rest but show a clear banner
+        document.getElementById('labourBanner').style.display='block';
+        document.getElementById('labourBanner').innerHTML = 'Labour signal missing: expected <code>SAHMCURRENT</code> (preferred) or <code>UN_SLOPE6</code>. Composite shown without labour (slightly less robust).';
+        this.keys = [...CORE_KEYS]; // run without labour
+      }else{
+        this.keys = [...CORE_KEYS, this.labourKey];
+        if(this.labourKey==='UN_SLOPE6'){
+          const b=document.getElementById('labourBanner');
+          b.style.display='block';
+          b.innerHTML='Using <b>UN_SLOPE6</b> as a temporary labour fallback. Add <code>SAHMCURRENT</code> to <code>data/fred_cache.json</code> and the dashboard will switch automatically.';
+        }
+      }
+
+      // Build weights & cadence maps
+      this.weights = { T10Y3M:W_BASE.T10Y3M, CREDIT:W_BASE.CREDIT, DD_12M:W_BASE.DD_12M, NFCI:W_BASE.NFCI };
+      this.cadence = {...CADENCE_BASE};
+      if(this.labourKey){
+        this.weights[this.labourKey] = W_BASE.LABOUR;
+        this.cadence[this.labourKey] = CADENCE_LABOUR[this.labourKey] || 'monthly';
+      }
+
       this.process();
       this.renderAll();
     },
 
-    setStatus(msg) { 
-      const el = document.getElementById('status'); 
-      if(el) el.textContent = msg; 
-    },
+    setStatus(msg){ const el=document.getElementById('status'); if(el) el.textContent=msg; },
+    setNeedle(score){ const n=document.getElementById('needle'); if(n) n.style.setProperty('--angle', ((Math.max(0,Math.min(100,score))/100)*360)+'deg'); },
 
-    setNeedle(score) { 
-      const n = document.getElementById('needle'); 
-      if(n) n.style.setProperty('--angle', ((Math.max(0, Math.min(100, score)) / 100) * 360) + 'deg'); 
-    },
-
-    process() {
-      const S = this.raw?.series || {};
+    process(){
+      const S = this.raw?.series||{};
       const fetchedAt = this.raw?.fetched_at_utc ? new Date(this.raw.fetched_at_utc) : new Date();
 
-      // Detect current regime
-      this.regime = detectRegime(S, fetchedAt);
-      
-      // Latest values & ages
-      for(const k of KEYS) {
-        const L = this.latest(S[k]);
-        this.latestVals[k] = L ? L.value : null;
-        this.ages[k] = this.seriesAgeDays(S[k], fetchedAt);
+      // latest values & ages
+      for(const k of this.keys){
+        const L = latest(S[k]);
+        this.latestVals[k] = L? L.value : null;
+        this.ages[k] = seriesAgeDays(S[k], fetchedAt);
       }
 
-      // Enhanced composite with regime-aware scoring
-      let wsum = 0, sum = 0;
-      const weights = WEIGHTS[this.regime];
-      
-      for(const k of KEYS) {
+      // latest composite (with freshness & delta boosts)
+      let wsum=0, sum=0;
+      for(const k of this.keys){
         const v = this.latestVals[k];
-        const risk = SCALE[k](v, this.regime);
-        const pen = this.freshnessPenalty(this.ages[k], CADENCE[k]);
-        sum += risk * weights[k] * pen;
-        wsum += weights[k];
+        const risk = (k in SCALE)? SCALE[k](v) : 50;
+        const pen = freshnessPenalty(this.ages[k], this.cadence[k]);
+        const wk = this.weights[k] ?? 0;
+        sum += risk * wk * pen;
+        wsum += wk;
       }
-      
-      // Enhanced momentum boosts
-      let boosts = this.deltaBoost('NFCI', MOMENTUM_RULES.NFCI)
-                 + this.deltaBoost('DD_12M', MOMENTUM_RULES.DD_12M)
-                 + this.deltaBoost('T10Y3M', MOMENTUM_RULES.T10Y3M)
-                 + this.deltaBoost('SAHM_RULE', MOMENTUM_RULES.SAHM_RULE)
-                 + this.deltaBoost('VIX', MOMENTUM_RULES.VIX);
-                 
-      this.compLatest = Math.round(Math.min(100, Math.max(0, (sum / wsum) + boosts)));
+      let boosts = this.deltaBoost('NFCI', DELTA_RULES.NFCI)
+                 + this.deltaBoost('DD_12M', DELTA_RULES.DD_12M)
+                 + this.deltaBoost('T10Y3M', DELTA_RULES.T10Y3M);
+      this.compLatest = Math.round(Math.min(100, Math.max(0, wsum>0? (sum/wsum) + boosts : null)));
 
-      // Enhanced composite history with regime detection over time
-      const { xs, byKey, n } = this.alignedTail(S, KEYS, 240);
-      const comp = [];
-      const regimes = [];
-      
-      for(let i = 0; i < n; i++) {
-        // Detect regime for each historical point
-        const pointData = {};
-        for(const k of KEYS) {
-          pointData[k] = [byKey[k][i]];
-        }
-        const pointDate = new Date(xs[i] + "T00:00:00Z");
-        const pointRegime = detectRegime(pointData, pointDate);
-        regimes.push(pointRegime);
-        
-        // Calculate score with appropriate regime weights
-        let tot = 0, w = 0;
-        const pointWeights = WEIGHTS[pointRegime];
-        for(const k of KEYS) { 
-          const v = byKey[k][i]?.value; 
-          const r = SCALE[k](v, pointRegime); 
-          tot += r * pointWeights[k]; 
-          w += pointWeights[k]; 
-        }
-        comp.push(+(tot / w).toFixed(1));
+      // composite history
+      const {xs,byKey,n} = alignedTail(S, this.keys, 240);
+      const comp=[];
+      for(let i=0;i<n;i++){
+        let tot=0, w=0;
+        for(const k of this.keys){ const v = byKey[k][i]?.value; const r=SCALE[k](v); const wk=this.weights[k]??0; tot += r*wk; w+=wk; }
+        comp.push( +(tot/(w||1)).toFixed(1) );
       }
-      
       this.compRaw = comp;
-      this.compMA7 = robustMovingAvg(comp, 7);
-      this.historicalRegimes = regimes;
-
-      // Calculate model confidence
-      this.modelConfidence = calculateConfidence(S, this.ages, this.regime);
+      this.compMA7 = movingAvg(comp, 7);
 
       this.fetchedAt = fetchedAt;
-      this.alignedXs = xs;
+      this.alignedXs = xs;  // ISO dates
     },
 
-    // ... (rest of the methods remain similar but enhanced for new features)
+    deltaBoost(key, rule){
+      const S=this.raw?.series?.[key]?.observations||[];
+      if(!S.length) return 0;
+      const last=S[S.length-1]; const lb = new Date(new Date(last.date+"T00:00:00Z").getTime()-rule.lookbackDays*864e5);
+      let base=+S[S.length-1].value;
+      for(let i=S.length-1;i>=0;i--){
+        const di = new Date(S[i].date+"T00:00:00Z");
+        if(di<=lb){ base = +S[i].value; break; }
+      }
+      const chg = (+last.value) - base;
+      if(key==='DD_12M'){ return (chg<=rule.th) ? rule.add : 0; }
+      return (chg>=rule.th) ? rule.add : 0;
+    },
 
-    renderGauge() {
-      document.getElementById('scoreText').textContent = isFinite(this.compLatest) ? this.compLatest : '–';
-      this.setNeedle(isFinite(this.compLatest) ? this.compLatest : 50);
-      
-      // Display regime
-      const regimeEl = document.getElementById('regimeIndicator');
-      regimeEl.innerHTML = `Current Regime: <span class="regime-pill regime-${this.regime}" style="background:${regimeColor(this.regime)}">${regimeName(this.regime)}</span>`;
-      
-      // Display model confidence
-      const confEl = document.getElementById('confidenceText');
-      const fillEl = document.getElementById('confidenceFill');
-      confEl.textContent = `${this.modelConfidence}%`;
-      fillEl.style.width = `${this.modelConfidence}%`;
-      fillEl.className = `confidence-fill ${
-        this.modelConfidence >= 80 ? 'confidence-high' : 
-        this.modelConfidence >= 60 ? 'confidence-medium' : 'confidence-low'
-      }`;
-      
-      const ts = this.raw?.fetched_at_utc ? new Date(this.raw.fetched_at_utc) : null;
-      const txt = ts ? `${ts.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'})} ${ts.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}` : '—';
+    renderAll(){
+      this.renderGauge();
+      this.renderPills();
+      this.renderCompositeChart();
+      this.renderIndicatorCharts();
+      this.renderDiagnostics();
+      this.renderEpisodes();
+    },
+
+    renderGauge(){
+      document.getElementById('scoreText').textContent = isFinite(this.compLatest)? this.compLatest : '–';
+      this.setNeedle(isFinite(this.compLatest)? this.compLatest : 50);
+      const ts = this.raw?.fetched_at_utc? new Date(this.raw.fetched_at_utc) : null;
+      const txt = ts ? `${ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})} ${ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}` : '—';
       document.getElementById('freshness').textContent = `AS-OF ${txt}`;
     },
 
-    // ... (other rendering methods enhanced for new indicators and features)
-  };
+    pillDot(days, cadence){
+      const lim = FRESH[cadence]||FRESH.daily;
+      if (days<=lim.ok) return 'var(--green)';
+      if (days<=lim.warn) return 'var(--amber)';
+      return 'var(--red)';
+    },
 
-  // Keep existing utility functions but enhance where needed for new features
-  const d = s => new Date(s + "T00:00:00Z");
-  function gbDate(D) { return D ? D.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}) : '—' }
-  function clamp(x) { return Math.max(0, Math.min(100, x)); }
-  function map01(val, good, bad) { 
-    if(val == null) return 50; 
-    const denom = bad - good; 
-    if(Math.abs(denom) < 1e-9) return 50; 
-    return ((val - good) / denom) * 100; 
-  }
-  function movingAvg(a, k) { 
-    const out = []; 
-    let sum = 0; 
-    for(let i = 0; i < a.length; i++) { 
-      sum += a[i]; 
-      if(i >= k) sum -= a[i - k]; 
-      out.push(i >= k - 1 ? +(sum / k).toFixed(1) : null); 
-    } 
-    return out; 
-  }
-  function latest(series) { 
-    const obs = series?.observations || []; 
-    if(!obs.length) return null; 
-    const o = obs[obs.length - 1]; 
-    return { value: +o.value, date: o.date }; 
-  }
-  function seriesAgeDays(series, fetchedAt) {
-    const L = latest(series); 
-    if(!L) return Infinity;
-    return Math.max(0, Math.round((new Date(fetchedAt) - d(L.date)) / (1000 * 60 * 60 * 24)));
-  }
-  function freshnessPenalty(days, cadence) {
-    const lim = FRESH[cadence] || FRESH.daily;
-    if(days <= lim.ok) return 1.00;
-    if(days <= lim.warn) return 0.85;
-    return 0.70;
-  }
-  function alignedTail(S, keys, tail = 180) {
-    const arrays = keys.map(k => (S[k]?.observations || []));
-    const minLen = Math.min(...arrays.map(a => a.length || 0));
-    const n = Math.min(minLen, tail);
-    const byKey = {};
-    keys.forEach((k, i) => byKey[k] = arrays[i].slice(-n).map(o => ({date: o.date, value: +o.value})));
-    const xs = byKey[keys[0]].map(o => o.date);
-    return { xs, byKey, n };
-  }
+    renderPills(){
+      const host=document.getElementById('pills'); host.innerHTML='';
+      const labelBase={T10Y3M:'Yield (10y–3m)',CREDIT:'Credit (BAA–AAA)',DD_12M:'Drawdown 12m',NFCI:'NFCI'};
+      const labourLabel = this.labourKey==='SAHMCURRENT' ? 'Sahm Rule' : (this.labourKey==='UN_SLOPE6' ? 'Unemp Δ6m (fallback)' : null);
+      const label = {...labelBase}; if(this.labourKey) label[this.labourKey]=labourLabel;
 
-  // Enhanced deltaBoost function
-  function deltaBoost(key, rule) {
-    const S = this.raw?.series?.[key]?.observations || [];
-    if(!S.length) return 0;
-    const last = S[S.length - 1]; 
-    const lb = new Date(new Date(last.date + "T00:00:00Z").getTime() - rule.lookbackDays * 864e5);
-    let base = +S[S.length - 1].value;
-    for(let i = S.length - 1; i >= 0; i--) {
-      const di = new Date(S[i].date + "T00:00:00Z");
-      if(di <= lb) { base = +S[i].value; break; }
-    }
-    const chg = (+last.value) - base;
-    if(key === 'DD_12M') { return (chg <= rule.th) ? rule.add : 0; }
-    return (chg >= rule.th) ? rule.add : 0;
-  }
+      const fmt={T10Y3M:v=>v?.toFixed(2),CREDIT:v=>v?.toFixed(2),
+                 SAHMCURRENT:v=>v?.toFixed(2),UN_SLOPE6:v=>v?.toFixed(2),
+                 DD_12M:v=>((v??0)*100).toFixed(1)+'%',NFCI:v=>v?.toFixed(3)};
 
-  // Initialize the enhanced app
-  (async () => { await App.init(); })();
-  </script>
-</body>
-</html>
+      const tipBase={
+        T10Y3M:'More negative = worse (inversions often precede recessions).',
+        CREDIT:'Wider = worse (lower-grade vs AAA).',
+        DD_12M:'More negative = worse (price stress).',
+        NFCI:'Higher = tighter/worse; >0 tighter than average.'
+      };
+      const tipLabour = this.labourKey==='SAHMCURRENT'
+        ? '3-mo avg unemployment minus its 12-mo low; ≥0.5 historically signals recession.'
+        : '6-month change in unemployment; rising = worse (temporary fallback).';
+      const tip = {...tipBase}; if(this.labourKey) tip[this.labourKey]=tipLabour;
+
+      for(const k of this.keys){
+        const pill=document.createElement('span'); pill.className='pill'; pill.title=tip[k]||'';
+        const dot=document.createElement('span'); dot.className='dot'; dot.style.background=this.pillDot(this.ages[k], (this.cadence[k]||'daily'));
+        const val=this.latestVals[k];
+        pill.append(dot, document.create
