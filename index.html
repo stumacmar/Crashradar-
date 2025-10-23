@@ -1,3 +1,5 @@
+Here is the most correct base code
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -22,7 +24,6 @@
 
     .card{background:var(--panel);border-radius:var(--radius);padding:20px;margin:16px 0;
       box-shadow:0 0 0 1px rgba(255,255,255,.05) inset}
-    .alert{background:#2b1f12;border:1px solid #4d3817;color:#ffdca8;padding:10px;border-radius:10px;margin-top:8px}
 
     /* Gauge */
     .gauge{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
@@ -64,7 +65,6 @@
     <header>
       <h1>CrashRadar — Composite Crash Risk</h1>
       <div id="status" class="sub" aria-live="polite">Loading market data…</div>
-      <div id="labourBanner" class="alert" style="display:none"></div>
     </header>
 
     <main>
@@ -126,28 +126,24 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.1/dist/chartjs-plugin-annotation.min.js"></script>
 
   <script>
-  // ====================== CONFIG (dynamic labour signal) ======================
-  // Fixed core signals
-  const CORE_KEYS = ['T10Y3M','CREDIT','DD_12M','NFCI']; // always required
-  // Labour will be chosen dynamically: SAHMCURRENT preferred, else UN_SLOPE6 (fallback).
+  // ====================== MODEL (uses your existing 5-series cache) ======================
+  const KEYS = ['T10Y3M','CREDIT','UN_SLOPE6','DD_12M','NFCI'];
 
-  // 0–100 risk mappings (good -> bad)
+  // 0–100 risk mappings (good -> bad) — tightened for responsiveness
   const SCALE = {
-    T10Y3M:     v => clamp(map01(v,  1.0, -2.0)),   // ↓ worse
-    CREDIT:     v => clamp(map01(v,  0.30, 1.00)),  // ↑ worse (BAA–AAA)
-    SAHMCURRENT:v => clamp(map01(v,  0.10, 0.50)),  // ↑ worse; ~0.5 => red trigger
-    UN_SLOPE6:  v => clamp(map01(v,  0.05, 0.50)),  // ↑ worse (legacy)
-    DD_12M:     v => clamp(map01(v,  0.00, -0.20)), // ↓ worse
-    NFCI:       v => clamp(map01(v, -0.80, 0.40))   // ↑ worse (>0 tighter)
+    T10Y3M:   v => clamp(map01(v,  1.0, -2.0)),     // ↓ worse
+    CREDIT:   v => clamp(map01(v,  0.30, 1.00)),    // ↑ worse (BAA–AAA)
+    UN_SLOPE6:v => clamp(map01(v,  0.05, 0.50)),    // ↑ worse (min sensitivity 0.05)
+    DD_12M:   v => clamp(map01(v,  0.00, -0.20)),   // ↓ worse (−20% = red)
+    NFCI:     v => clamp(map01(v, -0.80, 0.40))     // ↑ worse (>0 tighter)
   };
 
-  // Weights (sum≈1). Labour gets 0.16 either way.
-  const W_BASE = { T10Y3M:0.26, CREDIT:0.18, LABOUR:0.16, DD_12M:0.25, NFCI:0.15 };
+  // Weights (sum=1): more weight to faster/market series
+  const W = { T10Y3M:0.26, CREDIT:0.18, UN_SLOPE6:0.16, DD_12M:0.25, NFCI:0.15 };
 
-  // Freshness penalties
+  // Freshness penalties (applied per-series)
   const FRESH = { daily:{ok:7,warn:30}, weekly:{ok:7,warn:30}, monthly:{ok:30,warn:60} };
-  const CADENCE_BASE = {T10Y3M:'daily',CREDIT:'monthly',DD_12M:'daily',NFCI:'weekly'};
-  const CADENCE_LABOUR = {SAHMCURRENT:'monthly', UN_SLOPE6:'monthly'};
+  const CADENCE = {T10Y3M:'daily',CREDIT:'monthly',UN_SLOPE6:'monthly',DD_12M:'daily',NFCI:'weekly'};
   function freshnessPenalty(days, cadence){
     const lim = FRESH[cadence]||FRESH.daily;
     if (days<=lim.ok) return 1.00;
@@ -155,7 +151,7 @@
     return 0.70;
   }
 
-  // Small delta boosts to catch fast moves (labour excluded)
+  // Small delta boosts to catch fast moves
   const DELTA_RULES = {
     NFCI:  { lookbackDays:28, th:+0.15, add:+4 },   // tightening quickly
     DD_12M:{ lookbackDays:14, th:-0.05, add:+3 },   // quick slide lower
@@ -176,7 +172,9 @@
     const L=latest(series); if(!L) return Infinity;
     return Math.max(0, Math.round((new Date(fetchedAt)-d(L.date))/(1000*60*60*24)));
   }
-  function alignedTail(S, keys, tail=240){
+
+  // Align on common tail (your cache arrays are same length & dates in STRICT mode)
+  function alignedTail(S, keys, tail=180){
     const arrays = keys.map(k => (S[k]?.observations||[]));
     const minLen = Math.min(...arrays.map(a=>a.length||0));
     const n = Math.min(minLen, tail);
@@ -188,8 +186,7 @@
 
   // ====================== APP ======================
   const App = {
-    raw:null, keys:[], labourKey:null, weights:{}, cadence:{},
-    compLatest:null, compMA7:[], compRaw:[], latestVals:{}, ages:{}, charts:new Map(),
+    raw:null, compLatest:null, compMA7:[], compRaw:[], latestVals:{}, ages:{}, charts:new Map(),
 
     async init(){
       this.setStatus('Loading market data…');
@@ -200,37 +197,10 @@
         this.raw = await res.json();
         this.setStatus('Ready');
       }catch(e){
-        this.setStatus('Failed to load data');
-        console.error(e);
+        this.setStatus('Failed to load data','bad');
+        document.getElementById('diag').textContent = 'Load error: '+e.message;
         return;
       }
-
-      // Decide labour signal based on availability
-      const S = this.raw?.series || {};
-      this.labourKey = S['SAHMCURRENT']?.observations?.length ? 'SAHMCURRENT'
-                       : (S['UN_SLOPE6']?.observations?.length ? 'UN_SLOPE6' : null);
-      if(!this.labourKey){
-        // Neither labour series present — we still render the rest but show a clear banner
-        document.getElementById('labourBanner').style.display='block';
-        document.getElementById('labourBanner').innerHTML = 'Labour signal missing: expected <code>SAHMCURRENT</code> (preferred) or <code>UN_SLOPE6</code>. Composite shown without labour (slightly less robust).';
-        this.keys = [...CORE_KEYS]; // run without labour
-      }else{
-        this.keys = [...CORE_KEYS, this.labourKey];
-        if(this.labourKey==='UN_SLOPE6'){
-          const b=document.getElementById('labourBanner');
-          b.style.display='block';
-          b.innerHTML='Using <b>UN_SLOPE6</b> as a temporary labour fallback. Add <code>SAHMCURRENT</code> to <code>data/fred_cache.json</code> and the dashboard will switch automatically.';
-        }
-      }
-
-      // Build weights & cadence maps
-      this.weights = { T10Y3M:W_BASE.T10Y3M, CREDIT:W_BASE.CREDIT, DD_12M:W_BASE.DD_12M, NFCI:W_BASE.NFCI };
-      this.cadence = {...CADENCE_BASE};
-      if(this.labourKey){
-        this.weights[this.labourKey] = W_BASE.LABOUR;
-        this.cadence[this.labourKey] = CADENCE_LABOUR[this.labourKey] || 'monthly';
-      }
-
       this.process();
       this.renderAll();
     },
@@ -243,7 +213,7 @@
       const fetchedAt = this.raw?.fetched_at_utc ? new Date(this.raw.fetched_at_utc) : new Date();
 
       // latest values & ages
-      for(const k of this.keys){
+      for(const k of KEYS){
         const L = latest(S[k]);
         this.latestVals[k] = L? L.value : null;
         this.ages[k] = seriesAgeDays(S[k], fetchedAt);
@@ -251,26 +221,25 @@
 
       // latest composite (with freshness & delta boosts)
       let wsum=0, sum=0;
-      for(const k of this.keys){
+      for(const k of KEYS){
         const v = this.latestVals[k];
-        const risk = (k in SCALE)? SCALE[k](v) : 50;
-        const pen = freshnessPenalty(this.ages[k], this.cadence[k]);
-        const wk = this.weights[k] ?? 0;
-        sum += risk * wk * pen;
-        wsum += wk;
+        const risk = SCALE[k](v);
+        const pen = freshnessPenalty(this.ages[k], CADENCE[k]);
+        sum += risk * W[k] * pen;
+        wsum += W[k];
       }
       let boosts = this.deltaBoost('NFCI', DELTA_RULES.NFCI)
                  + this.deltaBoost('DD_12M', DELTA_RULES.DD_12M)
                  + this.deltaBoost('T10Y3M', DELTA_RULES.T10Y3M);
-      this.compLatest = Math.round(Math.min(100, Math.max(0, wsum>0? (sum/wsum) + boosts : null)));
+      this.compLatest = Math.round(Math.min(100, Math.max(0,(sum/wsum) + boosts)));
 
-      // composite history
-      const {xs,byKey,n} = alignedTail(S, this.keys, 240);
+      // composite history (aligned tail), then 7-day MA
+      const {xs,byKey,n} = alignedTail(S, KEYS, 240);
       const comp=[];
       for(let i=0;i<n;i++){
         let tot=0, w=0;
-        for(const k of this.keys){ const v = byKey[k][i]?.value; const r=SCALE[k](v); const wk=this.weights[k]??0; tot += r*wk; w+=wk; }
-        comp.push( +(tot/(w||1)).toFixed(1) );
+        for(const k of KEYS){ const v = byKey[k][i]?.value; const r=SCALE[k](v); tot += r*W[k]; w+=W[k]; }
+        comp.push( +(tot/w).toFixed(1) );
       }
       this.compRaw = comp;
       this.compMA7 = movingAvg(comp, 7);
@@ -283,13 +252,14 @@
       const S=this.raw?.series?.[key]?.observations||[];
       if(!S.length) return 0;
       const last=S[S.length-1]; const lb = new Date(new Date(last.date+"T00:00:00Z").getTime()-rule.lookbackDays*864e5);
+      // find observation on/just before lookback
       let base=+S[S.length-1].value;
       for(let i=S.length-1;i>=0;i--){
         const di = new Date(S[i].date+"T00:00:00Z");
         if(di<=lb){ base = +S[i].value; break; }
       }
       const chg = (+last.value) - base;
-      if(key==='DD_12M'){ return (chg<=rule.th) ? rule.add : 0; }
+      if(key==='DD_12M'){ return (chg<=rule.th) ? rule.add : 0; } // more negative quickly
       return (chg>=rule.th) ? rule.add : 0;
     },
 
@@ -319,27 +289,138 @@
 
     renderPills(){
       const host=document.getElementById('pills'); host.innerHTML='';
-      const labelBase={T10Y3M:'Yield (10y–3m)',CREDIT:'Credit (BAA–AAA)',DD_12M:'Drawdown 12m',NFCI:'NFCI'};
-      const labourLabel = this.labourKey==='SAHMCURRENT' ? 'Sahm Rule' : (this.labourKey==='UN_SLOPE6' ? 'Unemp Δ6m (fallback)' : null);
-      const label = {...labelBase}; if(this.labourKey) label[this.labourKey]=labourLabel;
-
-      const fmt={T10Y3M:v=>v?.toFixed(2),CREDIT:v=>v?.toFixed(2),
-                 SAHMCURRENT:v=>v?.toFixed(2),UN_SLOPE6:v=>v?.toFixed(2),
-                 DD_12M:v=>((v??0)*100).toFixed(1)+'%',NFCI:v=>v?.toFixed(3)};
-
-      const tipBase={
-        T10Y3M:'More negative = worse (inversions often precede recessions).',
-        CREDIT:'Wider = worse (lower-grade vs AAA).',
-        DD_12M:'More negative = worse (price stress).',
-        NFCI:'Higher = tighter/worse; >0 tighter than average.'
-      };
-      const tipLabour = this.labourKey==='SAHMCURRENT'
-        ? '3-mo avg unemployment minus its 12-mo low; ≥0.5 historically signals recession.'
-        : '6-month change in unemployment; rising = worse (temporary fallback).';
-      const tip = {...tipBase}; if(this.labourKey) tip[this.labourKey]=tipLabour;
-
-      for(const k of this.keys){
-        const pill=document.createElement('span'); pill.className='pill'; pill.title=tip[k]||'';
-        const dot=document.createElement('span'); dot.className='dot'; dot.style.background=this.pillDot(this.ages[k], (this.cadence[k]||'daily'));
+      const label={T10Y3M:'Yield (10y–3m)',CREDIT:'Credit (BAA–AAA)',UN_SLOPE6:'Unemp Δ6m',DD_12M:'Drawdown 12m',NFCI:'NFCI'};
+      const fmt={T10Y3M:v=>v?.toFixed(2),CREDIT:v=>v?.toFixed(2),UN_SLOPE6:v=>v?.toFixed(2),DD_12M:v=>((v??0)*100).toFixed(1)+'%',NFCI:v=>v?.toFixed(3)};
+      for(const k of KEYS){
+        const pill=document.createElement('span'); pill.className='pill'; pill.title={
+          T10Y3M:'More negative = worse (inversions often precede recessions).',
+          CREDIT:'Wider = worse (lower-grade vs AAA).',
+          UN_SLOPE6:'Rising unemployment over 6 months = worse.',
+          DD_12M:'More negative = worse (price stress).',
+          NFCI:'Higher = tighter/worse; >0 tighter than average.'
+        }[k] || '';
+        const dot=document.createElement('span'); dot.className='dot';
+        dot.style.background=this.pillDot(this.ages[k], CADENCE[k]);
         const val=this.latestVals[k];
-        pill.append(dot, document.create
+        pill.append(dot, document.createTextNode(`${label[k]}: ${val==null?'—':fmt[k](val)}`));
+        host.appendChild(pill);
+      }
+    },
+
+    renderCompositeChart(){
+      const el=document.getElementById('compChart');
+      if(!this.compMA7.length){ el.closest('.chart').innerHTML='<div class="meta">No data.</div>'; return; }
+
+      // Register annotation plugin if available
+      try{ const ap=(window.ChartAnnotation||window['chartjs-plugin-annotation']); if(ap && !Chart.registry.getPlugin('annotation')) Chart.register(ap); }catch(e){}
+
+      const xs = this.alignedXs.map(s=>{
+        const D=new Date(s+"T00:00:00Z");
+        return !isNaN(D) ? D.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}).replace(' ',' ’') : s;
+      });
+
+      const prev=App.charts.get(el); if(prev) prev.destroy();
+      const chart=new Chart(el,{
+        type:'line',
+        data:{labels:xs, datasets:[{label:'Composite (7-day MA)', data:this.compMA7, borderColor:'#7da6ff', backgroundColor:'transparent', tension:.35, spanGaps:true, pointRadius:0}]},
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          scales:{
+            y:{min:0,max:100,grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#9aa6bf'}},
+            x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#9aa6bf',maxTicksLimit:6}}
+          },
+          plugins:{legend:{display:false},annotation:{annotations:{
+            g:{type:'box',yMin:0,yMax:30,backgroundColor:'rgba(30,194,139,.06)',borderWidth:0},
+            a:{type:'box',yMin:30,yMax:60,backgroundColor:'rgba(255,194,71,.05)',borderWidth:0},
+            r:{type:'box',yMin:60,yMax:100,backgroundColor:'rgba(255,96,112,.05)',borderWidth:0},
+            gl:{type:'line',yMin:30,yMax:30,borderColor:'rgba(30,194,139,.6)',borderDash:[6,4]},
+            al:{type:'line',yMin:60,yMax:60,borderColor:'rgba(255,194,71,.7)',borderDash:[6,4]}
+          }}}
+        }
+      });
+      App.charts.set(el,chart);
+    },
+
+    renderIndicatorCharts(){
+      const host=document.getElementById('charts'); host.innerHTML='';
+      const cfgs=[
+        {k:'T10Y3M', title:'Yield Curve (10y–3m)', desc:'More negative = worse.', color:'#6bb9ff', zero:true},
+        {k:'CREDIT', title:'Credit Spread (BAA–AAA)', desc:'Wider = worse.', color:'#ffb36b', zero:false},
+        {k:'UN_SLOPE6', title:'Unemployment 6-month slope', desc:'Rising = worse.', color:'#ffa0b5', zero:true},
+        {k:'DD_12M', title:'12-month Drawdown (S&P vs 1-yr peak)', desc:'More negative = worse.', color:'#a6c7ff', zero:true},
+        {k:'NFCI', title:'Chicago Fed NFCI', desc:'Higher = tighter/worse.', color:'#9bd3c1', zero:true}
+      ];
+      const S=this.raw?.series||{};
+      for(const c of cfgs){
+        const sec=document.createElement('section'); sec.className='card';
+        sec.innerHTML=`<h3 style="margin:0 0 8px">${c.title}</h3>
+          <div class="chart"><canvas id="c_${c.k}" aria-label="${c.title} over time"></canvas></div>
+          <div class="callout">${c.desc}</div>`;
+        host.appendChild(sec);
+
+        const obs=(S[c.k]?.observations||[]).slice(-180);
+        if(!obs.length){ sec.querySelector('.chart').innerHTML='<div class="meta">No data.</div>'; continue; }
+        const xs=obs.map(o=>o.date); const ys=obs.map(o=>+o.value);
+
+        const el=document.getElementById(`c_${c.k}`);
+        const prev=App.charts.get(el); if(prev) prev.destroy();
+        const chart=new Chart(el,{
+          type:'line',
+          data:{labels:xs, datasets:[{data:ys, borderColor:c.color, backgroundColor:'transparent', pointRadius:0, tension:.35}]},
+          options:{
+            responsive:true, maintainAspectRatio:false,
+            scales:{
+              x:{grid:{color:'rgba(255,255,255,.04)'},
+                 ticks:{color:'#9aa6bf',maxTicksLimit:6,callback:(v,i,t)=>{const raw=t?.[i]?.label||''; const D=new Date(raw); return !isNaN(D)? D.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}).replace(' ',' ’'):raw;}}},
+              y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#9aa6bf'}}
+            },
+            plugins:{legend:{display:false},annotation:c.zero?{annotations:{z:{type:'line',yMin:0,yMax:0,borderColor:'rgba(154,166,191,.6)',borderDash:[4,4]}}}:{}}}
+        });
+        App.charts.set(el,chart);
+      }
+    },
+
+    renderDiagnostics(){
+      const diag=document.getElementById('diag');
+      const S=this.raw?.series||{};
+      const out={
+        fetched_at_utc:this.raw?.fetched_at_utc||null,
+        sample_sizes:Object.fromEntries(KEYS.map(k=>[k,(S[k]?.observations||[]).length])),
+        latest_values:this.latestVals,
+        ages_days:this.ages,
+        weights:W,
+        composite_latest:this.compLatest,
+        calculation_timestamp:new Date().toISOString()
+      };
+      diag.textContent=JSON.stringify(out,null,2);
+    },
+
+    renderEpisodes(){
+      const tbody=document.querySelector('#episodesTable tbody');
+      const wrap=document.getElementById('episodesWrap');
+      tbody.innerHTML='';
+      const arr=this.compMA7;
+      if(!arr || !arr.length){ wrap.style.display='none'; return; }
+
+      let prevZone=null;
+      for(let i=0;i<arr.length;i++){
+        const v=arr[i]; if(v==null) continue;
+        const z=zoneOf(v);
+        if(prevZone==null){ prevZone=z; continue; }
+        if(z!==prevZone){
+          const tr=document.createElement('tr');
+          const dt = this.alignedXs?.[i] ? gbDate(new Date(this.alignedXs[i]+"T00:00:00Z")) : `t-${arr.length-i}`;
+          tr.innerHTML=`<td>${dt}</td><td>${zoneName(prevZone)}</td><td>${zoneName(z)}</td><td>${v.toFixed(1)}</td>`;
+          tbody.appendChild(tr);
+          prevZone=z;
+        }
+      }
+      wrap.style.display = tbody.children.length? 'block':'none';
+    }
+  };
+
+  // ====================== BOOT ======================
+  (async ()=>{ await App.init(); })();
+  </script>
+</body>
+</html>
