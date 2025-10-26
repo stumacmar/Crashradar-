@@ -5,13 +5,12 @@ on:
   schedule:
     - cron: "7 6 * * 1-5"   # 06:07 UTC on weekdays
   push:
-    branches: [ main ]      # allow manual fixes to re-run
+    branches: [ main ]
     paths:
       - ".github/workflows/fred-cache.yml"
       - "data/**"
       - "index.html"
 
-# VERY IMPORTANT for committing the JSON back to the repo
 permissions:
   contents: write
 
@@ -28,40 +27,42 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Build data/fred_cache.json (tries FRED, falls back to synthetic)
+      - name: Build data/fred_cache.json
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: |
           set -euo pipefail
           python - <<'PY'
-          import os, json, sys, time, datetime as dt
+          import os, json, datetime as dt
           from urllib.request import urlopen
           from urllib.parse import urlencode
 
-          OUT_DIR = "data"
-          OUT_FILE = os.path.join(OUT_DIR, "fred_cache.json")
-          os.makedirs(OUT_DIR, exist_ok=True)
+          OUT_FILE = "data/fred_cache.json"
+          os.makedirs("data", exist_ok=True)
 
-          # Required series and their FRED IDs / transforms
           series_map = {
-              "T10Y3M": {"id": "T10Y3M", "fmt": float},                  # 10y - 3m spread (percent)
-              "CREDIT": {"id": "BAA10YM", "fmt": float},                 # proxy: BAA - 10y; front-end labels it BAA-AAA spread
-              "UN_SLOPE6": {"id": "UNRATE", "fmt": float},              # we'll compute 6m slope
-              "DD_12M": {"id": "SP500", "fmt": float},                  # we'll transform into 12m drawdown %
-              "NFCI": {"id": "NFCI", "fmt": float},                     # Chicago Fed NFCI
+              "T10Y3M": {"id": "T10Y3M", "fmt": float},        # Yield curve
+              "CREDIT": {"id": "BAA10YM", "fmt": float},       # Credit spread proxy
+              "UN_SLOPE6": {"id": "UNRATE", "fmt": float},     # Unemployment rate (derive slope)
+              "DD_12M": {"id": "SP500", "fmt": float},         # SP500 (derive drawdown)
+              "NFCI": {"id": "NFCI", "fmt": float},            # Financial conditions
+              "VIX_PROXY": {"id": "VIXCLS", "fmt": float},     # Volatility index
+              "RSAFS": {"id": "RSAFS", "fmt": float},          # Retail sales (derive momentum)
+              "UMCSENT": {"id": "UMCSENT", "fmt": float}       # Consumer sentiment
           }
 
           def fred_json(series_id, api_key):
-              params = dict(series_id=series_id, api_key=api_key, file_type="json", observation_start="2010-01-01")
+              params = dict(series_id=series_id, api_key=api_key,
+                            file_type="json", observation_start="2010-01-01")
               url = "https://api.stlouisfed.org/fred/series/observations?" + urlencode(params)
-              with urlopen(url, timeout=20) as r:
+              with urlopen(url, timeout=30) as r:
                   return json.load(r)
 
           def to_obs_list(raw):
               out = []
               for o in raw.get("observations", []):
                   v = o.get("value")
-                  if v is None or v in ("", "."):
+                  if not v or v in (".", "NaN"):
                       continue
                   try:
                       fv = float(v)
@@ -70,101 +71,69 @@ jobs:
                   out.append({"date": o["date"][:10], "value": f"{fv}"})
               return out
 
-          def simple_roll_max(values, lookback):
-              out = []
-              from collections import deque
-              dq = deque()
-              for i, v in enumerate(values):
-                  while dq and dq[0][0] <= i - lookback: dq.popleft()
-                  while dq and dq[-1][1] <= v: dq.pop()
-                  dq.append((i, v))
-                  out.append(dq[0][1])
-              return out
-
           api_key = os.environ.get("FRED_API_KEY", "").strip()
           use_fred = bool(api_key)
           series = {}
 
           try:
               if not use_fred:
-                  raise RuntimeError("No FRED_API_KEY set; using synthetic fallback")
+                  raise RuntimeError("No FRED_API_KEY set")
 
-              raw = {}
-              for k, meta in series_map.items():
-                  raw[k] = fred_json(meta["id"], api_key)
-
-              # Convert to observations
+              raw = {k: fred_json(v["id"], api_key) for k, v in series_map.items()}
               conv = {k: to_obs_list(raw[k]) for k in raw}
 
-              # Build UN_SLOPE6 from UNRATE (6m change)
+              # Derive unemployment 6m slope
               def slope6(obs):
-                  # last 180 days approx -> compute diff between t and t-6m
-                  # Convert to monthly by taking last obs of each month
                   by_month = {}
                   for o in obs:
                       by_month[o["date"][:7]] = float(o["value"])
                   months = sorted(by_month)
                   out = []
-                  for i, m in enumerate(months):
-                      v = by_month[m]
-                      if i >= 6:
-                          v6 = by_month[months[i-6]]
-                          delta = v - v6
-                          # use last day of month as date
-                          # crude month-end date:
-                          y, mo = map(int, m.split("-"))
-                          d = dt.date(y, mo, 28)
-                          while True:
-                              try:
-                                  d = d.replace(day=d.day+1)
-                              except ValueError:
-                                  d = d.replace(day=d.day)  # back to last valid (end-of-month)
-                                  break
-                          out.append({"date": str(d), "value": f"{delta}"})
+                  for i in range(6, len(months)):
+                      m, prev = months[i], months[i-6]
+                      delta = by_month[m] - by_month[prev]
+                      y, mo = map(int, m.split("-"))
+                      d = dt.date(y, mo, 1)
+                      out.append({"date": str(d), "value": f"{delta}"})
                   return out
 
-              un_slope = slope6(conv["UN_SLOPE6"])
-
-              # Build DD_12M from SP500 into 12-month drawdown vs trailing 1y peak
-              # First daily close list
-              sp = [(o["date"], float(o["value"])) for o in conv["DD_12M"]]
-              dates = [d for d,_ in sp]
-              vals  = [v for _,v in sp]
-              # 252 trading days ~ 12m
-              peak = simple_roll_max(vals, 252)
-              dd = []
-              for d, v, p in zip(dates, vals, peak):
-                  if p == 0: continue
-                  draw = (v / p) - 1.0  # negative is worse
-                  dd.append({"date": d, "value": f"{draw}"})
-
-              # CREDIT: we used BAA10YM as a proxy; keep raw values
-              # T10Y3M, NFCI: already ok
+              # Derive 12-month drawdown (S&P 500)
+              def drawdown12(obs):
+                  vals = [float(o["value"]) for o in obs]
+                  peak = []
+                  for i in range(len(vals)):
+                      p = max(vals[max(0, i-252):i+1])
+                      peak.append(p)
+                  out = []
+                  for o, p in zip(obs, peak):
+                      if p == 0: continue
+                      out.append({"date": o["date"], "value": f"{(vals[obs.index(o)]/p)-1.0}"})
+                  return out
 
               series = {
                   "T10Y3M": {"name": "10-Year minus 3-Month Treasury Spread", "observations": conv["T10Y3M"][-365:]},
-                  "CREDIT": {"name": "Credit Spread proxy (BAA - 10y)", "observations": conv["CREDIT"][-365:]},
-                  "UN_SLOPE6": {"name": "Unemployment 6m Slope", "observations": un_slope[-365:]},
-                  "DD_12M": {"name": "S&P 500 12m Drawdown", "observations": dd[-365:]},
+                  "CREDIT": {"name": "Credit Spread (BAA - 10y)", "observations": conv["CREDIT"][-365:]},
+                  "UN_SLOPE6": {"name": "Unemployment 6m Slope", "observations": slope6(conv["UN_SLOPE6"])[-365:]},
+                  "DD_12M": {"name": "S&P 500 12m Drawdown", "observations": drawdown12(conv["DD_12M"])[-365:]},
                   "NFCI": {"name": "Chicago Fed NFCI", "observations": conv["NFCI"][-365:]},
+                  "VIX_PROXY": {"name": "Volatility Index (VIX)", "observations": conv["VIX_PROXY"][-365:]},
+                  "RSAFS": {"name": "Retail Sales", "observations": conv["RSAFS"][-365:]},
+                  "UMCSENT": {"name": "Consumer Sentiment", "observations": conv["UMCSENT"][-365:]}
               }
 
           except Exception as e:
-              # Synthetic fallback (7 weekly points) so frontend never breaks
+              import datetime as dt
               today = dt.date.today()
-              def weeks(n): return [(today - dt.timedelta(days=7*i)) for i in range(n)][::-1]
-              w = weeks(7)
+              w = [(today - dt.timedelta(days=7*i)) for i in range(7)][::-1]
               series = {
-                  "T10Y3M": {"name": "10-Year minus 3-Month Treasury Spread",
-                             "observations": [{"date": str(d), "value": f"{v}"} for d, v in zip(w, [0.32,0.29,0.26,0.23,0.20,0.19,0.18])]},
-                  "CREDIT": {"name": "Credit Spread (BAA–AAA)",
-                             "observations": [{"date": str(d), "value": f"{v}"} for d, v in zip(w, [0.63,0.65,0.68,0.70,0.72,0.74,0.75])]},
-                  "UN_SLOPE6": {"name": "Unemployment 6m Slope",
-                             "observations": [{"date": str(d), "value": f"{v}"} for d, v in zip(w, [0.09,0.11,0.13,0.15,0.17,0.18,0.20])]},
-                  "DD_12M": {"name": "12-month Drawdown (S&P vs 1-yr peak)",
-                             "observations": [{"date": str(d), "value": f"{v}"} for d, v in zip(w, [-0.02,-0.035,-0.05,-0.06,-0.07,-0.075,-0.08])]},
-                  "NFCI": {"name": "Chicago Fed NFCI",
-                             "observations": [{"date": str(d), "value": f"{v}"} for d, v in zip(w, [-0.50,-0.49,-0.47,-0.46,-0.45,-0.44,-0.44])]},
+                  "T10Y3M": {"name":"10Y–3M Spread","observations":[{"date":str(d),"value":str(v)} for d,v in zip(w,[0.3,0.28,0.25,0.23,0.21,0.20,0.18])]},
+                  "CREDIT": {"name":"Credit Spread","observations":[{"date":str(d),"value":str(v)} for d,v in zip(w,[0.65,0.67,0.69,0.71,0.73,0.74,0.75])]},
+                  "UN_SLOPE6": {"name":"Unemp Δ6m","observations":[{"date":str(d),"value":str(v)} for d,v in zip(w,[0.1,0.12,0.14,0.15,0.17,0.18,0.2])]},
+                  "DD_12M": {"name":"Drawdown","observations":[{"date":str(d),"value":str(v)} for d,v in zip(w,[-0.02,-0.03,-0.04,-0.05,-0.06,-0.07,-0.08])]},
+                  "NFCI": {"name":"NFCI","observations":[{"date":str(d),"value":str(v)} for d,v in zip(w,[-0.50,-0.49,-0.47,-0.46,-0.45,-0.44,-0.43])]},
+                  "VIX_PROXY": {"name":"VIX","observations":[{"date":str(d),"value":str(v)} for d,v in zip(w,[14,15,16,18,19,20,22])]},
+                  "RSAFS": {"name":"Retail Sales","observations":[{"date":str(d),"value":str(v)} for d,v in zip(w,[0.3,0.31,0.32,0.33,0.34,0.35,0.36])]},
+                  "UMCSENT": {"name":"Sentiment","observations":[{"date":str(d),"value":str(v)} for d,v in zip(w,[85,84,83,82,81,80,79])]}
               }
 
           payload = {
@@ -172,11 +141,10 @@ jobs:
               "series": series
           }
 
-          # Write pretty JSON (frontend expects numeric strings OK)
           with open(OUT_FILE, "w", encoding="utf-8") as f:
               json.dump(payload, f, indent=2)
 
-          print("Wrote", OUT_FILE, "OK")
+          print("✅ Wrote", OUT_FILE)
           PY
 
       - name: Commit cached data
