@@ -8,7 +8,7 @@
 
   <style>
     :root{
-      --bg:#0a0e1a; --panel:#12182b; --panel-hover:#151d33; --muted:#8b96b0; 
+      --bg:#0a0e1a; --panel:#12182b; --panel-hover:#151d33; --muted:#8b96b0;
       --text:#e8eeff; --accent:#6b9eff; --accent-bright:#8fb4ff;
       --green:#1ec28b; --amber:#ffc247; --red:#ff6070; --orange:#ff8c42;
       --radius:14px; --shadow:0 4px 24px rgba(0,0,0,.3);
@@ -32,28 +32,15 @@
       transition:transform .2s,box-shadow .2s}
     .card:hover{transform:translateY(-2px);box-shadow:0 6px 32px rgba(0,0,0,.4)}
 
-    .grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
-
-    /* Enhanced Gauge */
+    /* Gauge */
     .gauge-container{display:flex;align-items:center;gap:32px;flex-wrap:wrap}
     .gauge-wrap{position:relative;width:var(--ring);height:var(--ring)}
-
     .multi-ring{position:absolute;inset:0}
     .ring{position:absolute;border-radius:50%;transition:opacity .3s}
-    .ring-outer{inset:0;background:conic-gradient(
-      var(--green) 0deg 108deg,
-      var(--amber) 108deg 216deg, 
-      var(--red) 216deg 360deg);opacity:.3}
-    .ring-mid{inset:15px;background:conic-gradient(
-      var(--green) 0deg 108deg,
-      var(--amber) 108deg 216deg,
-      var(--red) 216deg 360deg);opacity:.5}
-    .ring-inner{inset:30px;background:conic-gradient(
-      var(--green) 0deg 108deg,
-      var(--amber) 108deg 216deg,
-      var(--red) 216deg 360deg)}
+    .ring-outer{inset:0;background:conic-gradient(var(--green)0 108deg,var(--amber)108deg 216deg,var(--red)216deg 360deg);opacity:.3}
+    .ring-mid{inset:15px;background:conic-gradient(var(--green)0 108deg,var(--amber)108deg 216deg,var(--red)216deg 360deg);opacity:.5}
+    .ring-inner{inset:30px;background:conic-gradient(var(--green)0 108deg,var(--amber)108deg 216deg,var(--red)216deg 360deg)}
     .ring::after{content:"";position:absolute;inset:20px;border-radius:50%;background:var(--panel)}
-
     .needle{position:absolute;inset:0;transition:transform .6s cubic-bezier(.34,1.56,.64,1)}
     .needle::before{content:"";position:absolute;top:50%;left:50%;width:4px;height:45%;
       background:linear-gradient(180deg,var(--accent-bright),var(--accent));
@@ -62,94 +49,47 @@
     .needle::after{content:"";position:absolute;top:50%;left:50%;width:16px;height:16px;
       background:var(--accent-bright);border-radius:50%;transform:translate(-50%,-50%);
       box-shadow:0 0 16px var(--accent),0 0 0 3px var(--panel)}
-
-    .score{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
-      justify-content:center;font-weight:800;font-size:48px;line-height:1}
+    .score{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:48px;line-height:1}
     .score-label{font-size:12px;font-weight:600;color:var(--muted);margin-top:4px;letter-spacing:.5px}
 
+    /* Info + pills */
     .gauge-info h2{font-size:28px;margin:0 0 8px;font-weight:700}
-    .confidence{display:inline-flex;align-items:center;gap:8px;background:rgba(107,158,255,.15);
-      padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-top:8px}
+    .confidence{display:inline-flex;align-items:center;gap:8px;background:rgba(107,158,255,.15);padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-top:8px}
     .confidence-bar{width:60px;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
     .confidence-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
 
-    /* Probability Display */
-    .prob-display{display:flex;gap:16px;margin-top:16px;flex-wrap:wrap}
-    .prob-item{flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;
-      border:1px solid rgba(255,255,255,.06)}
-    .prob-item h4{margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
-    .prob-value{font-size:24px;font-weight:700;color:var(--accent-bright)}
-
-    /* Indicator Pills */
     .pills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
-    .pill{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
-      padding:14px 16px;border-radius:12px;transition:all .2s;cursor:pointer;position:relative}
+    .pill{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);padding:14px 16px;border-radius:12px;transition:all .2s;cursor:pointer}
     .pill:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);transform:translateY(-2px)}
     .pill-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-    .pill-title{font-weight:600;font-size:13px;color:var(--text)}
+    .pill-title{font-weight:600;font-size:13px}
     .pill-badge{font-size:11px;padding:3px 8px;border-radius:6px;font-weight:600}
     .pill-value{font-size:20px;font-weight:700;margin:4px 0}
     .pill-change{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
-    .trend-arrow{display:inline-block;font-weight:bold}
-
     .badge-fresh{background:rgba(30,194,139,.15);color:var(--green)}
     .badge-stale{background:rgba(255,194,71,.15);color:var(--amber)}
     .badge-old{background:rgba(255,96,112,.15);color:var(--red)}
 
-    /* Charts */
+    /* Charts + tabs */
     .chart-container{position:relative;height:320px;margin:16px 0}
     .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:12px}
     .chart-title{font-size:18px;font-weight:600;margin:0}
     .chart-controls{display:flex;gap:8px}
     .btn-group{display:flex;gap:4px;background:rgba(255,255,255,.03);padding:4px;border-radius:8px}
-    .btn{background:transparent;border:none;color:var(--muted);padding:6px 14px;
-      border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s}
+    .btn{background:transparent;border:none;color:var(--muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s}
     .btn:hover{color:var(--text);background:rgba(255,255,255,.06)}
     .btn.active{background:var(--accent);color:#fff}
 
-    /* Heat Map */
-    .heatmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
-    .heat-cell{background:rgba(255,255,255,.03);padding:14px;border-radius:10px;
-      border-left:4px solid var(--accent);transition:all .2s}
-    .heat-cell:hover{background:rgba(255,255,255,.06);transform:scale(1.02)}
-    .heat-label{font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px}
-    .heat-value{font-size:22px;font-weight:700;margin:4px 0}
-
-    /* Regime Indicator */
-    .regime{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);
-      padding:10px 16px;border-radius:10px;font-weight:600;margin-top:12px}
-    .regime-dot{width:10px;height:10px;border-radius:50%;animation:pulse 2s infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-
-    /* Historical Analogs */
-    .analog-list{display:grid;gap:12px}
-    .analog-item{background:rgba(255,255,255,.03);padding:14px;border-radius:10px;
-      border-left:3px solid var(--accent);display:flex;justify-content:space-between;align-items:center}
-    .analog-period{font-weight:600}
-    .analog-similarity{color:var(--accent-bright);font-weight:700}
-
-    /* Tabs */
     .tabs{display:flex;gap:8px;border-bottom:2px solid rgba(255,255,255,.06);margin-bottom:20px;overflow-x:auto}
-    .tab{background:transparent;border:none;color:var(--muted);padding:12px 20px;
-      cursor:pointer;font-size:14px;font-weight:600;position:relative;transition:color .2s;white-space:nowrap}
+    .tab{background:transparent;border:none;color:var(--muted);padding:12px 20px;cursor:pointer;font-size:14px;font-weight:600;position:relative;white-space:nowrap}
     .tab:hover{color:var(--text)}
     .tab.active{color:var(--accent-bright)}
     .tab.active::after{content:"";position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--accent)}
     .tab-content{display:none}
     .tab-content.active{display:block}
 
-    /* Status Badge */
-    .status{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;
-      border-radius:8px;font-weight:600;font-size:13px}
+    .status{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px}
     .status-dot{width:8px;height:8px;border-radius:50%}
-
-    /* Scenario Cards */
-    .scenario-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:16px}
-    .scenario-card{background:rgba(255,255,255,.03);padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,.06)}
-    .scenario-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-    .scenario-title{font-weight:600;font-size:15px}
-    .scenario-prob{font-size:24px;font-weight:700;color:var(--accent-bright)}
-    .scenario-desc{font-size:13px;color:var(--muted);line-height:1.5}
 
     /* Responsive */
     @media (max-width:768px){
@@ -170,7 +110,7 @@
     </header>
 
     <main>
-      <!-- Enhanced Gauge Section -->
+      <!-- Gauge -->
       <section class="card">
         <div class="gauge-container">
           <div class="gauge-wrap">
@@ -180,16 +120,13 @@
               <div class="ring ring-inner"></div>
             </div>
             <div id="needle" class="needle"></div>
-            <div class="score">
-              <div id="scoreText">--</div>
-              <div class="score-label">COMPOSITE</div>
-            </div>
+            <div class="score"><div id="scoreText">--</div><div class="score-label">COMPOSITE</div></div>
           </div>
 
           <div class="gauge-info">
             <h2>Market Stress Index</h2>
             <div style="color:var(--muted);font-size:14px;margin-bottom:8px">
-              Real-time composite of <span id="indicatorCount">12</span> economic indicators
+              Real-time composite of <span id="indicatorCount">8</span> economic indicators
             </div>
             <div class="confidence">
               <span>Confidence:</span>
@@ -197,31 +134,31 @@
               <span id="confidenceText">85%</span>
             </div>
             <div id="regimeIndicator" class="regime"></div>
-            <div class="prob-display">
-              <div class="prob-item">
-                <h4>1-Month Risk</h4>
-                <div class="prob-value" id="prob1m">--</div>
+            <div class="prob-display" style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap">
+              <div class="prob-item" style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
+                <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">1-Month Risk</h4>
+                <div class="prob-value" id="prob1m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
               </div>
-              <div class="prob-item">
-                <h4>3-Month Risk</h4>
-                <div class="prob-value" id="prob3m">--</div>
+              <div class="prob-item" style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
+                <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">3-Month Risk</h4>
+                <div class="prob-value" id="prob3m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
               </div>
-              <div class="prob-item">
-                <h4>6-Month Risk</h4>
-                <div class="prob-value" id="prob6m">--</div>
+              <div class="prob-item" style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
+                <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">6-Month Risk</h4>
+                <div class="prob-value" id="prob6m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Indicator Pills Grid -->
+      <!-- Indicator Pills -->
       <section class="card">
         <h3 style="margin:0 0 16px;font-size:20px">📊 Live Indicators</h3>
         <div id="pillsGrid" class="pills-grid"></div>
       </section>
 
-      <!-- Tabs for Different Views -->
+      <!-- Tabs -->
       <div class="tabs">
         <button class="tab active" onclick="switchTab(event, 'composite')">Composite</button>
         <button class="tab" onclick="switchTab(event, 'scenarios')">Scenarios</button>
@@ -229,7 +166,6 @@
         <button class="tab" onclick="switchTab(event, 'analogs')">Analogs</button>
       </div>
 
-      <!-- Tab 1: Composite Analysis -->
       <div id="tab-composite" class="tab-content active">
         <section class="card">
           <div class="chart-header">
@@ -253,12 +189,11 @@
         </section>
       </div>
 
-      <!-- Tab 2: Scenarios -->
       <div id="tab-scenarios" class="tab-content">
         <section class="card">
           <h3 style="margin:0 0 8px">Forward-Looking Scenarios</h3>
           <p style="color:var(--muted);margin:0 0 16px;font-size:14px">Probability-weighted forecasts</p>
-          <div class="scenario-grid" id="scenarioGrid"></div>
+          <div class="scenario-grid" id="scenarioGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:16px"></div>
         </section>
 
         <section class="card">
@@ -267,7 +202,6 @@
         </section>
       </div>
 
-      <!-- Tab 3: Indicators -->
       <div id="tab-indicators" class="tab-content">
         <section class="card">
           <h3 style="margin:0 0 16px">Indicator Heat Map</h3>
@@ -276,7 +210,6 @@
         <div id="indicatorCharts"></div>
       </div>
 
-      <!-- Tab 4: Historical Analogs -->
       <div id="tab-analogs" class="tab-content">
         <section class="card">
           <h3 style="margin:0 0 8px">Similar Historical Periods</h3>
@@ -284,28 +217,28 @@
           <div id="analogList" class="analog-list"></div>
         </section>
       </div>
-
     </main>
   </div>
 
-  <!-- Charts -->
+  <!-- Chart libs -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.1/dist/chartjs-plugin-annotation.min.js"></script>
 
   <script>
-    // ===================== INDICATORS (from your code) =====================
+    /* ===================== CONFIG ===================== */
+    const FRED_CACHE_PATH = 'data/fred_cache.json';
+
     const INDICATORS = {
-      T10Y3M:           { label: 'Yield Curve',        format: v => v?.toFixed(2),                     weight: 0.18, cadence: 'daily'   },
-      CREDIT:           { label: 'Credit Spread',      format: v => v?.toFixed(2),                     weight: 0.14, cadence: 'daily'   },
-      UN_SLOPE6:        { label: 'Unemployment Δ',     format: v => v?.toFixed(2),                     weight: 0.12, cadence: 'monthly' },
-      DD_12M:           { label: 'Market Drawdown',    format: v => ((v ?? 0) * 100).toFixed(1) + '%', weight: 0.20, cadence: 'daily'   },
-      NFCI:             { label: 'Financial Conditions',format: v => v?.toFixed(3),                    weight: 0.12, cadence: 'weekly'  },
-      VIX_PROXY:        { label: 'Volatility Index',   format: v => v?.toFixed(1),                     weight: 0.10, cadence: 'daily'   },
-      RETAIL_MOMENTUM:  { label: 'Retail Sales Δ',     format: v => (v*100)?.toFixed(2)+'%',           weight: 0.08, cadence: 'monthly' },
-      SENTIMENT:        { label: 'Consumer Confidence',format: v => v?.toFixed(1),                     weight: 0.06, cadence: 'monthly' }
+      T10Y3M:          { label:'Yield Curve',         format:v=>v?.toFixed(2),                     weight:0.18, cadence:'daily'   },
+      CREDIT:          { label:'Credit Spread',       format:v=>v?.toFixed(2),                     weight:0.14, cadence:'daily'   },
+      UN_SLOPE6:       { label:'Unemployment Δ',      format:v=>v?.toFixed(2),                     weight:0.12, cadence:'monthly' },
+      DD_12M:          { label:'Market Drawdown',     format:v=>((v??0)*100).toFixed(1)+'%',       weight:0.20, cadence:'daily'   },
+      NFCI:            { label:'Financial Conditions',format:v=>v?.toFixed(3),                     weight:0.12, cadence:'weekly'  },
+      VIX_PROXY:       { label:'Volatility Index',    format:v=>v?.toFixed(1),                     weight:0.10, cadence:'daily'   },
+      RETAIL_MOMENTUM: { label:'Retail Sales Δ',      format:v=>(v*100)?.toFixed(2)+'%',           weight:0.08, cadence:'monthly' },
+      SENTIMENT:       { label:'Consumer Confidence', format:v=>v?.toFixed(1),                     weight:0.06, cadence:'monthly' }
     };
 
-    // Scaling to 0-100 (0 good, 100 bad)
     const clamp = x => Math.max(0, Math.min(100, x));
     const map01 = (val, good, bad) => {
       if (val == null) return 50;
@@ -319,26 +252,72 @@
       UN_SLOPE6:       v => clamp(map01(v,  0.05, 0.50)),
       DD_12M:          v => clamp(map01(v,  0.00, -0.20)),
       NFCI:            v => clamp(map01(v, -0.80, 0.40)),
-      VIX_PROXY:       v => clamp(map01(v, 12, 35)),
+      VIX_PROXY:       v => clamp(map01(v,  12,  35)),
       RETAIL_MOMENTUM: v => clamp(map01(v,  0.03, -0.02)),
-      SENTIMENT:       v => clamp(map01(v, 110, 70))
+      SENTIMENT:       v => clamp(map01(v, 110,  70))
     };
-
     const FRESH_LIMITS = { daily:{ok:7,warn:30}, weekly:{ok:7,warn:30}, monthly:{ok:30,warn:60} };
     const zoneOf = s => s <= 30 ? 'green' : (s <= 60 ? 'amber' : 'red');
 
-    // ===================== FRED CACHE LOADER (single file) =====================
-    const FRED_CACHE_PATH = 'data/fred_cache.json';
+    /* ===================== CACHE LOADING ===================== */
 
     async function loadFredCache(){
-      const res = await fetch(FRED_CACHE_PATH, {cache:'no-store'});
+      const res = await fetch(FRED_CACHE_PATH, { cache:'no-store' });
       if(!res.ok) throw new Error(`FRED cache: HTTP ${res.status}`);
-      const json = await res.json();
-      if(!json || typeof json !== 'object') throw new Error('FRED cache JSON invalid');
-      return json;
+      const raw = await res.json();
+      return normalizeCache(raw);
     }
 
-    // ---- Helpers for parsing & derivation from the merged cache ----
+    // Normalizes multiple possible shapes to: { seriesId: {observations, fetchedAt} }
+    function normalizeCache(raw){
+      const out = {};
+
+      // A) top-level map: { T10Y3M: {observations:[]}, ... }
+      const directLike = raw && typeof raw === 'object' &&
+        Object.keys(raw).some(k => raw[k] && Array.isArray(raw[k].observations));
+      if (directLike) {
+        for (const [k,v] of Object.entries(raw)) {
+          if (v && Array.isArray(v.observations)) out[k] = v;
+        }
+        return out;
+      }
+
+      // B) wrapped array: { series: [ {id:"T10Y3M", observations:[]}, ... ] }
+      if (Array.isArray(raw?.series)) {
+        for (const item of raw.series) {
+          const id = item?.id || item?.series_id || item?.name;
+          if (!id) continue;
+          const obs = Array.isArray(item.observations) ? item.observations
+                    : Array.isArray(item.data) ? item.data : [];
+          if (obs.length) out[id] = { observations: obs, fetchedAt: item.fetchedAt };
+        }
+        return out;
+      }
+
+      // C) your workflow shape: { series: { T10Y3M:{...}, CREDIT:{...}, ... } }
+      if (raw && raw.series && typeof raw.series === 'object' && !Array.isArray(raw.series)) {
+        for (const [id,item] of Object.entries(raw.series)) {
+          const obs = Array.isArray(item?.observations) ? item.observations
+                    : Array.isArray(item?.data) ? item.data : [];
+          if (obs.length) out[id] = { observations: obs, fetchedAt: item.fetchedAt };
+        }
+        return out;
+      }
+
+      // D) top-level array of series objects
+      if (Array.isArray(raw)) {
+        for (const item of raw) {
+          const id = item?.id || item?.series_id || item?.name;
+          if (!id) continue;
+          const obs = Array.isArray(item.observations) ? item.observations
+                    : Array.isArray(item.data) ? item.data : [];
+          if (obs.length) out[id] = { observations: obs, fetchedAt: item.fetchedAt };
+        }
+        return out;
+      }
+      return out;
+    }
+
     function latest(series){
       const obs = series?.observations||[];
       if(!obs.length) return null;
@@ -346,7 +325,6 @@
       const v = (o.value==null || o.value==='.' || o.value==='NaN') ? null : +o.value;
       return {value:v, date:o.date};
     }
-    function latestVal(series){ const L = latest(series); return L?.value ?? null; }
     function seriesAgeDays(series, fetchedAt){
       const L = latest(series);
       if(!L) return Infinity;
@@ -359,107 +337,70 @@
       if(days<=lim.warn) return 0.85;
       return 0.70;
     }
-    function badgeFor(days, cadence){
-      const lim = FRESH_LIMITS[cadence]||FRESH_LIMITS.daily;
-      if(days<=lim.ok) return {cls:'badge-fresh', txt:'Fresh'};
-      if(days<=lim.warn) return {cls:'badge-stale', txt:'Stale'};
-      return {cls:'badge-old', txt:'Old'};
-    }
 
-    // Derivations/mappings using common FRED IDs in your cache
+    // Derivations from base series in the cache
     function deriveUnempSlope6(UNRATE){
-      const L = latest(UNRATE); if(!L?.date || L.value==null) return null;
-      const back = new Date(L.date + 'T00:00:00Z'); back.setMonth(back.getMonth()-6);
-      const iso = back.toISOString().slice(0,10);
-      const obs = UNRATE.observations||[];
-      for(let i=obs.length-1;i>=0;i--){
-        if(obs[i].date<=iso){
-          const v = obs[i].value; if(v!=null && v!=='.' && v!=='NaN') return L.value - (+v);
-          break;
-        }
+      const obs = UNRATE?.observations||[];
+      if(!obs.length) return null;
+      // monthly: compute diff vs 6 months prior by month bucket
+      const byMonth = {};
+      for(const o of obs){ byMonth[o.date.slice(0,7)] = +o.value; }
+      const months = Object.keys(byMonth).sort();
+      if(months.length<7) return null;
+      const out = [];
+      for(let i=6;i<months.length;i++){
+        const m = months[i], prev = months[i-6];
+        const delta = byMonth[m] - byMonth[prev];
+        // approximate month-end date
+        const [yy,mm] = m.split('-').map(Number);
+        const d = new Date(Date.UTC(yy, mm, 0)); // day 0 of next month = last day of month
+        out.push({date: d.toISOString().slice(0,10), value: String(delta)});
       }
-      return null;
+      return { observations: out, fetchedAt: UNRATE.fetchedAt };
     }
     function deriveDrawdown12m(SP500){
-      const L = latest(SP500); if(!L?.date || L.value==null) return null;
-      const end = L.date;
-      const start = new Date(end+'T00:00:00Z'); start.setFullYear(start.getFullYear()-1);
-      const startIso = start.toISOString().slice(0,10);
-      let maxv = -Infinity;
-      for(const o of SP500.observations||[]){
-        if(o.date>=startIso && o.date<=end){
-          const v = (o.value==null||o.value==='.'||o.value==='NaN')?null:+o.value;
-          if(v!=null) maxv = Math.max(maxv, v);
-        }
+      const obs = SP500?.observations||[];
+      if(!obs.length) return null;
+      const dates = obs.map(o=>o.date), vals = obs.map(o=>+o.value);
+      // rolling 252-day peak
+      const peak = [];
+      let maxSoFar = -Infinity;
+      for(let i=0;i<vals.length;i++){
+        if(i===0) maxSoFar = vals[0];
+        else maxSoFar = Math.max(maxSoFar, vals[i-1], peak[i-1]??-Infinity);
+        // keep a 252d window peak
+        const start = Math.max(0, i-252);
+        let p = -Infinity;
+        for(let j=start;j<=i;j++) p = Math.max(p, vals[j]);
+        peak.push(p);
       }
-      if(!isFinite(maxv) || maxv<=0) return null;
-      return (L.value/maxv) - 1;
+      const dd = dates.map((d,i)=>({date:d, value:String(vals[i]/peak[i]-1)}));
+      return { observations: dd, fetchedAt: SP500.fetchedAt };
     }
     function deriveRetailMomentum(RSAFS){
-      const obs = RSAFS?.observations||[];
-      if(obs.length<2) return null;
-      // use last valid previous for MoM
-      const L = +obs[obs.length-1].value;
-      let prev=null;
-      for(let i=obs.length-2;i>=0;i--){
-        const v = obs[i].value;
-        if(v!=null && v!=='.' && v!=='NaN'){ prev = +v; break; }
-      }
+      const o = RSAFS?.observations||[];
+      if(o.length<2) return null;
+      const last = +o[o.length-1].value;
+      let prev = null;
+      for(let i=o.length-2;i>=0;i--){ const v = +o[i].value; if(isFinite(v)){ prev=v; break; } }
       if(prev==null || prev===0) return null;
-      return (L/prev) - 1;
+      return { observations:[{date:o[o.length-1].date, value:String(last/prev-1)}], fetchedAt: RSAFS.fetchedAt };
     }
 
-    // Map your expected INDICATOR keys from fred_cache.json contents
     function mapIndicatorsFromCache(cache){
       const out = {};
+      // pass-through
+      for(const k of Object.keys(INDICATORS)){ if(cache[k]) out[k]=cache[k]; }
 
-      // Direct pass-through if keys already match
-      for(const k of Object.keys(INDICATORS)){
-        if(cache[k]) out[k] = cache[k];
-      }
-
-      // Common mappings:
-      // CREDIT ← BAMLH0A0HYM2 (HY OAS)
-      if(!out.CREDIT && cache.BAMLH0A0HYM2) out.CREDIT = cache.BAMLH0A0HYM2;
-
-      // VIX_PROXY ← VIXCLS
+      // common aliases
+      if(!out.CREDIT && (cache.BAMLH0A0HYM2 || cache.BAA10YM)) out.CREDIT = cache.BAMLH0A0HYM2 || cache.BAA10YM;
       if(!out.VIX_PROXY && cache.VIXCLS) out.VIX_PROXY = cache.VIXCLS;
-
-      // SENTIMENT ← UMCSENT
       if(!out.SENTIMENT && cache.UMCSENT) out.SENTIMENT = cache.UMCSENT;
 
-      // RETAIL_MOMENTUM derive from RSAFS (retail & food services sales)
-      if(!out.RETAIL_MOMENTUM && cache.RSAFS){
-        const val = deriveRetailMomentum(cache.RSAFS);
-        if(val!=null){
-          out.RETAIL_MOMENTUM = {
-            observations:[{date: latest(cache.RSAFS).date, value: String(val)}],
-            fetchedAt: cache.RSAFS.fetchedAt || new Date().toISOString()
-          };
-        }
-      }
-
-      // UN_SLOPE6 from UNRATE
-      if(!out.UN_SLOPE6 && cache.UNRATE){
-        const val = deriveUnempSlope6(cache.UNRATE);
-        if(val!=null){
-          out.UN_SLOPE6 = {
-            observations:[{date: latest(cache.UNRATE).date, value: String(val)}],
-            fetchedAt: cache.UNRATE.fetchedAt || new Date().toISOString()
-          };
-        }
-      }
-
-      // DD_12M from SP500
-      if(!out.DD_12M && cache.SP500){
-        const val = deriveDrawdown12m(cache.SP500);
-        if(val!=null){
-          out.DD_12M = {
-            observations:[{date: latest(cache.SP500).date, value: String(val)}],
-            fetchedAt: cache.SP500.fetchedAt || new Date().toISOString()
-          };
-        }
-      }
+      // derived
+      if(!out.UN_SLOPE6 && cache.UNRATE){ const d=deriveUnempSlope6(cache.UNRATE); if(d) out.UN_SLOPE6=d; }
+      if(!out.DD_12M   && cache.SP500 ){ const d=deriveDrawdown12m(cache.SP500); if(d) out.DD_12M=d; }
+      if(!out.RETAIL_MOMENTUM && cache.RSAFS){ const d=deriveRetailMomentum(cache.RSAFS); if(d) out.RETAIL_MOMENTUM=d; }
 
       return out;
     }
@@ -467,15 +408,15 @@
     async function loadAllIndicators(){
       const cache = await loadFredCache();
       const map = mapIndicatorsFromCache(cache);
-
-      // Verify all required keys are present now
-      for(const k of Object.keys(INDICATORS)){
-        if(!map[k]) throw new Error(`${k} missing in fred_cache.json`);
+      const missing = Object.keys(INDICATORS).filter(k => !map[k]);
+      if(missing.length){
+        console.log('fred_cache keys present:', Object.keys(cache));
+        throw new Error(`${missing.join(', ')} missing in fred_cache.json`);
       }
       return map;
     }
 
-    // ===================== UI HELPERS =====================
+    /* ===================== UI Helpers ===================== */
     const els = {
       statusBadge:  document.getElementById('statusBadge'),
       scoreText:    document.getElementById('scoreText'),
@@ -489,7 +430,6 @@
       prob6m: document.getElementById('prob6m'),
       pillsGrid: document.getElementById('pillsGrid')
     };
-
     function setStatus(zone, text){
       const colors = {green:'#1ec28b', amber:'#ffc247', red:'#ff6070'};
       els.statusBadge.innerHTML = `
@@ -507,7 +447,7 @@
     }
     function setGauge(score){
       els.scoreText.textContent = Math.round(score);
-      const angle = (score/100)*360; // full circle needle in your CSS
+      const angle = (score/100)*360;
       els.needle.style.setProperty('--angle', angle+'deg');
       els.needle.style.transform = `rotate(${angle}deg)`;
     }
@@ -524,8 +464,6 @@
           <div class="pill-change"><span class="trend-arrow">${arrow}</span>${changeTxt}</div>
         </div>`;
     }
-
-    // Charts
     function ensureLineChart(id, labels, data){
       const ctx = document.getElementById(id);
       if(!ctx || !window.Chart) return;
@@ -545,51 +483,43 @@
       });
     }
 
-    // ===================== MAIN =====================
+    /* ===================== MAIN ===================== */
     (async function init(){
       try{
         const dataMap = await loadAllIndicators();
 
-        // Build parts with freshness and weighting
+        // build pills + composite
         let num=0, den=0;
         const parts=[];
         for(const [k,cfg] of Object.entries(INDICATORS)){
           const s = dataMap[k];
-          const L = latest(s);
+          const obs = s?.observations||[];
+          if(!obs.length) continue;
+          const last = obs[obs.length-1];
+          const L = {value:+last.value, date:last.date};
           const days = seriesAgeDays(s, s.fetchedAt);
-          const {cls, txt} = badgeFor(days, cfg.cadence);
-          const scaled = SCALE[k](L?.value);
-          const pen = freshnessPenalty(days, cfg.cadence);
-          const w = cfg.weight * pen;
+          const lim = FRESH_LIMITS[cfg.cadence]||FRESH_LIMITS.daily;
+          const badge = days<=lim.ok ? {cls:'badge-fresh',txt:'Fresh'} : days<=lim.warn ? {cls:'badge-stale',txt:'Stale'} : {cls:'badge-old',txt:'Old'};
+          const scaled = SCALE[k](L.value);
+          const w = cfg.weight * freshnessPenalty(days, cfg.cadence);
           if(Number.isFinite(scaled) && Number.isFinite(w)){ num += scaled*w; den += w; }
 
-          // simple Δ vs previous raw value (skip for derived-rate series if you want)
-          let change=null;
-          const obs=s?.observations||[];
-          if(obs.length>=2){
-            const a=+obs[obs.length-1].value, b=+obs[obs.length-2].value;
-            if(isFinite(a)&&isFinite(b)) change=a-b;
-          }
+          let change = null;
+          if(obs.length>=2){ const a=+obs[obs.length-1].value, b=+obs[obs.length-2].value; if(isFinite(a)&&isFinite(b)) change=a-b; }
 
-          parts.push({
-            key:k,label:cfg.label,raw:L?.value, valueDisp: cfg.format?.(L?.value) ?? (L?.value??'—'),
-            freshClass:cls,freshTxt:txt, scaled, w, change
-          });
+          parts.push({ key:k, label:cfg.label, valueDisp: cfg.format?.(L.value) ?? L.value, change, freshClass:badge.cls, freshTxt:badge.txt, scaled, w });
         }
 
         if(den<=0) throw new Error('No valid indicators / weights.');
         const composite = num/den;
 
-        // Gauge + status
         setGauge(composite);
         const zone = zoneOf(composite);
         setStatus(zone, `Composite: ${Math.round(composite)} (${zone.toUpperCase()})`);
-        els.indicatorCount.textContent = parts.length;
+        document.getElementById('indicatorCount').textContent = parts.length;
+        document.getElementById('pillsGrid').innerHTML = parts.map(p=>pillHTML(p)).join('');
 
-        // Pills
-        els.pillsGrid.innerHTML = parts.map(p=>pillHTML(p)).join('');
-
-        // Composite history: use first indicator dates as baseline, fill from others on/before date
+        // history based on first indicator dates
         const baseKey = Object.keys(INDICATORS)[0];
         const baseObs = (dataMap[baseKey]?.observations)||[];
         const labels = baseObs.map(o=>o.date);
@@ -598,18 +528,11 @@
           for(const [k,cfg] of Object.entries(INDICATORS)){
             const s = dataMap[k]; if(!s) continue;
             const obs = s.observations;
+            // pick latest <= date
             let v=null;
-            for(let i=obs.length-1;i>=0;i--){
-              if(obs[i].date<=date){
-                const vv = obs[i].value;
-                if(vv!=null && vv!=='.' && vv!=='NaN'){ v=+vv; }
-                break;
-              }
-            }
+            for(let i=obs.length-1;i>=0;i--){ if(obs[i].date<=date){ const vv=+obs[i].value; if(isFinite(vv)) v=vv; break; } }
             if(v==null) continue;
-            const sc = SCALE[k](v);
-            n += sc * cfg.weight;
-            d += cfg.weight;
+            const sc = SCALE[k](v); n+=sc*cfg.weight; d+=cfg.weight;
           }
           return d>0 ? +(n/d).toFixed(1) : null;
         });
@@ -617,13 +540,14 @@
         ensureLineChart('compositeChart', labels, hist);
         ensureBarChart('decompChart', parts.map(p=>p.label), parts.map(p=>+(p.scaled*p.w).toFixed(1)));
 
-        // Regime + simple forward probabilities (level mapping)
-        els.regimeIndicator.innerHTML = `<span class="regime-dot" style="background:${zone==='green'?'#1ec28b':zone==='amber'?'#ffc247':'#ff6070'}"></span>${zone==='green'?'Normal':zone==='amber'?'Stressed':'Crisis'} regime`;
-        els.prob1m.textContent = `${Math.round(Math.min(95, Math.max(5, composite-20)))}%`;
-        els.prob3m.textContent = `${Math.round(Math.min(95, Math.max(5, composite-10)))}%`;
-        els.prob6m.textContent = `${Math.round(Math.min(95, Math.max(5, composite)))}%`;
+        // simple probabilities from level
+        document.getElementById('regimeIndicator').innerHTML =
+          `<span class="regime-dot" style="width:10px;height:10px;border-radius:50%;display:inline-block;background:${zone==='green'?'#1ec28b':zone==='amber'?'#ffc247':'#ff6070'}"></span>${zone==='green'?'Normal':zone==='amber'?'Stressed':'Crisis'} regime`;
+        document.getElementById('prob1m').textContent = `${Math.round(Math.min(95, Math.max(5, composite-20)))}%`;
+        document.getElementById('prob3m').textContent = `${Math.round(Math.min(95, Math.max(5, composite-10)))}%`;
+        document.getElementById('prob6m').textContent = `${Math.round(Math.min(95, Math.max(5, composite)))}%`;
 
-        // Tabs/timeframes (UI only)
+        // tab handlers
         window.switchTab = (e, id)=>{
           document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
           e.currentTarget.classList.add('active');
@@ -633,7 +557,6 @@
         window.setTimeframe = (e, tf)=>{
           const btns = e.currentTarget.parentElement.querySelectorAll('.btn');
           btns.forEach(b=>b.classList.toggle('active', b===e.currentTarget));
-          // Optional: slice 'hist' by tf and re-render
         };
 
       }catch(err){
