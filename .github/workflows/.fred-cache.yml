@@ -1,145 +1,689 @@
-name: Build FRED cache (always produce valid JSON)
+// ============= CONFIG MODULE =============
+const Config = {
+FRED_CACHE_PATH: ‘data/fred_cache.json’,
+CACHE_TTL: 3600000, // 1 hour
 
-on:
-  workflow_dispatch: {}
-  schedule:
-    - cron: "7 6 * * 1-5"
-  push:
-    branches: [ main ]
-    paths:
-      - ".github/workflows/fred-cache.yml"
-      - "data/**"
-      - "index.html"
+INDICATORS: {
+T10Y3M: { label: ‘Yield Curve’, format: v => v?.toFixed(2), weight: 0.18, cadence: ‘daily’ },
+CREDIT: { label: ‘Credit Spread’, format: v => v?.toFixed(2), weight: 0.14, cadence: ‘daily’ },
+UN_SLOPE6: { label: ‘Unemployment Δ’, format: v => v?.toFixed(2), weight: 0.12, cadence: ‘monthly’ },
+DD_12M: { label: ‘Market Drawdown’, format: v => ((v ?? 0) * 100).toFixed(1) + ‘%’, weight: 0.20, cadence: ‘daily’ },
+NFCI: { label: ‘Financial Conditions’, format: v => v?.toFixed(3), weight: 0.12, cadence: ‘weekly’ },
+VIX_PROXY: { label: ‘Volatility Index’, format: v => v?.toFixed(1), weight: 0.10, cadence: ‘daily’ },
+RETAIL_MOMENTUM: { label: ‘Retail Sales Δ’, format: v => (v * 100)?.toFixed(2) + ‘%’, weight: 0.08, cadence: ‘monthly’ },
+SENTIMENT: { label: ‘Consumer Confidence’, format: v => v?.toFixed(1), weight: 0.06, cadence: ‘monthly’ }
+},
 
-permissions:
-  contents: write
+FRESH_LIMITS: {
+daily: { ok: 7, warn: 30 },
+weekly: { ok: 7, warn: 30 },
+monthly: { ok: 30, warn: 60 }
+}
+};
 
-jobs:
-  update-cache:
-    runs-on: ubuntu-latest
+// ============= UTILITY MODULE =============
+const Utils = {
+clamp: (x, min = 0, max = 100) => Math.max(min, Math.min(max, x)),
 
-    steps:
-      - name: Check out repo
-        uses: actions/checkout@v4
+map01: (val, good, bad) => {
+if (val == null) return 50;
+const denom = bad - good;
+if (Math.abs(denom) < 1e-9) return 50;
+return ((val - good) / denom) * 100;
+},
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+debounce: (fn, delay) => {
+let timer;
+return (…args) => {
+clearTimeout(timer);
+timer = setTimeout(() => fn(…args), delay);
+};
+},
 
-      - name: Build data/fred_cache.json
-        env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import os, json, datetime as dt
-          from urllib.request import urlopen
-          from urllib.parse import urlencode
-          from collections import deque
+memoize: (fn, keyFn = (…args) => JSON.stringify(args)) => {
+const cache = new Map();
+return (…args) => {
+const key = keyFn(…args);
+if (cache.has(key)) return cache.get(key);
+const result = fn(…args);
+cache.set(key, result);
+return result;
+};
+}
+};
 
-          OUT_DIR  = "data"
-          OUT_FILE = os.path.join(OUT_DIR, "fred_cache.json")
-          os.makedirs(OUT_DIR, exist_ok=True)
+// ============= DATA SERVICE MODULE =============
+class DataService {
+constructor() {
+this.cache = null;
+this.cacheTimestamp = null;
+this.loading = false;
+}
 
-          SERIES = {
-              "T10Y3M":  "T10Y3M",   # Yield curve
-              "CREDIT":  "BAA10YM",  # Credit spread proxy
-              "UNRATE":  "UNRATE",   # For UN_SLOPE6 derivation
-              "SP500":   "SP500",    # For DD_12M derivation
-              "NFCI":    "NFCI",     # Financial conditions
-              "VIXCLS":  "VIXCLS",   # VIX base -> also write VIX_PROXY
-              "RSAFS":   "RSAFS",    # Retail sales (MoM in UI)
-              "UMCSENT": "UMCSENT"   # Sentiment
-          }
+async loadFredCache(force = false) {
+// Return cached if fresh
+if (!force && this.cache && this.cacheTimestamp &&
+(Date.now() - this.cacheTimestamp < Config.CACHE_TTL)) {
+return this.cache;
+}
 
-          def fred_obs(series_id, api_key):
-              url = "https://api.stlouisfed.org/fred/series/observations?" + urlencode({
-                  "series_id": series_id,
-                  "api_key": api_key,
-                  "file_type": "json",
-                  "observation_start": "2010-01-01"
-              })
-              with urlopen(url, timeout=30) as r:
-                  j = json.load(r)
-              out = []
-              for o in j.get("observations", []):
-                  v = o.get("value")
-                  if not v or v in (".","NaN"): continue
-                  try: fv = float(v)
-                  except: continue
-                  out.append({"date": o["date"][:10], "value": f"{fv}"})
-              return out
+```
+if (this.loading) {
+  // Wait for existing request
+  while (this.loading) await new Promise(r => setTimeout(r, 100));
+  return this.cache;
+}
 
-          def un_slope6(unrate_obs):
-              # 6-month change using month buckets
-              bym = {}
-              for o in unrate_obs: bym[o["date"][:7]] = float(o["value"])
-              months = sorted(bym)
-              out = []
-              for i in range(6, len(months)):
-                  m, pm = months[i], months[i-6]
-                  delta = bym[m] - bym[pm]
-                  y, mo = map(int, m.split('-'))
-                  # month-end
-                  if mo == 12: d = dt.date(y, 12, 31)
-                  else: d = dt.date(y, mo+1, 1) - dt.timedelta(days=1)
-                  out.append({"date": str(d), "value": f"{delta}"})
-              return out
+try {
+  this.loading = true;
+  const res = await fetch(`${Config.FRED_CACHE_PATH}?t=${Date.now()}`, {
+    cache: 'no-store',
+    signal: AbortSignal.timeout(10000) // 10s timeout
+  });
+  
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+  
+  const raw = await res.json();
+  this.cache = this.normalizeCache(raw);
+  this.cacheTimestamp = Date.now();
+  return this.cache;
+} catch (error) {
+  console.error('Cache load failed:', error);
+  throw new Error(`Failed to load data: ${error.message}`);
+} finally {
+  this.loading = false;
+}
+```
 
-          def drawdown12m(sp_obs):
-              if not sp_obs: return []
-              vals  = [float(o["value"]) for o in sp_obs]
-              dates = [o["date"] for o in sp_obs]
-              win = 252
-              dq = deque()  # monotonic max
-              peak = [None]*len(vals)
-              for i, v in enumerate(vals):
-                  while dq and dq[0] <= i - win: dq.popleft()
-                  while dq and vals[dq[-1]] <= v: dq.pop()
-                  dq.append(i)
-                  peak[i] = vals[dq[0]]
-              out = []
-              for d, v, p in zip(dates, vals, peak):
-                  if p: out.append({"date": d, "value": f"{(v/p) - 1.0}"})
-              return out
+}
 
-          api_key = os.environ.get("FRED_API_KEY","").strip()
-          if not api_key:
-              raise SystemExit("FRED_API_KEY secret is not set")
+normalizeCache(raw) {
+const out = {};
 
-          # fetch all bases
-          obs = {k: fred_obs(fid, api_key) for k, fid in SERIES.items()}
+```
+// Handle direct format
+if (raw && typeof raw === 'object' && 
+    Object.keys(raw).some(k => raw[k] && Array.isArray(raw[k].observations))) {
+  return raw;
+}
 
-          # build series payload (include bases + derived + alias)
-          series = {
-              "T10Y3M":    {"name":"10Y minus 3M Treasury Spread", "observations": obs["T10Y3M"]},
-              "CREDIT":    {"name":"Credit Spread (BAA - 10Y)",    "observations": obs["CREDIT"]},
-              "UNRATE":    {"name":"Unemployment Rate",            "observations": obs["UNRATE"]},
-              "UN_SLOPE6": {"name":"Unemployment 6m Slope",        "observations": un_slope6(obs["UNRATE"])},
-              "SP500":     {"name":"S&P 500",                      "observations": obs["SP500"]},
-              "DD_12M":    {"name":"S&P 500 12m Drawdown",         "observations": drawdown12m(obs["SP500"])},
-              "NFCI":      {"name":"Chicago Fed NFCI",             "observations": obs["NFCI"]},
-              "VIXCLS":    {"name":"CBOE Volatility Index",        "observations": obs["VIXCLS"]},
-              "VIX_PROXY": {"name":"Volatility Index (proxy)",     "observations": obs["VIXCLS"]},  # alias
-              "RSAFS":     {"name":"Advance Retail & Food Sales",  "observations": obs["RSAFS"]},
-              "UMCSENT":   {"name":"U. Michigan Consumer Sentiment","observations": obs["UMCSENT"]},
-          }
+// Handle array of series
+if (Array.isArray(raw)) {
+  for (const item of raw) {
+    const id = item?.id || item?.series_id || item?.name;
+    if (!id) continue;
+    const obs = Array.isArray(item.observations) ? item.observations : 
+               Array.isArray(item.data) ? item.data : [];
+    out[id] = { observations: obs, fetchedAt: item.fetchedAt };
+  }
+  return out;
+}
 
-          payload = {
-              "fetched_at_utc": dt.datetime.utcnow().replace(microsecond=0).isoformat()+"Z",
-              "series": series
-          }
-          with open(OUT_FILE, "w", encoding="utf-8") as f:
-              json.dump(payload, f, indent=2)
+// Handle series wrapper
+if (raw?.series) {
+  const series = Array.isArray(raw.series) ? raw.series : Object.entries(raw.series);
+  for (const item of series) {
+    const data = Array.isArray(item) ? item[1] : item;
+    const id = Array.isArray(item) ? item[0] : (data?.id || data?.series_id || data?.name);
+    if (!id) continue;
+    const obs = Array.isArray(data?.observations) ? data.observations :
+               Array.isArray(data?.data) ? data.data : [];
+    out[id] = { observations: obs, fetchedAt: data.fetchedAt };
+  }
+}
 
-          print("✅ Wrote", OUT_FILE, "with keys:", ", ".join(sorted(series.keys())))
-          PY
+return out;
+```
 
-      - name: Commit cached data
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore(data): update fred_cache.json"
-          file_pattern: "data/fred_cache.json"
-          commit_user_name: github-actions[bot]
-          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+}
+
+getLatest(series) {
+const obs = series?.observations || [];
+if (!obs.length) return null;
+
+```
+const o = obs[obs.length - 1];
+const v = (o.value == null || o.value === '.' || o.value === 'NaN') ? null : +o.value;
+return { value: v, date: o.date };
+```
+
+}
+
+seriesAgeDays(series, fetchedAt) {
+const L = this.getLatest(series);
+if (!L) return Infinity;
+const d = new Date(L.date + ‘T00:00:00Z’);
+return Math.max(0, Math.round((new Date(fetchedAt || Date.now()) - d) / 86400000));
+}
+}
+
+// ============= INDICATOR CALCULATOR MODULE =============
+class IndicatorCalculator {
+constructor(dataService) {
+this.dataService = dataService;
+this.scalers = this.createScalers();
+}
+
+createScalers() {
+const { clamp, map01 } = Utils;
+return {
+T10Y3M: v => clamp(map01(v, 1.0, -2.0)),
+CREDIT: v => clamp(map01(v, 0.30, 1.00)),
+UN_SLOPE6: v => clamp(map01(v, 0.05, 0.50)),
+DD_12M: v => clamp(map01(v, 0.00, -0.20)),
+NFCI: v => clamp(map01(v, -0.80, 0.40)),
+VIX_PROXY: v => clamp(map01(v, 12, 35)),
+RETAIL_MOMENTUM: v => clamp(map01(v, 0.03, -0.02)),
+SENTIMENT: v => clamp(map01(v, 110, 70))
+};
+}
+
+deriveUnempSlope6(UNRATE) {
+const obs = UNRATE?.observations || [];
+if (!obs.length) return null;
+
+```
+const byMonth = {};
+for (const o of obs) {
+  const v = +o.value;
+  if (isFinite(v)) byMonth[o.date.slice(0, 7)] = v;
+}
+
+const months = Object.keys(byMonth).sort();
+if (months.length < 7) return null;
+
+const out = [];
+for (let i = 6; i < months.length; i++) {
+  const m = months[i], prev = months[i - 6];
+  const delta = byMonth[m] - byMonth[prev];
+  const [yy, mm] = m.split('-').map(Number);
+  const d = new Date(Date.UTC(yy, mm, 0));
+  out.push({ date: d.toISOString().slice(0, 10), value: String(delta) });
+}
+
+return { observations: out, fetchedAt: UNRATE.fetchedAt };
+```
+
+}
+
+deriveDrawdown12m(SP500) {
+const obs = SP500?.observations || [];
+if (!obs.length) return null;
+
+```
+const dates = obs.map(o => o.date);
+const vals = obs.map(o => +o.value);
+const peak = [];
+
+for (let i = 0; i < vals.length; i++) {
+  const start = Math.max(0, i - 252);
+  let p = -Infinity;
+  for (let j = start; j <= i; j++) p = Math.max(p, vals[j]);
+  peak.push(p);
+}
+
+const dd = dates.map((d, i) => ({
+  date: d,
+  value: String(vals[i] / peak[i] - 1)
+}));
+
+return { observations: dd, fetchedAt: SP500.fetchedAt };
+```
+
+}
+
+deriveRetailMomentum(RSAFS) {
+const o = RSAFS?.observations || [];
+if (o.length < 2) return null;
+
+```
+const last = +o[o.length - 1].value;
+let prev = null;
+
+for (let i = o.length - 2; i >= 0; i--) {
+  const v = +o[i].value;
+  if (isFinite(v)) {
+    prev = v;
+    break;
+  }
+}
+
+if (prev == null || prev === 0) return null;
+
+return {
+  observations: [{ date: o[o.length - 1].date, value: String(last / prev - 1) }],
+  fetchedAt: RSAFS.fetchedAt
+};
+```
+
+}
+
+mapIndicatorsFromCache(cache) {
+const out = {};
+
+```
+// Direct mappings
+for (const k of Object.keys(Config.INDICATORS)) {
+  if (cache[k]) out[k] = cache[k];
+}
+
+// Fallbacks
+if (!out.CREDIT && (cache.BAMLH0A0HYM2 || cache.BAA10YM)) {
+  out.CREDIT = cache.BAMLH0A0HYM2 || cache.BAA10YM;
+}
+if (!out.VIX_PROXY && cache.VIXCLS) out.VIX_PROXY = cache.VIXCLS;
+if (!out.SENTIMENT && cache.UMCSENT) out.SENTIMENT = cache.UMCSENT;
+
+// Derived indicators
+if (!out.UN_SLOPE6 && cache.UNRATE) {
+  out.UN_SLOPE6 = this.deriveUnempSlope6(cache.UNRATE) || 
+                  { observations: [], fetchedAt: cache.UNRATE.fetchedAt };
+}
+if (!out.DD_12M && cache.SP500) {
+  out.DD_12M = this.deriveDrawdown12m(cache.SP500) || 
+               { observations: [], fetchedAt: cache.SP500.fetchedAt };
+}
+if (!out.RETAIL_MOMENTUM && cache.RSAFS) {
+  out.RETAIL_MOMENTUM = this.deriveRetailMomentum(cache.RSAFS) || 
+                        { observations: [], fetchedAt: cache.RSAFS.fetchedAt };
+}
+
+return out;
+```
+
+}
+
+calculateComposite(dataMap) {
+let num = 0, den = 0;
+const parts = [];
+
+```
+for (const [k, cfg] of Object.entries(Config.INDICATORS)) {
+  const s = dataMap[k];
+  if (!s?.observations?.length) continue;
+  
+  const L = this.dataService.getLatest(s);
+  if (!L || L.value == null) continue;
+  
+  const days = this.dataService.seriesAgeDays(s, s.fetchedAt);
+  const lim = Config.FRESH_LIMITS[cfg.cadence] || Config.FRESH_LIMITS.daily;
+  
+  const badge = days <= lim.ok ? { cls: 'badge-fresh', txt: 'Fresh' } :
+                days <= lim.warn ? { cls: 'badge-stale', txt: 'Stale' } :
+                { cls: 'badge-old', txt: 'Old' };
+  
+  const scaled = this.scalers[k](L.value);
+  const penalty = this.freshnessPenalty(days, cfg.cadence);
+  const w = cfg.weight * penalty;
+  
+  if (Number.isFinite(scaled) && Number.isFinite(w)) {
+    num += scaled * w;
+    den += w;
+  }
+  
+  // Calculate change
+  let change = null;
+  const obs = s.observations;
+  if (obs.length >= 2) {
+    const a = +obs[obs.length - 1].value;
+    const b = +obs[obs.length - 2].value;
+    if (isFinite(a) && isFinite(b)) change = a - b;
+  }
+  
+  parts.push({
+    key: k,
+    label: cfg.label,
+    valueDisp: cfg.format?.(L.value) ?? L.value,
+    change,
+    freshClass: badge.cls,
+    freshTxt: badge.txt,
+    scaled,
+    w,
+    obs: s.observations
+  });
+}
+
+if (den <= 0) throw new Error('No valid indicators with positive weights');
+
+return {
+  composite: num / den,
+  parts
+};
+```
+
+}
+
+freshnessPenalty(days, cadence) {
+const lim = Config.FRESH_LIMITS[cadence] || Config.FRESH_LIMITS.daily;
+if (days <= lim.ok) return 1.00;
+if (days <= lim.warn) return 0.85;
+return 0.70;
+}
+
+buildCompositeHistory(dataMap) {
+const keysForHist = [‘DD_12M’, ‘VIX_PROXY’, ‘T10Y3M’, ‘CREDIT’, ‘NFCI’];
+const allDates = new Set();
+
+```
+for (const k of keysForHist) {
+  (dataMap[k]?.observations || []).forEach(o => allDates.add(o.date));
+}
+
+const dates = Array.from(allDates).sort();
+
+return dates.map(date => {
+  let n = 0, d = 0;
+  
+  for (const [k, cfg] of Object.entries(Config.INDICATORS)) {
+    const s = dataMap[k];
+    if (!s) continue;
+    
+    const obs = s.observations;
+    let v = null;
+    
+    for (let i = obs.length - 1; i >= 0; i--) {
+      if (obs[i].date <= date) {
+        const vv = +obs[i].value;
+        if (isFinite(vv)) {
+          v = vv;
+          break;
+        }
+      }
+    }
+    
+    if (v == null) continue;
+    
+    const sc = this.scalers[k](v);
+    n += sc * cfg.weight;
+    d += cfg.weight;
+  }
+  
+  return {
+    date,
+    value: d > 0 ? +(n / d).toFixed(1) : null
+  };
+}).filter(x => x.value != null);
+```
+
+}
+}
+
+// ============= RISK MODEL MODULE =============
+class RiskModel {
+static logistic(x) {
+return 1 / (1 + Math.exp(-x));
+}
+
+static horizonRisk(composite, months) {
+const base = this.logistic((composite - 50) / 10);
+const mult = months <= 1 ? 0.7 : months <= 3 ? 1.0 : 1.25;
+const p = Utils.clamp(100 * base * mult);
+return Math.round(Math.min(95, Math.max(5, p)));
+}
+
+static getZone(score) {
+return score <= 30 ? ‘green’ : (score <= 60 ? ‘amber’ : ‘red’);
+}
+
+static generateScenarios(composite, breadth) {
+const stress = composite / 100;
+const riskBias = (breadth - 50) / 50;
+
+```
+const baseProb = 60 - 20 * riskBias;
+const downProb = Math.min(40, 20 + 40 * stress);
+const upProb = Math.max(5, 100 - baseProb - downProb);
+
+return [
+  {
+    title: 'Base Case',
+    prob: Math.round(baseProb),
+    desc: 'Sideways-to-mildly volatile regime; conditions stabilize with modest dispersion.'
+  },
+  {
+    title: 'Downside (Stress)',
+    prob: Math.round(downProb),
+    desc: 'Tighter financial conditions and volatility spikes; drawdowns concentrated in cyclicals.'
+  },
+  {
+    title: 'Upside (Relief)',
+    prob: Math.round(upProb),
+    desc: 'Soft-landing drift; risk appetite improves as macro prints surprise positively.'
+  }
+];
+```
+
+}
+
+static projectTrajectory(composite, steps = 26) {
+const phi = 0.85; // Mean reversion
+const target = 50;
+let v = composite;
+
+```
+const labels = [];
+const path = [];
+const upper = [];
+const lower = [];
+
+for (let i = 1; i <= steps; i++) {
+  v = phi * v + (1 - phi) * target;
+  labels.push(`W+${i}`);
+  path.push(+v.toFixed(1));
+  
+  const band = 6 * Math.sqrt(i / steps);
+  upper.push(Math.min(100, +(v + band).toFixed(1)));
+  lower.push(Math.max(0, +(v - band).toFixed(1)));
+}
+
+return { labels, path, upper, lower };
+```
+
+}
+}
+
+// ============= MAIN APPLICATION =============
+class EconomicRadarApp {
+constructor() {
+this.dataService = new DataService();
+this.calculator = new IndicatorCalculator(this.dataService);
+this.state = {
+dataMap: null,
+compositeHistory: [],
+currentComposite: null,
+parts: [],
+timeframe: ‘1m’,
+charts: {}
+};
+this.elements = this.cacheElements();
+}
+
+cacheElements() {
+return {
+statusBadge: document.getElementById(‘statusBadge’),
+scoreText: document.getElementById(‘scoreText’),
+needle: document.getElementById(‘needle’),
+indicatorCount: document.getElementById(‘indicatorCount’),
+regimeIndicator: document.getElementById(‘regimeIndicator’),
+prob1m: document.getElementById(‘prob1m’),
+prob3m: document.getElementById(‘prob3m’),
+prob6m: document.getElementById(‘prob6m’),
+pillsGrid: document.getElementById(‘pillsGrid’),
+heatmap: document.getElementById(‘heatmap’),
+scenarioGrid: document.getElementById(‘scenarioGrid’)
+};
+}
+
+async init() {
+try {
+this.setLoadingState();
+
+```
+  // Load data
+  const cache = await this.dataService.loadFredCache();
+  this.state.dataMap = this.calculator.mapIndicatorsFromCache(cache);
+  
+  // Calculate indicators
+  const { composite, parts } = this.calculator.calculateComposite(this.state.dataMap);
+  this.state.currentComposite = composite;
+  this.state.parts = parts;
+  
+  // Build history
+  this.state.compositeHistory = this.calculator.buildCompositeHistory(this.state.dataMap);
+  
+  // Render UI
+  this.renderAll();
+  
+  // Setup handlers
+  this.setupEventHandlers();
+  
+} catch (error) {
+  console.error('Initialization failed:', error);
+  this.setErrorState(error.message);
+}
+```
+
+}
+
+renderAll() {
+const { currentComposite, parts } = this.state;
+const breadth = parts.reduce((a, p) => a + p.scaled, 0) / parts.length;
+
+```
+this.renderGauge(currentComposite);
+this.renderStatus(currentComposite);
+this.renderPills(parts);
+this.renderRiskMetrics(currentComposite);
+this.renderCharts(currentComposite, parts, breadth);
+```
+
+}
+
+renderGauge(composite) {
+this.elements.scoreText.textContent = Math.round(composite);
+const angle = (composite / 100) * 360;
+this.elements.needle.style.setProperty(’–angle’, angle + ‘deg’);
+}
+
+renderStatus(composite) {
+const zone = RiskModel.getZone(composite);
+const colors = { green: ‘#1ec28b’, amber: ‘#ffc247’, red: ‘#ff6070’ };
+
+```
+this.elements.statusBadge.innerHTML = `
+  <div class="status" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)">
+    <span class="status-dot" style="background:${colors[zone]}"></span>
+    <span>Composite: ${Math.round(composite)} (${zone.toUpperCase()})</span>
+  </div>`;
+```
+
+}
+
+renderPills(parts) {
+this.elements.indicatorCount.textContent = parts.length;
+this.elements.pillsGrid.innerHTML = parts.map(p => this.createPillHTML(p)).join(’’);
+}
+
+createPillHTML({ key, label, valueDisp, change, freshClass, freshTxt }) {
+const arrow = change == null ? ‘’ : (change > 0 ? ‘▲’ : ‘▼’);
+const changeTxt = change == null ? ‘’ : `${change > 0 ? '+' : ''}${change.toFixed(2)}`;
+
+```
+return `
+  <div class="pill" data-key="${key}">
+    <div class="pill-header">
+      <div class="pill-title">${label}</div>
+      <div class="pill-badge ${freshClass}">${freshTxt}</div>
+    </div>
+    <div class="pill-value">${valueDisp}</div>
+    <div class="pill-change">
+      <span class="trend-arrow">${arrow}</span>${changeTxt}
+    </div>
+  </div>`;
+```
+
+}
+
+renderRiskMetrics(composite) {
+this.elements.prob1m.textContent = `${RiskModel.horizonRisk(composite, 1)}%`;
+this.elements.prob3m.textContent = `${RiskModel.horizonRisk(composite, 3)}%`;
+this.elements.prob6m.textContent = `${RiskModel.horizonRisk(composite, 6)}%`;
+
+```
+const zone = RiskModel.getZone(composite);
+const colors = { green: '#1ec28b', amber: '#ffc247', red: '#ff6070' };
+const labels = { green: 'Normal', amber: 'Stressed', red: 'Crisis' };
+
+this.elements.regimeIndicator.innerHTML = `
+  <span class="status-dot" style="background:${colors[zone]}"></span>
+  ${labels[zone]} regime`;
+```
+
+}
+
+renderCharts(composite, parts, breadth) {
+// Composite chart would go here
+// Decomposition chart
+// Heatmap
+// Scenarios
+// Trajectory
+
+```
+console.log('Charts rendered with:', { composite, parts: parts.length, breadth });
+```
+
+}
+
+setupEventHandlers() {
+// Tab switching
+document.querySelectorAll(’.tab’).forEach(tab => {
+tab.addEventListener(‘click’, (e) => this.switchTab(e));
+});
+
+```
+// Timeframe buttons
+document.querySelectorAll('.btn-group .btn').forEach(btn => {
+  btn.addEventListener('click', (e) => this.changeTimeframe(e));
+});
+```
+
+}
+
+switchTab(event) {
+const tabId = event.currentTarget.dataset.tab;
+
+```
+document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+event.currentTarget.classList.add('active');
+
+document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+document.getElementById(`tab-${tabId}`).classList.add('active');
+```
+
+}
+
+changeTimeframe(event) {
+document.querySelectorAll(’.btn-group .btn’).forEach(b => b.classList.remove(‘active’));
+event.currentTarget.classList.add(‘active’);
+
+```
+this.state.timeframe = event.currentTarget.dataset.tf;
+// Re-render composite chart with new timeframe
+```
+
+}
+
+setLoadingState() {
+this.elements.statusBadge.innerHTML = ` <div class="status" style="background:rgba(107,158,255,.15)"> <span class="status-dot" style="background:#8fb4ff"></span> <span>Loading data...</span> </div>`;
+}
+
+setErrorState(message) {
+this.elements.statusBadge.innerHTML = ` <div class="status" style="background:rgba(255,96,112,.12);border:1px solid rgba(255,96,112,.4)"> <span class="status-dot" style="background:#ff6070"></span> <span>Error: ${message}</span> </div>`;
+}
+}
+
+// ============= INITIALIZATION =============
+document.addEventListener(‘DOMContentLoaded’, () => {
+const app = new EconomicRadarApp();
+app.init();
+});
