@@ -292,42 +292,20 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.1/dist/chartjs-plugin-annotation.min.js"></script>
 
-  <!-- ✅ Force GitHub Pages subpath to /data/fred -->
-  <script>window.FRED_CACHE_BASE = 'data/fred';</script>
-
   <script>
-    // ============ CONFIGURATION ============
-    const FRED_BASE = (window.FRED_CACHE_BASE || '/fred').replace(/\/+$/,''); 
-
+    // ===================== INDICATORS (from your code) =====================
     const INDICATORS = {
-      T10Y3M: { label: 'Yield Curve', format: v => v?.toFixed(2), weight: 0.18, cadence: 'daily' },
-      CREDIT: { label: 'Credit Spread', format: v => v?.toFixed(2), weight: 0.14, cadence: 'daily' },
-      UN_SLOPE6: { label: 'Unemployment Δ', format: v => v?.toFixed(2), weight: 0.12, cadence: 'monthly' },
-      DD_12M: { label: 'Market Drawdown', format: v => ((v ?? 0) * 100).toFixed(1) + '%', weight: 0.20, cadence: 'daily' },
-      NFCI: { label: 'Financial Conditions', format: v => v?.toFixed(3), weight: 0.12, cadence: 'weekly' },
-      VIX_PROXY: { label: 'Volatility Index', format: v => v?.toFixed(1), weight: 0.10, cadence: 'daily' },
-      RETAIL_MOMENTUM: { label: 'Retail Sales Δ', format: v => (v*100)?.toFixed(2) + '%', weight: 0.08, cadence: 'monthly' },
-      SENTIMENT: { label: 'Consumer Confidence', format: v => v?.toFixed(1), weight: 0.06, cadence: 'monthly' }
+      T10Y3M:           { label: 'Yield Curve',        format: v => v?.toFixed(2),                     weight: 0.18, cadence: 'daily'   },
+      CREDIT:           { label: 'Credit Spread',      format: v => v?.toFixed(2),                     weight: 0.14, cadence: 'daily'   },
+      UN_SLOPE6:        { label: 'Unemployment Δ',     format: v => v?.toFixed(2),                     weight: 0.12, cadence: 'monthly' },
+      DD_12M:           { label: 'Market Drawdown',    format: v => ((v ?? 0) * 100).toFixed(1) + '%', weight: 0.20, cadence: 'daily'   },
+      NFCI:             { label: 'Financial Conditions',format: v => v?.toFixed(3),                    weight: 0.12, cadence: 'weekly'  },
+      VIX_PROXY:        { label: 'Volatility Index',   format: v => v?.toFixed(1),                     weight: 0.10, cadence: 'daily'   },
+      RETAIL_MOMENTUM:  { label: 'Retail Sales Δ',     format: v => (v*100)?.toFixed(2)+'%',           weight: 0.08, cadence: 'monthly' },
+      SENTIMENT:        { label: 'Consumer Confidence',format: v => v?.toFixed(1),                     weight: 0.06, cadence: 'monthly' }
     };
 
-    const SCALE = {
-      T10Y3M: v => clamp(map01(v, 1.0, -2.0)),
-      CREDIT: v => clamp(map01(v, 0.30, 1.00)),
-      UN_SLOPE6: v => clamp(map01(v, 0.05, 0.50)),
-      DD_12M: v => clamp(map01(v, 0.00, -0.20)),
-      NFCI: v => clamp(map01(v, -0.80, 0.40)),
-      VIX_PROXY: v => clamp(map01(v, 12, 35)),
-      RETAIL_MOMENTUM: v => clamp(map01(v, 0.03, -0.02)),
-      SENTIMENT: v => clamp(map01(v, 110, 70))
-    };
-
-    const FRESH_LIMITS = {
-      daily: { ok: 7, warn: 30 },
-      weekly: { ok: 7, warn: 30 },
-      monthly: { ok: 30, warn: 60 }
-    };
-
-    // ============ UTILITIES ============
+    // Scaling to 0-100 (0 good, 100 bad)
     const clamp = x => Math.max(0, Math.min(100, x));
     const map01 = (val, good, bad) => {
       if (val == null) return 50;
@@ -335,31 +313,169 @@
       if (Math.abs(denom) < 1e-9) return 50;
       return ((val - good) / denom) * 100;
     };
+    const SCALE = {
+      T10Y3M:          v => clamp(map01(v,  1.0, -2.0)),
+      CREDIT:          v => clamp(map01(v,  0.30, 1.00)),
+      UN_SLOPE6:       v => clamp(map01(v,  0.05, 0.50)),
+      DD_12M:          v => clamp(map01(v,  0.00, -0.20)),
+      NFCI:            v => clamp(map01(v, -0.80, 0.40)),
+      VIX_PROXY:       v => clamp(map01(v, 12, 35)),
+      RETAIL_MOMENTUM: v => clamp(map01(v,  0.03, -0.02)),
+      SENTIMENT:       v => clamp(map01(v, 110, 70))
+    };
+
+    const FRESH_LIMITS = { daily:{ok:7,warn:30}, weekly:{ok:7,warn:30}, monthly:{ok:30,warn:60} };
     const zoneOf = s => s <= 30 ? 'green' : (s <= 60 ? 'amber' : 'red');
 
-    function freshnessPenalty(days, cadence) {
-      const lim = FRESH_LIMITS[cadence] || FRESH_LIMITS.daily;
-      if (days <= lim.ok) return 1.00;
-      if (days <= lim.warn) return 0.85;
-      return 0.70;
+    // ===================== FRED CACHE LOADER (single file) =====================
+    const FRED_CACHE_PATH = 'data/fred_cache.json';
+
+    async function loadFredCache(){
+      const res = await fetch(FRED_CACHE_PATH, {cache:'no-store'});
+      if(!res.ok) throw new Error(`FRED cache: HTTP ${res.status}`);
+      const json = await res.json();
+      if(!json || typeof json !== 'object') throw new Error('FRED cache JSON invalid');
+      return json;
     }
 
-    function latest(series) {
-      const obs = series?.observations || [];
-      if (!obs.length) return null;
-      const o = obs[obs.length - 1];
+    // ---- Helpers for parsing & derivation from the merged cache ----
+    function latest(series){
+      const obs = series?.observations||[];
+      if(!obs.length) return null;
+      const o = obs[obs.length-1];
       const v = (o.value==null || o.value==='.' || o.value==='NaN') ? null : +o.value;
-      return { value: v, date: o.date };
+      return {value:v, date:o.date};
     }
-
-    function seriesAgeDays(series, fetchedAt) {
+    function latestVal(series){ const L = latest(series); return L?.value ?? null; }
+    function seriesAgeDays(series, fetchedAt){
       const L = latest(series);
-      if (!L) return Infinity;
-      const d = new Date(L.date + "T00:00:00Z");
+      if(!L) return Infinity;
+      const d = new Date(L.date + 'T00:00:00Z');
       return Math.max(0, Math.round((new Date(fetchedAt || Date.now()) - d) / 86400000));
     }
+    function freshnessPenalty(days, cadence){
+      const lim = FRESH_LIMITS[cadence] || FRESH_LIMITS.daily;
+      if(days<=lim.ok) return 1.00;
+      if(days<=lim.warn) return 0.85;
+      return 0.70;
+    }
+    function badgeFor(days, cadence){
+      const lim = FRESH_LIMITS[cadence]||FRESH_LIMITS.daily;
+      if(days<=lim.ok) return {cls:'badge-fresh', txt:'Fresh'};
+      if(days<=lim.warn) return {cls:'badge-stale', txt:'Stale'};
+      return {cls:'badge-old', txt:'Old'};
+    }
 
-    // ============ DOM ============
+    // Derivations/mappings using common FRED IDs in your cache
+    function deriveUnempSlope6(UNRATE){
+      const L = latest(UNRATE); if(!L?.date || L.value==null) return null;
+      const back = new Date(L.date + 'T00:00:00Z'); back.setMonth(back.getMonth()-6);
+      const iso = back.toISOString().slice(0,10);
+      const obs = UNRATE.observations||[];
+      for(let i=obs.length-1;i>=0;i--){
+        if(obs[i].date<=iso){
+          const v = obs[i].value; if(v!=null && v!=='.' && v!=='NaN') return L.value - (+v);
+          break;
+        }
+      }
+      return null;
+    }
+    function deriveDrawdown12m(SP500){
+      const L = latest(SP500); if(!L?.date || L.value==null) return null;
+      const end = L.date;
+      const start = new Date(end+'T00:00:00Z'); start.setFullYear(start.getFullYear()-1);
+      const startIso = start.toISOString().slice(0,10);
+      let maxv = -Infinity;
+      for(const o of SP500.observations||[]){
+        if(o.date>=startIso && o.date<=end){
+          const v = (o.value==null||o.value==='.'||o.value==='NaN')?null:+o.value;
+          if(v!=null) maxv = Math.max(maxv, v);
+        }
+      }
+      if(!isFinite(maxv) || maxv<=0) return null;
+      return (L.value/maxv) - 1;
+    }
+    function deriveRetailMomentum(RSAFS){
+      const obs = RSAFS?.observations||[];
+      if(obs.length<2) return null;
+      // use last valid previous for MoM
+      const L = +obs[obs.length-1].value;
+      let prev=null;
+      for(let i=obs.length-2;i>=0;i--){
+        const v = obs[i].value;
+        if(v!=null && v!=='.' && v!=='NaN'){ prev = +v; break; }
+      }
+      if(prev==null || prev===0) return null;
+      return (L/prev) - 1;
+    }
+
+    // Map your expected INDICATOR keys from fred_cache.json contents
+    function mapIndicatorsFromCache(cache){
+      const out = {};
+
+      // Direct pass-through if keys already match
+      for(const k of Object.keys(INDICATORS)){
+        if(cache[k]) out[k] = cache[k];
+      }
+
+      // Common mappings:
+      // CREDIT ← BAMLH0A0HYM2 (HY OAS)
+      if(!out.CREDIT && cache.BAMLH0A0HYM2) out.CREDIT = cache.BAMLH0A0HYM2;
+
+      // VIX_PROXY ← VIXCLS
+      if(!out.VIX_PROXY && cache.VIXCLS) out.VIX_PROXY = cache.VIXCLS;
+
+      // SENTIMENT ← UMCSENT
+      if(!out.SENTIMENT && cache.UMCSENT) out.SENTIMENT = cache.UMCSENT;
+
+      // RETAIL_MOMENTUM derive from RSAFS (retail & food services sales)
+      if(!out.RETAIL_MOMENTUM && cache.RSAFS){
+        const val = deriveRetailMomentum(cache.RSAFS);
+        if(val!=null){
+          out.RETAIL_MOMENTUM = {
+            observations:[{date: latest(cache.RSAFS).date, value: String(val)}],
+            fetchedAt: cache.RSAFS.fetchedAt || new Date().toISOString()
+          };
+        }
+      }
+
+      // UN_SLOPE6 from UNRATE
+      if(!out.UN_SLOPE6 && cache.UNRATE){
+        const val = deriveUnempSlope6(cache.UNRATE);
+        if(val!=null){
+          out.UN_SLOPE6 = {
+            observations:[{date: latest(cache.UNRATE).date, value: String(val)}],
+            fetchedAt: cache.UNRATE.fetchedAt || new Date().toISOString()
+          };
+        }
+      }
+
+      // DD_12M from SP500
+      if(!out.DD_12M && cache.SP500){
+        const val = deriveDrawdown12m(cache.SP500);
+        if(val!=null){
+          out.DD_12M = {
+            observations:[{date: latest(cache.SP500).date, value: String(val)}],
+            fetchedAt: cache.SP500.fetchedAt || new Date().toISOString()
+          };
+        }
+      }
+
+      return out;
+    }
+
+    async function loadAllIndicators(){
+      const cache = await loadFredCache();
+      const map = mapIndicatorsFromCache(cache);
+
+      // Verify all required keys are present now
+      for(const k of Object.keys(INDICATORS)){
+        if(!map[k]) throw new Error(`${k} missing in fred_cache.json`);
+      }
+      return map;
+    }
+
+    // ===================== UI HELPERS =====================
     const els = {
       statusBadge:  document.getElementById('statusBadge'),
       scoreText:    document.getElementById('scoreText'),
@@ -391,102 +507,10 @@
     }
     function setGauge(score){
       els.scoreText.textContent = Math.round(score);
-      const angle = (score/100)*360;
+      const angle = (score/100)*360; // full circle needle in your CSS
       els.needle.style.setProperty('--angle', angle+'deg');
       els.needle.style.transform = `rotate(${angle}deg)`;
     }
-
-    // ============ FRED-ONLY FETCH ============
-    async function fetchSeriesByKey(key){
-      const res = await fetch(`${FRED_BASE}/${key}.json`, {cache:'no-store'});
-      if(!res.ok) throw new Error(`${key}: HTTP ${res.status}`);
-      const json = await res.json();
-      if(!json || !Array.isArray(json.observations)) throw new Error(`${key}: bad JSON`);
-      return json;
-    }
-
-    // --- Derived when files absent (no demo data) ---
-    function latestVal(series){
-      const obs = series?.observations || [];
-      if(!obs.length) return null;
-      const o = obs[obs.length-1];
-      const v = (o.value==null||o.value==='.'||o.value==='NaN')?null:+o.value;
-      return {value:v, date:o.date};
-    }
-    function deriveUnempSlope6(unrate){
-      const L = latestVal(unrate); if(!L?.date || L.value==null) return null;
-      const back = new Date(L.date+"T00:00:00Z"); back.setMonth(back.getMonth()-6);
-      const iso = back.toISOString().slice(0,10);
-      const obs = unrate.observations;
-      for(let i=obs.length-1;i>=0;i--){
-        if(obs[i].date<=iso){
-          const v = obs[i].value; if(v!=null && v!=='.' && v!=='NaN') return L.value - (+v);
-          break;
-        }
-      }
-      return null;
-    }
-    function deriveDrawdown12m(spx){
-      const L = latestVal(spx); if(!L?.date || L.value==null) return null;
-      const end = L.date;
-      const start = new Date(end+"T00:00:00Z"); start.setFullYear(start.getFullYear()-1);
-      const startIso = start.toISOString().slice(0,10);
-      let maxv = -Infinity;
-      for(const o of spx.observations||[]){
-        if(o.date>=startIso && o.date<=end){
-          const v = (o.value==null||o.value==='.'||o.value==='NaN')?null:+o.value;
-          if(v!=null) maxv = Math.max(maxv, v);
-        }
-      }
-      if(!isFinite(maxv) || maxv<=0) return null;
-      return (L.value/maxv) - 1;
-    }
-
-    async function loadAllIndicators(){
-      const keys = Object.keys(INDICATORS);
-      const map = {};
-      // try to fetch declared indicator files
-      await Promise.all(keys.map(async k=>{
-        try { map[k] = await fetchSeriesByKey(k); }
-        catch(e){ map[k] = null; }
-      }));
-
-      // derive missing UN_SLOPE6 from UNRATE.json (if needed)
-      if(!map.UN_SLOPE6){
-        const unrate = await fetchSeriesByKey('UNRATE');
-        const val = deriveUnempSlope6(unrate);
-        if(val!=null){
-          map.UN_SLOPE6 = {
-            observations: [{date: latestVal(unrate).date, value: String(val)}],
-            fetchedAt: unrate.fetchedAt || new Date().toISOString()
-          };
-        } else {
-          throw new Error('UN_SLOPE6 missing and could not be derived from UNRATE');
-        }
-      }
-
-      // derive missing DD_12M from SP500.json (if needed)
-      if(!map.DD_12M){
-        const spx = await fetchSeriesByKey('SP500');
-        const val = deriveDrawdown12m(spx);
-        if(val!=null){
-          map.DD_12M = {
-            observations: [{date: latestVal(spx).date, value: String(val)}],
-            fetchedAt: spx.fetchedAt || new Date().toISOString()
-          };
-        } else {
-          throw new Error('DD_12M missing and could not be derived from SP500');
-        }
-      }
-
-      // hard error if any required series still missing
-      for(const k of keys){
-        if(!map[k]) throw new Error(`${k} missing from FRED cache`);
-      }
-      return map;
-    }
-
-    // ============ RENDER HELPERS ============
     function pillHTML({key,label,valueDisp,change,freshClass,freshTxt}){
       const arrow = change==null?'' : (change>0?'▲':'▼');
       const changeTxt = change==null?'' : `${(change>0?'+':'')}${change.toFixed(2)}`;
@@ -501,6 +525,7 @@
         </div>`;
     }
 
+    // Charts
     function ensureLineChart(id, labels, data){
       const ctx = document.getElementById(id);
       if(!ctx || !window.Chart) return;
@@ -520,31 +545,25 @@
       });
     }
 
-    // ============ MAIN ============
+    // ===================== MAIN =====================
     (async function init(){
       try{
         const dataMap = await loadAllIndicators();
 
-        // Latest values & freshness
+        // Build parts with freshness and weighting
         let num=0, den=0;
         const parts=[];
         for(const [k,cfg] of Object.entries(INDICATORS)){
           const s = dataMap[k];
           const L = latest(s);
           const days = seriesAgeDays(s, s.fetchedAt);
-          const {cls, txt} = (()=> {
-            const lim = FRESH_LIMITS[cfg.cadence] || FRESH_LIMITS.daily;
-            if (days <= lim.ok) return {cls:'badge-fresh', txt:'Fresh'};
-            if (days <= lim.warn) return {cls:'badge-stale', txt:'Stale'};
-            return {cls:'badge-old', txt:'Old'};
-          })();
+          const {cls, txt} = badgeFor(days, cfg.cadence);
           const scaled = SCALE[k](L?.value);
           const pen = freshnessPenalty(days, cfg.cadence);
           const w = cfg.weight * pen;
-
           if(Number.isFinite(scaled) && Number.isFinite(w)){ num += scaled*w; den += w; }
 
-          // simple Δ vs previous
+          // simple Δ vs previous raw value (skip for derived-rate series if you want)
           let change=null;
           const obs=s?.observations||[];
           if(obs.length>=2){
@@ -570,7 +589,7 @@
         // Pills
         els.pillsGrid.innerHTML = parts.map(p=>pillHTML(p)).join('');
 
-        // Composite history (baseline on first indicator’s dates)
+        // Composite history: use first indicator dates as baseline, fill from others on/before date
         const baseKey = Object.keys(INDICATORS)[0];
         const baseObs = (dataMap[baseKey]?.observations)||[];
         const labels = baseObs.map(o=>o.date);
@@ -598,13 +617,13 @@
         ensureLineChart('compositeChart', labels, hist);
         ensureBarChart('decompChart', parts.map(p=>p.label), parts.map(p=>+(p.scaled*p.w).toFixed(1)));
 
-        // Regime + simple forward probabilities (level-mapped placeholders; swap with your model later)
+        // Regime + simple forward probabilities (level mapping)
         els.regimeIndicator.innerHTML = `<span class="regime-dot" style="background:${zone==='green'?'#1ec28b':zone==='amber'?'#ffc247':'#ff6070'}"></span>${zone==='green'?'Normal':zone==='amber'?'Stressed':'Crisis'} regime`;
         els.prob1m.textContent = `${Math.round(Math.min(95, Math.max(5, composite-20)))}%`;
         els.prob3m.textContent = `${Math.round(Math.min(95, Math.max(5, composite-10)))}%`;
         els.prob6m.textContent = `${Math.round(Math.min(95, Math.max(5, composite)))}%`;
 
-        // Tab + timeframe handlers
+        // Tabs/timeframes (UI only)
         window.switchTab = (e, id)=>{
           document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
           e.currentTarget.classList.add('active');
@@ -614,7 +633,7 @@
         window.setTimeframe = (e, tf)=>{
           const btns = e.currentTarget.parentElement.querySelectorAll('.btn');
           btns.forEach(b=>b.classList.toggle('active', b===e.currentTarget));
-          // TODO: optionally slice `hist` window by tf and update chart
+          // Optional: slice 'hist' by tf and re-render
         };
 
       }catch(err){
