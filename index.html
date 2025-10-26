@@ -262,7 +262,9 @@
     /* ===================== CACHE LOADING ===================== */
 
     async function loadFredCache(){
-      const res = await fetch(FRED_CACHE_PATH, { cache:'no-store' });
+      // Cache-bust GH Pages CDN
+      const url = `${FRED_CACHE_PATH}?t=${Date.now()}`;
+      const res = await fetch(url, { cache:'no-store' });
       if(!res.ok) throw new Error(`FRED cache: HTTP ${res.status}`);
       const raw = await res.json();
       return normalizeCache(raw);
@@ -277,7 +279,7 @@
         Object.keys(raw).some(k => raw[k] && Array.isArray(raw[k].observations));
       if (directLike) {
         for (const [k,v] of Object.entries(raw)) {
-          if (v && Array.isArray(v.observations)) out[k] = v;
+          if (v && Array.isArray(v.observations)) out[k] = v;        // keep even if empty
         }
         return out;
       }
@@ -289,17 +291,17 @@
           if (!id) continue;
           const obs = Array.isArray(item.observations) ? item.observations
                     : Array.isArray(item.data) ? item.data : [];
-          if (obs.length) out[id] = { observations: obs, fetchedAt: item.fetchedAt };
+          out[id] = { observations: obs, fetchedAt: item.fetchedAt }; // keep even if empty
         }
         return out;
       }
 
-      // C) your workflow shape: { series: { T10Y3M:{...}, CREDIT:{...}, ... } }
+      // C) object map under "series": { series: { T10Y3M:{...}, CREDIT:{...} } }
       if (raw && raw.series && typeof raw.series === 'object' && !Array.isArray(raw.series)) {
         for (const [id,item] of Object.entries(raw.series)) {
           const obs = Array.isArray(item?.observations) ? item.observations
                     : Array.isArray(item?.data) ? item.data : [];
-          if (obs.length) out[id] = { observations: obs, fetchedAt: item.fetchedAt };
+          out[id] = { observations: obs, fetchedAt: item.fetchedAt }; // keep even if empty
         }
         return out;
       }
@@ -311,7 +313,7 @@
           if (!id) continue;
           const obs = Array.isArray(item.observations) ? item.observations
                     : Array.isArray(item.data) ? item.data : [];
-          if (obs.length) out[id] = { observations: obs, fetchedAt: item.fetchedAt };
+          out[id] = { observations: obs, fetchedAt: item.fetchedAt }; // keep even if empty
         }
         return out;
       }
@@ -342,7 +344,6 @@
     function deriveUnempSlope6(UNRATE){
       const obs = UNRATE?.observations||[];
       if(!obs.length) return null;
-      // monthly: compute diff vs 6 months prior by month bucket
       const byMonth = {};
       for(const o of obs){ byMonth[o.date.slice(0,7)] = +o.value; }
       const months = Object.keys(byMonth).sort();
@@ -351,9 +352,8 @@
       for(let i=6;i<months.length;i++){
         const m = months[i], prev = months[i-6];
         const delta = byMonth[m] - byMonth[prev];
-        // approximate month-end date
         const [yy,mm] = m.split('-').map(Number);
-        const d = new Date(Date.UTC(yy, mm, 0)); // day 0 of next month = last day of month
+        const d = new Date(Date.UTC(yy, mm, 0));
         out.push({date: d.toISOString().slice(0,10), value: String(delta)});
       }
       return { observations: out, fetchedAt: UNRATE.fetchedAt };
@@ -362,13 +362,8 @@
       const obs = SP500?.observations||[];
       if(!obs.length) return null;
       const dates = obs.map(o=>o.date), vals = obs.map(o=>+o.value);
-      // rolling 252-day peak
       const peak = [];
-      let maxSoFar = -Infinity;
       for(let i=0;i<vals.length;i++){
-        if(i===0) maxSoFar = vals[0];
-        else maxSoFar = Math.max(maxSoFar, vals[i-1], peak[i-1]??-Infinity);
-        // keep a 252d window peak
         const start = Math.max(0, i-252);
         let p = -Infinity;
         for(let j=start;j<=i;j++) p = Math.max(p, vals[j]);
@@ -392,28 +387,46 @@
       // pass-through
       for(const k of Object.keys(INDICATORS)){ if(cache[k]) out[k]=cache[k]; }
 
-      // common aliases
+      // aliases
       if(!out.CREDIT && (cache.BAMLH0A0HYM2 || cache.BAA10YM)) out.CREDIT = cache.BAMLH0A0HYM2 || cache.BAA10YM;
       if(!out.VIX_PROXY && cache.VIXCLS) out.VIX_PROXY = cache.VIXCLS;
       if(!out.SENTIMENT && cache.UMCSENT) out.SENTIMENT = cache.UMCSENT;
 
-      // derived
-      if(!out.UN_SLOPE6 && cache.UNRATE){ const d=deriveUnempSlope6(cache.UNRATE); if(d) out.UN_SLOPE6=d; }
-      if(!out.DD_12M   && cache.SP500 ){ const d=deriveDrawdown12m(cache.SP500); if(d) out.DD_12M=d; }
-      if(!out.RETAIL_MOMENTUM && cache.RSAFS){ const d=deriveRetailMomentum(cache.RSAFS); if(d) out.RETAIL_MOMENTUM=d; }
+      // derived (fall back to empty placeholders if not computable yet)
+      if(!out.UN_SLOPE6 && cache.UNRATE){
+        const d=deriveUnempSlope6(cache.UNRATE);
+        out.UN_SLOPE6 = d || { observations: [], fetchedAt: cache.UNRATE.fetchedAt };
+      }
+      if(!out.DD_12M && cache.SP500){
+        const d=deriveDrawdown12m(cache.SP500);
+        out.DD_12M = d || { observations: [], fetchedAt: cache.SP500.fetchedAt };
+      }
+      if(!out.RETAIL_MOMENTUM && cache.RSAFS){
+        const d=deriveRetailMomentum(cache.RSAFS);
+        out.RETAIL_MOMENTUM = d || { observations: [], fetchedAt: cache.RSAFS.fetchedAt };
+      }
 
       return out;
     }
 
     async function loadAllIndicators(){
       const cache = await loadFredCache();
-      const map = mapIndicatorsFromCache(cache);
-      const missing = Object.keys(INDICATORS).filter(k => !map[k]);
-      if(missing.length){
+      const mapped = mapIndicatorsFromCache(cache);
+
+      // Treat aliases as present if their base exists in the cache (even if obs empty)
+      const actuallyMissing = Object.keys(INDICATORS).filter(k => {
+        if (mapped[k]) return false;
+        if (k==='VIX_PROXY'       && cache.VIXCLS)  return false;
+        if (k==='SENTIMENT'       && cache.UMCSENT) return false;
+        if (k==='RETAIL_MOMENTUM' && cache.RSAFS)   return false;
+        return true;
+      });
+
+      if(actuallyMissing.length){
         console.log('fred_cache keys present:', Object.keys(cache));
-        throw new Error(`${missing.join(', ')} missing in fred_cache.json`);
+        throw new Error(`${actuallyMissing.join(', ')} missing in fred_cache.json`);
       }
-      return map;
+      return mapped;
     }
 
     /* ===================== UI Helpers ===================== */
@@ -449,7 +462,9 @@
       els.scoreText.textContent = Math.round(score);
       const angle = (score/100)*360;
       els.needle.style.setProperty('--angle', angle+'deg');
+      /* removed double rotation:
       els.needle.style.transform = `rotate(${angle}deg)`;
+      */
     }
     function pillHTML({key,label,valueDisp,change,freshClass,freshTxt}){
       const arrow = change==null?'' : (change>0?'▲':'▼');
