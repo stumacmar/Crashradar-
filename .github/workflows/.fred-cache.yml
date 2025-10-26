@@ -38,98 +38,102 @@ jobs:
           from urllib.parse import urlencode
           from collections import deque
 
-          OUT_DIR = "data"
+          OUT_DIR  = "data"
           OUT_FILE = os.path.join(OUT_DIR, "fred_cache.json")
           os.makedirs(OUT_DIR, exist_ok=True)
 
           SERIES = {
-              "T10Y3M":  "T10Y3M",
-              "CREDIT":  "BAA10YM",
-              "UNRATE":  "UNRATE",
-              "SP500":   "SP500",
-              "NFCI":    "NFCI",
-              "VIXCLS":  "VIXCLS",
-              "RSAFS":   "RSAFS",
-              "UMCSENT": "UMCSENT",
+              "T10Y3M":  "T10Y3M",   # Yield curve
+              "CREDIT":  "BAA10YM",  # Credit spread proxy
+              "UNRATE":  "UNRATE",   # For UN_SLOPE6 derivation
+              "SP500":   "SP500",    # For DD_12M derivation
+              "NFCI":    "NFCI",     # Financial conditions
+              "VIXCLS":  "VIXCLS",   # VIX base -> also write VIX_PROXY
+              "RSAFS":   "RSAFS",    # Retail sales (MoM in UI)
+              "UMCSENT": "UMCSENT"   # Sentiment
           }
 
-          def fred_json(sid, api_key):
+          def fred_obs(series_id, api_key):
               url = "https://api.stlouisfed.org/fred/series/observations?" + urlencode({
-                  "series_id": sid,
+                  "series_id": series_id,
                   "api_key": api_key,
                   "file_type": "json",
                   "observation_start": "2010-01-01"
               })
               with urlopen(url, timeout=30) as r:
-                  return json.load(r)
-
-          def to_obs_list(raw):
-              out=[]
-              for o in raw.get("observations", []):
-                  v=o.get("value")
+                  j = json.load(r)
+              out = []
+              for o in j.get("observations", []):
+                  v = o.get("value")
                   if not v or v in (".","NaN"): continue
-                  try: f=float(v)
+                  try: fv = float(v)
                   except: continue
-                  out.append({"date":o["date"][:10],"value":f"{f}"})
+                  out.append({"date": o["date"][:10], "value": f"{fv}"})
               return out
 
-          def un_slope6(obs):
-              bym={}
-              for o in obs: bym[o["date"][:7]]=float(o["value"])
-              months=sorted(bym)
-              out=[]
-              for i in range(6,len(months)):
-                  m=months[i]; prev=months[i-6]
-                  delta=bym[m]-bym[prev]
-                  y,mo=map(int,m.split("-"))
-                  if mo==12: d=dt.date(y,12,31)
-                  else: d=dt.date(y,mo+1,1)-dt.timedelta(days=1)
-                  out.append({"date":str(d),"value":f"{delta}"})
+          def un_slope6(unrate_obs):
+              # 6-month change using month buckets
+              bym = {}
+              for o in unrate_obs: bym[o["date"][:7]] = float(o["value"])
+              months = sorted(bym)
+              out = []
+              for i in range(6, len(months)):
+                  m, pm = months[i], months[i-6]
+                  delta = bym[m] - bym[pm]
+                  y, mo = map(int, m.split('-'))
+                  # month-end
+                  if mo == 12: d = dt.date(y, 12, 31)
+                  else: d = dt.date(y, mo+1, 1) - dt.timedelta(days=1)
+                  out.append({"date": str(d), "value": f"{delta}"})
               return out
 
-          def drawdown12m(obs):
-              vals=[float(o["value"]) for o in obs]
-              dates=[o["date"] for o in obs]
-              win=252; dq=deque(); peak=[]
-              for i,v in enumerate(vals):
-                  while dq and dq[0]<=i-win: dq.popleft()
-                  while dq and vals[dq[-1]]<=v: dq.pop()
+          def drawdown12m(sp_obs):
+              if not sp_obs: return []
+              vals  = [float(o["value"]) for o in sp_obs]
+              dates = [o["date"] for o in sp_obs]
+              win = 252
+              dq = deque()  # monotonic max
+              peak = [None]*len(vals)
+              for i, v in enumerate(vals):
+                  while dq and dq[0] <= i - win: dq.popleft()
+                  while dq and vals[dq[-1]] <= v: dq.pop()
                   dq.append(i)
-                  peak.append(vals[dq[0]])
-              out=[]
-              for d,v,p in zip(dates,vals,peak):
-                  if p!=0: out.append({"date":d,"value":f"{v/p-1.0}"})
+                  peak[i] = vals[dq[0]]
+              out = []
+              for d, v, p in zip(dates, vals, peak):
+                  if p: out.append({"date": d, "value": f"{(v/p) - 1.0}"})
               return out
 
-          api_key=os.environ.get("FRED_API_KEY","").strip()
+          api_key = os.environ.get("FRED_API_KEY","").strip()
           if not api_key:
-              raise SystemExit("FRED_API_KEY missing")
+              raise SystemExit("FRED_API_KEY secret is not set")
 
-          raw={k:fred_json(v,api_key) for k,v in SERIES.items()}
-          obs={k:to_obs_list(raw[k]) for k in raw}
+          # fetch all bases
+          obs = {k: fred_obs(fid, api_key) for k, fid in SERIES.items()}
 
-          series={
-              "T10Y3M": {"name":"10Y-3M Treasury Spread","observations":obs["T10Y3M"][-365:]},
-              "CREDIT": {"name":"Credit Spread (BAA-10Y)","observations":obs["CREDIT"][-365:]},
-              "UNRATE": {"name":"Unemployment Rate","observations":obs["UNRATE"][-365:]},
-              "UN_SLOPE6": {"name":"Unemployment 6m Slope","observations":un_slope6(obs["UNRATE"])[-365:]},
-              "SP500": {"name":"S&P 500","observations":obs["SP500"][-365:]},
-              "DD_12M": {"name":"S&P 500 12m Drawdown","observations":drawdown12m(obs["SP500"])[-365:]},
-              "NFCI": {"name":"Chicago Fed NFCI","observations":obs["NFCI"][-365:]},
-              "VIXCLS": {"name":"CBOE VIX","observations":obs["VIXCLS"][-365:]},
-              "VIX_PROXY": {"name":"Volatility Index (proxy)","observations":obs["VIXCLS"][-365:]},
-              "RSAFS": {"name":"Retail Sales","observations":obs["RSAFS"][-365:]},
-              "UMCSENT": {"name":"Consumer Sentiment","observations":obs["UMCSENT"][-365:]},
+          # build series payload (include bases + derived + alias)
+          series = {
+              "T10Y3M":    {"name":"10Y minus 3M Treasury Spread", "observations": obs["T10Y3M"]},
+              "CREDIT":    {"name":"Credit Spread (BAA - 10Y)",    "observations": obs["CREDIT"]},
+              "UNRATE":    {"name":"Unemployment Rate",            "observations": obs["UNRATE"]},
+              "UN_SLOPE6": {"name":"Unemployment 6m Slope",        "observations": un_slope6(obs["UNRATE"])},
+              "SP500":     {"name":"S&P 500",                      "observations": obs["SP500"]},
+              "DD_12M":    {"name":"S&P 500 12m Drawdown",         "observations": drawdown12m(obs["SP500"])},
+              "NFCI":      {"name":"Chicago Fed NFCI",             "observations": obs["NFCI"]},
+              "VIXCLS":    {"name":"CBOE Volatility Index",        "observations": obs["VIXCLS"]},
+              "VIX_PROXY": {"name":"Volatility Index (proxy)",     "observations": obs["VIXCLS"]},  # alias
+              "RSAFS":     {"name":"Advance Retail & Food Sales",  "observations": obs["RSAFS"]},
+              "UMCSENT":   {"name":"U. Michigan Consumer Sentiment","observations": obs["UMCSENT"]},
           }
 
-          payload={
+          payload = {
               "fetched_at_utc": dt.datetime.utcnow().replace(microsecond=0).isoformat()+"Z",
               "series": series
           }
+          with open(OUT_FILE, "w", encoding="utf-8") as f:
+              json.dump(payload, f, indent=2)
 
-          with open(OUT_FILE,"w",encoding="utf-8") as f:
-              json.dump(payload,f,indent=2)
-          print("✅ Built cache with keys:",", ".join(series.keys()))
+          print("✅ Wrote", OUT_FILE, "with keys:", ", ".join(sorted(series.keys())))
           PY
 
       - name: Commit cached data
