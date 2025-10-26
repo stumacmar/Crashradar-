@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Advanced Economic Crash Radar with predictive analytics and multi-timeframe analysis" />
   <title>Economic Crash Radar Pro</title>
+
   <style>
     :root{
       --bg:#0a0e1a; --panel:#12182b; --panel-hover:#151d33; --muted:#8b96b0; 
@@ -197,9 +198,18 @@
             </div>
             <div id="regimeIndicator" class="regime"></div>
             <div class="prob-display">
-              <div class="prob-item"><h4>1-Month Risk</h4><div class="prob-value" id="prob1m">--</div></div>
-              <div class="prob-item"><h4>3-Month Risk</h4><div class="prob-value" id="prob3m">--</div></div>
-              <div class="prob-item"><h4>6-Month Risk</h4><div class="prob-value" id="prob6m">--</div></div>
+              <div class="prob-item">
+                <h4>1-Month Risk</h4>
+                <div class="prob-value" id="prob1m">--</div>
+              </div>
+              <div class="prob-item">
+                <h4>3-Month Risk</h4>
+                <div class="prob-value" id="prob3m">--</div>
+              </div>
+              <div class="prob-item">
+                <h4>6-Month Risk</h4>
+                <div class="prob-value" id="prob6m">--</div>
+              </div>
             </div>
           </div>
         </div>
@@ -278,22 +288,17 @@
     </main>
   </div>
 
+  <!-- Charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.1/dist/chartjs-plugin-annotation.min.js"></script>
 
-  <script>
-    // ================= FRED CACHE BASE PATH (subpath-safe) =================
-    // Why change from "/fred"? Because on GH/CF Pages or Replit you're served from /<repo>/
-    // so absolute "/fred" 404s. This computes a repo-relative base by default.
-    (function(){
-      const path = location.pathname;
-      const repoBase = path.endsWith('/') ? path : path.replace(/[^/]+$/, '');
-      window.FRED_CACHE_BASE = window.FRED_CACHE_BASE || (repoBase + 'fred');
-    })();
+  <!-- ✅ Force GitHub Pages subpath to /data/fred -->
+  <script>window.FRED_CACHE_BASE = 'data/fred';</script>
 
+  <script>
+    // ============ CONFIGURATION ============
     const FRED_BASE = (window.FRED_CACHE_BASE || '/fred').replace(/\/+$/,''); 
 
-    // ============ CONFIGURATION ============
     const INDICATORS = {
       T10Y3M: { label: 'Yield Curve', format: v => v?.toFixed(2), weight: 0.18, cadence: 'daily' },
       CREDIT: { label: 'Credit Spread', format: v => v?.toFixed(2), weight: 0.14, cadence: 'daily' },
@@ -301,7 +306,7 @@
       DD_12M: { label: 'Market Drawdown', format: v => ((v ?? 0) * 100).toFixed(1) + '%', weight: 0.20, cadence: 'daily' },
       NFCI: { label: 'Financial Conditions', format: v => v?.toFixed(3), weight: 0.12, cadence: 'weekly' },
       VIX_PROXY: { label: 'Volatility Index', format: v => v?.toFixed(1), weight: 0.10, cadence: 'daily' },
-      RETAIL_MOMENTUM: { label: 'Retail Sales Δ', format: v => v?.toFixed(2) + '%', weight: 0.08, cadence: 'monthly' },
+      RETAIL_MOMENTUM: { label: 'Retail Sales Δ', format: v => (v*100)?.toFixed(2) + '%', weight: 0.08, cadence: 'monthly' },
       SENTIMENT: { label: 'Consumer Confidence', format: v => v?.toFixed(1), weight: 0.06, cadence: 'monthly' }
     };
 
@@ -331,16 +336,6 @@
       return ((val - good) / denom) * 100;
     };
     const zoneOf = s => s <= 30 ? 'green' : (s <= 60 ? 'amber' : 'red');
-    const movingAvg = (arr, k) => {
-      const out = [];
-      let sum = 0;
-      for (let i = 0; i < arr.length; i++) {
-        sum += arr[i];
-        if (i >= k) sum -= arr[i - k];
-        out.push(i >= k - 1 ? +(sum / k).toFixed(1) : null);
-      }
-      return out;
-    };
 
     function freshnessPenalty(days, cadence) {
       const lim = FRESH_LIMITS[cadence] || FRESH_LIMITS.daily;
@@ -364,7 +359,7 @@
       return Math.max(0, Math.round((new Date(fetchedAt || Date.now()) - d) / 86400000));
     }
 
-    // ============ DOM HOOKS ============
+    // ============ DOM ============
     const els = {
       statusBadge:  document.getElementById('statusBadge'),
       scoreText:    document.getElementById('scoreText'),
@@ -403,21 +398,19 @@
 
     // ============ FRED-ONLY FETCH ============
     async function fetchSeriesByKey(key){
-      const bust = (window.__CACHE_BUSTER__ ? `?v=${window.__CACHE_BUSTER__}` : '');
-      const url = `${FRED_BASE}/${key}.json${bust}`;
-      const res = await fetch(url, {cache:'no-store'});
+      const res = await fetch(`${FRED_BASE}/${key}.json`, {cache:'no-store'});
       if(!res.ok) throw new Error(`${key}: HTTP ${res.status}`);
       const json = await res.json();
       if(!json || !Array.isArray(json.observations)) throw new Error(`${key}: bad JSON`);
       return json;
     }
 
-    // --- helpers for derived when files are absent (no demo, no placeholders) ---
+    // --- Derived when files absent (no demo data) ---
     function latestVal(series){
       const obs = series?.observations || [];
       if(!obs.length) return null;
       const o = obs[obs.length-1];
-      const v = (o.value==null || o.value==='.' || o.value==='NaN') ? null : +o.value;
+      const v = (o.value==null||o.value==='.'||o.value==='NaN')?null:+o.value;
       return {value:v, date:o.date};
     }
     function deriveUnempSlope6(unrate){
@@ -452,7 +445,6 @@
     async function loadAllIndicators(){
       const keys = Object.keys(INDICATORS);
       const map = {};
-
       // try to fetch declared indicator files
       await Promise.all(keys.map(async k=>{
         try { map[k] = await fetchSeriesByKey(k); }
@@ -606,13 +598,13 @@
         ensureLineChart('compositeChart', labels, hist);
         ensureBarChart('decompChart', parts.map(p=>p.label), parts.map(p=>+(p.scaled*p.w).toFixed(1)));
 
-        // Regime + simple forward probabilities (direct level map; keep your model later)
+        // Regime + simple forward probabilities (level-mapped placeholders; swap with your model later)
         els.regimeIndicator.innerHTML = `<span class="regime-dot" style="background:${zone==='green'?'#1ec28b':zone==='amber'?'#ffc247':'#ff6070'}"></span>${zone==='green'?'Normal':zone==='amber'?'Stressed':'Crisis'} regime`;
         els.prob1m.textContent = `${Math.round(Math.min(95, Math.max(5, composite-20)))}%`;
         els.prob3m.textContent = `${Math.round(Math.min(95, Math.max(5, composite-10)))}%`;
         els.prob6m.textContent = `${Math.round(Math.min(95, Math.max(5, composite)))}%`;
 
-        // Tabs & timeframe buttons
+        // Tab + timeframe handlers
         window.switchTab = (e, id)=>{
           document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
           e.currentTarget.classList.add('active');
@@ -622,7 +614,7 @@
         window.setTimeframe = (e, tf)=>{
           const btns = e.currentTarget.parentElement.querySelectorAll('.btn');
           btns.forEach(b=>b.classList.toggle('active', b===e.currentTarget));
-          // TODO: filter/compress 'hist' by tf
+          // TODO: optionally slice `hist` window by tf and update chart
         };
 
       }catch(err){
