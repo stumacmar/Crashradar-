@@ -1,703 +1,441 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Advanced Economic Crash Radar with predictive analytics and multi-timeframe analysis" />
-  <title>Economic Crash Radar Pro</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Modern responsive website with improved design and performance">
+    <title>Modern Website | Home</title>
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3a0ca3;
+            --accent-color: #4cc9f0;
+            --text-color: #2b2d42;
+            --light-text: #f8f9fa;
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
 
-  <style>
-    :root{
-      --bg:#0a0e1a; --panel:#12182b; --panel-hover:#151d33; --muted:#8b96b0;
-      --text:#e8eeff; --accent:#6b9eff; --accent-bright:#8fb4ff;
-      --green:#1ec28b; --amber:#ffc247; --red:#ff6070; --orange:#ff8c42;
-      --radius:14px; --shadow:0 4px 24px rgba(0,0,0,.3);
-      --ring:200px; --ring-m:160px;
-    }
-    *{box-sizing:border-box}
-    html,body{margin:0;background:var(--bg);color:var(--text);
-      font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    .wrap{max-width:1400px;margin:0 auto;padding:20px 16px 80px}
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            overflow-x: hidden;
+        }
 
-    header{margin-bottom:24px}
-    h1{font-size:clamp(32px,5vw,48px);line-height:1.1;margin:0 0 8px;
-      background:linear-gradient(135deg,var(--text),var(--accent-bright));
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .subtitle{color:var(--muted);font-size:15px;margin:8px 0}
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
 
-    .card{background:var(--panel);border-radius:var(--radius);padding:24px;margin:20px 0;
-      box-shadow:var(--shadow),0 0 0 1px rgba(255,255,255,.04) inset;transition:transform .2s,box-shadow .2s}
-    .card:hover{transform:translateY(-2px);box-shadow:0 6px 32px rgba(0,0,0,.4)}
-    .card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
+        /* Header Styles */
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--light-text);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
 
-    /* Gauge */
-    .gauge-container{display:flex;align-items:center;gap:32px;flex-wrap:wrap}
-    .gauge-wrap{position:relative;width:var(--ring);height:var(--ring)}
-    .multi-ring{position:absolute;inset:0}
-    .ring{position:absolute;border-radius:50%;transition:opacity .3s}
-    .ring-outer{inset:0;background:conic-gradient(var(--green)0 108deg,var(--amber)108deg 216deg,var(--red)216deg 360deg);opacity:.3}
-    .ring-mid{inset:15px;background:conic-gradient(var(--green)0 108deg,var(--amber)108deg 216deg,var(--red)216deg 360deg);opacity:.5}
-    .ring-inner{inset:30px;background:conic-gradient(var(--green)0 108deg,var(--amber)108deg 216deg,var(--red)216deg 360deg)}
-    .ring::after{content:"";position:absolute;inset:20px;border-radius:50%;background:var(--panel)}
-    .needle{position:absolute;inset:0;transition:transform .6s cubic-bezier(.34,1.56,.64,1)}
-    .needle::before{content:"";position:absolute;top:50%;left:50%;width:4px;height:45%;
-      background:linear-gradient(180deg,var(--accent-bright),var(--accent));
-      transform:translateX(-50%) translateY(-100%) rotate(var(--angle,0deg));
-      transform-origin:bottom center;border-radius:4px;box-shadow:0 0 12px var(--accent)}
-    .needle::after{content:"";position:absolute;top:50%;left:50%;width:16px;height:16px;background:var(--accent-bright);
-      border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 16px var(--accent),0 0 0 3px var(--panel)}
-    .score{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:48px;line-height:1}
-    .score-label{font-size:12px;font-weight:600;color:var(--muted);margin-top:4px;letter-spacing:.5px}
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-    .gauge-info h2{font-size:28px;margin:0 0 8px;font-weight:700}
-    .confidence{display:inline-flex;align-items:center;gap:8px;background:rgba(107,158,255,.15);padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-top:8px}
-    .confidence-bar{width:60px;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
-    .confidence-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
 
-    .pills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
-    .pill{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);padding:14px 16px;border-radius:12px;transition:all .2s;cursor:pointer;position:relative}
-    .pill:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);transform:translateY(-2px)}
-    .pill-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
-    .pill-title{font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px}
-    .pill-value{font-size:20px;font-weight:700;margin:4px 0}
-    .pill-change{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
-    .pill-badge{font-size:11px;padding:3px 8px;border-radius:6px;font-weight:600}
-    .badge-fresh{background:rgba(30,194,139,.15);color:var(--green)}
-    .badge-stale{background:rgba(255,194,71,.15);color:var(--amber)}
-    .badge-old{background:rgba(255,96,112,.15);color:var(--red)}
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            list-style: none;
+        }
 
-    .chart-container{position:relative;height:320px;margin:16px 0}
-    .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:12px}
-    .chart-title{font-size:18px;font-weight:600;margin:0}
-    .chart-controls{display:flex;gap:8px}
-    .btn-group{display:flex;gap:4px;background:rgba(255,255,255,.03);padding:4px;border-radius:8px}
-    .btn{background:transparent;border:none;color:var(--muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s}
-    .btn:hover{color:var(--text);background:rgba(255,255,255,.06)}
-    .btn.active{background:var(--accent);color:#fff}
+        .nav-links a {
+            color: var(--light-text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
 
-    .tabs{display:flex;gap:8px;border-bottom:2px solid rgba(255,255,255,.06);margin-bottom:20px;overflow-x:auto}
-    .tab{background:transparent;border:none;color:var(--muted);padding:12px 20px;cursor:pointer;font-size:14px;font-weight:600;position:relative;white-space:nowrap}
-    .tab:hover{color:var(--text)}
-    .tab.active{color:var(--accent-bright)}
-    .tab.active::after{content:"";position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--accent)}
-    .tab-content{display:none}
-    .tab-content.active{display:block}
+        .nav-links a:hover {
+            opacity: 0.8;
+        }
 
-    .heatmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
-    .heat-cell{background:rgba(255,255,255,.03);padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,.06)}
-    .heat-label{font-size:12px;color:var(--muted)}
-    .heat-value{font-size:22px;font-weight:700}
-    .bar{height:6px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px}
-    .bar > span{display:block;height:100%;border-radius:4px}
+        /* Hero Section */
+        .hero {
+            padding: 4rem 0;
+            text-align: center;
+            background: linear-gradient(rgba(67, 97, 238, 0.1), rgba(67, 97, 238, 0.05));
+        }
 
-    @media (max-width:768px){
-      .gauge-container{justify-content:center;text-align:center}
-      .gauge-wrap{width:var(--ring-m);height:var(--ring-m)}
-      .score{font-size:36px}
-      .pills-grid{grid-template-columns:1fr}
-      .chart-header{flex-direction:column;align-items:flex-start}
-    }
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--secondary-color);
+        }
 
-    /* === NEW: explain UI bits (tiny, unobtrusive) === */
-    .info-btn{
-      display:inline-flex;align-items:center;gap:6px;
-      font-size:12px;font-weight:600;color:var(--accent-bright);
-      background:rgba(107,158,255,.12);padding:6px 10px;border-radius:8px;
-      border:1px solid rgba(107,158,255,.25);cursor:pointer;white-space:nowrap
-    }
-    .info-note{margin-top:10px;border-radius:10px;padding:12px 14px;
-      background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
-      color:var(--muted);font-size:13px;display:none}
-    .info-note.show{display:block}
-    .help-toggle{margin:4px 0 10px;font-size:13px;color:var(--accent-bright);cursor:pointer;text-decoration:underline}
-    .micro-note{display:none;color:var(--muted);font-size:12px;margin-top:6px}
-    body.help-on .micro-note{display:block}
-  </style>
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            color: var(--text-color);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 3rem 0;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--secondary-color);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .feature-card {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 1rem;
+            color: var(--secondary-color);
+        }
+
+        /* Image Gallery */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            aspect-ratio: 4/3;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--light-text);
+            padding: 3rem 0;
+            text-align: center;
+            border-radius: var(--border-radius);
+            margin: 3rem 0;
+        }
+
+        .cta-section h2 {
+            margin-bottom: 1rem;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            padding: 12px 30px;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .btn:hover {
+            background-color: #3ab0d6;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--secondary-color);
+            color: var(--light-text);
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .social-links a {
+            color: var(--light-text);
+            font-size: 1.2rem;
+            transition: color 0.3s;
+        }
+
+        .social-links a:hover {
+            color: var(--accent-color);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-links {
+                gap: 1rem;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .feature-card {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 15px;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.5rem;
+            }
+
+            .hero {
+                padding: 2rem 0;
+            }
+
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
+    <!-- Header -->
     <header>
-      <h1>⚡ Economic Crash Radar Pro</h1>
-      <div class="subtitle">Advanced multi-timeframe market stress analysis with predictive analytics</div>
-      <div id="statusBadge"></div>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">ModernSite</div>
+                <nav>
+                    <ul class="nav-links">
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#gallery">Gallery</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
     </header>
 
-    <main>
-      <!-- Gauge -->
-      <section class="card">
-        <div class="gauge-container">
-          <div class="gauge-wrap">
-            <div class="multi-ring">
-              <div class="ring ring-outer"></div>
-              <div class="ring ring-mid"></div>
-              <div class="ring ring-inner"></div>
-            </div>
-            <div id="needle" class="needle"></div>
-            <div class="score"><div id="scoreText">--</div><div class="score-label">COMPOSITE</div></div>
-          </div>
-
-          <div class="gauge-info">
-            <h2>Market Stress Index</h2>
-            <div style="color:var(--muted);font-size:14px;margin-bottom:8px">
-              Real-time composite of <span id="indicatorCount">8</span> economic indicators
-            </div>
-            <div class="confidence">
-              <span>Confidence:</span>
-              <div class="confidence-bar"><div id="confidenceFill" class="confidence-fill" style="width:85%"></div></div>
-              <span id="confidenceText">85%</span>
-            </div>
-            <div id="regimeIndicator" class="regime"></div>
-            <div class="prob-display" style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap">
-              <div class="prob-item" style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
-                <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">1-Month Risk</h4>
-                <div class="prob-value" id="prob1m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
-              </div>
-              <div class="prob-item" style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
-                <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">3-Month Risk</h4>
-                <div class="prob-value" id="prob3m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
-              </div>
-              <div class="prob-item" style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
-                <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">6-Month Risk</h4>
-                <div class="prob-value" id="prob6m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
-              </div>
-            </div>
-          </div>
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="container">
+            <h1>Welcome to Our Modern Website</h1>
+            <p>Experience the next generation of web design with improved performance, accessibility, and user experience.</p>
+            <button class="btn" id="ctaButton">Get Started</button>
         </div>
-      </section>
+    </section>
 
-      <!-- Indicator Pills -->
-      <section class="card">
-        <div class="card-head">
-          <h3 style="margin:0 0 16px;font-size:20px">📊 Live Indicators</h3>
-        </div>
-        <div id="kpiExplainToggle" class="help-toggle">Explain KPIs</div>
-        <div id="pillsGrid" class="pills-grid"></div>
-      </section>
-
-      <!-- Tabs -->
-      <div class="tabs">
-        <button class="tab active" onclick="switchTab(event, 'composite')">Composite</button>
-        <button class="tab" onclick="switchTab(event, 'scenarios')">Scenarios</button>
-        <button class="tab" onclick="switchTab(event, 'indicators')">Indicators</button>
-        <button class="tab" onclick="switchTab(event, 'analogs')">Analogs</button>
-      </div>
-
-      <div id="tab-composite" class="tab-content active">
-        <section class="card">
-          <div class="chart-header">
-            <h3 class="chart-title">Composite Risk Score</h3>
-            <div class="chart-controls">
-              <div class="btn-group">
-                <button class="btn active" data-tf="1m">1M</button>
-                <button class="btn" data-tf="3m">3M</button>
-                <button class="btn" data-tf="6m">6M</button>
-                <button class="btn" data-tf="1y">1Y</button>
-                <button class="btn" data-tf="all">ALL</button>
-              </div>
+    <!-- Main Content -->
+    <main class="main-content container">
+        <section id="features">
+            <h2 class="section-title">Our Features</h2>
+            <div class="features">
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3>Fast Performance</h3>
+                    <p>Optimized for speed with lazy loading images and efficient code that loads in milliseconds.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Responsive Design</h3>
+                    <p>Looks great on all devices from mobile phones to desktop computers with adaptive layouts.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">♿</div>
+                    <h3>Accessibility First</h3>
+                    <p>Built with accessibility in mind, following WCAG guidelines for inclusive user experience.</p>
+                </div>
             </div>
-          </div>
-          <div class="chart-container"><canvas id="compositeChart"></canvas></div>
         </section>
 
-        <section class="card">
-          <h3 style="margin:0 0 16px">Risk Decomposition</h3>
-          <div class="chart-container"><canvas id="decompChart"></canvas></div>
+        <!-- Image Gallery -->
+        <section id="gallery">
+            <h2 class="section-title">Image Gallery</h2>
+            <div class="gallery">
+                <!-- Using placeholder images with optimized attributes -->
+                <div class="gallery-item">
+                    <img src="https://picsum.photos/400/300?random=1" alt="Modern architecture" loading="lazy">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://picsum.photos/400/300?random=2" alt="Nature landscape" loading="lazy">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://picsum.photos/400/300?random=3" alt="Technology interface" loading="lazy">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://picsum.photos/400/300?random=4" alt="Creative design" loading="lazy">
+                </div>
+            </div>
         </section>
-      </div>
 
-      <div id="tab-scenarios" class="tab-content">
-        <section class="card">
-          <div class="card-head">
-            <h3 style="margin:0 0 8px">Forward-Looking Scenarios</h3>
-            <button class="info-btn" data-note-target="scenarios">ⓘ Explain</button>
-          </div>
-          <p style="color:var(--muted);margin:0 0 16px;font-size:14px">Probability-weighted forecasts</p>
-          <div id="scenarioGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:16px"></div>
-          <div id="scenariosNote" class="info-note">
-            Scenarios estimate the odds of three possible regimes—Base Case, Downside (Stress), and Upside (Relief).
-            They come from how today’s indicators align with past stable or stressed periods.
-            More “Downside” means conditions are tighter and turbulence risk is higher.
-          </div>
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <h2>Ready to Get Started?</h2>
+            <p>Join thousands of satisfied users and experience the difference.</p>
+            <button class="btn" id="signupButton">Sign Up Now</button>
         </section>
-
-        <section class="card">
-          <div class="card-head">
-            <h3 style="margin:0 0 0">Risk Trajectory</h3>
-            <button class="info-btn" data-note-target="trajectory">ⓘ Explain</button>
-          </div>
-          <div class="chart-container"><canvas id="trajectoryChart"></canvas></div>
-          <div id="trajectoryNote" class="info-note">
-            The trajectory projects the composite about 25 weeks ahead if current trends continue.
-            The solid line is the central path; dashed lines show uncertainty.
-            Up-sloping = pressure building; flat/down = stabilising.
-          </div>
-        </section>
-      </div>
-
-      <div id="tab-indicators" class="tab-content">
-        <section class="card">
-          <h3 style="margin:0 0 16px">Indicator Heat Map</h3>
-          <div id="heatmap" class="heatmap"></div>
-        </section>
-      </div>
-
-      <div id="tab-analogs" class="tab-content">
-        <section class="card">
-          <h3 style="margin:0 0 8px">Similar Historical Periods</h3>
-          <p style="color:var(--muted);margin:0 0 16px;font-size:14px">Compared to past market regimes</p>
-          <div id="analogList" class="analog-list"></div>
-        </section>
-      </div>
     </main>
-  </div>
 
-  <!-- Chart libs -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.1/dist/chartjs-plugin-annotation.min.js"></script>
-
-  <script>
-    /* ===================== CONFIG ===================== */
-    const FRED_CACHE_PATH = 'data/fred_cache.json';
-
-    const INDICATORS = {
-      T10Y3M:          { label:'Yield Curve',         format:v=>v?.toFixed(2),               weight:0.18, cadence:'daily',   tip:'10y–3m Treasury spread. Inversions (≤0) often precede recessions.' },
-      CREDIT:          { label:'Credit Spread',       format:v=>v?.toFixed(2),               weight:0.14, cadence:'daily',   tip:'Corporate vs Treasury yields. Wider = tighter financing conditions.' },
-      UN_SLOPE6:       { label:'Unemployment Δ',      format:v=>v?.toFixed(2),               weight:0.12, cadence:'monthly', tip:'Six-month change in unemployment. Rising = labour softening.' },
-      DD_12M:          { label:'Market Drawdown',     format:v=>((v??0)*100).toFixed(1)+'%', weight:0.20, cadence:'daily',   tip:'S&P vs its 12-month peak. Negative means below the recent high.' },
-      NFCI:            { label:'Financial Conditions',format:v=>v?.toFixed(3),               weight:0.12, cadence:'weekly',  tip:'NFCI combines rates, credit, and liquidity tightness.' },
-      VIX_PROXY:       { label:'Volatility Index',    format:v=>v?.toFixed(1),               weight:0.10, cadence:'daily',   tip:'Implied S&P 500 volatility (VIX). Higher = more stress.' },
-      RETAIL_MOMENTUM: { label:'Retail Sales Δ',      format:v=>(v*100)?.toFixed(2)+'%',     weight:0.08, cadence:'monthly', tip:'Latest month-over-month change in retail sales.' },
-      SENTIMENT:       { label:'Consumer Confidence', format:v=>v?.toFixed(1),               weight:0.06, cadence:'monthly', tip:'Survey-based household confidence; higher = more optimistic.' }
-    };
-
-    const clamp = x => Math.max(0, Math.min(100, x));
-    const map01 = (val, good, bad) => {
-      if (val == null) return 50;
-      const denom = bad - good;
-      if (Math.abs(denom) < 1e-9) return 50;
-      return ((val - good) / denom) * 100;
-    };
-    const SCALE = {
-      T10Y3M:          v => clamp(map01(v,  1.0, -2.0)),
-      CREDIT:          v => clamp(map01(v,  0.30, 1.00)),
-      UN_SLOPE6:       v => clamp(map01(v,  0.05, 0.50)),
-      DD_12M:          v => clamp(map01(v,  0.00, -0.20)),
-      NFCI:            v => clamp(map01(v, -0.80, 0.40)),
-      VIX_PROXY:       v => clamp(map01(v,  12,  35)),
-      RETAIL_MOMENTUM: v => clamp(map01(v,  0.03, -0.02)),
-      SENTIMENT:       v => clamp(map01(v, 110,  70))
-    };
-    const FRESH_LIMITS = { daily:{ok:7,warn:30}, weekly:{ok:7,warn:30}, monthly:{ok:30,warn:60} };
-    const zoneOf = s => s <= 30 ? 'green' : (s <= 60 ? 'amber' : 'red');
-
-    /* ===================== CACHE LOADING ===================== */
-    async function loadFredCache(){
-      const res = await fetch(`${FRED_CACHE_PATH}?t=${Date.now()}`, { cache:'no-store' });
-      if(!res.ok) throw new Error(`FRED cache: HTTP ${res.status}`);
-      const raw = await res.json();
-      return normalizeCache(raw);
-    }
-
-    function normalizeCache(raw){
-      const out = {};
-      const directLike = raw && typeof raw === 'object' &&
-        Object.keys(raw).some(k => raw[k] && Array.isArray(raw[k].observations));
-      if (directLike) {
-        for (const [k,v] of Object.entries(raw)) out[k] = v;
-        return out;
-      }
-      if (Array.isArray(raw?.series)) {
-        for (const item of raw.series) {
-          const id = item?.id || item?.series_id || item?.name;
-          if (!id) continue;
-          const obs = Array.isArray(item.observations) ? item.observations
-                    : Array.isArray(item.data) ? item.data : [];
-          out[id] = { observations: obs, fetchedAt: item.fetchedAt };
-        }
-        return out;
-      }
-      if (raw && raw.series && typeof raw.series === 'object' && !Array.isArray(raw.series)) {
-        for (const [id,item] of Object.entries(raw.series)) {
-          const obs = Array.isArray(item?.observations) ? item.observations
-                    : Array.isArray(item?.data) ? item.data : [];
-          out[id] = { observations: obs, fetchedAt: item.fetchedAt };
-        }
-        return out;
-      }
-      if (Array.isArray(raw)) {
-        for (const item of raw) {
-          const id = item?.id || item?.series_id || item?.name;
-          if (!id) continue;
-          const obs = Array.isArray(item.observations) ? item.observations
-                    : Array.isArray(item.data) ? item.data : [];
-          out[id] = { observations: obs, fetchedAt: item.fetchedAt };
-        }
-      }
-      return out;
-    }
-
-    function latest(series){
-      const obs = series?.observations||[];
-      if(!obs.length) return null;
-      const o = obs[obs.length-1];
-      const v = (o.value==null || o.value==='.' || o.value==='NaN') ? null : +o.value;
-      return {value:v, date:o.date};
-    }
-    function seriesAgeDays(series, fetchedAt){
-      const L = latest(series);
-      if(!L) return Infinity;
-      const d = new Date(L.date + 'T00:00:00Z');
-      return Math.max(0, Math.round((new Date(fetchedAt || Date.now()) - d) / 86400000));
-    }
-    function freshnessPenalty(days, cadence){
-      const lim = FRESH_LIMITS[cadence] || FRESH_LIMITS.daily;
-      if(days<=lim.ok) return 1.00;
-      if(days<=lim.warn) return 0.85;
-      return 0.70;
-    }
-
-    // Derivations
-    function deriveUnempSlope6(UNRATE){
-      const obs = UNRATE?.observations||[];
-      if(!obs.length) return null;
-      const byMonth = {};
-      for(const o of obs){ byMonth[o.date.slice(0,7)] = +o.value; }
-      const months = Object.keys(byMonth).sort();
-      if(months.length<7) return null;
-      const out = [];
-      for(let i=6;i<months.length;i++){
-        const m = months[i], prev = months[i-6];
-        const delta = byMonth[m] - byMonth[prev];
-        const [yy,mm] = m.split('-').map(Number);
-        const d = new Date(Date.UTC(yy, mm, 0));
-        out.push({date: d.toISOString().slice(0,10), value: String(delta)});
-      }
-      return { observations: out, fetchedAt: UNRATE.fetchedAt };
-    }
-    function deriveDrawdown12m(SP500){
-      const obs = SP500?.observations||[];
-      if(!obs.length) return null;
-      const dates = obs.map(o=>o.date), vals = obs.map(o=>+o.value);
-      const peak = [];
-      for(let i=0;i<vals.length;i++){
-        const start = Math.max(0, i-252);
-        let p = -Infinity;
-        for(let j=start;j<=i;j++) p = Math.max(p, vals[j]);
-        peak.push(p);
-      }
-      const dd = dates.map((d,i)=>({date:d, value:String(vals[i]/peak[i]-1)}));
-      return { observations: dd, fetchedAt: SP500.fetchedAt };
-    }
-    function deriveRetailMomentum(RSAFS){
-      const o = RSAFS?.observations||[];
-      if(o.length<2) return null;
-      const last = +o[o.length-1].value;
-      let prev = null;
-      for(let i=o.length-2;i>=0;i--){ const v = +o[i].value; if(isFinite(v)){ prev=v; break; } }
-      if(prev==null || prev===0) return null;
-      return { observations:[{date:o[o.length-1].date, value:String(last/prev-1)}], fetchedAt: RSAFS.fetchedAt };
-    }
-
-    function mapIndicatorsFromCache(cache){
-      const out = {};
-      for(const k of Object.keys(INDICATORS)){ if(cache[k]) out[k]=cache[k]; }
-      if(!out.CREDIT && (cache.BAMLH0A0HYM2 || cache.BAA10YM)) out.CREDIT = cache.BAMLH0A0HYM2 || cache.BAA10YM;
-      if(!out.VIX_PROXY && cache.VIXCLS) out.VIX_PROXY = cache.VIXCLS;
-      if(!out.SENTIMENT && cache.UMCSENT) out.SENTIMENT = cache.UMCSENT;
-
-      if(!out.UN_SLOPE6 && cache.UNRATE){ out.UN_SLOPE6 = deriveUnempSlope6(cache.UNRATE) || {observations:[],fetchedAt:cache.UNRATE.fetchedAt}; }
-      if(!out.DD_12M   && cache.SP500 ){ out.DD_12M   = deriveDrawdown12m(cache.SP500 ) || {observations:[],fetchedAt:cache.SP500.fetchedAt}; }
-      if(!out.RETAIL_MOMENTUM && cache.RSAFS){ out.RETAIL_MOMENTUM = deriveRetailMomentum(cache.RSAFS) || {observations:[],fetchedAt:cache.RSAFS.fetchedAt}; }
-      return out;
-    }
-
-    /* ======= RISK MODELS ======= */
-    function logistic(x){ return 1/(1+Math.exp(-x)); }
-    function horizonRisk(composite, months){
-      const base = logistic((composite-50)/10);
-      const mult = months<=1 ? 0.7 : months<=3 ? 1.0 : 1.25;
-      const p = clamp(100 * base * mult);
-      return Math.round(Math.min(95, Math.max(5, p)));
-    }
-    const zoneLabel = z => z==='green'?'Normal':z==='amber'?'Stressed':'Crisis';
-
-    /* ===================== STATE / CHART HANDLES ===================== */
-    let STATE = {
-      dataMap:null,
-      compositeHistory:[],   // [{date, value}]
-      tf:'1m',
-      charts:{ composite:null, decomp:null, traj:null }
-    };
-
-    function timeframeSpan(tf){
-      const day = 1, mo=30, yr=365;
-      return tf==='1m'? 1*mo : tf==='3m'? 3*mo : tf==='6m'? 6*mo : tf==='1y'? yr : Infinity;
-    }
-
-    /* ===================== UI HELPERS ===================== */
-    const els = {
-      statusBadge:  document.getElementById('statusBadge'),
-      scoreText:    document.getElementById('scoreText'),
-      needle:       document.getElementById('needle'),
-      indicatorCount: document.getElementById('indicatorCount'),
-      regimeIndicator: document.getElementById('regimeIndicator'),
-      prob1m: document.getElementById('prob1m'),
-      prob3m: document.getElementById('prob3m'),
-      prob6m: document.getElementById('prob6m'),
-      pillsGrid: document.getElementById('pillsGrid'),
-      heatmap: document.getElementById('heatmap'),
-      scenarioGrid: document.getElementById('scenarioGrid'),
-      kpiExplainToggle: document.getElementById('kpiExplainToggle')
-    };
-    function setStatus(zone, text){
-      const colors = {green:'#1ec28b', amber:'#ffc247', red:'#ff6070'};
-      els.statusBadge.innerHTML = `
-        <div class="status" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)">
-          <span class="status-dot" style="background:${colors[zone]||'#8fb4ff'}"></span>
-          <span>${text}</span>
-        </div>`;
-    }
-    function setErrorStatus(errText){
-      els.statusBadge.innerHTML = `
-        <div class="status" style="background:rgba(255,96,112,.12);border:1px solid rgba(255,96,112,.4)">
-          <span class="status-dot" style="background:#ff6070"></span>
-          <span>Data error: ${errText}</span>
-        </div>`;
-    }
-    function setGauge(score){
-      els.scoreText.textContent = Math.round(score);
-      const angle = (score/100)*360;
-      els.needle.style.setProperty('--angle', angle+'deg');
-    }
-    function pillHTML({key,label,valueDisp,change,freshClass,freshTxt,tip}){
-      const arrow = change==null?'' : (change>0?'▲':'▼');
-      const changeTxt = change==null?'' : `${(change>0?'+':'')}${change.toFixed(2)}`;
-      return `
-        <div class="pill" data-key="${key}">
-          <div class="pill-header">
-            <div class="pill-title">${label}</div>
-            <div class="pill-badge ${freshClass}">${freshTxt}</div>
-          </div>
-          <div class="pill-value">${valueDisp}</div>
-          <div class="pill-change"><span class="trend-arrow">${arrow}</span>${changeTxt}</div>
-          <div class="micro-note">${tip||''}</div>
-        </div>`;
-    }
-
-    function mkLine(ctx, labels, data){
-      return new Chart(ctx, {
-        type:'line',
-        data:{ labels, datasets:[{label:'Composite', data, borderWidth:2, fill:false, tension:0.25}] },
-        options:{ responsive:true, plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{min:0,max:100}} }
-      });
-    }
-    function mkBar(ctx, labels, data){
-      return new Chart(ctx, {
-        type:'bar',
-        data:{ labels, datasets:[{label:'Contribution', data, borderWidth:1}] },
-        options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,max:Math.max(10,Math.ceil(Math.max(...data,10)/10)*10)}} }
-      });
-    }
-
-    function renderCompositeChart(){
-      const span = timeframeSpan(STATE.tf);
-      const hist = STATE.compositeHistory;
-      const last = span===Infinity ? hist : hist.slice(-span);
-      const labels = last.map(d=>d.date);
-      const data = last.map(d=>d.value);
-      if(STATE.charts.composite) STATE.charts.composite.destroy();
-      STATE.charts.composite = mkLine(document.getElementById('compositeChart'), labels, data);
-    }
-
-    function renderDecomp(parts){
-      const labels = parts.map(p=>p.label);
-      const contrib = parts.map(p=>+(p.scaled*p.w).toFixed(1));
-      if(STATE.charts.decomp) STATE.charts.decomp.destroy();
-      STATE.charts.decomp = mkBar(document.getElementById('decompChart'), labels, contrib);
-    }
-
-    function heatColor(score){
-      const r = Math.round(255 * (score/100));
-      const g = Math.round(200 * (1-score/100));
-      return `rgb(${r},${g},80)`;
-    }
-
-    function renderHeatmap(parts){
-      els.heatmap.innerHTML = parts.map(p=>{
-        const c = heatColor(p.scaled);
-        return `<div class="heat-cell">
-          <div class="heat-label">${p.label}</div>
-          <div class="heat-value">${p.valueDisp}</div>
-          <div class="bar"><span style="width:${p.scaled}%;background:${c}"></span></div>
-        </div>`;
-      }).join('');
-    }
-
-    function renderScenarios(composite, breadth){
-      const stress = composite/100;
-      const riskBias = (breadth-50)/50; // <0 better, >0 worse
-      const baseProb = 60 - 20*riskBias;                 // ~40-80
-      const downProb = Math.min(40, 20 + 40*stress);     // capped
-      const upProb = Math.max(5, 100 - baseProb - downProb);
-
-      const cards = [
-        {title:'Base Case', prob:Math.round(baseProb), desc:'Sideways-to-mildly volatile regime; conditions stabilise with modest dispersion.'},
-        {title:'Downside (Stress)', prob:Math.round(downProb), desc:'Tighter financial conditions and volatility spikes; drawdowns concentrated in cyclicals.'},
-        {title:'Upside (Relief)', prob:Math.round(upProb), desc:'Soft-landing drift; risk appetite improves as macro prints surprise positively.'}
-      ];
-      els.scenarioGrid.innerHTML = cards.map(c=>`
-        <div class="scenario-card" style="background:rgba(255,255,255,.03);padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,.06)">
-          <div class="scenario-header" style="display:flex;justify-content:space-between;align-items:center">
-            <div class="scenario-title" style="font-weight:600">${c.title}</div>
-            <div class="scenario-prob" style="font-size:22px;font-weight:700;color:var(--accent-bright)">${c.prob}%</div>
-          </div>
-          <div class="scenario-desc" style="color:var(--muted);font-size:13px">${c.desc}</div>
+    <!-- Footer -->
+    <footer id="contact">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2023 Modern Website. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="#" aria-label="Facebook">📘</a>
+                    <a href="#" aria-label="Twitter">🐦</a>
+                    <a href="#" aria-label="Instagram">📷</a>
+                    <a href="#" aria-label="LinkedIn">💼</a>
+                </div>
+            </div>
         </div>
-      `).join('');
-    }
+    </footer>
 
-    function renderTrajectory(composite){
-      const steps = 26; // ~26 weeks
-      const phi = 0.85; // persistence
-      const target = 50;
-      let v = composite;
-      const labels = [];
-      const path = [];
-      const upper = [];
-      const lower = [];
-      for(let i=1;i<=steps;i++){
-        v = phi*v + (1-phi)*target;
-        labels.push(`W+${i}`);
-        path.push(+v.toFixed(1));
-        const band = 6*Math.sqrt(i/steps); // widening band
-        upper.push(Math.min(100, +(v+band).toFixed(1)));
-        lower.push(Math.max(0,   +(v-band).toFixed(1)));
-      }
-      if(STATE.charts.traj) STATE.charts.traj.destroy();
-      STATE.charts.traj = new Chart(document.getElementById('trajectoryChart'),{
-        type:'line',
-        data:{labels,
-          datasets:[
-            {label:'Projected', data:path, borderWidth:2, fill:false, tension:0.25},
-            {label:'Upper', data:upper, borderWidth:1, fill:false, borderDash:[4,4]},
-            {label:'Lower', data:lower, borderWidth:1, fill:false, borderDash:[4,4]}
-          ]},
-        options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{min:0,max:100}}}
-      });
-    }
-
-    /* ===================== MAIN ===================== */
-    (async function init(){
-      try{
-        // Load + map indicators
-        const cache = await loadFredCache();
-        const dataMap = mapIndicatorsFromCache(cache);
-        STATE.dataMap = dataMap;
-
-        // ===== build pills + composite =====
-        let num=0, den=0;
-        const parts=[];
-        for(const [k,cfg] of Object.entries(INDICATORS)){
-          const s = dataMap[k];
-          const obs = s?.observations||[];
-          if(!obs.length) continue;
-          const last = obs[obs.length-1];
-          const L = {value:+last.value, date:last.date};
-          const days = seriesAgeDays(s, s.fetchedAt);
-          const lim = FRESH_LIMITS[cfg.cadence]||FRESH_LIMITS.daily;
-          const badge = days<=lim.ok ? {cls:'badge-fresh',txt:'Fresh'} : days<=lim.warn ? {cls:'badge-stale',txt:'Stale'} : {cls:'badge-old',txt:'Old'};
-          const scaled = SCALE[k](L.value);
-          const w = cfg.weight * freshnessPenalty(days, cfg.cadence);
-          if(Number.isFinite(scaled) && Number.isFinite(w)){ num += scaled*w; den += w; }
-
-          let change = null;
-          if(obs.length>=2){ const a=+obs[obs.length-1].value, b=+obs[obs.length-2].value; if(isFinite(a)&&isFinite(b)) change=a-b; }
-
-          parts.push({ key:k, label:cfg.label, valueDisp: cfg.format?.(L.value) ?? L.value, change, freshClass:badge.cls, freshTxt:badge.txt, scaled, w, obs, tip:cfg.tip });
-        }
-
-        if(den<=0) throw new Error('No valid indicators / weights.');
-        const composite = num/den;
-        setGauge(composite);
-        const zone = zoneOf(composite);
-        setStatus(zone, `Composite: ${Math.round(composite)} (${zone.toUpperCase()})`);
-        document.getElementById('indicatorCount').textContent = parts.length;
-        els.pillsGrid.innerHTML = parts.map(p=>pillHTML(p)).join('');
-
-        // ===== build composite history (synchronised by date)
-        const keysForHist = ['DD_12M','VIX_PROXY','T10Y3M','CREDIT','NFCI'];
-        const allDates = new Set();
-        for(const k of keysForHist){ (dataMap[k]?.observations||[]).forEach(o=>allDates.add(o.date)); }
-        const dates = Array.from(allDates).sort();
-
-        STATE.compositeHistory = dates.map(date=>{
-          let n=0,d=0;
-          for(const [k,cfg] of Object.entries(INDICATORS)){
-            const s = dataMap[k]; if(!s) continue;
-            const obs = s.observations;
-            let v=null;
-            for(let i=obs.length-1;i>=0;i--){ if(obs[i].date<=date){ const vv=+obs[i].value; if(isFinite(vv)) v=vv; break; } }
-            if(v==null) continue;
-            const sc = SCALE[k](v); n+=sc*cfg.weight; d+=cfg.weight;
-          }
-          return {date, value: d>0 ? +(n/d).toFixed(1) : null};
-        }).filter(x=>x.value!=null);
-
-        // Initial charts
-        renderCompositeChart();
-        renderDecomp(parts);
-        renderHeatmap(parts);
-        renderScenarios(composite, parts.reduce((a,p)=>a+p.scaled,0)/parts.length);
-        renderTrajectory(composite);
-
-        // Probabilities (consistent with composite)
-        els.prob1m.textContent = `${horizonRisk(composite,1)}%`;
-        els.prob3m.textContent = `${horizonRisk(composite,3)}%`;
-        els.prob6m.textContent = `${horizonRisk(composite,6)}%`;
-        els.regimeIndicator.innerHTML =
-          `<span class="status-dot" style="background:${zone==='green'?'#1ec28b':zone==='amber'?'#ffc247':'#ff6070'}"></span>${zoneLabel(zone)} regime`;
-
-        // ===== Tab / timeframe handlers =====
-        window.switchTab = (e, id)=>{
-          document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-          e.currentTarget.classList.add('active');
-          document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
-          document.getElementById('tab-'+id).classList.add('active');
-        };
-
-        document.querySelectorAll('.btn-group .btn').forEach(btn=>{
-          btn.addEventListener('click', (evt)=>{
-            document.querySelectorAll('.btn-group .btn').forEach(b=>b.classList.remove('active'));
-            evt.currentTarget.classList.add('active');
-            STATE.tf = evt.currentTarget.dataset.tf;
-            renderCompositeChart();
-          });
+    <script>
+        // Enhanced JavaScript with modern features
+        document.addEventListener('DOMContentLoaded', function() {
+            // Button interactions
+            const ctaButton = document.getElementById('ctaButton');
+            const signupButton = document.getElementById('signupButton');
+            
+            function handleButtonClick(event) {
+                const button = event.target;
+                const originalText = button.textContent;
+                
+                // Visual feedback
+                button.textContent = 'Loading...';
+                button.disabled = true;
+                
+                // Simulate API call
+                setTimeout(() => {
+                    alert('Thank you for your interest! This is a demo website.');
+                    button.textContent = originalText;
+                    button.disabled = false;
+                }, 1000);
+            }
+            
+            if (ctaButton) {
+                ctaButton.addEventListener('click', handleButtonClick);
+            }
+            
+            if (signupButton) {
+                signupButton.addEventListener('click', handleButtonClick);
+            }
+            
+            // Smooth scrolling for navigation links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+                    
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 80,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+            
+            // Add intersection observer for animations (basic implementation)
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.style.opacity = 1;
+                            entry.target.style.transform = 'translateY(0)';
+                        }
+                    });
+                }, { threshold: 0.1 });
+                
+                // Observe feature cards
+                document.querySelectorAll('.feature-card').forEach(card => {
+                    card.style.opacity = 0;
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'opacity 0.5s, transform 0.5s';
+                    observer.observe(card);
+                });
+            }
         });
-
-        // ===== Explain buttons for scenarios/trajectory
-        document.querySelectorAll('.info-btn').forEach(btn=>{
-          btn.addEventListener('click', ()=>{
-            const t = btn.getAttribute('data-note-target');
-            const el = document.getElementById(t==='scenarios'?'scenariosNote':'trajectoryNote');
-            if(el) el.classList.toggle('show');
-          });
-        });
-
-        // ===== KPI explain toggle (micro-notes under pills)
-        const key = 'helpMode';
-        const saved = localStorage.getItem(key);
-        if(saved==='on'){ document.body.classList.add('help-on'); }
-        els.kpiExplainToggle.addEventListener('click', ()=>{
-          document.body.classList.toggle('help-on');
-          localStorage.setItem(key, document.body.classList.contains('help-on')?'on':'off');
-        });
-
-      }catch(err){
-        console.error(err);
-        setErrorStatus(err.message||'FRED cache error');
-      }
-    })();
-  </script>
+    </script>
 </body>
 </html>
