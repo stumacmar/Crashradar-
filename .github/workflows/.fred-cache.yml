@@ -1,12 +1,12 @@
-name: Morning FRED Refresh
+name: CrashRadar Daily Cache Update
 
 on:
   schedule:
-    - cron: "0 6 * * *"   # every morning 06:00 UTC (≈ 07:00 UK)
-  workflow_dispatch:       # allows manual run from Actions tab
+    - cron: "0 6 * * *"   # run 06:00 UTC every day (~07:00 UK)
+  workflow_dispatch:       # allow manual trigger
 
 permissions:
-  contents: write          # allow this workflow to commit changes
+  contents: write          # allow committing the updated JSON
 
 jobs:
   update-cache:
