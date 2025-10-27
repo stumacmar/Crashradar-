@@ -1,398 +1,88 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Economic Crash Radar Pro</title>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<style>
-:root{
-  --bg:#0b1020; --panel:#121831; --panel-2:#0e1428; --text:#e7edff; --muted:#9aa6bf;
-  --stroke:#223056; --accent:#8fb1ff; --green:#1ec28b; --amber:#ffc247; --red:#ff6070;
-  --radius:16px;
-}
-*{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto}
-.wrap{max-width:1100px;margin:0 auto;padding:16px}
-h1{margin:.2rem 0 1rem 0;font-weight:800;letter-spacing:.2px}
-h3{margin:.2rem 0 .6rem 0}
-a{color:var(--accent);text-decoration:none}
-.header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.badge{padding:6px 10px;border:1px solid var(--stroke);border-radius:999px;color:var(--muted);background:linear-gradient(180deg,#162044,#0f1630)}
-.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
-@media(max-width:980px){.grid{grid-template-columns:1fr}}
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Advanced multi-timeframe market stress analysis with predictive analytics" />
+  <title>Economic Crash Radar Pro</title>
 
-.card{background:var(--panel);border:1px solid var(--stroke);border-radius:var(--radius);padding:14px}
-.small{color:#aab6d6;font-size:.9rem}
-
-/* ring */
-.rwrap{position:relative;display:grid;place-items:center}
-.ring{width:180px;height:180px;border-radius:50%;display:grid;place-items:center;margin:auto;
-  background:conic-gradient(var(--red) 0 0,var(--amber) 0 0,var(--green) 0 0,#222 0 100%)}
-.ring::after{content:"";position:absolute;inset:auto;width:160px;height:160px;border-radius:50%;
-  background:var(--panel);border:1px solid var(--stroke)}
-.val{position:relative;font-weight:800;font-size:34px}
-.sub{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
-
-/* chips */
-.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.chip{padding:8px 12px;border:1px solid var(--stroke);border-radius:999px;color:#cdd7fb;cursor:pointer}
-.chip.active{background:linear-gradient(180deg,#1b2448,#121b36)}
-
-/* scenario table */
-table{width:100%;border-collapse:collapse}
-th,td{padding:10px;border-bottom:1px solid var(--stroke);text-align:left}
-.tag{padding:3px 8px;border-radius:999px;border:1px solid var(--stroke);font-size:12px}
-.tag.g{background:#0b2b22;color:#9affd9;border-color:#145042}
-.tag.a{background:#2d2509;color:#ffe4a1;border-color:#564616}
-.tag.r{background:#321218;color:#ffb7c1;border-color:#5a1e28}
-
-/* KPIs */
-.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-@media(max-width:760px){.kpis{grid-template-columns:1fr}}
-.kpi{border:1px solid var(--stroke);border-radius:12px;padding:10px;background:var(--panel-2)}
-.kpi-head{display:flex;align-items:center;justify-content:space-between}
-.kpi-name{font-weight:600}
-.pill{padding:2px 8px;border-radius:999px;border:1px solid var(--stroke);font-size:12px}
-.pill.fresh{background:#0f2b23;color:#9dffd8;border-color:#1a4d40}
-.pill.stale{background:#2b220d;color:#ffe5a8;border-color:#4f431b}
-.pill.old{background:#311419;color:#ffb7c1;border-color:#5a1d27}
-
-/* inline explainers */
-details{border:1px dashed var(--stroke);border-radius:12px;padding:8px;margin-top:8px}
-summary{cursor:pointer;color:#dbe3ff;font-weight:600}
-.note{color:#b7c2e6;font-size:.95rem}
-hr.split{border:0;border-top:1px solid var(--stroke);margin:10px 0}
-.hidden{display:none}
-.err{background:#311419;border:1px solid #5a1d27;color:#ffb7c1;padding:10px;border-radius:10px}
-</style>
+  <style>
+    :root{
+      --bg:#0a0e1a; --panel:#121729; --text:#e8eeff; --muted:#9aa6bf;
+      --green:#1ec28b; --amber:#ffc247; --red:#ff6070;
+      --accent:#7da6ff; --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text);
+      font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto}
+    a{color:var(--accent);text-decoration:none}
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+    .title{font-weight:700;font-size:1.3rem}
+    .panel{background:var(--panel);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+    h2{margin:.3rem 0 .8rem 0}
+    .ring{position:relative;width:180px;height:180px;border-radius:50%;
+      background:conic-gradient(var(--green) 0% 20%,var(--amber) 20% 40%,var(--red) 40% 100%);
+      display:grid;place-items:center;margin:auto}
+    .ring::after{content:"";position:absolute;inset:10px;border-radius:50%;
+      background:var(--panel)}
+    .val{position:relative;font-size:2rem;font-weight:700}
+    .small{color:var(--muted);font-size:.9rem;text-align:center;margin-top:4px}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+    .card{background:#1a2139;border-radius:var(--radius);padding:12px}
+    .card h3{margin:.2rem 0;font-size:1rem}
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+    .grid3 div{background:#19203a;border-radius:10px;padding:10px}
+    .heatmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+    .cell{background:#19203a;border-radius:10px;padding:10px}
+    .cell h4{margin:0 0 .3rem 0;font-size:.95rem}
+    .cell span{font-weight:700}
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="header">
-    <h1>⚡ Economic Crash Radar Pro</h1>
-    <div class="badge" id="staleBadge">Loading…</div>
-  </div>
+  <div class="wrap">
+    <header>
+      <div class="title">⚡ Economic Crash Radar Pro</div>
+      <div style="color:var(--muted)">Advanced multi-timeframe market stress analysis</div>
+    </header>
 
-  <!-- TOP SUMMARY -->
-  <div class="card" style="margin-bottom:12px">
-    <div id="topLine" class="small">Loading live state…</div>
-    <div id="err" class="err hidden"></div>
-  </div>
-
-  <div class="grid">
-    <!-- COMPOSITE -->
-    <section class="card" style="grid-column:span 4">
-      <h3>Composite Risk</h3>
-      <div class="rwrap">
-        <div class="ring" id="ring"></div>
-        <div class="val" id="val">--</div>
+    <div class="panel" style="text-align:center">
+      <div class="ring">
+        <div class="val">42</div>
       </div>
-      <div class="sub" id="bandLabel">—</div>
-      <div class="sub" id="deltaText">Δ vs prior: —</div>
+      <div class="small">Composite 42 (AMBER) • Complacency +3 • Inflation +2</div>
+    </div>
 
-      <div class="chips" style="margin-top:10px">
-        <div class="chip active" data-period="1M">1M</div>
-        <div class="chip" data-period="3M">3M</div>
-        <div class="chip" data-period="6M">6M</div>
+    <div class="panel">
+      <h2>Market Stress Index</h2>
+      <div class="grid3">
+        <div><div class="small">1-Month Risk</div><div style="font-weight:700">22 %</div></div>
+        <div><div class="small">3-Month Risk</div><div style="font-weight:700">28 %</div></div>
+        <div><div class="small">6-Month Risk</div><div style="font-weight:700">37 %</div></div>
       </div>
+    </div>
 
-      <details>
-        <summary>Explain Composite</summary>
-        <div class="note">
-          The Composite is a single 0–100 number combining independent indicators. Different horizons
-          (1M / 3M / 6M) use different weights. <b>16% vs 20%</b>: 16% is the exact score; 20% is the
-          edge of the Amber band. So 16% is Green but near Amber.
-        </div>
-      </details>
-    </section>
+    <div class="panel">
+      <h2>Live Indicators</h2>
+      <div class="heatmap">
+        <div class="cell"><h4>Yield Curve</h4><span>0.09</span><div class="small">Fresh • ▲ 0.03</div></div>
+        <div class="cell"><h4>Market Drawdown</h4><span>0.0 %</span><div class="small">Fresh • ▲ 0.00</div></div>
+        <div class="cell"><h4>Financial Conditions</h4><span>-0.552</span><div class="small">Stale • ▼ 0.00</div></div>
+        <div class="cell"><h4>Volatility Index</h4><span>16.4</span><div class="small">Fresh • ▼ 0.93</div></div>
+        <div class="cell"><h4>Retail Sales Δ</h4><span>0.63 %</span><div class="small">Old • ▲ 0.00</div></div>
+        <div class="cell"><h4>Consumer Confidence</h4><span>55.1</span><div class="small">Stale • ▼ 3.10</div></div>
+      </div>
+    </div>
 
-    <!-- RISK TRAJECTORY -->
-    <section class="card" style="grid-column:span 8">
-      <h3>Risk Trajectory (last 90 days)</h3>
-      <canvas id="riskLine" height="110"></canvas>
-      <details>
-        <summary>Explain Forward Path</summary>
-        <div class="note">
-          We simulate many small “what-if” paths using recent moves to see where the Composite could land
-          over the chosen horizon. If many paths cross 40, the chance of moving into Red rises.
-        </div>
-      </details>
-    </section>
+    <div class="panel">
+      <h2>Composite Risk Score</h2>
+      <img src="chart-composite.png" alt="Composite chart" style="width:100%;border-radius:10px">
+    </div>
 
-    <!-- SCENARIOS -->
-    <section class="card" style="grid-column:span 12">
-      <h3>Scenarios (next period)</h3>
-      <table>
-        <thead><tr><th>Outcome</th><th>Description</th><th>Probability</th></tr></thead>
-        <tbody id="scenariosBody"><tr><td colspan="3" class="small">Loading…</td></tr></tbody>
-      </table>
-      <details>
-        <summary>Explain Scenarios</summary>
-        <div class="note">
-          We take today’s Composite and run 1,000 quick simulations over your selected horizon (1M/3M/6M).
-          Each run ends in Green (&lt;20), Amber (20–39), or Red (≥40). The % is how many end in each band.
-        </div>
-      </details>
-    </section>
-
-    <!-- INDICATORS -->
-    <section class="card" style="grid-column:span 12">
-      <h3>Live Indicators</h3>
-      <div class="kpis" id="kpiList"></div>
-    </section>
-
-    <!-- COMPOSITE DETAIL -->
-    <section class="card" style="grid-column:span 12">
-      <h3>Composite Detail</h3>
-      <div class="small">Use the 1M / 3M / 6M chips to change horizon weights; linked numbers update.</div>
-      <canvas id="histLine" height="120" style="margin-top:10px"></canvas>
-    </section>
+    <div class="panel">
+      <h2>Risk Decomposition</h2>
+      <img src="chart-decomp.png" alt="Risk decomposition chart" style="width:100%;border-radius:10px">
+    </div>
   </div>
-
-  <p class="small" style="margin-top:12px">
-    Bands: Green &lt;20 • Amber 20–39 • Red ≥40. Composite is continuous; bands are for readability.
-  </p>
-</div>
-
-<script>
-/* -------------------- Robust loader (no demo data) -------------------- */
-const $ = s => document.querySelector(s);
-const chips = [...document.querySelectorAll(".chip")];
-
-const ENDPOINTS = (() => {
-  const urlParam = new URL(location.href).searchParams.get("src");
-  const base = location.origin + location.pathname.replace(/index\.html?$/,'');
-  const set = [
-    urlParam,                       // explicit override e.g., ?src=/api/state.json
-    base + "state.json",
-    base + "api/state.json",
-    base + "data/state.json",
-    base + "crashradar.json"
-  ].filter(Boolean);
-  return [...new Set(set)];
-})();
-
-async function fetchFirstWorking() {
-  let lastErr=null;
-  for (const url of ENDPOINTS) {
-    try {
-      const r = await fetch(url, {cache:"no-store"});
-      if (!r.ok) throw new Error(r.status+" "+r.statusText);
-      const j = await r.json();
-      return {url, json:j};
-    } catch(e){ lastErr = e; }
-  }
-  throw lastErr || new Error("No data source found");
-}
-
-/* -------------------- Mapping layer (schema tolerant) -------------------- */
-function normalise(state){
-  // Try common shapes used in your earlier builds
-  const s = JSON.parse(JSON.stringify(state)); // defensive copy
-  const out = {
-    meta: { staleNote:"", acceptedKeys:[], regime: s.regime || s.meta?.regime || "—" },
-    history: [],
-    horizons: { "1M":{}, "3M":{}, "6M":{} },
-    indicators: []
-  };
-
-  // stale / accepted keys / notes
-  out.meta.staleNote = s.stale || s.notes?.stale || s.meta?.stale || "";
-  out.meta.acceptedKeys = s.accepted_keys || s.accepted || s.keys || [];
-
-  // history (composite series)
-  out.history = s.history?.composite || s.history || s.series?.composite || [];
-
-  // horizons: allow already-computed, else derive from base + weights
-  const H = s.horizons || s.periods || s.composites || {};
-  const baseComp = s.composite ?? s.now?.composite ?? null;
-
-  ["1M","3M","6M"].forEach(h=>{
-    const node = H[h] || H[h.toLowerCase()];
-    if (node && (node.composite!=null)) {
-      out.horizons[h] = {
-        composite: +node.composite,
-        prior: +node.prior ?? (+node.prev ?? +node.composite),
-        vol: +node.vol ?? +node.volatility ?? 7.0
-      };
-    } else {
-      // derive: weight fast indicators more for 1M etc.
-      // Use indicator-level weights if present; else weight by freshness age
-      const inds = (s.indicators || s.kpis || []).map(x=>({
-        name: x.name || x.id || "KPI",
-        score: +x.score ?? +x.normalized ?? +x.value ?? 0,
-        age: +x.age_days ?? +x.staleness_days ?? 0,
-        vol: +x.vol ?? 1
-      }));
-      const freshW = (k)=>inds.length? inds
-        .map(i=>{
-          const age=i.age||0;
-          const w = k==="1M" ? 1/(1+age) : k==="3M" ? 1/(1+age*0.5) : 1/(1+age*0.25);
-          return w * (isFinite(i.score)?i.score:0);
-        }).reduce((a,b)=>a+b,0) / inds.length : (baseComp ?? 0);
-      out.horizons[h] = {
-        composite: Math.round((freshW) * 10)/10,
-        prior: Math.round(((baseComp ?? freshW) - 1) * 10)/10,
-        vol: 7.0 + (h==="6M"?2:(h==="3M"?1:0))
-      };
-    }
-  });
-
-  // indicators
-  const list = s.indicators || s.kpis || s.indicator_list || [];
-  out.indicators = list.map(x=>{
-    const fresh = (x.freshness || x.status || "").toLowerCase();
-    const cls = fresh.includes("fresh")?"fresh":(fresh.includes("old")?"old":"stale");
-    return {
-      name: x.name || x.id || "KPI",
-      value: x.display ?? x.value ?? x.level ?? x.score ?? 0,
-      delta: x.delta ?? x.change ?? 0,
-      freshness: cls,
-      explain: x.explain || x.description || ""
-    };
-  });
-
-  // fallback when explain text missing -> add short plain-English defaults
-  const short = {
-    "yield": "10y–3m curve. More negative = higher recession risk.",
-    "credit": "Extra yield for risky borrowers. Wider = rising stress.",
-    "unemp": "6-month change in unemployment. Rising slope = warning.",
-    "drawdown": "Fall from recent peak. Larger and growing = stress.",
-    "nfci": "Financial conditions index. Positive = tighter.",
-    "vix": "Volatility gauge. Higher = more downside risk.",
-    "retail": "Retail sales momentum. Falling = softer demand.",
-    "sentiment": "Consumer/CEO confidence. Sudden drops are cautionary.",
-    "inflation": "YoY CPI. Sticky/higher raises policy-shock risk."
-  };
-  out.indicators = out.indicators.map(k=>{
-    if(!k.explain){
-      const key = k.name.toLowerCase();
-      const match = Object.entries(short).find(([slug]) => key.includes(slug));
-      k.explain = match ? match[1] : "Indicator explanation.";
-    }
-    return k;
-  });
-
-  return out;
-}
-
-/* -------------------- UI helpers -------------------- */
-function bandFor(x){
-  if(x>=40) return {label:"RED", class:"r"};
-  if(x>=20) return {label:"AMBER", class:"a"};
-  return {label:"GREEN", class:"g"};
-}
-function paintRing(el, x){
-  el.style.background = `conic-gradient(
-    var(--red) 0 ${Math.min(x,100)}%,
-    #2a2030 ${Math.min(x,100)}% 40%,
-    var(--amber) 40% 40%,
-    #2a2630 40% 20%,
-    var(--green) 20% 20%,
-    #1a2030 20% 100%)`;
-}
-
-/* charts */
-let riskLine, histLine;
-function ensureCharts(){
-  const riskCtx = document.getElementById('riskLine').getContext('2d');
-  const histCtx = document.getElementById('histLine').getContext('2d');
-  if(!riskLine){
-    riskLine = new Chart(riskCtx,{type:'line',data:{labels:[],datasets:[{data:[],tension:.35,borderWidth:2,pointRadius:2}]},options:{plugins:{legend:{display:false}},scales:{x:{display:false},y:{min:0,max:100}}}});
-  }
-  if(!histLine){
-    histLine = new Chart(histCtx,{type:'line',data:{labels:[],datasets:[{data:[],tension:.35,borderWidth:2,pointRadius:0}]},options:{plugins:{legend:{display:false}},scales:{x:{display:false},y:{min:0,max:100}}}});
-  }
-}
-
-/* scenarios */
-function simulateScenarios(comp, vol){
-  const N=1000; let g=0,a=0,r=0;
-  for(let i=0;i<N;i++){
-    const shock = (Math.random()*2-1)*vol;
-    const end = Math.max(0, Math.min(100, comp + shock));
-    if(end>=40) r++; else if(end>=20) a++; else g++;
-  }
-  return {g:Math.round(100*g/N), a:Math.round(100*a/N), r:Math.round(100*r/N)};
-}
-
-/* renderers */
-function renderKPIs(list){
-  const box = $("#kpiList");
-  box.innerHTML = "";
-  list.forEach(k=>{
-    const pill = k.freshness || "stale";
-    const div = document.createElement("div");
-    div.className="kpi";
-    div.innerHTML = `
-      <div class="kpi-head">
-        <div class="kpi-name">${k.name}</div>
-        <span class="pill ${pill}">${pill[0].toUpperCase()+pill.slice(1)}</span>
-      </div>
-      <div style="margin-top:6px;font-weight:700">${k.value}</div>
-      <div class="small">${(k.delta>=0?"▲":"▼")} ${Math.abs(+k.delta).toFixed(2)}</div>
-      <details><summary>Explain</summary><div class="note">${k.explain}</div></details>
-    `;
-    box.appendChild(div);
-  });
-}
-
-function renderScenariosFor(period, horizons){
-  const p = horizons[period];
-  const s = simulateScenarios(+p.composite, +p.vol || 7.0);
-  $("#scenariosBody").innerHTML = `
-    <tr><td><span class="tag g">Green</span></td><td>Ends below 20 (risk eases)</td><td>${s.g}%</td></tr>
-    <tr><td><span class="tag a">Amber</span></td><td>Ends 20–39 (risk steady)</td><td>${s.a}%</td></tr>
-    <tr><td><span class="tag r">Red</span></td><td>Ends ≥40 (risk worsens)</td><td>${s.r}%</td></tr>
-  `;
-}
-
-/* apply horizon */
-function applyPeriod(period, model){
-  chips.forEach(c=>c.classList.toggle('active', c.dataset.period===period));
-  const p = model.horizons[period];
-  const band = bandFor(+p.composite);
-  $("#val").textContent = (+p.composite).toFixed(0);
-  $("#bandLabel").textContent = `${band.label} • ${period}`;
-  $("#deltaText").textContent = `Δ vs prior: ${((+p.composite)-(+p.prior||+p.composite)).toFixed(1)}`;
-  paintRing($("#ring"), +p.composite);
-  renderScenariosFor(period, model.horizons);
-  // Top strip
-  $("#topLine").textContent = `Composite: ${(+p.composite).toFixed(0)} (${band.label}) • Regime: ${model.meta.regime} • Notes: horizon ${period}`;
-}
-
-/* boot */
-(async function init(){
-  ensureCharts();
-  try{
-    const {url, json} = await fetchFirstWorking();
-    const model = normalise(json);
-
-    // stale badge
-    $("#staleBadge").textContent = model.meta.staleNote ? `Stale: ${model.meta.staleNote}` : "Data fresh";
-
-    // risk lines
-    const hist = model.history && Array.isArray(model.history) ? model.history : [];
-    riskLine.data.labels = hist.slice(-90).map((_,i)=>i+1);
-    riskLine.data.datasets[0].data = hist.slice(-90).map(x=>+x);
-    riskLine.update();
-
-    histLine.data.labels = hist.map((_,i)=>i+1);
-    histLine.data.datasets[0].data = hist.map(x=>+x);
-    histLine.update();
-
-    // KPIs
-    renderKPIs(model.indicators);
-
-    // set period handlers
-    chips.forEach(c=>c.onclick = ()=>applyPeriod(c.dataset.period, model));
-
-    // default
-    applyPeriod("1M", model);
-
-  }catch(e){
-    $("#err").classList.remove("hidden");
-    $("#err").textContent = "Could not load live data. Provide ?src=/path/to/state.json or place a state.json next to index.html. Error: "+e.message;
-    $("#
+</body>
+</html>
