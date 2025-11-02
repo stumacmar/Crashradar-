@@ -17,22 +17,20 @@
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);
       font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif}
-
     .wrap{max-width:1400px;margin:0 auto;padding:20px 16px 80px}
-
     header{margin-bottom:24px}
     h1{font-size:clamp(32px,5vw,48px);line-height:1.1;margin:0 0 8px;
       background:linear-gradient(135deg,var(--text),var(--accent-bright));
       -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
     .subtitle{color:var(--muted);font-size:15px;margin:8px 0}
+    .status{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.1);padding:10px 12px;border-radius:12px;font-weight:600}
+    .status-dot{width:10px;height:10px;border-radius:50%}
 
     .card{background:var(--panel);border-radius:var(--radius);padding:24px;margin:20px 0;
       box-shadow:var(--shadow),0 0 0 1px rgba(255,255,255,.04) inset;transition:transform .2s,box-shadow .2s}
     .card:hover{transform:translateY(-2px);box-shadow:0 6px 32px rgba(0,0,0,.4)}
     .card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
-
-    .status{display:inline-flex;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;font-weight:600;margin-top:10px}
-    .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 
     /* Gauge */
     .gauge-container{display:flex;align-items:center;gap:32px;flex-wrap:wrap}
@@ -59,7 +57,7 @@
     .confidence-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
 
     .pills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
-    .pill{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);padding:14px 16px;border-radius:12px;transition:all .2s;cursor:pointer;position:relative}
+    .pill{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);padding:14px 16px;border-radius:12px;transition:all .2s;position:relative}
     .pill:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);transform:translateY(-2px)}
     .pill-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
     .pill-title{font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px}
@@ -69,11 +67,12 @@
     .badge-fresh{background:rgba(30,194,139,.15);color:var(--green)}
     .badge-stale{background:rgba(255,194,71,.15);color:var(--amber)}
     .badge-old{background:rgba(255,96,112,.15);color:var(--red)}
+    .micro-note{display:none;color:var(--muted);font-size:12px;margin-top:6px}
+    body.help-on .micro-note{display:block}
 
     .chart-container{position:relative;height:320px;margin:16px 0}
     .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:12px}
     .chart-title{font-size:18px;font-weight:600;margin:0}
-    .chart-controls{display:flex;gap:8px}
     .btn-group{display:flex;gap:4px;background:rgba(255,255,255,.03);padding:4px;border-radius:8px}
     .btn{background:transparent;border:none;color:var(--muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s}
     .btn:hover{color:var(--text);background:rgba(255,255,255,.06)}
@@ -102,15 +101,17 @@
       .chart-header{flex-direction:column;align-items:flex-start}
     }
 
-    /* Explain UI */
-    .info-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--accent-bright);
-      background:rgba(107,158,255,.12);padding:6px 10px;border-radius:8px;border:1px solid rgba(107,158,255,.25);cursor:pointer;white-space:nowrap}
-    .info-note{margin-top:10px;border-radius:10px;padding:12px 14px;background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);color:var(--muted);font-size:13px;display:none}
+    .info-btn{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:12px;font-weight:600;color:var(--accent-bright);
+      background:rgba(107,158,255,.12);padding:6px 10px;border-radius:8px;
+      border:1px solid rgba(107,158,255,.25);cursor:pointer;white-space:nowrap
+    }
+    .info-note{margin-top:10px;border-radius:10px;padding:12px 14px;
+      background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+      color:var(--muted);font-size:13px;display:none}
     .info-note.show{display:block}
     .help-toggle{margin:4px 0 10px;font-size:13px;color:var(--accent-bright);cursor:pointer;text-decoration:underline}
-    .micro-note{display:none;color:var(--muted);font-size:12px;margin-top:6px}
-    body.help-on .micro-note{display:block}
   </style>
 </head>
 <body>
@@ -146,7 +147,6 @@
               <span id="confidenceText">85%</span>
             </div>
             <div id="regimeIndicator" class="regime" style="margin-top:8px"></div>
-
             <div class="prob-display" style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap">
               <div class="prob-item" style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
                 <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">1-Month Risk</h4>
@@ -176,24 +176,22 @@
 
       <!-- Tabs -->
       <div class="tabs">
-        <button class="tab active" data-tab="composite">Composite</button>
-        <button class="tab" data-tab="scenarios">Scenarios</button>
-        <button class="tab" data-tab="indicators">Indicators</button>
-        <button class="tab" data-tab="analogs">Analogs</button>
+        <button class="tab active" onclick="switchTab(event, 'composite')">Composite</button>
+        <button class="tab" onclick="switchTab(event, 'scenarios')">Scenarios</button>
+        <button class="tab" onclick="switchTab(event, 'indicators')">Indicators</button>
+        <button class="tab" onclick="switchTab(event, 'analogs')">Analogs</button>
       </div>
 
       <div id="tab-composite" class="tab-content active">
         <section class="card">
           <div class="chart-header">
             <h3 class="chart-title">Composite Risk Score</h3>
-            <div class="chart-controls">
-              <div class="btn-group">
-                <button class="btn active" data-tf="1m">1M</button>
-                <button class="btn" data-tf="3m">3M</button>
-                <button class="btn" data-tf="6m">6M</button>
-                <button class="btn" data-tf="1y">1Y</button>
-                <button class="btn" data-tf="all">ALL</button>
-              </div>
+            <div class="btn-group" id="tfButtons">
+              <button class="btn active" data-tf="1m">1M</button>
+              <button class="btn" data-tf="3m">3M</button>
+              <button class="btn" data-tf="6m">6M</button>
+              <button class="btn" data-tf="1y">1Y</button>
+              <button class="btn" data-tf="all">ALL</button>
             </div>
           </div>
           <div class="chart-container"><canvas id="compositeChart"></canvas></div>
@@ -214,18 +212,18 @@
           <p style="color:var(--muted);margin:0 0 16px;font-size:14px">Probability-weighted forecasts</p>
           <div id="scenarioGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:16px"></div>
           <div id="scenariosNote" class="info-note">
-            Scenarios estimate the odds of three regimes—Base Case, Downside (Stress), and Upside (Relief)—from how today’s indicators line up with past stable vs stressed periods.
+            Scenarios estimate the odds of three regimes—Base Case, Downside (Stress), Upside (Relief)—based on how today’s indicators align with past stable or stressed periods. More “Downside” = tighter conditions & higher turbulence risk.
           </div>
         </section>
 
         <section class="card">
           <div class="card-head">
-            <h3 style="margin:0 0 0">Risk Trajectory</h3>
+            <h3 style="margin:0">Risk Trajectory</h3>
             <button class="info-btn" data-note-target="trajectory">ⓘ Explain</button>
           </div>
           <div class="chart-container"><canvas id="trajectoryChart"></canvas></div>
           <div id="trajectoryNote" class="info-note">
-            Projection ~25 weeks ahead if current trends persist. Solid line = central path; dashed = uncertainty band. Up = pressure building; flat/down = stabilising.
+            Projection ~25 weeks ahead assuming recent momentum persists. Solid = central path; dashed = uncertainty band. Up-sloping = pressure building; flat/down = stabilising.
           </div>
         </section>
       </div>
@@ -259,19 +257,18 @@
       T10Y3M:          { label:'Yield Curve',         format:v=>v?.toFixed(2),               weight:0.18, cadence:'daily',   tip:'10y–3m Treasury spread. Inversions (≤0) often precede recessions.' },
       CREDIT:          { label:'Credit Spread',       format:v=>v?.toFixed(2),               weight:0.14, cadence:'daily',   tip:'Corporate vs Treasury yields. Wider = tighter financing conditions.' },
       UN_SLOPE6:       { label:'Unemployment Δ',      format:v=>v?.toFixed(2),               weight:0.12, cadence:'monthly', tip:'Six-month change in unemployment. Rising = labour softening.' },
-      DD_12M:          { label:'Market Drawdown',     format:v=>((v??0)*100).toFixed(1)+'%', weight:0.20, cadence:'daily',   tip:'S&P vs its 12-month peak. Negative means below the recent high.' },
+      DD_12M:          { label:'Market Drawdown',     format:v=>((v??0)*100).toFixed(1)+'%', weight:0.20, cadence:'daily',   tip:'S&P vs its 12-month peak. Negative = below recent high.' },
       NFCI:            { label:'Financial Conditions',format:v=>v?.toFixed(3),               weight:0.12, cadence:'weekly',  tip:'NFCI combines rates, credit, and liquidity tightness.' },
       VIX_PROXY:       { label:'Volatility Index',    format:v=>v?.toFixed(1),               weight:0.10, cadence:'daily',   tip:'Implied S&P 500 volatility (VIX). Higher = more stress.' },
       RETAIL_MOMENTUM: { label:'Retail Sales Δ',      format:v=>(v*100)?.toFixed(2)+'%',     weight:0.08, cadence:'monthly', tip:'Latest month-over-month change in retail sales.' },
-      SENTIMENT:       { label:'Consumer Confidence', format:v=>v?.toFixed(1),               weight:0.06, cadence:'monthly', tip:'Survey-based household confidence; higher = more optimistic.' }
+      SENTIMENT:       { label:'Consumer Confidence', format:v=>v?.toFixed(1),               weight:0.06, cadence:'monthly', tip:'Household confidence; higher = more optimistic.' }
     };
 
     const clamp = x => Math.max(0, Math.min(100, x));
     const map01 = (val, good, bad) => {
       if (val == null) return 50;
-      const denom = bad - good;
-      if (Math.abs(denom) < 1e-9) return 50;
-      return ((val - good) / denom) * 100;
+      const d = bad - good; if (Math.abs(d) < 1e-9) return 50;
+      return ((val - good) / d) * 100;
     };
     const SCALE = {
       T10Y3M:          v => clamp(map01(v,  1.0, -2.0)),
@@ -283,30 +280,11 @@
       RETAIL_MOMENTUM: v => clamp(map01(v,  0.03, -0.02)),
       SENTIMENT:       v => clamp(map01(v, 110,  70))
     };
+
+    // Freshness thresholds; calm regimes punish staleness harder (see calc)
     const FRESH_LIMITS = { daily:{ok:7,warn:30}, weekly:{ok:7,warn:30}, monthly:{ok:30,warn:60} };
     const zoneOf = s => s <= 30 ? 'green' : (s <= 60 ? 'amber' : 'red');
     const zoneLabel = z => z==='green'?'Normal':z==='amber'?'Stressed':'Crisis';
-
-    /* ============== OVERLAYS & FRESHNESS TIGHTENING ============== */
-    function calcFalseCalmOverlay(vix, composite){
-      if (!isFinite(vix)) return 0;
-      const calm = Math.max(0, 14 - vix);     // kick in below ~14
-      const tilt  = composite<40 ? 1.0 : composite<55 ? 0.7 : 0.4;
-      return Math.min(6, +(calm * 0.6 * tilt).toFixed(1));
-    }
-    function calcInflationDrift(cpi_yoy){
-      if (!isFinite(cpi_yoy)) return 0;
-      if (cpi_yoy < 1)  return -1;
-      if (cpi_yoy < 2)  return  0;
-      if (cpi_yoy < 3)  return  1;
-      if (cpi_yoy < 4)  return  2;
-      return 3;
-    }
-    function calmAdjustedFreshMultiplier(baseMult, vix){
-      if (!isFinite(vix) || vix >= 14) return baseMult;
-      const extra = Math.min(0.15, (14 - vix) * 0.03); // tighten up to ~15%
-      return +(baseMult * (1 - extra)).toFixed(3);
-    }
 
     /* ===================== CACHE LOADING ===================== */
     async function loadFredCache(){
@@ -315,60 +293,30 @@
       const raw = await res.json();
       return normalizeCache(raw);
     }
-
     function normalizeCache(raw){
       const out = {};
-      const directLike = raw && typeof raw === 'object' &&
-        Object.keys(raw).some(k => raw[k] && Array.isArray(raw[k].observations));
-      if (directLike) { for (const [k,v] of Object.entries(raw)) out[k] = v; return out; }
-      if (Array.isArray(raw?.series)) {
-        for (const item of raw.series) {
-          const id = item?.id || item?.series_id || item?.name;
-          if (!id) continue;
-          const obs = Array.isArray(item.observations) ? item.observations
-                    : Array.isArray(item.data) ? item.data : [];
-          out[id] = { observations: obs, fetchedAt: item.fetchedAt };
-        }
-        return out;
-      }
-      if (raw && raw.series && typeof raw.series === 'object' && !Array.isArray(raw.series)) {
-        for (const [id,item] of Object.entries(raw.series)) {
-          const obs = Array.isArray(item?.observations) ? item.observations
-                    : Array.isArray(item?.data) ? item.data : [];
-          out[id] = { observations: obs, fetchedAt: item.fetchedAt };
-        }
-        return out;
-      }
-      if (Array.isArray(raw)) {
-        for (const item of raw) {
-          const id = item?.id || item?.series_id || item?.name;
-          if (!id) continue;
-          const obs = Array.isArray(item.observations) ? item.observations
-                    : Array.isArray(item.data) ? item.data : [];
-          out[id] = { observations: obs, fetchedAt: item.fetchedAt };
-        }
-      }
-      return out;
+      if (raw && typeof raw==='object' && !Array.isArray(raw) && raw.T10Y3M) return raw; // your current shape
+      if (Array.isArray(raw?.series)) for (const s of raw.series){ out[s.id||s.series_id]=s; }
+      return Object.keys(out).length? out : raw;
     }
 
     function latest(series){
-      const obs = series?.observations||[];
-      if(!obs.length) return null;
-      const o = obs[obs.length-1];
-      const v = (o.value==null || o.value==='.' || o.value==='NaN') ? null : +o.value;
-      return {value:v, date:o.date};
+      const o = series?.observations||[]; if(!o.length) return null;
+      const L = o[o.length-1];
+      const v = (L.value==null || L.value==='.' ) ? null : +L.value;
+      return {value:v, date:L.date};
     }
     function seriesAgeDays(series, fetchedAt){
-      const L = latest(series);
-      if(!L) return Infinity;
+      const L = latest(series); if(!L) return Infinity;
       const d = new Date(L.date + 'T00:00:00Z');
-      return Math.max(0, Math.round((new Date(fetchedAt || Date.now()) - d) / 86400000));
+      return Math.max(0, Math.round((new Date() - d) / 86400000));
     }
-    function freshnessPenalty(days, cadence){
+    function freshnessPenalty(days, cadence, calm){
       const lim = FRESH_LIMITS[cadence] || FRESH_LIMITS.daily;
+      // calm regime halves weight more aggressively
       if(days<=lim.ok) return 1.00;
-      if(days<=lim.warn) return 0.85;
-      return 0.70;
+      if(days<=lim.warn) return calm ? 0.75 : 0.85;
+      return calm ? 0.55 : 0.70;
     }
 
     // Derivations
@@ -390,25 +338,22 @@
       return { observations: out, fetchedAt: UNRATE.fetchedAt };
     }
     function deriveDrawdown12m(SP500){
-      const obs = SP500?.observations||[];
-      if(!obs.length) return null;
+      const obs = SP500?.observations||[]; if(!obs.length) return null;
       const dates = obs.map(o=>o.date), vals = obs.map(o=>+o.value);
       const peak = [];
       for(let i=0;i<vals.length;i++){
         const start = Math.max(0, i-252);
-        let p = -Infinity;
-        for(let j=start;j<=i;j++) p = Math.max(p, vals[j]);
+        let p = -Infinity; for(let j=start;j<=i;j++) p = Math.max(p, vals[j]);
         peak.push(p);
       }
       const dd = dates.map((d,i)=>({date:d, value:String(vals[i]/peak[i]-1)}));
       return { observations: dd, fetchedAt: SP500.fetchedAt };
     }
     function deriveRetailMomentum(RSAFS){
-      const o = RSAFS?.observations||[];
-      if(o.length<2) return null;
+      const o = RSAFS?.observations||[]; if(o.length<2) return null;
       const last = +o[o.length-1].value;
       let prev = null;
-      for(let i=o.length-2;i>=0;i--){ const v = +o[i].value; if(isFinite(v)){ prev=v; break; } }
+      for(let i=o.length-2;i>=0;i--){ const v=+o[i].value; if(isFinite(v)){ prev=v; break; } }
       if(prev==null || prev===0) return null;
       return { observations:[{date:o[o.length-1].date, value:String(last/prev-1)}], fetchedAt: RSAFS.fetchedAt };
     }
@@ -419,46 +364,62 @@
       if(!out.CREDIT && (cache.BAMLH0A0HYM2 || cache.BAA10YM)) out.CREDIT = cache.BAMLH0A0HYM2 || cache.BAA10YM;
       if(!out.VIX_PROXY && cache.VIXCLS) out.VIX_PROXY = cache.VIXCLS;
       if(!out.SENTIMENT && cache.UMCSENT) out.SENTIMENT = cache.UMCSENT;
-
       if(!out.UN_SLOPE6 && cache.UNRATE){ out.UN_SLOPE6 = deriveUnempSlope6(cache.UNRATE) || {observations:[],fetchedAt:cache.UNRATE.fetchedAt}; }
       if(!out.DD_12M   && cache.SP500 ){ out.DD_12M   = deriveDrawdown12m(cache.SP500 ) || {observations:[],fetchedAt:cache.SP500.fetchedAt}; }
       if(!out.RETAIL_MOMENTUM && cache.RSAFS){ out.RETAIL_MOMENTUM = deriveRetailMomentum(cache.RSAFS) || {observations:[],fetchedAt:cache.RSAFS.fetchedAt}; }
       return out;
     }
 
-    /* ======= RISK MODELS ======= */
-    function timeframeCount(tf){
-      return tf==='1m'?22 : tf==='3m'?66 : tf==='6m'?132 : tf==='1y'?252 : Infinity;
-    }
-    function logistic(x){ return 1/(1+Math.exp(-x)); }
-    function horizonRisk(compositeNow, months){
-      const base = 100 * logistic((compositeNow-50)/9);
+    /* ======== OVERLAYS (false-calm & inflation drift) ======== */
+    function computeOverlays(map){
+      let notes = [];
+      let total = 0;
 
-      // momentum: slope of last ~30 bars
-      const h = STATE.compositeHistory || [];
-      const M = Math.min(30, h.length);
-      let slope = 0, vol = 0;
-      if (M >= 5){
-        const ys = h.slice(-M).map(d=>d.value);
-        const xs = h.slice(-M).map((_,i)=>i);
-        const n = xs.length, sx = xs.reduce((a,b)=>a+b,0), sy = ys.reduce((a,b)=>a+b,0);
-        const sxx = xs.reduce((a,b)=>a+b*b,0);
-        const sxy = xs.reduce((a,_,i)=>a + xs[i]*ys[i], 0);
-        slope = (n*sxy - sx*sy) / Math.max(1e-9,(n*sxx - sx*sx));
-        const mean = sy/n, s2 = ys.reduce((a,b)=>a+(b-mean)*(b-mean),0)/Math.max(1, n-1);
-        vol = Math.sqrt(s2);
+      // False-calm / complacency: low vol + shallow drawdown + positive curve
+      const vix = +latest(map.VIX_PROXY)?.value ?? null;
+      const dd  = +latest(map.DD_12M   )?.value ?? null; // fraction (-0.07 = -7%)
+      const yc  = +latest(map.T10Y3M   )?.value ?? null;
+      if (isFinite(vix) && isFinite(dd) && isFinite(yc)){
+        if (vix < 14 && dd > -0.03 && yc > 0.0){ notes.push('Complacency +3'); total += 3; }
+        else if (vix < 15 && dd > -0.05){ notes.push('Complacency +2'); total += 2; }
       }
 
-      const H = months<=1 ? 0.7 : months<=3 ? 1.0 : 1.3;
-      const momAdj = (slope*3) * (months/3);
-      const volAdj = Math.min(8, vol) * (months/6);
+      // Inflation drift: CPI YoY above target
+      const cpiYoY = +latest(map.CPI_YOY)?.value ?? null;
+      if (isFinite(cpiYoY)){
+        if (cpiYoY >= 3.0){ notes.push('Inflation +2'); total += 2; }
+        else if (cpiYoY >= 2.0){ notes.push('Inflation +1'); total += 1; }
+      }
 
-      const p = clamp(base*H + momAdj + volAdj);
+      // Mild funding stress nudge from credit
+      const cr = +latest(map.CREDIT)?.value ?? null;
+      if (isFinite(cr) && cr >= 2.50){ notes.push('Funding +1'); total += 1; }
+
+      return {total, notes};
+    }
+
+    /* ======= RISK MODELS ======= */
+    function logistic(x){ return 1/(1+Math.exp(-x)); }
+    function horizonRisk(composite, months){
+      // scale with horizon so 1m < 3m < 6m
+      const base = logistic((composite-50)/10);
+      const mult = months<=1 ? 0.65 : months<=3 ? 1.00 : 1.30;
+      const p = clamp(100 * base * mult);
       return Math.round(Math.min(95, Math.max(5, p)));
     }
 
     /* ===================== STATE / CHART HANDLES ===================== */
-    let STATE = { dataMap:null, compositeHistory:[], tf:'1m', charts:{ composite:null, decomp:null, traj:null } };
+    let STATE = {
+      dataMap:null,
+      compositeHistory:[],   // [{date, value}]
+      tf:'1m',
+      charts:{ composite:null, decomp:null, traj:null }
+    };
+
+    function timeframeSpanDays(tf){
+      const mo = 30, yr = 365;
+      return tf==='1m'? 1*mo : tf==='3m'? 3*mo : tf==='6m'? 6*mo : tf==='1y'? yr : Infinity;
+    }
 
     /* ===================== UI HELPERS ===================== */
     const els = {
@@ -473,12 +434,13 @@
       pillsGrid: document.getElementById('pillsGrid'),
       heatmap: document.getElementById('heatmap'),
       scenarioGrid: document.getElementById('scenarioGrid'),
-      kpiExplainToggle: document.getElementById('kpiExplainToggle')
+      kpiExplainToggle: document.getElementById('kpiExplainToggle'),
+      tfButtons: document.getElementById('tfButtons')
     };
     function setStatus(zone, text){
       const colors = {green:'#1ec28b', amber:'#ffc247', red:'#ff6070'};
       els.statusBadge.innerHTML = `
-        <div class="status" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)">
+        <div class="status">
           <span class="status-dot" style="background:${colors[zone]||'#8fb4ff'}"></span>
           <span>${text}</span>
         </div>`;
@@ -509,6 +471,19 @@
           <div class="micro-note">${tip||''}</div>
         </div>`;
     }
+    function heatColor(score){
+      const r = Math.round(255 * (score/100));
+      const g = Math.round(200 * (1-score/100));
+      return `rgb(${r},${g},80)`;
+    }
+
+    function mkLine(ctx, labels, data){
+      return new Chart(ctx, {
+        type:'line',
+        data:{ labels, datasets:[{label:'Composite', data, borderWidth:2, fill:false, tension:0.25}] },
+        options:{ responsive:true, plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{min:0,max:100}} }
+      });
+    }
     function mkBar(ctx, labels, data){
       return new Chart(ctx, {
         type:'bar',
@@ -516,18 +491,17 @@
         options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,max:Math.max(10,Math.ceil(Math.max(...data,10)/10)*10)}} }
       });
     }
+
     function renderCompositeChart(){
-      const N = timeframeCount(STATE.tf);
-      const hist = STATE.compositeHistory || [];
-      const last = (N===Infinity || N>=hist.length) ? hist : hist.slice(-N);
-      const labels = last.map(d=>d.date);
-      const data   = last.map(d=>d.value);
+      const span = timeframeSpanDays(STATE.tf);
+      const hist = STATE.compositeHistory;
+      const today = new Date(hist.length? hist[hist.length-1].date : Date.now());
+      const cutoff = span===Infinity ? null : new Date(+today - span*86400000);
+      const sel = cutoff ? hist.filter(d => new Date(d.date) >= cutoff) : hist;
+      const labels = sel.map(d=>d.date);
+      const data = sel.map(d=>d.value);
       if(STATE.charts.composite) STATE.charts.composite.destroy();
-      STATE.charts.composite = new Chart(document.getElementById('compositeChart'), {
-        type:'line',
-        data:{ labels, datasets:[{label:'Composite', data, borderWidth:2, fill:false, tension:0.25}] },
-        options:{ responsive:true, plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{min:0,max:100}} }
-      });
+      STATE.charts.composite = mkLine(document.getElementById('compositeChart'), labels, data);
     }
     function renderDecomp(parts){
       const labels = parts.map(p=>p.label);
@@ -535,26 +509,19 @@
       if(STATE.charts.decomp) STATE.charts.decomp.destroy();
       STATE.charts.decomp = mkBar(document.getElementById('decompChart'), labels, contrib);
     }
-    function heatColor(score){
-      const r = Math.round(255 * (score/100));
-      const g = Math.round(200 * (1-score/100));
-      return `rgb(${r},${g},80)`;
-    }
     function renderHeatmap(parts){
-      els.heatmap.innerHTML = parts.length
-        ? parts.map(p=>{
-            const c = heatColor(p.scaled);
-            return `<div class="heat-cell">
-              <div class="heat-label">${p.label}</div>
-              <div class="heat-value">${p.valueDisp}</div>
-              <div class="bar"><span style="width:${p.scaled}%;background:${c}"></span></div>
-            </div>`;
-          }).join('')
-        : '<div class="heat-cell">No data</div>';
+      els.heatmap.innerHTML = parts.map(p=>{
+        const c = heatColor(p.scaled);
+        return `<div class="heat-cell">
+          <div class="heat-label">${p.label}</div>
+          <div class="heat-value">${p.valueDisp}</div>
+          <div class="bar"><span style="width:${p.scaled}%;background:${c}"></span></div>
+        </div>`;
+      }).join('');
     }
     function renderScenarios(composite, breadth){
       const stress = composite/100;
-      const riskBias = (breadth-50)/50;
+      const riskBias = (breadth-50)/50; // <0 better, >0 worse
       const baseProb = 60 - 20*riskBias;
       const downProb = Math.min(40, 20 + 40*stress);
       const upProb = Math.max(5, 100 - baseProb - downProb);
@@ -570,13 +537,12 @@
             <div class="scenario-prob" style="font-size:22px;font-weight:700;color:var(--accent-bright)">${c.prob}%</div>
           </div>
           <div class="scenario-desc" style="color:var(--muted);font-size:13px">${c.desc}</div>
-        </div>
-      `).join('');
+        </div>`).join('');
     }
     function renderTrajectory(composite){
       const steps = 26, phi = 0.85, target = 50;
       let v = composite;
-      const labels=[], path=[], upper=[], lower=[];
+      const labels = [], path = [], upper = [], lower = [];
       for(let i=1;i<=steps;i++){
         v = phi*v + (1-phi)*target;
         labels.push(`W+${i}`);
@@ -605,60 +571,53 @@
         const dataMap = mapIndicatorsFromCache(cache);
         STATE.dataMap = dataMap;
 
-        // ===== build pills + composite
+        // ===== build parts + composite =====
         let num=0, den=0;
         const parts=[];
+        // preliminary calm guess using VIX and DD
+        const vixVal = +latest(dataMap.VIX_PROXY)?.value ?? 20;
+        const ddVal  = +latest(dataMap.DD_12M)?.value ?? -0.06;
+        const calmRegime = (vixVal < 15 && ddVal > -0.05);
+
         for(const [k,cfg] of Object.entries(INDICATORS)){
           const s = dataMap[k];
           const obs = s?.observations||[];
           if(!obs.length) continue;
-          const last = obs[obs.length-1];
-          const L = {value:+last.value, date:last.date};
+          const L = +obs[obs.length-1].value;
           const days = seriesAgeDays(s, s.fetchedAt);
           const lim = FRESH_LIMITS[cfg.cadence]||FRESH_LIMITS.daily;
           const badge = days<=lim.ok ? {cls:'badge-fresh',txt:'Fresh'} : days<=lim.warn ? {cls:'badge-stale',txt:'Stale'} : {cls:'badge-old',txt:'Old'};
-          const scaled = SCALE[k](L.value);
-
-          // calm tightening
-          const vixLast = (STATE.dataMap?.VIX_PROXY?.observations||[]).at(-1);
-          const vixVal  = vixLast ? +vixLast.value : NaN;
-          const baseW = cfg.weight * freshnessPenalty(days, cfg.cadence);
-          const w = calmAdjustedFreshMultiplier(baseW, vixVal);
-
+          const scaled = SCALE[k](L);
+          const w = cfg.weight * freshnessPenalty(days, cfg.cadence, calmRegime);
           if(Number.isFinite(scaled) && Number.isFinite(w)){ num += scaled*w; den += w; }
 
           let change = null;
-          if(obs.length>=2){ const a=+obs[obs.length-1].value, b=+obs[obs.length-2].value; if(isFinite(a)&&isFinite(b)) change=a-b; }
-
-          parts.push({ key:k, label:cfg.label, valueDisp: cfg.format?.(L.value) ?? L.value, change, freshClass:badge.cls, freshTxt:badge.txt, scaled, w, obs, tip:cfg.tip });
+          if(obs.length>=2){
+            const a=+obs[obs.length-1].value, b=+obs[obs.length-2].value;
+            if(isFinite(a)&&isFinite(b)) change=a-b;
+          }
+          parts.push({ key:k, label:cfg.label, valueDisp: cfg.format?.(L) ?? L, change, freshClass:badge.cls, freshTxt:badge.txt, scaled, w, obs, tip:cfg.tip });
         }
 
         if(den<=0) throw new Error('No valid indicators / weights.');
-        let composite = num/den;
+        const composite = num/den;
+        const zone = zoneOf(composite);
 
-        // Overlays
-        const vixNow = +(STATE.dataMap?.VIX_PROXY?.observations?.at(-1)?.value ?? NaN);
-        const cpiYoyNow = +(STATE.dataMap?.CPI_YOY?.observations?.at(-1)?.value ?? NaN);
-        const calmOv = calcFalseCalmOverlay(vixNow, composite);
-        const inflOv = calcInflationDrift(cpiYoyNow);
-        const compositeAdj = clamp(composite + calmOv + inflOv);
+        // Overlays (don’t change the score; we display the reason)
+        const overlays = computeOverlays(dataMap);
+        const overlayText = overlays.notes.length ? ' • ' + overlays.notes.join(' • ') : '';
 
-        // UI
-        setGauge(compositeAdj);
-        const zone = zoneOf(compositeAdj);
-        const ovBits = [];
-        if (calmOv) ovBits.push(`Calm +${calmOv}`);
-        if (isFinite(inflOv) && inflOv!==0) ovBits.push(`Inflation ${inflOv>0?'+':''}${inflOv}`);
-        const ovLabel = ovBits.length ? ` • ${ovBits.join(' · ')}` : '';
-        setStatus(zone, `Composite: ${Math.round(compositeAdj)} (${zone.toUpperCase()})${ovLabel}`);
+        setGauge(composite);
+        setStatus(zone, `Composite: ${Math.round(composite)} (${zone.toUpperCase()})${overlayText}`);
         document.getElementById('indicatorCount').textContent = parts.length;
         els.pillsGrid.innerHTML = parts.map(p=>pillHTML(p)).join('');
 
-        // ===== build composite history (sync by date)
+        // ===== composite history (sync on date)
         const keysForHist = ['DD_12M','VIX_PROXY','T10Y3M','CREDIT','NFCI'];
         const allDates = new Set();
         for(const k of keysForHist){ (dataMap[k]?.observations||[]).forEach(o=>allDates.add(o.date)); }
         const dates = Array.from(allDates).sort();
+
         STATE.compositeHistory = dates.map(date=>{
           let n=0,d=0;
           for(const [k,cfg] of Object.entries(INDICATORS)){
@@ -672,35 +631,32 @@
           return {date, value: d>0 ? +(n/d).toFixed(1) : null};
         }).filter(x=>x.value!=null);
 
-        // Charts & sections (safe-guards)
+        // Charts & panels
         renderCompositeChart();
         renderDecomp(parts);
         renderHeatmap(parts);
-        try{ renderScenarios(compositeAdj, parts.reduce((a,p)=>a+p.scaled,0)/parts.length); }catch(e){ console.error(e); }
-        try{ renderTrajectory(compositeAdj); }catch(e){ console.error(e); }
+        const breadth = parts.reduce((a,p)=>a+p.scaled,0)/parts.length;
+        renderScenarios(composite, breadth);
+        renderTrajectory(composite);
 
-        // Probabilities (use adjusted composite)
-        els.prob1m.textContent = `${horizonRisk(compositeAdj,1)}%`;
-        els.prob3m.textContent = `${horizonRisk(compositeAdj,3)}%`;
-        els.prob6m.textContent = `${horizonRisk(compositeAdj,6)}%`;
+        // Probabilities (differ by horizon)
+        els.prob1m.textContent = `${horizonRisk(composite,1)}%`;
+        els.prob3m.textContent = `${horizonRisk(composite,3)}%`;
+        els.prob6m.textContent = `${horizonRisk(composite,6)}%`;
         els.regimeIndicator.innerHTML =
           `<span class="status-dot" style="background:${zone==='green'?'#1ec28b':zone==='amber'?'#ffc247':'#ff6070'}"></span>${zoneLabel(zone)} regime`;
 
-        // Tabs
-        document.querySelectorAll('.tab').forEach(btn=>{
-          btn.addEventListener('click', e=>{
-            document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            const id = e.currentTarget.getAttribute('data-tab');
-            document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
-            document.getElementById('tab-'+id).classList.add('active');
-          });
-        });
+        // ===== Tab / timeframe handlers
+        window.switchTab = (e, id)=>{
+          document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+          e.currentTarget.classList.add('active');
+          document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+          document.getElementById('tab-'+id).classList.add('active');
+        };
 
-        // Timeframe buttons
-        document.querySelectorAll('.btn-group .btn').forEach(btn=>{
+        els.tfButtons.querySelectorAll('.btn').forEach(btn=>{
           btn.addEventListener('click', (evt)=>{
-            document.querySelectorAll('.btn-group .btn').forEach(b=>b.classList.remove('active'));
+            els.tfButtons.querySelectorAll('.btn').forEach(b=>b.classList.remove('active'));
             evt.currentTarget.classList.add('active');
             STATE.tf = evt.currentTarget.dataset.tf;
             renderCompositeChart();
@@ -715,6 +671,7 @@
             if(el) el.classList.toggle('show');
           });
         });
+
         const key = 'helpMode';
         const saved = localStorage.getItem(key);
         if(saved==='on'){ document.body.classList.add('help-on'); }
