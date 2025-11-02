@@ -155,20 +155,26 @@
               <span id="confidenceText">85%</span>
             </div>
             <div id="regimeIndicator" class="regime" style="margin-top:10px"></div>
+
+            <!-- Horizon risk & explainer -->
             <div class="prob-display" style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap">
               <div class="prob-item" style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
                 <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">1-Month Risk</h4>
                 <div class="prob-value" id="prob1m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
+                <div class="micro-note">Chance the composite rises meaningfully (≥~10 pts) within ~30 days.</div>
               </div>
               <div class="prob-item" style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
                 <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">3-Month Risk</h4>
                 <div class="prob-value" id="prob3m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
+                <div class="micro-note">Same idea over ~90 days; higher = more pressure building.</div>
               </div>
               <div class="prob-item" style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
                 <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">6-Month Risk</h4>
                 <div class="prob-value" id="prob6m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
+                <div class="micro-note">Medium-term pressure over ~180 days (more weight to slow indicators).</div>
               </div>
             </div>
+            <a id="kpiExplainToggle" class="help-toggle">Explain KPIs & horizons</a>
           </div>
         </div>
       </section>
@@ -177,7 +183,7 @@
       <section class="card">
         <div class="card-head">
           <h3 style="margin:0 0 16px;font-size:20px">📊 Live Indicators</h3>
-          <a id="kpiExplainToggle" class="help-toggle">Explain KPIs</a>
+          <span style="color:var(--muted);font-size:13px">Bars show risk (R/A/G); badges show recency (Fresh/Stale/Old).</span>
         </div>
         <div id="pillsGrid" class="pills-grid"></div>
       </section>
@@ -282,6 +288,9 @@
       SENTIMENT:       { label:'Consumer Confidence', format:v=>v?.toFixed(1),               weight:0.06, cadence:'monthly', tip:'Survey-based household confidence; higher = more optimistic.' }
     };
 
+    // Optional extra series for overlays (created by fetch_fred.js)
+    const OPTIONAL = { CPI_YOY:true };
+
     const clamp = x => Math.max(0, Math.min(100, x));
     const map01 = (val, good, bad) => {
       if (val == null) return 50;
@@ -315,10 +324,7 @@
       const out = {};
       const directLike = raw && typeof raw === 'object' &&
         Object.keys(raw).some(k => raw[k] && Array.isArray(raw[k].observations));
-      if (directLike) {
-        for (const [k,v] of Object.entries(raw)) out[k] = v;
-        return out;
-      }
+      if (directLike) { for (const [k,v] of Object.entries(raw)) out[k] = v; return out; }
       if (Array.isArray(raw?.series)) {
         for (const item of raw.series) {
           const id = item?.id || item?.series_id || item?.name;
@@ -326,16 +332,14 @@
           const obs = Array.isArray(item.observations) ? item.observations
                     : Array.isArray(item.data) ? item.data : [];
           out[id] = { observations: obs, fetchedAt: item.fetchedAt };
-        }
-        return out;
+        } return out;
       }
       if (raw && raw.series && typeof raw.series === 'object' && !Array.isArray(raw.series)) {
         for (const [id,item] of Object.entries(raw.series)) {
           const obs = Array.isArray(item?.observations) ? item.observations
                     : Array.isArray(item?.data) ? item.data : [];
           out[id] = { observations: obs, fetchedAt: item.fetchedAt };
-        }
-        return out;
+        } return out;
       }
       if (Array.isArray(raw)) {
         for (const item of raw) {
@@ -421,6 +425,10 @@
       if(!out.UN_SLOPE6 && cache.UNRATE){ out.UN_SLOPE6 = deriveUnempSlope6(cache.UNRATE) || {observations:[],fetchedAt:cache.UNRATE.fetchedAt}; }
       if(!out.DD_12M   && cache.SP500 ){ out.DD_12M   = deriveDrawdown12m(cache.SP500 ) || {observations:[],fetchedAt:cache.SP500.fetchedAt}; }
       if(!out.RETAIL_MOMENTUM && cache.RSAFS){ out.RETAIL_MOMENTUM = deriveRetailMomentum(cache.RSAFS) || {observations:[],fetchedAt:cache.RSAFS.fetchedAt}; }
+
+      // Optional overlays
+      if (OPTIONAL.CPI_YOY && cache.CPI_YOY) out.CPI_YOY = cache.CPI_YOY;
+
       return out;
     }
 
@@ -431,6 +439,38 @@
       const mult = months<=1 ? 0.7 : months<=3 ? 1.0 : 1.25;
       const p = clamp(100 * base * mult);
       return Math.round(Math.min(95, Math.max(5, p)));
+    }
+
+    /* ======= OVERLAYS ======= */
+    function computeOverlays(dataMap){
+      const tags = [];
+      let adj = 0;
+
+      const vix = +latest(dataMap.VIX_PROXY)?.value ?? null;
+      const nfci = +latest(dataMap.NFCI)?.value ?? null;
+      const cred = +latest(dataMap.CREDIT)?.value ?? null;
+      const dd   = +latest(dataMap.DD_12M)?.value ?? null;
+
+      // False Calm: superficially calm despite latent risks (very low VIX & easy conditions)
+      if (vix && nfci!=null && cred!=null && dd!=null){
+        if (vix < 14 && nfci < -0.4 && cred < 0.45 && dd > -0.05){
+          adj += 3;
+          tags.push('False Calm +3');
+        }
+      }
+
+      // Inflation Drift: CPI YoY ≥ 3% and rising vs 3 months ago
+      if (dataMap.CPI_YOY?.observations?.length >= 4){
+        const o = dataMap.CPI_YOY.observations;
+        const last = +o[o.length-1].value;
+        const prior = +o[o.length-4].value;
+        if (isFinite(last) && isFinite(prior) && last >= 3 && last > prior){
+          adj += 2;
+          tags.push('Inflation +2');
+        }
+      }
+
+      return { adj, tags };
     }
 
     /* ===================== STATE / CHART HANDLES ===================== */
@@ -587,15 +627,12 @@
       const phi = 0.85; // persistence
       const target = 50;
       let v = composite;
-      const labels = [];
-      const path = [];
-      const upper = [];
-      const lower = [];
+      const labels = [], path = [], upper = [], lower = [];
       for(let i=1;i<=steps;i++){
         v = phi*v + (1-phi)*target;
         labels.push(`W+${i}`);
         path.push(+v.toFixed(1));
-        const band = 6*Math.sqrt(i/steps); // widening band
+        const band = 6*Math.sqrt(i/steps);
         upper.push(Math.min(100, +(v+band).toFixed(1)));
         lower.push(Math.max(0,   +(v-band).toFixed(1)));
       }
@@ -642,14 +679,23 @@
         }
 
         if(den<=0) throw new Error('No valid indicators / weights.');
-        const composite = num/den;
-        setGauge(composite);
-        const zone = zoneOf(composite);
-        setStatus(zone, `Composite: ${Math.round(composite)} (${zone.toUpperCase()})`);
-        document.getElementById('indicatorCount').textContent = parts.length;
-        els.pillsGrid.innerHTML = parts.map(p=>pillHTML(p)).join('');
+        const baseComposite = num/den;
 
-        // ===== composite history (sync by date across key series)
+        // === overlays (do not change history; only the displayed composite) ===
+        const { adj, tags } = computeOverlays(dataMap);
+        const displayComposite = clamp(baseComposite + adj);
+
+        // gauge & status
+        setGauge(displayComposite);
+        const zone = zoneOf(displayComposite);
+        const overlayTxt = tags.length ? ` • ${tags.join(' • ')}` : '';
+        setStatus(zone, `Composite: ${Math.round(displayComposite)} (${zone.toUpperCase()})${overlayTxt}`);
+        document.getElementById('indicatorCount').textContent = parts.length;
+
+        // live indicators grid
+        document.getElementById('pillsGrid').innerHTML = parts.map(p=>pillHTML(p)).join('');
+
+        // ===== composite history (sync by date across key series) – from base (no overlays)
         const keysForHist = ['DD_12M','VIX_PROXY','T10Y3M','CREDIT','NFCI'];
         const allDates = new Set();
         for(const k of keysForHist){ (dataMap[k]?.observations||[]).forEach(o=>allDates.add(o.date)); }
@@ -672,13 +718,13 @@
         renderCompositeChart();
         renderDecomp(parts);
         renderHeatmap(parts);
-        renderScenarios(composite, parts.reduce((a,p)=>a+p.scaled,0)/parts.length);
-        renderTrajectory(composite);
+        renderScenarios(displayComposite, parts.reduce((a,p)=>a+p.scaled,0)/parts.length);
+        renderTrajectory(displayComposite);
 
-        // Probabilities
-        els.prob1m.textContent = `${horizonRisk(composite,1)}%`;
-        els.prob3m.textContent = `${horizonRisk(composite,3)}%`;
-        els.prob6m.textContent = `${horizonRisk(composite,6)}%`;
+        // Probabilities (use displayed composite, since user sees overlays)
+        els.prob1m.textContent = `${horizonRisk(displayComposite,1)}%`;
+        els.prob3m.textContent = `${horizonRisk(displayComposite,3)}%`;
+        els.prob6m.textContent = `${horizonRisk(displayComposite,6)}%`;
         els.regimeIndicator.innerHTML =
           `<span class="status-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;background:${zone==='green'?'#1ec28b':zone==='amber'?'#ffc247':'#ff6070'}"></span> ${zoneLabel(zone)} regime`;
 
@@ -709,7 +755,7 @@
           });
         });
 
-        // KPI micro-notes toggle with persistence
+        // KPI + horizon micro-notes toggle with persistence
         const key = 'helpMode';
         const saved = localStorage.getItem(key);
         if(saved==='on'){ document.body.classList.add('help-on'); }
