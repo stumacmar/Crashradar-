@@ -35862,7 +35862,7 @@
         "value": "0.22"
       }
     ],
-    "fetchedAt": "2025-11-01T06:01:11.824Z"
+    "fetchedAt": "2025-11-02T06:01:14.756Z"
   },
   "BAMLH0A0HYM2": {
     "observations": [
@@ -65979,7 +65979,7 @@
         "value": "2.85"
       }
     ],
-    "fetchedAt": "2025-11-01T06:01:12.008Z"
+    "fetchedAt": "2025-11-02T06:01:14.938Z"
   },
   "BAA10YM": {
     "observations": [
@@ -67700,7 +67700,7 @@
         "value": "1.71"
       }
     ],
-    "fetchedAt": "2025-11-01T06:01:12.121Z"
+    "fetchedAt": "2025-11-02T06:01:15.079Z"
   },
   "UNRATE": {
     "observations": [
@@ -69417,7 +69417,7 @@
         "value": "4.3"
       }
     ],
-    "fetchedAt": "2025-11-01T06:01:12.227Z"
+    "fetchedAt": "2025-11-02T06:01:15.288Z"
   },
   "SP500": {
     "observations": [
@@ -79482,7 +79482,7 @@
         "value": "6840.2"
       }
     ],
-    "fetchedAt": "2025-11-01T06:01:12.379Z"
+    "fetchedAt": "2025-11-02T06:01:15.494Z"
   },
   "NFCI": {
     "observations": [
@@ -86963,7 +86963,7 @@
         "value": "-0.54921"
       }
     ],
-    "fetchedAt": "2025-11-01T06:01:16.106Z"
+    "fetchedAt": "2025-11-02T06:01:20.383Z"
   },
   "VIXCLS": {
     "observations": [
@@ -123164,7 +123164,7 @@
         "value": "16.91"
       }
     ],
-    "fetchedAt": "2025-11-01T06:01:16.310Z"
+    "fetchedAt": "2025-11-02T06:01:20.731Z"
   },
   "RSAFS": {
     "observations": [
@@ -124785,7 +124785,7 @@
         "value": "732010.0"
       }
     ],
-    "fetchedAt": "2025-11-01T06:01:16.500Z"
+    "fetchedAt": "2025-11-02T06:01:20.858Z"
   },
   "UMCSENT": {
     "observations": [
@@ -126506,7 +126506,7 @@
         "value": "55.1"
       }
     ],
-    "fetchedAt": "2025-11-01T06:01:16.660Z"
+    "fetchedAt": "2025-11-02T06:01:21.086Z"
   },
   "CPIAUCSL": {
     "observations": [
@@ -128227,7 +128227,7 @@
         "value": "324.368"
       }
     ],
-    "fetchedAt": "2025-11-01T06:01:16.756Z"
+    "fetchedAt": "2025-11-02T06:01:21.221Z"
   },
   "CREDIT": {
     "observations": [
@@ -158344,7 +158344,7 @@
         "value": "2.85"
       }
     ],
-    "fetchedAt": "2025-11-01T06:01:12.008Z"
+    "fetchedAt": "2025-11-02T06:01:14.938Z"
   },
   "CPI_YOY": {
     "observations": [
@@ -160017,6 +160017,6 @@
         "value": "3.02"
       }
     ],
-    "fetchedAt": "2025-11-01T06:01:16.756Z"
+    "fetchedAt": "2025-11-02T06:01:21.221Z"
   }
 }
