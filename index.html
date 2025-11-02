@@ -6,18 +6,6 @@
   <meta name="description" content="Advanced Economic Crash Radar with predictive analytics and multi-timeframe analysis" />
   <title>Economic Crash Radar Pro</title>
 
-  <!-- ===== Version header =====
-       ECRP index – 2025-11-02 (Overlay & Explain build)
-       - False-Calm overlay (+Funding/Complacency)
-       - Inflation-drift nudge
-       - Date-window timeframe filter (1M/3M/6M/1Y/ALL)
-       - Robust renders (scenarios, heatmap, trajectory)
-       - Unified tabs & handlers
-       - Freshness penalty tighter in calm regimes
-       - Explain toggles for KPI pills, Scenarios, Trajectory
-       - 1/3/6M risk explanation block
-  -->
-
   <style>
     :root{
       --bg:#0a0e1a; --panel:#12182b; --panel-hover:#151d33; --muted:#8b96b0;
@@ -42,10 +30,6 @@
       box-shadow:var(--shadow),0 0 0 1px rgba(255,255,255,.04) inset;transition:transform .2s,box-shadow .2s}
     .card:hover{transform:translateY(-2px);box-shadow:0 6px 32px rgba(0,0,0,.4)}
     .card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
-
-    /* Status badge */
-    .status{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;font-weight:600;color:#fff;margin-top:6px}
-    .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 
     /* Gauge */
     .gauge-container{display:flex;align-items:center;gap:32px;flex-wrap:wrap}
@@ -72,7 +56,7 @@
     .confidence-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
 
     .pills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
-    .pill{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);padding:14px 16px;border-radius:12px;transition:all .2s;cursor:pointer;position:relative}
+    .pill{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);padding:14px 16px;border-radius:12px;transition:all .2s;cursor:pointer;position:relative;border-left:6px solid transparent}
     .pill:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);transform:translateY(-2px)}
     .pill-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
     .pill-title{font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px}
@@ -82,6 +66,11 @@
     .badge-fresh{background:rgba(30,194,139,.15);color:var(--green)}
     .badge-stale{background:rgba(255,194,71,.15);color:var(--amber)}
     .badge-old{background:rgba(255,96,112,.15);color:var(--red)}
+    .riskbar{height:6px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px}
+    .riskbar > span{display:block;height:100%}
+    .risk-green{border-left-color:var(--green)}
+    .risk-amber{border-left-color:var(--amber)}
+    .risk-red{border-left-color:var(--red)}
 
     .chart-container{position:relative;height:320px;margin:16px 0}
     .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:12px}
@@ -100,12 +89,14 @@
     .tab-content{display:none}
     .tab-content.active{display:block}
 
-    .heatmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+    .heatmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
     .heat-cell{background:rgba(255,255,255,.03);padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,.06)}
     .heat-label{font-size:12px;color:var(--muted)}
     .heat-value{font-size:22px;font-weight:700}
-    .bar{height:6px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px}
-    .bar > span{display:block;height:100%;border-radius:4px}
+    .heat-score{font-size:12px;color:var(--muted);margin-top:4px}
+    .heatbar{height:10px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px}
+    .heatbar > span{display:block;height:100%}
+    .heat-axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px}
 
     @media (max-width:768px){
       .gauge-container{justify-content:center;text-align:center}
@@ -116,9 +107,15 @@
     }
 
     /* Explain UI */
-    .info-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--accent-bright);
-      background:rgba(107,158,255,.12);padding:6px 10px;border-radius:8px;border:1px solid rgba(107,158,255,.25);cursor:pointer;white-space:nowrap}
-    .info-note{margin-top:10px;border-radius:10px;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--muted);font-size:13px;display:none}
+    .info-btn{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:12px;font-weight:600;color:var(--accent-bright);
+      background:rgba(107,158,255,.12);padding:6px 10px;border-radius:8px;
+      border:1px solid rgba(107,158,255,.25);cursor:pointer;white-space:nowrap
+    }
+    .info-note{margin-top:10px;border-radius:10px;padding:12px 14px;
+      background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+      color:var(--muted);font-size:13px;display:none}
     .info-note.show{display:block}
     .help-toggle{margin:4px 0 10px;font-size:13px;color:var(--accent-bright);cursor:pointer;text-decoration:underline}
     .micro-note{display:none;color:var(--muted);font-size:12px;margin-top:6px}
@@ -157,9 +154,7 @@
               <div class="confidence-bar"><div id="confidenceFill" class="confidence-fill" style="width:85%"></div></div>
               <span id="confidenceText">85%</span>
             </div>
-            <div id="regimeIndicator" class="regime" style="margin-top:8px"></div>
-
-            <!-- Risk horizon boxes -->
+            <div id="regimeIndicator" class="regime" style="margin-top:10px"></div>
             <div class="prob-display" style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap">
               <div class="prob-item" style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
                 <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">1-Month Risk</h4>
@@ -174,11 +169,6 @@
                 <div class="prob-value" id="prob6m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
               </div>
             </div>
-
-            <div id="riskExplain" class="micro-note" style="margin-top:10px">
-              These are the model’s **odds that composite stress stays in the current (or worse) regime** over each horizon,
-              based on today’s level and trend. Longer horizons compound risk, so **6M ≥ 3M ≥ 1M** unless conditions rapidly improve.
-            </div>
           </div>
         </div>
       </section>
@@ -187,17 +177,17 @@
       <section class="card">
         <div class="card-head">
           <h3 style="margin:0 0 16px;font-size:20px">📊 Live Indicators</h3>
-          <div id="kpiExplainToggle" class="help-toggle">Explain KPIs</div>
+          <a id="kpiExplainToggle" class="help-toggle">Explain KPIs</a>
         </div>
         <div id="pillsGrid" class="pills-grid"></div>
       </section>
 
       <!-- Tabs -->
       <div class="tabs">
-        <button class="tab active" data-tab="composite">Composite</button>
-        <button class="tab" data-tab="scenarios">Scenarios</button>
-        <button class="tab" data-tab="indicators">Indicators</button>
-        <button class="tab" data-tab="analogs">Analogs</button>
+        <button class="tab active" onclick="switchTab(event, 'composite')">Composite</button>
+        <button class="tab" onclick="switchTab(event, 'scenarios')">Scenarios</button>
+        <button class="tab" onclick="switchTab(event, 'indicators')">Indicators</button>
+        <button class="tab" onclick="switchTab(event, 'analogs')">Analogs</button>
       </div>
 
       <div id="tab-composite" class="tab-content active">
@@ -205,7 +195,7 @@
           <div class="chart-header">
             <h3 class="chart-title">Composite Risk Score</h3>
             <div class="chart-controls">
-              <div class="btn-group" id="tfGroup">
+              <div class="btn-group">
                 <button class="btn active" data-tf="1m">1M</button>
                 <button class="btn" data-tf="3m">3M</button>
                 <button class="btn" data-tf="6m">6M</button>
@@ -232,8 +222,7 @@
           <p style="color:var(--muted);margin:0 0 16px;font-size:14px">Probability-weighted forecasts</p>
           <div id="scenarioGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:16px"></div>
           <div id="scenariosNote" class="info-note">
-            We compare today’s indicator mix to past **calm / stressed** regimes.  
-            **Base** = sideways/mild volatility, **Downside** = tighter conditions & drawdown pressure, **Upside** = relief.
+            Scenarios estimate odds of Base Case, Downside (Stress), and Upside (Relief) regimes from how today’s indicators align with past regimes. More “Downside” = tighter conditions and higher turbulence risk.
           </div>
         </section>
 
@@ -244,20 +233,21 @@
           </div>
           <div class="chart-container"><canvas id="trajectoryChart"></canvas></div>
           <div id="trajectoryNote" class="info-note">
-            Projection ~25 weeks ahead from current level with mean-reversion and widening uncertainty bands.
-            **Up-sloping** = pressure building; **flat/down** = stabilising.
+            Projects the composite ~25 weeks ahead if current trends persist: central path plus widening uncertainty bands. Up-sloping = pressure building; flat/down = stabilising.
           </div>
         </section>
       </div>
 
       <div id="tab-indicators" class="tab-content">
         <section class="card">
-          <div class="card-head" style="align-items:flex-end">
-            <h3 style="margin:0">Indicator Heat Map</h3>
+          <div class="card-head">
+            <h3 style="margin:0 0 16px">Indicator Heat Map</h3>
+            <button class="info-btn" data-note-target="heatmap">ⓘ Explain</button>
           </div>
-          <div style="color:var(--muted);font-size:13px;margin:6px 0 10px">
-            Bars show **scaled risk contribution (0–100)** per KPI; labels show latest values.  
-            Recency badges (**Fresh/Stale/Old**) reduce weight in the composite.
+          <div id="heatExplain" class="info-note">
+            Bars show <b>scaled risk (0–100)</b> for each KPI using fixed “good→bad” guardrails:
+            0 = benign, 50 = neutral, 100 = worst case for that KPI. Ticks 0|50|100 under each bar show the common scale.
+            Fresh/Stale/Old affects the <i>weight</i> in the composite, not the bar length.
           </div>
           <div id="heatmap" class="heatmap"></div>
         </section>
@@ -309,231 +299,11 @@
       RETAIL_MOMENTUM: v => clamp(map01(v,  0.03, -0.02)),
       SENTIMENT:       v => clamp(map01(v, 110,  70))
     };
-
-    // Recency penalties (tightened in calm regimes)
-    const FRESH_LIMITS = { daily:{ok:7,warn:21}, weekly:{ok:7,warn:30}, monthly:{ok:30,warn:60} };
-    function freshnessPenalty(days, cadence, calmBias){
-      const lim = FRESH_LIMITS[cadence] || FRESH_LIMITS.daily;
-      let w = 1.0;
-      if (days<=lim.ok) w = 1.00;
-      else if (days<=lim.warn) w = 0.80;
-      else w = 0.60;
-      // If system looks "too calm", tighten penalties a bit more
-      return calmBias ? w * 0.9 : w;
-    }
-
+    const FRESH_LIMITS = { daily:{ok:7,warn:30}, weekly:{ok:7,warn:30}, monthly:{ok:30,warn:60} };
     const zoneOf = s => s <= 30 ? 'green' : (s <= 60 ? 'amber' : 'red');
     const zoneLabel = z => z==='green'?'Normal':z==='amber'?'Stressed':'Crisis';
 
-    /* ===== Overlays ===== */
-    function falseCalmOverlay(parts){
-      // Complacency: low VIX + low drawdown + tight ranges → nudge up risk
-      const vix = parts.find(p=>p.key==='VIX_PROXY')?.scaled ?? 50;
-      const dd  = parts.find(p=>p.key==='DD_12M')?.scaled ?? 50; // here, lower means better
-      const credit = parts.find(p=>p.key==='CREDIT')?.scaled ?? 50;
-      const complacent = (vix < 30) && (dd < 35) && (credit < 40);
-      return complacent ? {label:'Complacency +2', nudge:+2, calmBias:true} : null;
-    }
-    function inflationDriftOverlay(cache){
-      const cpi = cache.CPI_YOY?.observations?.slice(-1)[0];
-      if(!cpi) return null;
-      const yoy = +cpi.value; // already percent
-      return yoy > 3.0 ? {label:'Inflation +2', nudge:+2} : yoy > 2.0 ? {label:'Inflation +1', nudge:+1} : null;
-    }
-    function fundingTightnessOverlay(parts){
-      const nfci = parts.find(p=>p.key==='NFCI')?.scaled ?? 50;
-      const credit = parts.find(p=>p.key==='CREDIT')?.scaled ?? 50;
-      const tight = (nfci > 55) || (credit > 65);
-      return tight ? {label:'Funding +1', nudge:+1} : null;
-    }
-
-    /* ===== Horizon risk ===== */
-    function logistic(x){ return 1/(1+Math.exp(-x)); }
-    function horizonRisk(composite, months){
-      // Base odds from current level; longer horizons compound persistence
-      const base = logistic((composite-50)/10);
-      const mult = months<=1 ? 0.65 : months<=3 ? 0.95 : 1.25;
-      const p = clamp(100 * base * mult);
-      return Math.round(Math.min(95, Math.max(5, p)));
-    }
-
-    /* ===================== STATE / CHARTS ===================== */
-    let STATE = {
-      dataMap:null,
-      compositeHistory:[],   // [{date, value}]
-      tf:'1m',
-      charts:{ composite:null, decomp:null, traj:null },
-      overlayNotes:[]
-    };
-
-    const els = {
-      statusBadge:  document.getElementById('statusBadge'),
-      scoreText:    document.getElementById('scoreText'),
-      needle:       document.getElementById('needle'),
-      indicatorCount: document.getElementById('indicatorCount'),
-      regimeIndicator: document.getElementById('regimeIndicator'),
-      prob1m: document.getElementById('prob1m'),
-      prob3m: document.getElementById('prob3m'),
-      prob6m: document.getElementById('prob6m'),
-      pillsGrid: document.getElementById('pillsGrid'),
-      heatmap: document.getElementById('heatmap'),
-      scenarioGrid: document.getElementById('scenarioGrid'),
-      kpiExplainToggle: document.getElementById('kpiExplainToggle')
-    };
-
-    function setStatus(zone, text, overlays=[]){
-      const colors = {green:'#1ec28b', amber:'#ffc247', red:'#ff6070'};
-      const suffix = overlays.length ? ' • ' + overlays.join(' + ') : '';
-      els.statusBadge.innerHTML = `
-        <div class="status" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)">
-          <span class="status-dot" style="background:${colors[zone]||'#8fb4ff'}"></span>
-          <span>${text}${suffix}</span>
-        </div>`;
-    }
-    function setErrorStatus(errText){
-      els.statusBadge.innerHTML = `
-        <div class="status" style="background:rgba(255,96,112,.12);border:1px solid rgba(255,96,112,.4)">
-          <span class="status-dot" style="background:#ff6070"></span>
-          <span>Data error: ${errText}</span>
-        </div>`;
-    }
-    function setGauge(score){
-      els.scoreText.textContent = Math.round(score);
-      const angle = (score/100)*360;
-      els.needle.style.setProperty('--angle', angle+'deg');
-    }
-
-    function pillHTML({key,label,valueDisp,change,freshClass,freshTxt,tip}){
-      const arrow = change==null?'' : (change>0?'▲':'▼');
-      const changeTxt = change==null?'' : `${(change>0?'+':'')}${change.toFixed(2)}`;
-      return `
-        <div class="pill" data-key="${key}">
-          <div class="pill-header">
-            <div class="pill-title">${label}</div>
-            <div class="pill-badge ${freshClass}">${freshTxt}</div>
-          </div>
-          <div class="pill-value">${valueDisp}</div>
-          <div class="pill-change"><span class="trend-arrow">${arrow}</span>${changeTxt}</div>
-          <div class="micro-note">${tip||''}</div>
-        </div>`;
-    }
-
-    function mkLine(ctx, labels, data){
-      return new Chart(ctx, {
-        type:'line',
-        data:{ labels, datasets:[{label:'Composite', data, borderWidth:2, fill:false, tension:0.25}] },
-        options:{ responsive:true, plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{min:0,max:100}} }
-      });
-    }
-    function mkBar(ctx, labels, data){
-      return new Chart(ctx, {
-        type:'bar',
-        data:{ labels, datasets:[{label:'Contribution', data, borderWidth:1}] },
-        options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,max:Math.max(10,Math.ceil(Math.max(...data,10)/10)*10)}} }
-      });
-    }
-
-    /* ===== Date window helper for timeframe filter ===== */
-    function filterByWindow(history, tf){
-      if (tf === 'all') return history;
-      const now = new Date();
-      let days = 30;
-      if (tf==='3m') days = 90;
-      else if (tf==='6m') days = 180;
-      else if (tf==='1y') days = 365;
-      else if (tf==='1m') days = 30;
-
-      const minDate = new Date(now.getTime() - days*86400000).toISOString().slice(0,10);
-      return history.filter(d => d.date >= minDate);
-    }
-
-    /* ===== Renders ===== */
-    function renderCompositeChart(){
-      const segment = filterByWindow(STATE.compositeHistory, STATE.tf);
-      const labels = segment.map(d=>d.date);
-      const data = segment.map(d=>d.value);
-      if(STATE.charts.composite) STATE.charts.composite.destroy();
-      STATE.charts.composite = mkLine(document.getElementById('compositeChart'), labels, data);
-    }
-
-    function renderDecomp(parts){
-      const labels = parts.map(p=>p.label);
-      const contrib = parts.map(p=>+(p.scaled*p.w).toFixed(1));
-      if(STATE.charts.decomp) STATE.charts.decomp.destroy();
-      STATE.charts.decomp = mkBar(document.getElementById('decompChart'), labels, contrib);
-    }
-
-    function heatColor(score){
-      const r = Math.round(255 * (score/100));
-      const g = Math.round(200 * (1-score/100));
-      return `rgb(${r},${g},80)`;
-    }
-    function renderHeatmap(parts){
-      const safe = Array.isArray(parts) ? parts : [];
-      els.heatmap.innerHTML = safe.map(p=>{
-        const c = heatColor(p.scaled);
-        return `<div class="heat-cell">
-          <div class="heat-label">${p.label}</div>
-          <div class="heat-value">${p.valueDisp}</div>
-          <div class="bar"><span style="width:${p.scaled}%;background:${c}"></span></div>
-        </div>`;
-      }).join('');
-    }
-
-    function renderScenarios(composite, breadth){
-      const stress = composite/100;
-      const riskBias = (breadth-50)/50; // <0 better, >0 worse
-      const baseProb = 60 - 20*riskBias;
-      const downProb = Math.min(40, 20 + 40*stress);
-      const upProb = Math.max(5, 100 - baseProb - downProb);
-
-      const cards = [
-        {title:'Base Case', prob:Math.round(baseProb), desc:'Sideways-to-mildly volatile regime; conditions stabilise with modest dispersion.'},
-        {title:'Downside (Stress)', prob:Math.round(downProb), desc:'Tighter financial conditions and volatility spikes; drawdowns concentrated in cyclicals.'},
-        {title:'Upside (Relief)', prob:Math.round(upProb), desc:'Soft-landing drift; risk appetite improves as macro prints surprise positively.'}
-      ];
-      els.scenarioGrid.innerHTML = cards.map(c=>`
-        <div class="scenario-card" style="background:rgba(255,255,255,.03);padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,.06)">
-          <div class="scenario-header" style="display:flex;justify-content:space-between;align-items:center">
-            <div class="scenario-title" style="font-weight:600">${c.title}</div>
-            <div class="scenario-prob" style="font-size:22px;font-weight:700;color:var(--accent-bright)">${c.prob}%</div>
-          </div>
-          <div class="scenario-desc" style="color:var(--muted);font-size:13px">${c.desc}</div>
-        </div>
-      `).join('');
-    }
-
-    function renderTrajectory(composite){
-      const steps = 26; // ~26 weeks
-      const phi = 0.85; // persistence
-      const target = 50;
-      let v = composite;
-      const labels = [];
-      const path = [];
-      const upper = [];
-      const lower = [];
-      for(let i=1;i<=steps;i++){
-        v = phi*v + (1-phi)*target;
-        labels.push(`W+${i}`);
-        path.push(+v.toFixed(1));
-        const band = 6*Math.sqrt(i/steps);
-        upper.push(Math.min(100, +(v+band).toFixed(1)));
-        lower.push(Math.max(0,   +(v-band).toFixed(1)));
-      }
-      if(STATE.charts.traj) STATE.charts.traj.destroy();
-      STATE.charts.traj = new Chart(document.getElementById('trajectoryChart'),{
-        type:'line',
-        data:{labels,
-          datasets:[
-            {label:'Projected', data:path, borderWidth:2, fill:false, tension:0.25},
-            {label:'Upper', data:upper, borderWidth:1, fill:false, borderDash:[4,4]},
-            {label:'Lower', data:lower, borderWidth:1, fill:false, borderDash:[4,4]}
-          ]},
-        options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{min:0,max:100}}}
-      });
-    }
-
-    /* ===================== MAIN ===================== */
+    /* ===================== CACHE LOADING ===================== */
     async function loadFredCache(){
       const res = await fetch(`${FRED_CACHE_PATH}?t=${Date.now()}`, { cache:'no-store' });
       if(!res.ok) throw new Error(`FRED cache: HTTP ${res.status}`);
@@ -592,7 +362,14 @@
       const d = new Date(L.date + 'T00:00:00Z');
       return Math.max(0, Math.round((new Date(fetchedAt || Date.now()) - d) / 86400000));
     }
+    function freshnessPenalty(days, cadence){
+      const lim = FRESH_LIMITS[cadence] || FRESH_LIMITS.daily;
+      if(days<=lim.ok) return 1.00;
+      if(days<=lim.warn) return 0.85;
+      return 0.70;
+    }
 
+    // Derivations
     function deriveUnempSlope6(UNRATE){
       const obs = UNRATE?.observations||[];
       if(!obs.length) return null;
@@ -629,7 +406,7 @@
       if(o.length<2) return null;
       const last = +o[o.length-1].value;
       let prev = null;
-      for(let i=o.length-2;i>=0;i--){ const v = +o[i].value; if(isFinite(v)){ prev=v; break; } }
+      for(let i=o.length-2;i>=0;i--){ const v=+o[i].value; if(isFinite(v)){ prev=v; break; } }
       if(prev==null || prev===0) return null;
       return { observations:[{date:o[o.length-1].date, value:String(last/prev-1)}], fetchedAt: RSAFS.fetchedAt };
     }
@@ -647,14 +424,202 @@
       return out;
     }
 
+    /* ======= RISK MODELS ======= */
+    function logistic(x){ return 1/(1+Math.exp(-x)); }
+    function horizonRisk(composite, months){
+      const base = logistic((composite-50)/10);
+      const mult = months<=1 ? 0.7 : months<=3 ? 1.0 : 1.25;
+      const p = clamp(100 * base * mult);
+      return Math.round(Math.min(95, Math.max(5, p)));
+    }
+
+    /* ===================== STATE / CHART HANDLES ===================== */
+    let STATE = {
+      dataMap:null,
+      compositeHistory:[],   // [{date, value}]
+      tf:'1m',
+      charts:{ composite:null, decomp:null, traj:null }
+    };
+
+    function timeframeDays(tf){
+      const mo = 30, yr=365;
+      return tf==='1m'? mo : tf==='3m'? 3*mo : tf==='6m'? 6*mo : tf==='1y'? yr : Infinity;
+    }
+
+    /* ===================== UI HELPERS ===================== */
+    const els = {
+      statusBadge:  document.getElementById('statusBadge'),
+      scoreText:    document.getElementById('scoreText'),
+      needle:       document.getElementById('needle'),
+      indicatorCount: document.getElementById('indicatorCount'),
+      regimeIndicator: document.getElementById('regimeIndicator'),
+      prob1m: document.getElementById('prob1m'),
+      prob3m: document.getElementById('prob3m'),
+      prob6m: document.getElementById('prob6m'),
+      pillsGrid: document.getElementById('pillsGrid'),
+      heatmap: document.getElementById('heatmap'),
+      scenarioGrid: document.getElementById('scenarioGrid'),
+      kpiExplainToggle: document.getElementById('kpiExplainToggle')
+    };
+    function setStatus(zone, text){
+      const colors = {green:'#1ec28b', amber:'#ffc247', red:'#ff6070'};
+      els.statusBadge.innerHTML = `
+        <div class="status" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:8px 12px;border-radius:10px">
+          <span class="status-dot" style="width:10px;height:10px;border-radius:50%;background:${colors[zone]||'#8fb4ff'}"></span>
+          <span>${text}</span>
+        </div>`;
+    }
+    function setErrorStatus(errText){
+      els.statusBadge.innerHTML = `
+        <div class="status" style="background:rgba(255,96,112,.12);border:1px solid rgba(255,96,112,.4);padding:8px 12px;border-radius:10px">
+          <span class="status-dot" style="width:10px;height:10px;border-radius:50%;background:#ff6070"></span>
+          <span>Data error: ${errText}</span>
+        </div>`;
+    }
+    function setGauge(score){
+      els.scoreText.textContent = Math.round(score);
+      const angle = (score/100)*360;
+      els.needle.style.setProperty('--angle', angle+'deg');
+    }
+
+    function pillHTML({key,label,valueDisp,change,freshClass,freshTxt,tip,scaled}){
+      const arrow = change==null?'' : (change>0?'▲':'▼');
+      const changeTxt = change==null?'' : `${(change>0?'+':'')}${change.toFixed(2)}`;
+      const zone = zoneOf(scaled);
+      const riskClass = zone==='green'?'risk-green':zone==='amber'?'risk-amber':'risk-red';
+      const riskColor = zone==='green'?'#1ec28b':zone==='amber'?'#ffc247':'#ff6070';
+      return `
+        <div class="pill ${riskClass}" data-key="${key}">
+          <div class="pill-header">
+            <div class="pill-title">${label}</div>
+            <div class="pill-badge ${freshClass}">${freshTxt}</div>
+          </div>
+          <div class="pill-value">${valueDisp}</div>
+          <div class="pill-change"><span class="trend-arrow">${arrow}</span>${changeTxt}</div>
+          <div class="riskbar"><span style="width:${Math.round(scaled)}%;background:${riskColor}"></span></div>
+          <div class="micro-note">${tip||''}</div>
+        </div>`;
+    }
+
+    function mkLine(ctx, labels, data){
+      return new Chart(ctx, {
+        type:'line',
+        data:{ labels, datasets:[{label:'Composite', data, borderWidth:2, fill:false, tension:0.25}] },
+        options:{ responsive:true, plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{min:0,max:100}} }
+      });
+    }
+    function mkBar(ctx, labels, data){
+      return new Chart(ctx, {
+        type:'bar',
+        data:{ labels, datasets:[{label:'Contribution', data, borderWidth:1}] },
+        options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,max:Math.max(10,Math.ceil(Math.max(...data,10)/10)*10)}} }
+      });
+    }
+
+    // date-window filter for timeframes
+    function renderCompositeChart(){
+      const hist = STATE.compositeHistory;
+      const tf = STATE.tf;
+      let filtered = hist;
+      if(tf !== 'all'){
+        const days = timeframeDays(tf);
+        const cutoff = new Date(Date.now() - days*86400000);
+        filtered = hist.filter(d => new Date(d.date+'T00:00:00Z') >= cutoff);
+      }
+      const labels = filtered.map(d=>d.date);
+      const data = filtered.map(d=>d.value);
+      if(STATE.charts.composite) STATE.charts.composite.destroy();
+      STATE.charts.composite = mkLine(document.getElementById('compositeChart'), labels, data);
+    }
+
+    function renderDecomp(parts){
+      const labels = parts.map(p=>p.label);
+      const contrib = parts.map(p=>+(p.scaled*p.w).toFixed(1));
+      if(STATE.charts.decomp) STATE.charts.decomp.destroy();
+      STATE.charts.decomp = mkBar(document.getElementById('decompChart'), labels, contrib);
+    }
+
+    function heatColor(score){
+      const r = Math.round(255 * (score/100));
+      const g = Math.round(200 * (1-score/100));
+      return `rgb(${r},${g},80)`;
+    }
+
+    function renderHeatmap(parts){
+      els.heatmap.innerHTML = parts.map(p=>{
+        const c = heatColor(p.scaled);
+        const s = Math.round(p.scaled);
+        return `<div class="heat-cell">
+          <div class="heat-label">${p.label}</div>
+          <div class="heat-value">${p.valueDisp}</div>
+          <div class="heat-score">Risk score: <b>${s}</b> / 100</div>
+          <div class="heatbar"><span style="width:${s}%;background:${c}"></span></div>
+          <div class="heat-axis"><span>0</span><span>50</span><span>100</span></div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderScenarios(composite, breadth){
+      const stress = composite/100;
+      const riskBias = (breadth-50)/50; // <0 better, >0 worse
+      const baseProb = 60 - 20*riskBias;                 // ~40-80
+      const downProb = Math.min(40, 20 + 40*stress);     // capped
+      const upProb = Math.max(5, 100 - baseProb - downProb);
+
+      const cards = [
+        {title:'Base Case', prob:Math.round(baseProb), desc:'Sideways-to-mildly volatile regime; conditions stabilise with modest dispersion.'},
+        {title:'Downside (Stress)', prob:Math.round(downProb), desc:'Tighter financial conditions and volatility spikes; drawdowns concentrated in cyclicals.'},
+        {title:'Upside (Relief)', prob:Math.round(upProb), desc:'Soft-landing drift; risk appetite improves as macro prints surprise positively.'}
+      ];
+      els.scenarioGrid.innerHTML = cards.map(c=>`
+        <div class="scenario-card" style="background:rgba(255,255,255,.03);padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,.06)">
+          <div class="scenario-header" style="display:flex;justify-content:space-between;align-items:center">
+            <div class="scenario-title" style="font-weight:600">${c.title}</div>
+            <div class="scenario-prob" style="font-size:22px;font-weight:700;color:var(--accent-bright)">${c.prob}%</div>
+          </div>
+          <div class="scenario-desc" style="color:var(--muted);font-size:13px">${c.desc}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderTrajectory(composite){
+      const steps = 26; // ~26 weeks
+      const phi = 0.85; // persistence
+      const target = 50;
+      let v = composite;
+      const labels = [];
+      const path = [];
+      const upper = [];
+      const lower = [];
+      for(let i=1;i<=steps;i++){
+        v = phi*v + (1-phi)*target;
+        labels.push(`W+${i}`);
+        path.push(+v.toFixed(1));
+        const band = 6*Math.sqrt(i/steps); // widening band
+        upper.push(Math.min(100, +(v+band).toFixed(1)));
+        lower.push(Math.max(0,   +(v-band).toFixed(1)));
+      }
+      if(STATE.charts.traj) STATE.charts.traj.destroy();
+      STATE.charts.traj = new Chart(document.getElementById('trajectoryChart'),{
+        type:'line',
+        data:{labels,
+          datasets:[
+            {label:'Projected', data:path, borderWidth:2, fill:false, tension:0.25},
+            {label:'Upper', data:upper, borderWidth:1, fill:false, borderDash:[4,4]},
+            {label:'Lower', data:lower, borderWidth:1, fill:false, borderDash:[4,4]}
+          ]},
+        options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{min:0,max:100}}}
+      });
+    }
+
+    /* ===================== MAIN ===================== */
     (async function init(){
       try{
-        // Load + map indicators
         const cache = await loadFredCache();
         const dataMap = mapIndicatorsFromCache(cache);
         STATE.dataMap = dataMap;
 
-        // Build parts + composite
+        // ===== build pills + composite =====
         let num=0, den=0;
         const parts=[];
         for(const [k,cfg] of Object.entries(INDICATORS)){
@@ -664,15 +629,10 @@
           const last = obs[obs.length-1];
           const L = {value:+last.value, date:last.date};
           const days = seriesAgeDays(s, s.fetchedAt);
-          const scaled = SCALE[k](L.value);
-
-          // temporary calm bias check (used in freshnessPenalty)
-          const calmBias = false;
-
           const lim = FRESH_LIMITS[cfg.cadence]||FRESH_LIMITS.daily;
           const badge = days<=lim.ok ? {cls:'badge-fresh',txt:'Fresh'} : days<=lim.warn ? {cls:'badge-stale',txt:'Stale'} : {cls:'badge-old',txt:'Old'};
-          const w = cfg.weight * freshnessPenalty(days, cfg.cadence, calmBias);
-
+          const scaled = SCALE[k](L.value);
+          const w = cfg.weight * freshnessPenalty(days, cfg.cadence);
           if(Number.isFinite(scaled) && Number.isFinite(w)){ num += scaled*w; den += w; }
 
           let change = null;
@@ -682,22 +642,14 @@
         }
 
         if(den<=0) throw new Error('No valid indicators / weights.');
-        let composite = num/den;
-        const overlays = [];
-
-        // Overlays (record labels for badge)
-        const o1 = falseCalmOverlay(parts); if (o1){ composite += o1.nudge; overlays.push(o1.label); }
-        const o2 = inflationDriftOverlay(cache); if (o2){ composite += o2.nudge; overlays.push(o2.label); }
-        const o3 = fundingTightnessOverlay(parts); if (o3){ composite += o3.nudge; overlays.push(o3.label); }
-        composite = clamp(composite);
-
+        const composite = num/den;
         setGauge(composite);
         const zone = zoneOf(composite);
-        setStatus(zone, `Composite: ${Math.round(composite)} (${zone.toUpperCase()})`, overlays);
+        setStatus(zone, `Composite: ${Math.round(composite)} (${zone.toUpperCase()})`);
         document.getElementById('indicatorCount').textContent = parts.length;
         els.pillsGrid.innerHTML = parts.map(p=>pillHTML(p)).join('');
 
-        // Composite history (date-aligned selection of key series)
+        // ===== composite history (sync by date across key series)
         const keysForHist = ['DD_12M','VIX_PROXY','T10Y3M','CREDIT','NFCI'];
         const allDates = new Set();
         for(const k of keysForHist){ (dataMap[k]?.observations||[]).forEach(o=>allDates.add(o.date)); }
@@ -716,50 +668,48 @@
           return {date, value: d>0 ? +(n/d).toFixed(1) : null};
         }).filter(x=>x.value!=null);
 
-        // Charts & views
+        // Initial charts & panels
         renderCompositeChart();
         renderDecomp(parts);
         renderHeatmap(parts);
         renderScenarios(composite, parts.reduce((a,p)=>a+p.scaled,0)/parts.length);
         renderTrajectory(composite);
 
-        // Horizon probabilities
+        // Probabilities
         els.prob1m.textContent = `${horizonRisk(composite,1)}%`;
         els.prob3m.textContent = `${horizonRisk(composite,3)}%`;
         els.prob6m.textContent = `${horizonRisk(composite,6)}%`;
         els.regimeIndicator.innerHTML =
-          `<span class="status-dot" style="background:${zone==='green'?'#1ec28b':zone==='amber'?'#ffc247':'#ff6070'}"></span>${zoneLabel(zone)} regime`;
+          `<span class="status-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;background:${zone==='green'?'#1ec28b':zone==='amber'?'#ffc247':'#ff6070'}"></span> ${zoneLabel(zone)} regime`;
 
-        // Tabs
-        document.querySelectorAll('.tab').forEach(btn=>{
-          btn.addEventListener('click', ()=>{
-            document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-            btn.classList.add('active');
-            document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
-            document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
-          });
-        });
+        // ===== Tab / timeframe handlers =====
+        window.switchTab = (e, id)=>{
+          document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+          e.currentTarget.classList.add('active');
+          document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+          document.getElementById('tab-'+id).classList.add('active');
+        };
 
-        // Timeframe buttons
-        document.querySelectorAll('#tfGroup .btn').forEach(btn=>{
+        document.querySelectorAll('.btn-group .btn').forEach(btn=>{
           btn.addEventListener('click', (evt)=>{
-            document.querySelectorAll('#tfGroup .btn').forEach(b=>b.classList.remove('active'));
+            document.querySelectorAll('.btn-group .btn').forEach(b=>b.classList.remove('active'));
             evt.currentTarget.classList.add('active');
             STATE.tf = evt.currentTarget.dataset.tf;
             renderCompositeChart();
           });
         });
 
-        // Explain buttons
+        // Explain buttons (scenarios / trajectory / heatmap)
         document.querySelectorAll('.info-btn').forEach(btn=>{
           btn.addEventListener('click', ()=>{
             const t = btn.getAttribute('data-note-target');
-            const el = document.getElementById(t==='scenarios'?'scenariosNote':'trajectoryNote');
+            const id = t==='scenarios' ? 'scenariosNote' : t==='trajectory' ? 'trajectoryNote' : 'heatExplain';
+            const el = document.getElementById(id);
             if(el) el.classList.toggle('show');
           });
         });
 
-        // KPI explain toggle
+        // KPI micro-notes toggle with persistence
         const key = 'helpMode';
         const saved = localStorage.getItem(key);
         if(saved==='on'){ document.body.classList.add('help-on'); }
