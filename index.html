@@ -31,6 +31,9 @@
     .card:hover{transform:translateY(-2px);box-shadow:0 6px 32px rgba(0,0,0,.4)}
     .card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
 
+    .status{display:inline-flex;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;font-weight:600;margin-top:10px}
+    .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+
     /* Gauge */
     .gauge-container{display:flex;align-items:center;gap:32px;flex-wrap:wrap}
     .gauge-wrap{position:relative;width:var(--ring);height:var(--ring)}
@@ -99,16 +102,11 @@
       .chart-header{flex-direction:column;align-items:flex-start}
     }
 
-    /* === NEW: explain UI bits (tiny, unobtrusive) === */
-    .info-btn{
-      display:inline-flex;align-items:center;gap:6px;
-      font-size:12px;font-weight:600;color:var(--accent-bright);
-      background:rgba(107,158,255,.12);padding:6px 10px;border-radius:8px;
-      border:1px solid rgba(107,158,255,.25);cursor:pointer;white-space:nowrap
-    }
-    .info-note{margin-top:10px;border-radius:10px;padding:12px 14px;
-      background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
-      color:var(--muted);font-size:13px;display:none}
+    /* Explain UI */
+    .info-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--accent-bright);
+      background:rgba(107,158,255,.12);padding:6px 10px;border-radius:8px;border:1px solid rgba(107,158,255,.25);cursor:pointer;white-space:nowrap}
+    .info-note{margin-top:10px;border-radius:10px;padding:12px 14px;background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);color:var(--muted);font-size:13px;display:none}
     .info-note.show{display:block}
     .help-toggle{margin:4px 0 10px;font-size:13px;color:var(--accent-bright);cursor:pointer;text-decoration:underline}
     .micro-note{display:none;color:var(--muted);font-size:12px;margin-top:6px}
@@ -147,7 +145,8 @@
               <div class="confidence-bar"><div id="confidenceFill" class="confidence-fill" style="width:85%"></div></div>
               <span id="confidenceText">85%</span>
             </div>
-            <div id="regimeIndicator" class="regime"></div>
+            <div id="regimeIndicator" class="regime" style="margin-top:8px"></div>
+
             <div class="prob-display" style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap">
               <div class="prob-item" style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
                 <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">1-Month Risk</h4>
@@ -177,10 +176,10 @@
 
       <!-- Tabs -->
       <div class="tabs">
-        <button class="tab active" onclick="switchTab(event, 'composite')">Composite</button>
-        <button class="tab" onclick="switchTab(event, 'scenarios')">Scenarios</button>
-        <button class="tab" onclick="switchTab(event, 'indicators')">Indicators</button>
-        <button class="tab" onclick="switchTab(event, 'analogs')">Analogs</button>
+        <button class="tab active" data-tab="composite">Composite</button>
+        <button class="tab" data-tab="scenarios">Scenarios</button>
+        <button class="tab" data-tab="indicators">Indicators</button>
+        <button class="tab" data-tab="analogs">Analogs</button>
       </div>
 
       <div id="tab-composite" class="tab-content active">
@@ -215,9 +214,7 @@
           <p style="color:var(--muted);margin:0 0 16px;font-size:14px">Probability-weighted forecasts</p>
           <div id="scenarioGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:16px"></div>
           <div id="scenariosNote" class="info-note">
-            Scenarios estimate the odds of three possible regimes—Base Case, Downside (Stress), and Upside (Relief).
-            They come from how today’s indicators align with past stable or stressed periods.
-            More “Downside” means conditions are tighter and turbulence risk is higher.
+            Scenarios estimate the odds of three regimes—Base Case, Downside (Stress), and Upside (Relief)—from how today’s indicators line up with past stable vs stressed periods.
           </div>
         </section>
 
@@ -228,9 +225,7 @@
           </div>
           <div class="chart-container"><canvas id="trajectoryChart"></canvas></div>
           <div id="trajectoryNote" class="info-note">
-            The trajectory projects the composite about 25 weeks ahead if current trends continue.
-            The solid line is the central path; dashed lines show uncertainty.
-            Up-sloping = pressure building; flat/down = stabilising.
+            Projection ~25 weeks ahead if current trends persist. Solid line = central path; dashed = uncertainty band. Up = pressure building; flat/down = stabilising.
           </div>
         </section>
       </div>
@@ -290,6 +285,28 @@
     };
     const FRESH_LIMITS = { daily:{ok:7,warn:30}, weekly:{ok:7,warn:30}, monthly:{ok:30,warn:60} };
     const zoneOf = s => s <= 30 ? 'green' : (s <= 60 ? 'amber' : 'red');
+    const zoneLabel = z => z==='green'?'Normal':z==='amber'?'Stressed':'Crisis';
+
+    /* ============== OVERLAYS & FRESHNESS TIGHTENING ============== */
+    function calcFalseCalmOverlay(vix, composite){
+      if (!isFinite(vix)) return 0;
+      const calm = Math.max(0, 14 - vix);     // kick in below ~14
+      const tilt  = composite<40 ? 1.0 : composite<55 ? 0.7 : 0.4;
+      return Math.min(6, +(calm * 0.6 * tilt).toFixed(1));
+    }
+    function calcInflationDrift(cpi_yoy){
+      if (!isFinite(cpi_yoy)) return 0;
+      if (cpi_yoy < 1)  return -1;
+      if (cpi_yoy < 2)  return  0;
+      if (cpi_yoy < 3)  return  1;
+      if (cpi_yoy < 4)  return  2;
+      return 3;
+    }
+    function calmAdjustedFreshMultiplier(baseMult, vix){
+      if (!isFinite(vix) || vix >= 14) return baseMult;
+      const extra = Math.min(0.15, (14 - vix) * 0.03); // tighten up to ~15%
+      return +(baseMult * (1 - extra)).toFixed(3);
+    }
 
     /* ===================== CACHE LOADING ===================== */
     async function loadFredCache(){
@@ -303,10 +320,7 @@
       const out = {};
       const directLike = raw && typeof raw === 'object' &&
         Object.keys(raw).some(k => raw[k] && Array.isArray(raw[k].observations));
-      if (directLike) {
-        for (const [k,v] of Object.entries(raw)) out[k] = v;
-        return out;
-      }
+      if (directLike) { for (const [k,v] of Object.entries(raw)) out[k] = v; return out; }
       if (Array.isArray(raw?.series)) {
         for (const item of raw.series) {
           const id = item?.id || item?.series_id || item?.name;
@@ -413,27 +427,38 @@
     }
 
     /* ======= RISK MODELS ======= */
+    function timeframeCount(tf){
+      return tf==='1m'?22 : tf==='3m'?66 : tf==='6m'?132 : tf==='1y'?252 : Infinity;
+    }
     function logistic(x){ return 1/(1+Math.exp(-x)); }
-    function horizonRisk(composite, months){
-      const base = logistic((composite-50)/10);
-      const mult = months<=1 ? 0.7 : months<=3 ? 1.0 : 1.25;
-      const p = clamp(100 * base * mult);
+    function horizonRisk(compositeNow, months){
+      const base = 100 * logistic((compositeNow-50)/9);
+
+      // momentum: slope of last ~30 bars
+      const h = STATE.compositeHistory || [];
+      const M = Math.min(30, h.length);
+      let slope = 0, vol = 0;
+      if (M >= 5){
+        const ys = h.slice(-M).map(d=>d.value);
+        const xs = h.slice(-M).map((_,i)=>i);
+        const n = xs.length, sx = xs.reduce((a,b)=>a+b,0), sy = ys.reduce((a,b)=>a+b,0);
+        const sxx = xs.reduce((a,b)=>a+b*b,0);
+        const sxy = xs.reduce((a,_,i)=>a + xs[i]*ys[i], 0);
+        slope = (n*sxy - sx*sy) / Math.max(1e-9,(n*sxx - sx*sx));
+        const mean = sy/n, s2 = ys.reduce((a,b)=>a+(b-mean)*(b-mean),0)/Math.max(1, n-1);
+        vol = Math.sqrt(s2);
+      }
+
+      const H = months<=1 ? 0.7 : months<=3 ? 1.0 : 1.3;
+      const momAdj = (slope*3) * (months/3);
+      const volAdj = Math.min(8, vol) * (months/6);
+
+      const p = clamp(base*H + momAdj + volAdj);
       return Math.round(Math.min(95, Math.max(5, p)));
     }
-    const zoneLabel = z => z==='green'?'Normal':z==='amber'?'Stressed':'Crisis';
 
     /* ===================== STATE / CHART HANDLES ===================== */
-    let STATE = {
-      dataMap:null,
-      compositeHistory:[],   // [{date, value}]
-      tf:'1m',
-      charts:{ composite:null, decomp:null, traj:null }
-    };
-
-    function timeframeSpan(tf){
-      const day = 1, mo=30, yr=365;
-      return tf==='1m'? 1*mo : tf==='3m'? 3*mo : tf==='6m'? 6*mo : tf==='1y'? yr : Infinity;
-    }
+    let STATE = { dataMap:null, compositeHistory:[], tf:'1m', charts:{ composite:null, decomp:null, traj:null } };
 
     /* ===================== UI HELPERS ===================== */
     const els = {
@@ -484,14 +509,6 @@
           <div class="micro-note">${tip||''}</div>
         </div>`;
     }
-
-    function mkLine(ctx, labels, data){
-      return new Chart(ctx, {
-        type:'line',
-        data:{ labels, datasets:[{label:'Composite', data, borderWidth:2, fill:false, tension:0.25}] },
-        options:{ responsive:true, plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{min:0,max:100}} }
-      });
-    }
     function mkBar(ctx, labels, data){
       return new Chart(ctx, {
         type:'bar',
@@ -499,48 +516,48 @@
         options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,max:Math.max(10,Math.ceil(Math.max(...data,10)/10)*10)}} }
       });
     }
-
     function renderCompositeChart(){
-      const span = timeframeSpan(STATE.tf);
-      const hist = STATE.compositeHistory;
-      const last = span===Infinity ? hist : hist.slice(-span);
+      const N = timeframeCount(STATE.tf);
+      const hist = STATE.compositeHistory || [];
+      const last = (N===Infinity || N>=hist.length) ? hist : hist.slice(-N);
       const labels = last.map(d=>d.date);
-      const data = last.map(d=>d.value);
+      const data   = last.map(d=>d.value);
       if(STATE.charts.composite) STATE.charts.composite.destroy();
-      STATE.charts.composite = mkLine(document.getElementById('compositeChart'), labels, data);
+      STATE.charts.composite = new Chart(document.getElementById('compositeChart'), {
+        type:'line',
+        data:{ labels, datasets:[{label:'Composite', data, borderWidth:2, fill:false, tension:0.25}] },
+        options:{ responsive:true, plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{min:0,max:100}} }
+      });
     }
-
     function renderDecomp(parts){
       const labels = parts.map(p=>p.label);
       const contrib = parts.map(p=>+(p.scaled*p.w).toFixed(1));
       if(STATE.charts.decomp) STATE.charts.decomp.destroy();
       STATE.charts.decomp = mkBar(document.getElementById('decompChart'), labels, contrib);
     }
-
     function heatColor(score){
       const r = Math.round(255 * (score/100));
       const g = Math.round(200 * (1-score/100));
       return `rgb(${r},${g},80)`;
     }
-
     function renderHeatmap(parts){
-      els.heatmap.innerHTML = parts.map(p=>{
-        const c = heatColor(p.scaled);
-        return `<div class="heat-cell">
-          <div class="heat-label">${p.label}</div>
-          <div class="heat-value">${p.valueDisp}</div>
-          <div class="bar"><span style="width:${p.scaled}%;background:${c}"></span></div>
-        </div>`;
-      }).join('');
+      els.heatmap.innerHTML = parts.length
+        ? parts.map(p=>{
+            const c = heatColor(p.scaled);
+            return `<div class="heat-cell">
+              <div class="heat-label">${p.label}</div>
+              <div class="heat-value">${p.valueDisp}</div>
+              <div class="bar"><span style="width:${p.scaled}%;background:${c}"></span></div>
+            </div>`;
+          }).join('')
+        : '<div class="heat-cell">No data</div>';
     }
-
     function renderScenarios(composite, breadth){
       const stress = composite/100;
-      const riskBias = (breadth-50)/50; // <0 better, >0 worse
-      const baseProb = 60 - 20*riskBias;                 // ~40-80
-      const downProb = Math.min(40, 20 + 40*stress);     // capped
+      const riskBias = (breadth-50)/50;
+      const baseProb = 60 - 20*riskBias;
+      const downProb = Math.min(40, 20 + 40*stress);
       const upProb = Math.max(5, 100 - baseProb - downProb);
-
       const cards = [
         {title:'Base Case', prob:Math.round(baseProb), desc:'Sideways-to-mildly volatile regime; conditions stabilise with modest dispersion.'},
         {title:'Downside (Stress)', prob:Math.round(downProb), desc:'Tighter financial conditions and volatility spikes; drawdowns concentrated in cyclicals.'},
@@ -556,21 +573,15 @@
         </div>
       `).join('');
     }
-
     function renderTrajectory(composite){
-      const steps = 26; // ~26 weeks
-      const phi = 0.85; // persistence
-      const target = 50;
+      const steps = 26, phi = 0.85, target = 50;
       let v = composite;
-      const labels = [];
-      const path = [];
-      const upper = [];
-      const lower = [];
+      const labels=[], path=[], upper=[], lower=[];
       for(let i=1;i<=steps;i++){
         v = phi*v + (1-phi)*target;
         labels.push(`W+${i}`);
         path.push(+v.toFixed(1));
-        const band = 6*Math.sqrt(i/steps); // widening band
+        const band = 6*Math.sqrt(i/steps);
         upper.push(Math.min(100, +(v+band).toFixed(1)));
         lower.push(Math.max(0,   +(v-band).toFixed(1)));
       }
@@ -590,12 +601,11 @@
     /* ===================== MAIN ===================== */
     (async function init(){
       try{
-        // Load + map indicators
         const cache = await loadFredCache();
         const dataMap = mapIndicatorsFromCache(cache);
         STATE.dataMap = dataMap;
 
-        // ===== build pills + composite =====
+        // ===== build pills + composite
         let num=0, den=0;
         const parts=[];
         for(const [k,cfg] of Object.entries(INDICATORS)){
@@ -608,7 +618,13 @@
           const lim = FRESH_LIMITS[cfg.cadence]||FRESH_LIMITS.daily;
           const badge = days<=lim.ok ? {cls:'badge-fresh',txt:'Fresh'} : days<=lim.warn ? {cls:'badge-stale',txt:'Stale'} : {cls:'badge-old',txt:'Old'};
           const scaled = SCALE[k](L.value);
-          const w = cfg.weight * freshnessPenalty(days, cfg.cadence);
+
+          // calm tightening
+          const vixLast = (STATE.dataMap?.VIX_PROXY?.observations||[]).at(-1);
+          const vixVal  = vixLast ? +vixLast.value : NaN;
+          const baseW = cfg.weight * freshnessPenalty(days, cfg.cadence);
+          const w = calmAdjustedFreshMultiplier(baseW, vixVal);
+
           if(Number.isFinite(scaled) && Number.isFinite(w)){ num += scaled*w; den += w; }
 
           let change = null;
@@ -618,19 +634,31 @@
         }
 
         if(den<=0) throw new Error('No valid indicators / weights.');
-        const composite = num/den;
-        setGauge(composite);
-        const zone = zoneOf(composite);
-        setStatus(zone, `Composite: ${Math.round(composite)} (${zone.toUpperCase()})`);
+        let composite = num/den;
+
+        // Overlays
+        const vixNow = +(STATE.dataMap?.VIX_PROXY?.observations?.at(-1)?.value ?? NaN);
+        const cpiYoyNow = +(STATE.dataMap?.CPI_YOY?.observations?.at(-1)?.value ?? NaN);
+        const calmOv = calcFalseCalmOverlay(vixNow, composite);
+        const inflOv = calcInflationDrift(cpiYoyNow);
+        const compositeAdj = clamp(composite + calmOv + inflOv);
+
+        // UI
+        setGauge(compositeAdj);
+        const zone = zoneOf(compositeAdj);
+        const ovBits = [];
+        if (calmOv) ovBits.push(`Calm +${calmOv}`);
+        if (isFinite(inflOv) && inflOv!==0) ovBits.push(`Inflation ${inflOv>0?'+':''}${inflOv}`);
+        const ovLabel = ovBits.length ? ` • ${ovBits.join(' · ')}` : '';
+        setStatus(zone, `Composite: ${Math.round(compositeAdj)} (${zone.toUpperCase()})${ovLabel}`);
         document.getElementById('indicatorCount').textContent = parts.length;
         els.pillsGrid.innerHTML = parts.map(p=>pillHTML(p)).join('');
 
-        // ===== build composite history (synchronised by date)
+        // ===== build composite history (sync by date)
         const keysForHist = ['DD_12M','VIX_PROXY','T10Y3M','CREDIT','NFCI'];
         const allDates = new Set();
         for(const k of keysForHist){ (dataMap[k]?.observations||[]).forEach(o=>allDates.add(o.date)); }
         const dates = Array.from(allDates).sort();
-
         STATE.compositeHistory = dates.map(date=>{
           let n=0,d=0;
           for(const [k,cfg] of Object.entries(INDICATORS)){
@@ -644,28 +672,32 @@
           return {date, value: d>0 ? +(n/d).toFixed(1) : null};
         }).filter(x=>x.value!=null);
 
-        // Initial charts
+        // Charts & sections (safe-guards)
         renderCompositeChart();
         renderDecomp(parts);
         renderHeatmap(parts);
-        renderScenarios(composite, parts.reduce((a,p)=>a+p.scaled,0)/parts.length);
-        renderTrajectory(composite);
+        try{ renderScenarios(compositeAdj, parts.reduce((a,p)=>a+p.scaled,0)/parts.length); }catch(e){ console.error(e); }
+        try{ renderTrajectory(compositeAdj); }catch(e){ console.error(e); }
 
-        // Probabilities (consistent with composite)
-        els.prob1m.textContent = `${horizonRisk(composite,1)}%`;
-        els.prob3m.textContent = `${horizonRisk(composite,3)}%`;
-        els.prob6m.textContent = `${horizonRisk(composite,6)}%`;
+        // Probabilities (use adjusted composite)
+        els.prob1m.textContent = `${horizonRisk(compositeAdj,1)}%`;
+        els.prob3m.textContent = `${horizonRisk(compositeAdj,3)}%`;
+        els.prob6m.textContent = `${horizonRisk(compositeAdj,6)}%`;
         els.regimeIndicator.innerHTML =
           `<span class="status-dot" style="background:${zone==='green'?'#1ec28b':zone==='amber'?'#ffc247':'#ff6070'}"></span>${zoneLabel(zone)} regime`;
 
-        // ===== Tab / timeframe handlers =====
-        window.switchTab = (e, id)=>{
-          document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-          e.currentTarget.classList.add('active');
-          document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
-          document.getElementById('tab-'+id).classList.add('active');
-        };
+        // Tabs
+        document.querySelectorAll('.tab').forEach(btn=>{
+          btn.addEventListener('click', e=>{
+            document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            const id = e.currentTarget.getAttribute('data-tab');
+            document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+            document.getElementById('tab-'+id).classList.add('active');
+          });
+        });
 
+        // Timeframe buttons
         document.querySelectorAll('.btn-group .btn').forEach(btn=>{
           btn.addEventListener('click', (evt)=>{
             document.querySelectorAll('.btn-group .btn').forEach(b=>b.classList.remove('active'));
@@ -675,7 +707,7 @@
           });
         });
 
-        // ===== Explain buttons for scenarios/trajectory
+        // Explain toggles
         document.querySelectorAll('.info-btn').forEach(btn=>{
           btn.addEventListener('click', ()=>{
             const t = btn.getAttribute('data-note-target');
@@ -683,8 +715,6 @@
             if(el) el.classList.toggle('show');
           });
         });
-
-        // ===== KPI explain toggle (micro-notes under pills)
         const key = 'helpMode';
         const saved = localStorage.getItem(key);
         if(saved==='on'){ document.body.classList.add('help-on'); }
