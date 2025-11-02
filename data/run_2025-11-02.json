@@ -1,1 +1,10 @@
-
+{
+  "model_version": "MARK-6 v1.2",
+  "date": "2025-11-02T22:15:00Z",
+  "manifest_hash": "test1234abcd5678",
+  "levers": [],
+  "total": 55.0,
+  "regime": "amber",
+  "total_mayhem": { "reds": 1, "ambers": 2, "flag": "none" },
+  "stale_summary": { "count": 0, "ids": [] }
+}
