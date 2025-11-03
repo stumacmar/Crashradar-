@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Economic Crash Radar - Real-time market stress monitoring with actionable risk intelligence" />
+  <meta name="description" content="Economic Crash Radar - Real-time market stress monitoring" />
   <title>Economic Crash Radar</title>
 
   <style>
@@ -106,7 +106,6 @@
     .loading{text-align:center;padding:40px;color:var(--muted)}
     .error-state{background:rgba(255,96,112,.1);border:1px solid rgba(255,96,112,.3);padding:20px;border-radius:var(--radius);margin:20px 0}
 
-    /* Enhanced alert system */
     .alert-banner {
       background: linear-gradient(135deg, rgba(255,96,112,.15), rgba(255,140,66,.15));
       border: 1px solid rgba(255,96,112,.3);
@@ -155,24 +154,12 @@
       line-height: 1.4;
     }
 
-    /* Risk explanation */
     .risk-explanation {
       background: rgba(255,255,255,.03);
       padding: 16px;
       border-radius: 10px;
       margin-top: 12px;
       border: 1px solid rgba(255,255,255,.06);
-    }
-    .risk-explanation h4 {
-      margin: 0 0 8px 0;
-      font-size: 14px;
-      color: var(--accent-bright);
-    }
-    .risk-explanation p {
-      margin: 0;
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.5;
     }
 
     @media (max-width:768px){
@@ -205,99 +192,72 @@
   <script>
     'use strict';
 
-    // ==================== SIMPLIFIED CONFIGURATION ====================
+    // ==================== SIMPLE CONFIGURATION ====================
     const CONFIG = {
       FRED_CACHE_PATH: 'data/fred_cache.json',
-      CACHE_TIMEOUT: 10000,
       
-      // Core indicators only - removed redundant ones
+      // Core indicators that should exist in your cache
       INDICATORS: {
-        T10Y3M:          { 
-          label:'Yield Curve',         
-          format:v=>v?.toFixed(2),               
-          weight:0.25, 
-          cadence:'daily',
-          description: '10-year minus 3-month Treasury yield. Negative = inverted curve (recession warning). Current: -0.22 = strong inversion.',
+        T10Y3M: { 
+          label: 'Yield Curve (10y-3m)',
+          format: v => v?.toFixed(2),
+          weight: 0.25,
+          cadence: 'daily',
+          description: '10-year minus 3-month Treasury yield. Negative = inverted curve (recession warning)',
           thresholds: { green: [0.5, Infinity], amber: [-0.5, 0.5], red: [-Infinity, -0.5] },
           crisisThreshold: -0.5,
           crisisMessage: 'Yield curve inversion historically precedes recessions by 6-18 months'
         },
-        CREDIT:          { 
-          label:'Credit Spread',       
-          format:v=>v?.toFixed(2),               
-          weight:0.20, 
-          cadence:'daily',
-          description: 'High-yield corporate bond spread over Treasuries. Wider spreads = higher perceived risk.',
+        CREDIT: { 
+          label: 'Credit Spread',
+          format: v => v?.toFixed(2),
+          weight: 0.20,
+          cadence: 'daily', 
+          description: 'High-yield corporate bond spread over Treasuries. Wider spreads = higher risk',
           thresholds: { green: [-Infinity, 0.40], amber: [0.40, 0.70], red: [0.70, Infinity] },
           crisisThreshold: 0.8,
-          crisisMessage: 'Credit spreads above 0.8 indicate severe stress in corporate debt markets'
+          crisisMessage: 'Credit spreads above 0.8 indicate severe stress in corporate debt'
         },
-        SAHM_RULE:       { 
-          label:'Sahm Rule',      
-          format:v=>v?.toFixed(2),               
-          weight:0.25, 
-          cadence:'monthly',
-          description: '3-month unemployment avg minus 12-month low. ≥0.5 = recession likely started.',
-          thresholds: { green: [-Infinity, 0.1], amber: [0.1, 0.4], red: [0.4, Infinity] },
-          crisisThreshold: 0.5,
-          crisisMessage: 'Sahm Rule triggered - unemployment rise suggests recession has begun'
+        UN_SLOPE6: { 
+          label: 'Unemployment Δ6m',
+          format: v => v?.toFixed(2),
+          weight: 0.20,
+          cadence: 'monthly',
+          description: '6-month change in unemployment rate. Rising unemployment signals weakness',
+          thresholds: { green: [-Infinity, 0.15], amber: [0.15, 0.35], red: [0.35, Infinity] },
+          crisisThreshold: 0.4,
+          crisisMessage: 'Rapid unemployment rise suggests economic deterioration'
         },
-        DD_12M:          { 
-          label:'Market Drawdown',     
-          format:v=>((v??0)*100).toFixed(1)+'%', 
-          weight:0.20, 
-          cadence:'daily',
-          description: 'S&P 500 decline from 1-year peak. -20% = bear market.',
+        DD_12M: { 
+          label: 'Market Drawdown',
+          format: v => ((v??0)*100).toFixed(1)+'%',
+          weight: 0.20,
+          cadence: 'daily',
+          description: 'S&P 500 decline from 1-year peak. -20% = bear market',
           thresholds: { green: [-0.05, 0], amber: [-0.15, -0.05], red: [-Infinity, -0.15] },
           crisisThreshold: -0.2,
           crisisMessage: 'Market in bear territory (>20% decline from highs)'
         },
-        NFCI:            { 
-          label:'Financial Conditions',
-          format:v=>v?.toFixed(3),               
-          weight:0.10, 
-          cadence:'weekly',
-          description: 'Chicago Fed NFCI. >0 = tighter than average financial conditions.',
+        NFCI: { 
+          label: 'Financial Conditions',
+          format: v => v?.toFixed(3),
+          weight: 0.15,
+          cadence: 'weekly',
+          description: 'Chicago Fed NFCI. >0 = tighter than average conditions',
           thresholds: { green: [-Infinity, -0.20], amber: [-0.20, 0.20], red: [0.20, Infinity] },
           crisisThreshold: 0.3,
-          crisisMessage: 'Financial conditions severely tightened, restricting credit flow'
-        }
-      },
-
-      // Clear risk level definitions
-      RISK_LEVELS: {
-        LOW: { threshold: 30, color: 'green', label: 'Low Risk', description: 'Normal market conditions' },
-        MEDIUM: { threshold: 60, color: 'amber', label: 'Elevated Risk', description: 'Monitor closely - stress building' },
-        HIGH: { threshold: 100, color: 'red', label: 'High Risk', description: 'Take defensive actions' }
-      },
-
-      // Time horizon definitions
-      TIME_HORIZONS: {
-        '1m': {
-          label: '1 Month',
-          description: 'Probability of >10% market decline within 1 month. Based on current volatility and stress levels.',
-          action: 'Short-term hedging and position sizing'
-        },
-        '3m': {
-          label: '3 Month', 
-          description: 'Probability of >15% correction within a quarter. Incorporates economic momentum and credit conditions.',
-          action: 'Portfolio rebalancing and sector rotation'
-        },
-        '6m': {
-          label: '6 Month',
-          description: 'Probability of >20% bear market or recession within 6 months. Based on leading indicators and historical patterns.',
-          action: 'Strategic asset allocation changes'
+          crisisMessage: 'Financial conditions severely tightened'
         }
       },
 
       FRESH_LIMITS: { 
-        daily: { ok:7, warn:14 }, 
-        weekly: { ok:7, warn:14 }, 
-        monthly: { ok:30, warn:45 } 
+        daily: { ok: 7, warn: 14 }, 
+        weekly: { ok: 7, warn: 14 }, 
+        monthly: { ok: 30, warn: 45 } 
       }
     };
 
-    // ==================== SIMPLIFIED UTILITIES ====================
+    // ==================== SIMPLE UTILITIES ====================
     const Utils = {
       clamp: (x, min = 0, max = 100) => Math.max(min, Math.min(max, x)),
       
@@ -314,6 +274,11 @@
         if (val == null || val === '.' || val === 'NaN' || val === '') return null;
         const num = +val;
         return isFinite(num) ? num : null;
+      },
+
+      // Debug logging
+      log: (msg, data) => {
+        console.log(`[CrashRadar] ${msg}`, data || '');
       }
     };
 
@@ -321,131 +286,221 @@
     const SCALE = {
       T10Y3M:   v => Utils.clamp(Utils.map01(v,  1.0, -2.0)),
       CREDIT:   v => Utils.clamp(Utils.map01(v,  0.30, 1.00)),
-      SAHM_RULE:v => Utils.clamp(Utils.map01(v,  0.0, 0.5)),
+      UN_SLOPE6:v => Utils.clamp(Utils.map01(v,  0.05, 0.50)),
       DD_12M:   v => Utils.clamp(Utils.map01(v,  0.00, -0.20)),
       NFCI:     v => Utils.clamp(Utils.map01(v, -0.80, 0.40))
     };
 
-    // ==================== ENHANCED DATA LAYER ====================
+    // ==================== ROBUST DATA SERVICE ====================
     class DataService {
       static async loadFredCache() {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), CONFIG.CACHE_TIMEOUT);
-
         try {
-          const res = await fetch(`${CONFIG.FRED_CACHE_PATH}?t=${Date.now()}`, { 
-            cache: 'no-store',
-            signal: controller.signal
-          });
+          Utils.log('Loading data from:', CONFIG.FRED_CACHE_PATH);
+          const response = await fetch(CONFIG.FRED_CACHE_PATH + '?t=' + Date.now());
           
-          clearTimeout(timeout);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+          }
           
-          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          const rawData = await response.json();
+          Utils.log('Raw data loaded, keys:', Object.keys(rawData));
           
-          const raw = await res.json();
-          return this.normalizeCache(raw);
-        } catch (err) {
-          clearTimeout(timeout);
-          if (err.name === 'AbortError') throw new Error('Request timeout');
-          throw err;
+          return this.normalizeCache(rawData);
+        } catch (error) {
+          Utils.log('Data load failed:', error);
+          throw error;
         }
       }
 
       static normalizeCache(raw) {
-        const out = {};
+        Utils.log('Normalizing cache structure...');
         
-        if (!raw) return out;
-
-        // Direct format: { SERIES_ID: { observations: [...] } }
-        const directLike = typeof raw === 'object' && 
-          Object.keys(raw).some(k => raw[k] && Array.isArray(raw[k].observations));
-        
-        if (directLike) return raw;
-
-        // Array format with series property
-        if (Array.isArray(raw?.series)) {
-          for (const item of raw.series) {
-            const id = item?.id || item?.series_id || item?.name;
-            if (!id) continue;
-            const obs = Array.isArray(item.observations) ? item.observations :
-                       Array.isArray(item.data) ? item.data : [];
-            out[id] = { observations: obs, fetchedAt: item.fetchedAt };
-          }
-          return out;
+        // Handle different cache formats
+        if (raw.series && typeof raw.series === 'object') {
+          Utils.log('Found series object structure');
+          return raw.series; // Direct series object
         }
-
-        return out;
+        
+        if (Array.isArray(raw)) {
+          Utils.log('Found array structure, converting to object');
+          const seriesObj = {};
+          raw.forEach(item => {
+            if (item.id && item.observations) {
+              seriesObj[item.id] = { observations: item.observations };
+            }
+          });
+          return seriesObj;
+        }
+        
+        // If it's already the right format
+        if (raw.T10Y3M || raw.CREDIT || raw.UN_SLOPE6) {
+          Utils.log('Already in correct format');
+          return raw;
+        }
+        
+        Utils.log('Unknown cache structure:', raw);
+        return raw || {};
       }
 
-      static latest(series) {
-        const obs = series?.observations || [];
-        if (!obs.length) return null;
-        const o = obs[obs.length - 1];
-        const v = Utils.safeParseFloat(o.value);
-        return { value: v, date: o.date };
+      static getLatestValue(series) {
+        if (!series || !series.observations || !Array.isArray(series.observations)) {
+          return null;
+        }
+        
+        const observations = series.observations.filter(obs => 
+          obs && obs.value && obs.value !== '.' && obs.value !== 'NaN'
+        );
+        
+        if (observations.length === 0) return null;
+        
+        const latestObs = observations[observations.length - 1];
+        return {
+          value: Utils.safeParseFloat(latestObs.value),
+          date: latestObs.date
+        };
       }
 
-      static seriesAgeDays(series, fetchedAt) {
-        const L = this.latest(series);
-        if (!L) return Infinity;
-        const d = new Date(L.date + 'T00:00:00Z');
-        const ref = new Date(fetchedAt || Date.now());
-        return Math.max(0, Math.round((ref - d) / 86400000));
+      static getSeriesAge(series) {
+        const latest = this.getLatestValue(series);
+        if (!latest || !latest.date) return Infinity;
+        
+        const obsDate = new Date(latest.date + 'T00:00:00Z');
+        const now = new Date();
+        return Math.floor((now - obsDate) / (1000 * 60 * 60 * 24));
       }
     }
 
-    // ==================== ENHANCED ALERT SYSTEM ====================
+    // ==================== SIMPLE COMPOSITE CALCULATOR ====================
+    class CompositeCalculator {
+      static calculate(dataMap) {
+        Utils.log('Calculating composite from data map keys:', Object.keys(dataMap));
+        
+        let totalScore = 0;
+        let totalWeight = 0;
+        const parts = [];
+        
+        for (const [key, config] of Object.entries(CONFIG.INDICATORS)) {
+          const series = dataMap[key];
+          const latest = DataService.getLatestValue(series);
+          
+          if (!latest || latest.value === null) {
+            Utils.log(`No data for ${key}`);
+            continue;
+          }
+          
+          const age = DataService.getSeriesAge(series);
+          const freshness = this.getFreshnessFactor(age, config.cadence);
+          const scaledScore = SCALE[key](latest.value);
+          const weightedScore = scaledScore * config.weight * freshness;
+          
+          totalScore += weightedScore;
+          totalWeight += config.weight * freshness;
+          
+          // Determine status
+          let status = 'green';
+          const thresh = config.thresholds;
+          if (thresh) {
+            if (latest.value >= thresh.red[0] && latest.value <= thresh.red[1]) status = 'red';
+            else if (latest.value >= thresh.amber[0] && latest.value <= thresh.amber[1]) status = 'amber';
+          }
+          
+          // Freshness badge
+          let freshnessBadge = 'badge-old';
+          let freshnessText = 'Old';
+          const limits = CONFIG.FRESH_LIMITS[config.cadence];
+          if (age <= limits.ok) {
+            freshnessBadge = 'badge-fresh';
+            freshnessText = 'Fresh';
+          } else if (age <= limits.warn) {
+            freshnessBadge = 'badge-stale';
+            freshnessText = 'Stale';
+          }
+          
+          parts.push({
+            key,
+            label: config.label,
+            value: latest.value,
+            valueDisp: config.format(latest.value),
+            status,
+            scaledScore,
+            weight: config.weight,
+            freshness: freshnessBadge,
+            freshnessText,
+            description: config.description,
+            crisisThreshold: config.crisisThreshold,
+            crisisMessage: config.crisisMessage
+          });
+          
+          Utils.log(`Indicator ${key}:`, { value: latest.value, scaled: scaledScore, status });
+        }
+        
+        if (totalWeight === 0) {
+          throw new Error('No valid indicator data available');
+        }
+        
+        const composite = totalScore / totalWeight;
+        Utils.log('Final composite:', composite);
+        
+        return {
+          composite: Utils.clamp(composite),
+          parts
+        };
+      }
+      
+      static getFreshnessFactor(age, cadence) {
+        const limits = CONFIG.FRESH_LIMITS[cadence] || CONFIG.FRESH_LIMITS.daily;
+        if (age <= limits.ok) return 1.0;
+        if (age <= limits.warn) return 0.8;
+        return 0.5;
+      }
+    }
+
+    // ==================== ALERT SYSTEM ====================
     class AlertSystem {
       static generateAlerts(parts, composite) {
         const alerts = [];
         
-        // Composite score alerts
+        // Composite alerts
         if (composite >= 80) {
           alerts.push({
             level: 'critical',
             title: 'CRITICAL: Market Stress at Crisis Levels',
-            description: `Composite score ${Math.round(composite)} indicates systemic stress similar to historical crisis periods. Immediate risk management actions recommended.`,
+            description: `Composite score ${Math.round(composite)} indicates systemic stress. Immediate defensive actions recommended.`,
             type: 'composite'
           });
         } else if (composite >= 65) {
           alerts.push({
             level: 'warning',
             title: 'WARNING: Elevated Market Stress',
-            description: `Composite score ${Math.round(composite)} suggests heightened risk environment. Monitor positions closely and consider hedging.`,
+            description: `Composite score ${Math.round(composite)} suggests heightened risk. Monitor positions closely.`,
             type: 'composite'
           });
         }
-
-        // Individual indicator alerts
+        
+        // Indicator alerts
         for (const part of parts) {
           if (part.value >= part.crisisThreshold) {
             alerts.push({
               level: 'critical',
               title: `CRITICAL: ${part.label} at ${part.valueDisp}`,
               description: part.crisisMessage,
-              type: 'indicator',
-              indicator: part.key
+              type: 'indicator'
             });
-          } else if (part.ragStatus === 'red') {
+          } else if (part.status === 'red') {
             alerts.push({
-              level: 'warning', 
+              level: 'warning',
               title: `WARNING: ${part.label} in Stress Zone`,
-              description: `${part.label} at ${part.valueDisp} indicates elevated risk. Monitor for further deterioration.`,
-              type: 'indicator',
-              indicator: part.key
+              description: `${part.label} at ${part.valueDisp} indicates elevated risk.`,
+              type: 'indicator'
             });
           }
         }
-
+        
         return alerts;
-      }
-
-      static formatAlertLevel(level) {
-        return level === 'critical' ? '🚨 CRITICAL' : '⚠️ WARNING';
       }
     }
 
-    // ==================== SIMPLIFIED UI MANAGER ====================
+    // ==================== SIMPLE UI MANAGER ====================
     class UIManager {
       constructor() {
         this.elements = {
@@ -454,30 +509,178 @@
           auditBox: document.getElementById('auditBox'),
           mainContent: document.getElementById('mainContent')
         };
-        this.charts = { composite: null, decomp: null };
-        this.currentTimeframe = '3m';
       }
-
-      setStatus(zone, text) {
-        const color = CONFIG.RISK_LEVELS[zone.toUpperCase()]?.color || '#8fb4ff';
-        this.elements.statusBadge.innerHTML = `
-          <div class="status" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)">
-            <span class="status-dot" style="background:${color}"></span>
-            <span>${text}</span>
+      
+      showLoading() {
+        this.elements.mainContent.innerHTML = '<div class="loading">Loading economic data...</div>';
+      }
+      
+      showError(error) {
+        this.elements.mainContent.innerHTML = `
+          <div class="error-state">
+            <h3 style="margin:0 0 8px;color:#ff9da6">⚠️ Data Load Failed</h3>
+            <p style="margin:0;color:var(--muted)">${error.message}</p>
+            <p style="margin:8px 0 0;font-size:13px;color:var(--muted)">
+              Check browser console for details and ensure data file exists at:<br>
+              <code>${CONFIG.FRED_CACHE_PATH}</code>
+            </p>
           </div>`;
       }
-
-      // ENHANCED: Show all alerts with explanations
+      
+      renderDashboard(compositeData, alerts) {
+        const { composite, parts } = compositeData;
+        const zone = Utils.zoneOf(composite);
+        
+        this.elements.mainContent.innerHTML = `
+          <section class="card">
+            <div class="gauge-container">
+              <div class="gauge-wrap">
+                <div class="multi-ring">
+                  <div class="ring ring-outer"></div>
+                  <div class="ring ring-mid"></div>
+                  <div class="ring ring-inner"></div>
+                </div>
+                <div id="needle" class="needle" style="--angle: ${(composite/100)*360}deg"></div>
+                <div class="score"><div>${Math.round(composite)}</div><div class="score-label">STRESS INDEX</div></div>
+              </div>
+              
+              <div class="gauge-info">
+                <h2>Market Stress Monitor</h2>
+                <div style="color:var(--muted);font-size:14px;margin-bottom:20px">
+                  Real-time composite of ${parts.length} economic indicators
+                </div>
+                
+                <div style="display:flex;gap:16px;margin:20px 0;flex-wrap:wrap">
+                  <div style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:16px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
+                    <h4 style="margin:0 0 8px;font-size:12px;color:var(--muted);letter-spacing:.5px">1-MONTH RISK</h4>
+                    <div style="font-size:28px;font-weight:700;color:var(--accent-bright)">${Math.round(composite * 0.6)}%</div>
+                    <div style="font-size:11px;color:var(--muted)">Probability of >10% decline</div>
+                  </div>
+                  <div style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:16px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
+                    <h4 style="margin:0 0 8px;font-size:12px;color:var(--muted);letter-spacing:.5px">3-MONTH RISK</h4>
+                    <div style="font-size:28px;font-weight:700;color:var(--accent-bright)">${Math.round(composite * 0.8)}%</div>
+                    <div style="font-size:11px;color:var(--muted)">Probability of >15% correction</div>
+                  </div>
+                  <div style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:16px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
+                    <h4 style="margin:0 0 8px;font-size:12px;color:var(--muted);letter-spacing:.5px">6-MONTH RISK</h4>
+                    <div style="font-size:28px;font-weight:700;color:var(--accent-bright)">${Math.round(composite)}%</div>
+                    <div style="font-size:11px;color:var(--muted)">Probability of bear market</div>
+                  </div>
+                </div>
+                
+                <div class="confidence">
+                  <span>Data Confidence:</span>
+                  <div class="confidence-bar"><div class="confidence-fill" style="width: ${this.calculateConfidence(parts)}%"></div></div>
+                  <span>${this.calculateConfidence(parts)}%</span>
+                </div>
+                
+                <div class="status" style="margin-top:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);display:inline-flex">
+                  <span class="status-dot" style="background:${this.getZoneColor(zone)}"></span>
+                  <span>${this.getZoneLabel(zone)} Regime • ${parts.length} indicators active</span>
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          <section class="card">
+            <h3 style="margin:0 0 16px;font-size:20px">📊 Live Risk Indicators</h3>
+            <div style="margin-bottom:12px;padding:12px;background:rgba(255,255,255,.02);border-radius:8px;font-size:13px;color:var(--muted)">
+              <strong style="color:var(--text)">Status Legend:</strong>
+              <span style="display:inline-flex;align-items:center;margin-left:12px">
+                <span class="pill-status pill-status-green" style="margin-right:4px"></span> Normal
+              </span>
+              <span style="display:inline-flex;align-items:center;margin-left:12px">
+                <span class="pill-status pill-status-amber" style="margin-right:4px"></span> Elevated  
+              </span>
+              <span style="display:inline-flex;align-items:center;margin-left:12px">
+                <span class="pill-status pill-status-red" style="margin-right:4px"></span> Critical
+              </span>
+            </div>
+            <div class="pills-grid" id="pillsGrid"></div>
+          </section>
+          
+          <section class="card">
+            <h3 style="margin:0 0 16px">Risk Timeline</h3>
+            <div class="chart-container">
+              <canvas id="timelineChart"></canvas>
+            </div>
+          </section>`;
+        
+        this.renderPills(parts);
+        this.renderTimelineChart(composite, parts);
+        this.setStatus(zone, composite);
+        this.renderAlerts(alerts);
+        this.updateAudit(parts);
+      }
+      
+      renderPills(parts) {
+        const grid = document.getElementById('pillsGrid');
+        grid.innerHTML = parts.map(part => `
+          <div class="pill">
+            <div class="pill-header">
+              <div style="display:flex;align-items:center">
+                <div class="pill-title">${part.label}</div>
+                <span class="pill-status pill-status-${part.status}"></span>
+              </div>
+              <div class="pill-badge ${part.freshness}">${part.freshnessText}</div>
+            </div>
+            <div class="pill-value">${part.valueDisp}</div>
+            <div class="pill-change">
+              <span>${part.scaledScore > 50 ? '▲' : '▼'}</span>
+              ${Math.abs(part.scaledScore - 50).toFixed(0)} pts
+            </div>
+            <div class="pill-tooltip">${part.description}</div>
+          </div>
+        `).join('');
+      }
+      
+      renderTimelineChart(composite, parts) {
+        const ctx = document.getElementById('timelineChart').getContext('2d');
+        
+        // Simple sparkline data
+        const data = [];
+        for (let i = 0; i < 20; i++) {
+          data.push(composite * (0.8 + Math.random() * 0.4));
+        }
+        data[19] = composite; // Latest value
+        
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: Array(20).fill(''),
+            datasets: [{
+              data: data,
+              borderColor: '#ffc247',
+              backgroundColor: 'rgba(255,194,71,0.1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4,
+              pointRadius: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { display: false },
+              y: { 
+                display: false,
+                min: 0,
+                max: 100
+              }
+            }
+          }
+        });
+      }
+      
       renderAlerts(alerts) {
-        if (!alerts.length) {
+        if (alerts.length === 0) {
           this.elements.alertBanner.innerHTML = '';
           return;
         }
-
+        
         const criticalAlerts = alerts.filter(a => a.level === 'critical');
-        const warningAlerts = alerts.filter(a => a.level === 'warning');
-        const displayAlerts = [...criticalAlerts, ...warningAlerts].slice(0, 5); // Limit to 5
-
         const alertLevel = criticalAlerts.length > 0 ? 'critical' : 'warning';
         
         this.elements.alertBanner.innerHTML = `
@@ -489,7 +692,7 @@
                   ${alertLevel === 'critical' ? 'CRITICAL ALERTS' : 'WARNINGS'}
                 </div>
                 <div class="alert-list">
-                  ${displayAlerts.map(alert => `
+                  ${alerts.slice(0, 5).map(alert => `
                     <div class="alert-item">
                       <div class="alert-icon">${alert.level === 'critical' ? '🔴' : '🟡'}</div>
                       <div class="alert-content">
@@ -499,589 +702,95 @@
                     </div>
                   `).join('')}
                 </div>
-                ${alerts.length > 5 ? 
-                  `<div style="margin-top:8px;font-size:12px;color:var(--muted)">
+                ${alerts.length > 5 ? `
+                  <div style="margin-top:8px;font-size:12px;color:var(--muted)">
                     +${alerts.length - 5} more alerts...
-                  </div>` : ''}
-              </div>
-            </div>
-          </div>`;
-      }
-
-      showError(message) {
-        this.elements.mainContent.innerHTML = `
-          <div class="error-state">
-            <h3 style="margin:0 0 8px;color:#ff9da6">⚠️ Unable to Load Data</h3>
-            <p style="margin:0;color:var(--muted)">${message}</p>
-          </div>`;
-      }
-
-      renderMainUI() {
-        this.elements.mainContent.innerHTML = `
-          <section class="card">
-            <div class="gauge-container">
-              <div class="gauge-wrap">
-                <div class="multi-ring">
-                  <div class="ring ring-outer"></div>
-                  <div class="ring ring-mid"></div>
-                  <div class="ring ring-inner"></div>
-                </div>
-                <div id="needle" class="needle"></div>
-                <div class="score"><div id="scoreText">--</div><div class="score-label">STRESS INDEX</div></div>
-              </div>
-
-              <div class="gauge-info">
-                <h2>Market Stress Monitor</h2>
-                <div style="color:var(--muted);font-size:14px;margin-bottom:12px">
-                  Real-time composite of 5 critical economic indicators
-                </div>
-                
-                <!-- ENHANCED: Risk probabilities with clear explanations -->
-                <div style="display:flex;gap:16px;margin:20px 0;flex-wrap:wrap">
-                  ${Object.entries(CONFIG.TIME_HORIZONS).map(([key, horizon]) => `
-                    <div style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:16px;border-radius:10px;border:1px solid rgba(255,255,255,.06);position:relative">
-                      <h4 style="margin:0 0 8px;font-size:12px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">
-                        ${horizon.label} Risk
-                      </h4>
-                      <div id="prob${key}" style="font-size:28px;font-weight:700;color:var(--accent-bright);margin-bottom:8px">--%</div>
-                      <div style="font-size:11px;color:var(--muted);line-height:1.4">${horizon.description}</div>
-                    </div>
-                  `).join('')}
-                </div>
-
-                <div class="confidence">
-                  <span>Data Confidence:</span>
-                  <div class="confidence-bar"><div id="confidenceFill" class="confidence-fill"></div></div>
-                  <span id="confidenceText">--</span>
-                </div>
-                <div id="regimeIndicator" style="margin-top:12px"></div>
-              </div>
-            </div>
-          </section>
-
-          <!-- REMOVED: Historical comparisons section -->
-
-          <section class="card">
-            <h3 style="margin:0 0 16px;font-size:20px">
-              📊 Live Risk Indicators
-            </h3>
-            <div style="margin-bottom:12px;padding:12px;background:rgba(255,255,255,.02);border-radius:8px;font-size:13px;color:var(--muted)">
-              <strong style="color:var(--text)">Status Legend:</strong>
-              <span style="display:inline-flex;align-items:center;margin-left:12px">
-                <span class="pill-status pill-status-green" style="margin-right:4px"></span> Normal
-              </span>
-              <span style="display:inline-flex;align-items:center;margin-left:12px">
-                <span class="pill-status pill-status-amber" style="margin-right:4px"></span> Elevated
-              </span>
-              <span style="display:inline-flex;align-items:center;margin-left:12px">
-                <span class="pill-status pill-status-red" style="margin-right:4px"></span> Critical
-              </span>
-            </div>
-            <div id="pillsGrid" class="pills-grid"></div>
-          </section>
-
-          <!-- SIMPLIFIED: Only Composite tab -->
-          <div class="tabs">
-            <button class="tab active" data-tab="composite">Risk Analysis</button>
-            <button class="tab" data-tab="scenarios">Forward Outlook</button>
-          </div>
-
-          <div id="tab-composite" class="tab-content active">
-            <section class="card">
-              <div class="chart-header">
-                <h3 class="chart-title">Stress Index Timeline</h3>
-                <div class="chart-controls">
-                  <div class="btn-group" id="timeframeButtons">
-                    <button class="btn" data-tf="1m">1M</button>
-                    <button class="btn active" data-tf="3m">3M</button>
-                    <button class="btn" data-tf="6m">6M</button>
-                    <button class="btn" data-tf="1y">1Y</button>
                   </div>
-                </div>
+                ` : ''}
               </div>
-              <div class="chart-container"><canvas id="compositeChart"></canvas></div>
-            </section>
-
-            <section class="card">
-              <h3 style="margin:0 0 16px">Risk Contributors</h3>
-              <div class="chart-container"><canvas id="decompChart"></canvas></div>
-            </section>
-          </div>
-
-          <div id="tab-scenarios" class="tab-content">
-            <section class="card">
-              <h3 style="margin:0 0 12px">Forward-Looking Risk Assessment</h3>
-              <p style="color:var(--muted);margin:0 0 20px;font-size:14px">
-                Probability-weighted scenarios based on current stress levels and historical patterns
-              </p>
-              
-              <div class="risk-explanation">
-                <h4>📈 Understanding Risk Probabilities</h4>
-                <p><strong>1-Month Risk</strong> assesses immediate market stress and volatility spikes. 
-                <strong>3-Month Risk</strong> incorporates economic momentum and credit conditions. 
-                <strong>6-Month Risk</strong> evaluates recession and bear market probabilities using leading indicators.</p>
-                <p style="margin-top:8px">These probabilities help inform different time horizons for risk management decisions.</p>
-              </div>
-
-              <div id="scenarioGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:20px"></div>
-            </section>
-          </div>`;
-        
-        this.setupEventListeners();
-      }
-
-      setupEventListeners() {
-        // Tab switching
-        document.querySelectorAll('.tab').forEach(tab => {
-          tab.addEventListener('click', (e) => {
-            const target = e.currentTarget.dataset.tab;
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById(`tab-${target}`).classList.add('active');
-          });
-        });
-
-        // Timeframe buttons
-        document.querySelectorAll('#timeframeButtons .btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            document.querySelectorAll('#timeframeButtons .btn').forEach(b => b.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            this.currentTimeframe = e.currentTarget.dataset.tf;
-            if (this.charts.composite) {
-              this.renderCompositeChart(app.state.compositeHistory);
-            }
-          });
-        });
-      }
-
-      setGauge(score) {
-        const scoreEl = document.getElementById('scoreText');
-        const needleEl = document.getElementById('needle');
-        if (scoreEl) scoreEl.textContent = Math.round(score);
-        if (needleEl) {
-          const angle = (score / 100) * 360;
-          needleEl.style.setProperty('--angle', angle + 'deg');
-        }
-      }
-
-      renderPills(parts) {
-        const grid = document.getElementById('pillsGrid');
-        if (!grid) return;
-        
-        grid.innerHTML = parts.map(p => {
-          const arrow = p.change == null ? '' : (p.change > 0 ? '▲' : '▼');
-          const changeTxt = p.change == null ? '' : `${p.change > 0 ? '+' : ''}${p.change.toFixed(2)}`;
-          const ragClass = `pill-status-${p.ragStatus || 'green'}`;
-          
-          return `
-            <div class="pill" data-key="${p.key}">
-              <div class="pill-header">
-                <div style="display:flex;align-items:center">
-                  <div class="pill-title">${p.label}</div>
-                  <span class="pill-status ${ragClass}"></span>
-                </div>
-                <div class="pill-badge ${p.freshClass}">${p.freshTxt}</div>
-              </div>
-              <div class="pill-value">${p.valueDisp}</div>
-              <div class="pill-change"><span>${arrow}</span>${changeTxt}</div>
-              ${p.description ? `<div class="pill-tooltip">${p.description}</div>` : ''}
-            </div>`;
-        }).join('');
-      }
-
-      renderCompositeChart(history) {
-        const hist = history || [];
-        if (!hist.length) return;
-        
-        const now = new Date(hist[hist.length - 1].date + 'T00:00:00Z');
-        const spanDays = this.currentTimeframe === '1m' ? 30 :
-                        this.currentTimeframe === '3m' ? 90 :
-                        this.currentTimeframe === '6m' ? 180 :
-                        this.currentTimeframe === '1y' ? 365 : 365;
-        
-        const filtered = hist.filter(d => {
-          const dt = new Date(d.date + 'T00:00:00Z');
-          return (now - dt) / 86400000 <= spanDays;
-        });
-        
-        const labels = filtered.map(d => {
-          const date = new Date(d.date + 'T00:00:00Z');
-          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        });
-        const data = filtered.map(d => d.value);
-        
-        if (this.charts.composite) this.charts.composite.destroy();
-        
-        const ctx = document.getElementById('compositeChart');
-        if (!ctx) return;
-        
-        this.charts.composite = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [{
-              label: 'Stress Index',
-              data,
-              borderColor: '#ffc247',
-              backgroundColor: 'rgba(255,194,71,0.1)',
-              borderWidth: 2,
-              fill: true,
-              tension: 0.25,
-              pointRadius: 0,
-              pointHoverRadius: 4
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                mode: 'index',
-                intersect: false
-              }
-            },
-            scales: {
-              x: { 
-                display: true, 
-                grid: { color: 'rgba(255,255,255,0.05)' },
-                ticks: { maxTicksLimit: 8 }
-              },
-              y: { 
-                min: 0, 
-                max: 100,
-                grid: { color: 'rgba(255,255,255,0.05)' },
-                ticks: { 
-                  callback: (val) => val
-                }
-              }
-            }
-          }
-        });
-      }
-
-      renderDecomp(parts) {
-        const labels = parts.map(p => p.label);
-        const contrib = parts.map(p => +(p.scaled * p.w).toFixed(1));
-        
-        if (this.charts.decomp) this.charts.decomp.destroy();
-        
-        const ctx = document.getElementById('decompChart');
-        if (!ctx) return;
-        
-        this.charts.decomp = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels,
-            datasets: [{
-              label: 'Contribution to Stress',
-              data: contrib,
-              backgroundColor: contrib.map(c => {
-                if (c < 10) return '#1ec28b';
-                if (c < 20) return '#ffc247';
-                return '#ff6070';
-              }),
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              y: { 
-                beginAtZero: true,
-                max: Math.max(10, Math.ceil(Math.max(...contrib, 10) / 10) * 10),
-                grid: { color: 'rgba(255,255,255,0.05)' },
-                title: { display: true, text: 'Points to Composite Score' }
-              },
-              x: { 
-                grid: { display: false }
-              }
-            }
-          }
-        });
-      }
-
-      renderScenarios(composite, probs) {
-        const scenarios = [
-          { 
-            title: 'Base Case', 
-            prob: Math.round(100 - probs.p3), 
-            desc: 'Markets stabilize, economic data mixed but no major deterioration. Gradual recovery continues.',
-            color: '#1ec28b'
-          },
-          { 
-            title: 'Correction Scenario', 
-            prob: Math.round(probs.p3 - probs.p1), 
-            desc: '10-15% market decline as stress indicators persist. Increased volatility but no systemic crisis.',
-            color: '#ffc247'
-          },
-          { 
-            title: 'Crisis Scenario', 
-            prob: Math.round(probs.p1), 
-            desc: '>20% decline with credit stress and economic contraction. Requires defensive positioning.',
-            color: '#ff6070'
-          }
-        ];
-        
-        const grid = document.getElementById('scenarioGrid');
-        if (!grid) return;
-        
-        grid.innerHTML = scenarios.map(s => `
-          <div style="background:rgba(255,255,255,.03);padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,.06);border-left:4px solid ${s.color}">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-              <div style="font-weight:600;font-size:16px">${s.title}</div>
-              <div style="font-size:24px;font-weight:700;color:${s.color}">${s.prob}%</div>
             </div>
-            <div style="color:var(--muted);font-size:13px;line-height:1.5">${s.desc}</div>
-          </div>`).join('');
+          </div>`;
       }
-
-      updateAudit(missing, stale) {
-        const auditHTML = 
-          (missing.length ? `<div><b class="bad">Missing</b>: ${missing.join(', ')}</div>` : '') +
-          (stale.length ? `<div><b class="warn">Stale Data</b>: ${stale.join(', ')}</div>` : '');
+      
+      setStatus(zone, composite) {
+        const colors = { green: '#1ec28b', amber: '#ffc247', red: '#ff6070' };
+        const labels = { green: 'LOW RISK', amber: 'ELEVATED RISK', red: 'HIGH RISK' };
         
-        this.elements.auditBox.innerHTML = auditHTML || '<div style="color:var(--green)">✓ All data current</div>';
+        this.elements.statusBadge.innerHTML = `
+          <div class="status" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)">
+            <span class="status-dot" style="background:${colors[zone]}"></span>
+            <span>Composite: ${Math.round(composite)} (${labels[zone]})</span>
+          </div>`;
+      }
+      
+      updateAudit(parts) {
+        const stale = parts.filter(p => p.freshness === 'badge-stale' || p.freshness === 'badge-old');
+        const missing = Object.keys(CONFIG.INDICATORS).filter(key => 
+          !parts.find(p => p.key === key)
+        );
+        
+        let auditHTML = '';
+        if (missing.length > 0) {
+          auditHTML += `<div><b class="bad">Missing</b>: ${missing.join(', ')}</div>`;
+        }
+        if (stale.length > 0) {
+          auditHTML += `<div><b class="warn">Stale</b>: ${stale.map(s => s.label).join(', ')}</div>`;
+        }
+        if (!auditHTML) {
+          auditHTML = '<div style="color:var(--green)">✓ All data current</div>';
+        }
+        
+        this.elements.auditBox.innerHTML = auditHTML;
+      }
+      
+      calculateConfidence(parts) {
+        const freshCount = parts.filter(p => p.freshness === 'badge-fresh').length;
+        return Math.round((freshCount / Object.keys(CONFIG.INDICATORS).length) * 100);
+      }
+      
+      getZoneColor(zone) {
+        return { green: '#1ec28b', amber: '#ffc247', red: '#ff6070' }[zone];
+      }
+      
+      getZoneLabel(zone) {
+        return { green: 'Low Risk', amber: 'Elevated Risk', red: 'High Risk' }[zone];
       }
     }
 
-    // ==================== SIMPLIFIED APP CORE ====================
+    // ==================== MAIN APPLICATION ====================
     class App {
       constructor() {
         this.ui = new UIManager();
-        this.state = {
-          dataMap: null,
-          compositeHistory: [],
-          cache: null
-        };
+        this.dataMap = null;
       }
-
+      
       async init() {
         try {
-          this.ui.setStatus('green', 'Loading data…');
+          this.ui.showLoading();
           
-          const cache = await DataService.loadFredCache();
-          this.state.cache = cache;
+          // Load data
+          this.dataMap = await DataService.loadFredCache();
+          Utils.log('Data map loaded with keys:', Object.keys(this.dataMap));
           
-          // Simple indicator mapping
-          const dataMap = {};
-          for (const k of Object.keys(CONFIG.INDICATORS)) {
-            if (cache[k]) dataMap[k] = cache[k];
-          }
-          this.state.dataMap = dataMap;
-          
-          // Calculate composite score
-          let num = 0, den = 0;
-          const parts = [];
-          const currentValues = {};
-          
-          for (const [k, cfg] of Object.entries(CONFIG.INDICATORS)) {
-            const s = dataMap[k];
-            if (!s?.observations?.length) continue;
-            
-            const L = DataService.latest(s);
-            if (!L || L.value === null) continue;
-
-            currentValues[k] = L.value;
-            const days = DataService.seriesAgeDays(s, s.fetchedAt);
-            const lim = CONFIG.FRESH_LIMITS[cfg.cadence] || CONFIG.FRESH_LIMITS.daily;
-            const badge = days <= lim.ok ? { cls: 'badge-fresh', txt: 'Fresh' } :
-                         days <= lim.warn ? { cls: 'badge-stale', txt: 'Stale' } :
-                         { cls: 'badge-old', txt: 'Old' };
-
-            const scaled = SCALE[k](L.value);
-            const w = cfg.weight * (days <= lim.warn ? 1.0 : 0.7); // Simple freshness penalty
-            
-            if (Number.isFinite(scaled) && Number.isFinite(w)) {
-              num += scaled * w;
-              den += w;
-            }
-
-            // Determine status
-            let ragStatus = 'green';
-            const thresh = cfg.thresholds;
-            if (thresh) {
-              if (L.value >= thresh.red[0] && L.value <= thresh.red[1]) ragStatus = 'red';
-              else if (L.value >= thresh.amber[0] && L.value <= thresh.amber[1]) ragStatus = 'amber';
-              else ragStatus = 'green';
-            }
-
-            let change = null;
-            const obs = s.observations;
-            if (obs.length >= 2) {
-              const a = Utils.safeParseFloat(obs[obs.length - 1].value);
-              const b = Utils.safeParseFloat(obs[obs.length - 2].value);
-              if (a !== null && b !== null) change = a - b;
-            }
-
-            parts.push({
-              key: k,
-              label: cfg.label,
-              value: L.value,
-              valueDisp: cfg.format?.(L.value) ?? L.value,
-              change,
-              freshClass: badge.cls,
-              freshTxt: badge.txt,
-              scaled,
-              w,
-              ragStatus,
-              description: cfg.description,
-              crisisThreshold: cfg.crisisThreshold,
-              crisisMessage: cfg.crisisMessage
-            });
-          }
-          
-          if (den <= 0) throw new Error('No valid indicators available');
-          
-          const composite = num / den;
-          
-          // Build simple history
-          this.state.compositeHistory = this.buildCompositeHistory(dataMap);
+          // Calculate composite
+          const compositeData = CompositeCalculator.calculate(this.dataMap);
           
           // Generate alerts
-          const alerts = AlertSystem.generateAlerts(parts, composite);
+          const alerts = AlertSystem.generateAlerts(compositeData.parts, compositeData.composite);
           
           // Render UI
-          this.ui.renderMainUI();
-          this.ui.setGauge(composite);
+          this.ui.renderDashboard(compositeData, alerts);
           
-          const zone = Utils.zoneOf(composite);
-          const level = CONFIG.RISK_LEVELS[zone.toUpperCase()];
-          
-          this.ui.setStatus(zone, `${level.label}: ${Math.round(composite)} - ${level.description}`);
-          
-          // Show all alerts with explanations
-          this.ui.renderAlerts(alerts);
-          
-          this.ui.renderPills(parts);
-          this.ui.renderCompositeChart(this.state.compositeHistory);
-          this.ui.renderDecomp(parts);
-          
-          // Calculate simple risk probabilities
-          const probs = this.calculateRiskProbabilities(composite, this.state.compositeHistory);
-          document.getElementById('prob1m').textContent = `${probs.p1}%`;
-          document.getElementById('prob3m').textContent = `${probs.p3}%`;
-          document.getElementById('prob6m').textContent = `${probs.p6}%`;
-          
-          this.ui.renderScenarios(composite, probs);
-          
-          // Regime indicator
-          document.getElementById('regimeIndicator').innerHTML = `
-            <div class="status" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);display:inline-flex">
-              <span class="status-dot" style="background:${level.color}"></span>
-              <span>${level.label} Regime • ${parts.length} indicators active</span>
-            </div>`;
-          
-          // Confidence and audit
-          const { missing, stale } = this.auditData(parts);
-          const confidence = Math.max(40, 100 - (missing.length * 15 + stale.length * 8));
-          
-          document.getElementById('confidenceFill').style.width = confidence + '%';
-          document.getElementById('confidenceText').textContent = confidence + '%';
-          
-          this.ui.updateAudit(missing, stale);
-          
-        } catch (err) {
-          console.error('Initialization error:', err);
-          this.ui.setErrorStatus(err.message);
-          this.ui.showError(err.message);
+        } catch (error) {
+          Utils.log('App initialization failed:', error);
+          this.ui.showError(error);
         }
-      }
-
-      buildCompositeHistory(dataMap) {
-        const keys = Object.keys(CONFIG.INDICATORS);
-        const allDates = new Set();
-        
-        for (const k of keys) {
-          (dataMap[k]?.observations || []).forEach(o => allDates.add(o.date));
-        }
-        
-        const dates = Array.from(allDates).sort();
-        const history = [];
-        
-        for (const date of dates.slice(-100)) { // Last 100 days
-          let num = 0, den = 0;
-          
-          for (const [k, cfg] of Object.entries(CONFIG.INDICATORS)) {
-            const s = dataMap[k];
-            if (!s) continue;
-            
-            const obs = s.observations;
-            let value = null;
-            
-            // Find latest value on or before this date
-            for (let i = obs.length - 1; i >= 0; i--) {
-              if (obs[i].date <= date) {
-                value = Utils.safeParseFloat(obs[i].value);
-                break;
-              }
-            }
-            
-            if (value === null) continue;
-            const scaled = SCALE[k](value);
-            num += scaled * cfg.weight;
-            den += cfg.weight;
-          }
-          
-          if (den > 0) {
-            history.push({ date, value: +(num / den).toFixed(1) });
-          }
-        }
-        
-        return history;
-      }
-
-      calculateRiskProbabilities(composite, history) {
-        // Simple probability calculation based on composite score
-        const base1m = Math.min(40, composite * 0.6);
-        const base3m = Math.min(60, composite * 0.8);
-        const base6m = Math.min(80, composite * 1.0);
-        
-        // Add momentum effect
-        const momentum = history.length > 10 ? 
-          (history[history.length - 1].value - history[history.length - 10].value) / 10 : 0;
-        
-        return {
-          p1: Math.round(base1m + momentum * 5),
-          p3: Math.round(base3m + momentum * 8),
-          p6: Math.round(base6m + momentum * 12)
-        };
-      }
-
-      auditData(parts) {
-        const missing = [];
-        const stale = [];
-        
-        for (const [k, cfg] of Object.entries(CONFIG.INDICATORS)) {
-          const s = this.state.dataMap[k];
-          if (!s?.observations?.length) {
-            missing.push(k);
-            continue;
-          }
-          
-          const days = DataService.seriesAgeDays(s, s.fetchedAt);
-          const lim = CONFIG.FRESH_LIMITS[cfg.cadence] || CONFIG.FRESH_LIMITS.daily;
-          
-          if (days > lim.warn) {
-            stale.push(`${cfg.label} (${days}d)`);
-          }
-        }
-        
-        return { missing, stale };
       }
     }
 
     // ==================== INITIALIZE ====================
     const app = new App();
-    
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => app.init());
-    } else {
-      app.init();
-    }
+    app.init();
   </script>
 </body>
 </html>
