@@ -284,16 +284,24 @@
     /* ===================== CONFIG ===================== */
     const FRED_CACHE_PATH = 'data/fred_cache.json';
 
-    const INDICATORS = {
-      T10Y3M:          { label:'Yield Curve',         format:v=>v?.toFixed(2),               weight:0.18, cadence:'daily',   tip:'10y–3m Treasury spread. Inversions (≤0) often precede recessions.' },
-      CREDIT:          { label:'Credit Spread',       format:v=>v?.toFixed(2),               weight:0.14, cadence:'daily',   tip:'Corporate vs Treasury yields. Wider = tighter financing conditions.' },
-      UN_SLOPE6:       { label:'Unemployment Δ',      format:v=>v?.toFixed(2),               weight:0.12, cadence:'monthly', tip:'Six-month change in unemployment. Rising = labour softening.' },
-      DD_12M:          { label:'Market Drawdown',     format:v=>((v??0)*100).toFixed(1)+'%', weight:0.20, cadence:'daily',   tip:'S&P vs its 12-month peak. Negative means below the recent high.' },
-      NFCI:            { label:'Financial Conditions',format:v=>v?.toFixed(3),               weight:0.12, cadence:'weekly',  tip:'NFCI combines rates, credit, and liquidity tightness.' },
-      VIX_PROXY:       { label:'Volatility Index',    format:v=>v?.toFixed(1),               weight:0.10, cadence:'daily',   tip:'Implied S&P 500 volatility (VIX). Higher = more stress.' },
-      RETAIL_MOMENTUM: { label:'Retail Sales Δ',      format:v=>(v*100)?.toFixed(2)+'%',     weight:0.08, cadence:'monthly', tip:'Latest month-over-month change in retail sales.' },
-      SENTIMENT:       { label:'Consumer Confidence', format:v=>v?.toFixed(1),               weight:0.06, cadence:'monthly', tip:'Survey-based household confidence; higher = more optimistic.' }
-    };
+    /* ===================== CONFIG (revised) ===================== */
+const INDICATORS = {
+  T10Y3M:          { label:'Yield Curve',         format:v=>v?.toFixed(2),               weight:0.16, cadence:'daily',   tip:'10y–3m Treasury spread. Inversion (<0) precedes recessions.' },
+  CREDIT:          { label:'Credit Spread',       format:v=>v?.toFixed(2),               weight:0.16, cadence:'daily',   tip:'Spreads vs Treasuries. Wider = tighter credit; IG and HY scaled correctly.' },
+  UN_SLOPE6:       { label:'Unemployment Δ',      format:v=>v?.toFixed(2),               weight:0.12, cadence:'monthly', tip:'Six-month change in unemployment. Rising = labour softening.' },
+  DD_12M:          { label:'Market Drawdown',     format:v=>((v??0)*100).toFixed(1)+'%', weight:0.20, cadence:'daily',   tip:'S&P vs its 12-month peak. Negative = below recent high.' },
+  NFCI:            { label:'Financial Conditions',format:v=>v?.toFixed(3),               weight:0.12, cadence:'weekly',  tip:'Chicago Fed NFCI (lower=looser). Amber/red as it rises.' },
+  VIX_PROXY:       { label:'Volatility Index',    format:v=>v?.toFixed(1),               weight:0.10, cadence:'daily',   tip:'Implied equity vol. Higher = more stress.' },
+  RETAIL_MOMENTUM: { label:'Retail Sales Δ',      format:v=>(v*100)?.toFixed(2)+'%',     weight:0.08, cadence:'monthly', tip:'Latest MoM retail sales (control-group proxy).' },
+  SENTIMENT:       { label:'Consumer Confidence', format:v=>v?.toFixed(1),               weight:0.06, cadence:'monthly', tip:'UMich sentiment (modern scale). Lower = worse.' }
+};
+
+/* Detect which credit series we actually have so scaling matches units */
+function mapIndicatorsFromCache(cache){
+  const out = {};
+  for(const k of Object.keys(INDICATORS)){ if(cache[k]) out[k]=cache[k]; }
+
+  // CREDIT precedence: HY OAS -> IG OAS -> BAA-10y yield gap ->
 
     const clamp = x => Math.max(0, Math.min(100, x));
     const map01 = (val, good, bad) => {
