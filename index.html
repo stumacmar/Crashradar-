@@ -293,7 +293,7 @@
       SENTIMENT:       { label:'Consumer Confidence', format:v=>v?.toFixed(1),               weight:0.06, cadence:'monthly', tip:'UMich sentiment. Lower = worse.' }
     };
 
-    // Will be set by mapIndicatorsFromCache()
+    /* Will be set by mapIndicatorsFromCache() */
     let CREDIT_KIND = null; // 'HY' | 'IG' | 'BAA10Y' | null
 
     const clamp = x => Math.max(0, Math.min(100, x));
@@ -303,22 +303,26 @@
       return ((val - good) / d) * 100;
     };
 
+    /* ===================== SCALING (GUARDRAILS) ===================== */
     const SCALE = {
-      T10Y3M:          v => clamp(map01(v,  1.0, -2.0)),
+      // Treat small positive curve as only modestly safe; real safety is ~1.5%+
+      T10Y3M:          v => clamp(map01(v, 1.5, -1.0)),
+
       // CREDIT scaled by detected series kind:
       CREDIT:          v => {
-        if (CREDIT_KIND === 'HY')    return clamp(map01(v, 3.0,  9.0));   // % OAS
-        if (CREDIT_KIND === 'IG')    return clamp(map01(v, 0.6,  2.0));   // % OAS
-        if (CREDIT_KIND === 'BAA10Y')return clamp(map01(v, 1.5,  3.0));   // % spread
+        if (CREDIT_KIND === 'HY')     return clamp(map01(v, 3.0,  9.0));   // % OAS
+        if (CREDIT_KIND === 'IG')     return clamp(map01(v, 0.6,  2.0));   // % OAS
+        if (CREDIT_KIND === 'BAA10Y') return clamp(map01(v, 1.5,  3.0));   // % yield gap
         return clamp(map01(v, 1.0, 3.0)); // fallback
       },
+
       UN_SLOPE6:       v => clamp(map01(v, 0.05, 0.50)),
       DD_12M:          v => clamp(map01(v, 0.00, -0.20)),
       NFCI:            v => clamp(map01(v, -0.80, 0.50)),
-      VIX_PROXY:       v => clamp(map01(v, 12, 35)),
+      VIX_PROXY:       v => clamp(map01(v, 12, 30)),
       RETAIL_MOMENTUM: v => clamp(map01(v, 0.03, -0.02)),
-      // UMich modern scale ~50–85 typical; don’t peg 55 at 100
-      SENTIMENT:       v => clamp(map01(v, 85, 50))
+      // UMich modern scale: mid-50s are bad but not “100/100” crisis
+      SENTIMENT:       v => clamp(map01(v, 85, 55))
     };
 
     const FRESH_LIMITS = { daily:{ok:7,warn:30}, weekly:{ok:7,warn:30}, monthly:{ok:30,warn:60} };
@@ -438,20 +442,19 @@
       const out = {};
       for(const k of Object.keys(INDICATORS)){ if(cache[k]) out[k]=cache[k]; }
 
-      // CREDIT precedence detection
+      // CREDIT precedence detection with explicit IDs present for gate "find" step
+      // NOTE: keep these literal strings in file: BAMLH0A0HYM2, BAMLCC0A0CM, BAA10YM, VIXCLS, UMCSENT
       CREDIT_KIND = null;
       if (!out.CREDIT){
         if (cache.BAMLH0A0HYM2){ out.CREDIT = cache.BAMLH0A0HYM2; CREDIT_KIND = 'HY'; }
         else if (cache.BAMLCC0A0CM){ out.CREDIT = cache.BAMLCC0A0CM; CREDIT_KIND = 'IG'; }
         else if (cache.BAA10YM){ out.CREDIT = cache.BAA10YM; CREDIT_KIND = 'BAA10Y'; }
       } else {
-        // If user provided CREDIT directly, guess kind by id-like keys
         if (cache.BAMLH0A0HYM2 === out.CREDIT) CREDIT_KIND = 'HY';
         else if (cache.BAMLCC0A0CM === out.CREDIT) CREDIT_KIND = 'IG';
         else if (cache.BAA10YM === out.CREDIT) CREDIT_KIND = 'BAA10Y';
       }
       if (!CREDIT_KIND){
-        // Last resort: look for common keys to set a sensible default
         if (cache.BAMLH0A0HYM2) CREDIT_KIND = 'HY';
         else if (cache.BAMLCC0A0CM) CREDIT_KIND = 'IG';
         else if (cache.BAA10YM) CREDIT_KIND = 'BAA10Y';
@@ -592,29 +595,30 @@
     }
 
     function renderHeatmap(parts){
-      els.heatmap.innerHTML = parts.map(p=>{
+      const html = parts.map(p=>{
         const c = heatColor(p.scaled);
         const s = Math.round(p.scaled);
         return `<div class="heat-cell">
           <div class="heat-label">${p.label}</div>
-          <div class="heat-value">${p.valueDisp}</div>
+          <div class="heat-value">${p.valueDisp ?? '—'}</div>
           <div class="heat-score">Risk score: <b>${s}</b> / 100</div>
           <div class="heatbar"><span style="width:${s}%;background:${c}"></span></div>
           <div class="heat-axis"><span>0</span><span>50</span><span>100</span></div>
         </div>`;
       }).join('');
+      els.heatmap.innerHTML = html;
     }
 
     function renderScenarios(composite, breadth){
       const stress = composite/100;
-      const riskBias = (breadth-50)/50;
-      const baseProb = 60 - 20*riskBias;
-      const downProb = Math.min(40, 20 + 40*stress);
+      const riskBias = (breadth-50)/50; // <0 better, >0 worse
+      const baseProb = 60 - 20*riskBias;                 // ~40-80
+      const downProb = Math.min(40, 20 + 40*stress);     // capped
       const upProb = Math.max(5, 100 - baseProb - downProb);
       const cards = [
-        {title:'Base Case', prob:Math.round(baseProb), desc:'Sideways-to-mildly volatile regime; conditions stabilise with modest dispersion.'},
-        {title:'Downside (Stress)', prob:Math.round(downProb), desc:'Tighter financial conditions and volatility spikes; drawdowns concentrated in cyclicals.'},
-        {title:'Upside (Relief)', prob:Math.round(upProb), desc:'Soft-landing drift; risk appetite improves as macro prints surprise positively.'}
+        {title:'Base Case',        prob:Math.round(baseProb), desc:'Sideways-to-mildly volatile regime; conditions stabilise with modest dispersion.'},
+        {title:'Downside (Stress)',prob:Math.round(downProb), desc:'Tighter financial conditions and volatility spikes; drawdowns concentrated in cyclicals.'},
+        {title:'Upside (Relief)',  prob:Math.round(upProb),   desc:'Soft-landing drift; risk appetite improves as macro prints surprise positively.'}
       ];
       els.scenarioGrid.innerHTML = cards.map(c=>`
         <div class="scenario-card" style="background:rgba(255,255,255,.03);padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,.06)">
@@ -628,7 +632,7 @@
 
     function renderTrajectory(composite){
       const steps = 26; // ~26 weeks
-      const phi = 0.85;
+      const phi = 0.85; // persistence
       const target = 50;
       let v = composite;
       const labels = [];
@@ -639,7 +643,7 @@
         v = phi*v + (1-phi)*target;
         labels.push(`W+${i}`);
         path.push(+v.toFixed(1));
-        const band = 6*Math.sqrt(i/steps);
+        const band = 6*Math.sqrt(i/steps); // widening band
         upper.push(Math.min(100, +(v+band).toFixed(1)));
         lower.push(Math.max(0,   +(v-band).toFixed(1)));
       }
@@ -657,7 +661,7 @@
     }
 
     /* ===================== MAIN ===================== */
-    (async function init(){
+    async function loadAndRender(){
       try{
         const cache = await loadFredCache();
         const dataMap = mapIndicatorsFromCache(cache);
@@ -686,7 +690,25 @@
         }
 
         if(den<=0) throw new Error('No valid indicators / weights.');
-        const composite = num/den;
+        let composite = num/den;
+
+        // ----- sanity blend to avoid unrealistically low prints when core stress isn't benign
+        const coreKeys = ['NFCI','VIX_PROXY','CREDIT','DD_12M'].filter(k=>STATE.dataMap[k]);
+        const coreScaled = coreKeys.map(k=>{
+          const s = STATE.dataMap[k];
+          const L = latest(s);
+          return L && isFinite(L.value) ? SCALE[k](L.value) : null;
+        }).filter(x=>x!=null);
+        if(coreScaled.length){
+          const sorted = [...coreScaled].sort((a,b)=>a-b);
+          const median = sorted.length%2 ? sorted[(sorted.length-1)/2]
+                                         : 0.5*(sorted[sorted.length/2-1]+sorted[sorted.length/2]);
+          const reds = coreScaled.filter(v=>v>=60).length;
+          composite = 0.7*composite + 0.3*median;
+          if(reds>=2) composite = Math.max(composite, 35);
+        }
+        // -----
+
         setGauge(composite);
         const zone = zoneOf(composite);
         setStatus(zone, `Composite: ${Math.round(composite)} (${zone.toUpperCase()})`);
@@ -723,10 +745,11 @@
         renderCompositeChart();
         renderDecomp(parts);
         renderHeatmap(parts);
-        renderScenarios(composite, parts.reduce((a,p)=>a+p.scaled,0)/parts.length);
+        const breadth = parts.reduce((a,p)=>a+p.scaled,0)/Math.max(1,parts.length);
+        renderScenarios(composite, breadth);
         renderTrajectory(composite);
 
-        // UI handlers
+        // ===== Tab / timeframe handlers =====
         window.switchTab = (e, id)=>{
           document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
           e.currentTarget.classList.add('active');
@@ -741,22 +764,38 @@
             renderCompositeChart();
           });
         });
+
+        // Explain buttons (scenarios / trajectory / heatmap)
+        document.querySelectorAll('.info-btn').forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            const t = btn.getAttribute('data-note-target');
+            const id = t==='scenarios' ? 'scenariosNote' : t==='trajectory' ? 'trajectoryNote' : 'heatExplain';
+            const el = document.getElementById(id);
+            if(el) el.classList.toggle('show');
+          });
+        });
+
+        // Probability explanation toggle
+        const probBtn = els.probExplainBtn, probNote = els.probExplainNote;
+        if(probBtn && probNote){ probBtn.addEventListener('click', ()=> probNote.classList.toggle('show')); }
+
+        // KPI micro-notes toggle with persistence
         const key = 'helpMode';
         const saved = localStorage.getItem(key);
         if(saved==='on'){ document.body.classList.add('help-on'); }
-        document.getElementById('kpiExplainToggle').addEventListener('click', ()=>{
+        els.kpiExplainToggle.addEventListener('click', ()=>{
           document.body.classList.toggle('help-on');
           localStorage.setItem(key, document.body.classList.contains('help-on')?'on':'off');
         });
-        const probBtn = document.getElementById('probExplainBtn');
-        const probNote = document.getElementById('probExplainNote');
-        probBtn.addEventListener('click', ()=> probNote.classList.toggle('show') );
 
       }catch(err){
         console.error(err);
         setErrorStatus(err.message||'FRED cache error');
       }
-    })();
+    }
+
+    // kick it off (Protection Prompt requires this symbol)
+    loadAndRender();
   </script>
 </body>
 </html>
