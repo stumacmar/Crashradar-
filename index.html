@@ -440,7 +440,7 @@
           peak.push(p);
         }
         const dd=dates.map((d,i)=>({ date:d, value: (vals[i]!=null && peak[i]!==-Infinity) ? String(vals[i]/peak[i]-1) : '.' }));
-        return { observations:dd, fetchedAt:SPP500?.fetchedAt ?? SP500.fetchedAt };
+        return { observations: dd, fetchedAt: (SP500 && SP500.fetchedAt) ? SP500.fetchedAt : undefined };
       }
     }
 
