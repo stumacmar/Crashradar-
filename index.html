@@ -54,16 +54,31 @@
     .confidence-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
 
     .pills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
-    .pill{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);padding:14px 16px;border-radius:12px;transition:all .2s;cursor:pointer}
+    .pill{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);padding:14px 16px;border-radius:12px;transition:all .2s;cursor:pointer;position:relative}
     .pill:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);transform:translateY(-2px)}
+    .pill:hover .pill-tooltip{opacity:1;visibility:visible;transform:translateY(0)}
     .pill-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
     .pill-title{font-weight:600;font-size:13px}
     .pill-badge{font-size:11px;padding:3px 8px;border-radius:6px;font-weight:600}
     .pill-value{font-size:20px;font-weight:700;margin:4px 0}
     .pill-change{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
+    .pill-status{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:8px}
+    .pill-status-green{background:var(--green)}
+    .pill-status-amber{background:var(--amber)}
+    .pill-status-red{background:var(--red)}
+    .pill-tooltip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-4px);
+      background:var(--panel-hover);border:1px solid rgba(255,255,255,.12);padding:12px;border-radius:8px;
+      font-size:12px;line-height:1.5;color:var(--text);width:280px;z-index:100;
+      box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;visibility:hidden;transition:all .2s;pointer-events:none}
+    .pill-tooltip::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);
+      border:6px solid transparent;border-top-color:var(--panel-hover)}
     .badge-fresh{background:rgba(30,194,139,.15);color:var(--green)}
     .badge-stale{background:rgba(255,194,71,.15);color:var(--amber)}
     .badge-old{background:rgba(255,96,112,.15);color:var(--red)}
+    .info-tooltip{display:inline-block;width:16px;height:16px;line-height:16px;text-align:center;
+      background:rgba(255,255,255,.1);border-radius:50%;font-size:11px;font-weight:700;
+      cursor:help;margin-left:6px;color:var(--accent-bright)}
+    .info-tooltip:hover{background:rgba(255,255,255,.2)}
 
     .chart-container{position:relative;height:320px;margin:16px 0}
     .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:12px}
@@ -139,14 +154,70 @@
       CACHE_TIMEOUT: 10000,
       
       INDICATORS: {
-        T10Y3M:          { label:'Yield Curve',         format:v=>v?.toFixed(2),               weight:0.18, cadence:'daily'   },
-        CREDIT:          { label:'Credit Spread',       format:v=>v?.toFixed(2),               weight:0.14, cadence:'daily'   },
-        UN_SLOPE6:       { label:'Unemployment Δ',      format:v=>v?.toFixed(2),               weight:0.12, cadence:'monthly' },
-        DD_12M:          { label:'Market Drawdown',     format:v=>((v??0)*100).toFixed(1)+'%', weight:0.20, cadence:'daily'   },
-        NFCI:            { label:'Financial Conditions',format:v=>v?.toFixed(3),               weight:0.12, cadence:'weekly'  },
-        VIX_PROXY:       { label:'Volatility Index',    format:v=>v?.toFixed(1),               weight:0.10, cadence:'daily'   },
-        RETAIL_MOMENTUM: { label:'Retail Sales Δ',      format:v=>(v*100)?.toFixed(2)+'%',     weight:0.08, cadence:'monthly' },
-        SENTIMENT:       { label:'Consumer Confidence', format:v=>v?.toFixed(1),               weight:0.06, cadence:'monthly' }
+        T10Y3M:          { 
+          label:'Yield Curve',         
+          format:v=>v?.toFixed(2),               
+          weight:0.18, 
+          cadence:'daily',
+          description: 'Difference between 10-year and 3-month Treasury yields. Negative values (inverted curve) historically precede recessions by 6-18 months.',
+          thresholds: { green: [0.5, Infinity], amber: [-0.5, 0.5], red: [-Infinity, -0.5] }
+        },
+        CREDIT:          { 
+          label:'Credit Spread',       
+          format:v=>v?.toFixed(2),               
+          weight:0.14, 
+          cadence:'daily',
+          description: 'High-yield bond spread over Treasuries. Widening spreads indicate investors demanding more compensation for risk and potential credit stress.',
+          thresholds: { green: [-Infinity, 0.40], amber: [0.40, 0.70], red: [0.70, Infinity] }
+        },
+        UN_SLOPE6:       { 
+          label:'Unemployment Δ',      
+          format:v=>v?.toFixed(2),               
+          weight:0.12, 
+          cadence:'monthly',
+          description: '6-month change in unemployment rate. Rising unemployment signals economic weakness. Sahm Rule: 0.5+ increase from 12-month low indicates recession.',
+          thresholds: { green: [-Infinity, 0.15], amber: [0.15, 0.35], red: [0.35, Infinity] }
+        },
+        DD_12M:          { 
+          label:'Market Drawdown',     
+          format:v=>((v??0)*100).toFixed(1)+'%', 
+          weight:0.20, 
+          cadence:'daily',
+          description: 'S&P 500 decline from 12-month peak. Deep drawdowns often coincide with economic stress. -20% defines bear market territory.',
+          thresholds: { green: [-0.05, 0], amber: [-0.15, -0.05], red: [-Infinity, -0.15] }
+        },
+        NFCI:            { 
+          label:'Financial Conditions',
+          format:v=>v?.toFixed(3),               
+          weight:0.12, 
+          cadence:'weekly',
+          description: 'Chicago Fed National Financial Conditions Index. Above zero = tighter conditions. Sharp increases precede downturns.',
+          thresholds: { green: [-Infinity, -0.20], amber: [-0.20, 0.20], red: [0.20, Infinity] }
+        },
+        VIX_PROXY:       { 
+          label:'Volatility Index',    
+          format:v=>v?.toFixed(1),               
+          weight:0.10, 
+          cadence:'daily',
+          description: 'CBOE Volatility Index (VIX) - "fear gauge". <15 = calm, 15-25 = elevated, >30 = stressed. Sustained low VIX can signal complacency.',
+          thresholds: { green: [-Infinity, 18], amber: [18, 28], red: [28, Infinity] }
+        },
+        RETAIL_MOMENTUM: { 
+          label:'Retail Sales Δ',      
+          format:v=>(v*100)?.toFixed(2)+'%',     
+          weight:0.08, 
+          cadence:'monthly',
+          description: 'Month-over-month retail sales growth. Consumer spending is 70% of GDP. Negative growth indicates weakening demand.',
+          thresholds: { green: [0.01, Infinity], amber: [-0.01, 0.01], red: [-Infinity, -0.01] }
+        },
+        SENTIMENT:       { 
+          label:'Consumer Confidence', 
+          format:v=>v?.toFixed(1),               
+          weight:0.06, 
+          cadence:'monthly',
+          description: 'U. Michigan Consumer Sentiment Index. Measures household confidence. <80 = pessimistic, >100 = optimistic. Leading indicator for spending.',
+          thresholds: { green: [95, Infinity], amber: [75, 95], red: [-Infinity, 75] }
+        }
       },
 
       FRESH_LIMITS: { 
@@ -435,6 +506,15 @@
             den += w;
           }
 
+          // Determine RAG status based on actual value
+          let ragStatus = 'green';
+          const thresh = cfg.thresholds;
+          if (thresh) {
+            if (L.value >= thresh.red[0] && L.value <= thresh.red[1]) ragStatus = 'red';
+            else if (L.value >= thresh.amber[0] && L.value <= thresh.amber[1]) ragStatus = 'amber';
+            else ragStatus = 'green';
+          }
+
           let change = null;
           if (obs.length >= 2) {
             const a = Utils.safeParseFloat(obs[obs.length - 1].value);
@@ -451,7 +531,9 @@
             freshTxt: badge.txt,
             scaled,
             w,
-            obs
+            obs,
+            ragStatus,
+            description: cfg.description
           });
         }
         
@@ -630,16 +712,25 @@
                 </div>
                 <div id="regimeIndicator" style="margin-top:12px"></div>
                 <div style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap">
-                  <div style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
-                    <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">1-Month Risk</h4>
+                  <div style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06);position:relative">
+                    <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center">
+                      1-Month Risk
+                      <span class="info-tooltip" title="Probability of a significant market downturn (>10% drawdown) within the next month based on current stress levels">?</span>
+                    </h4>
                     <div id="prob1m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
                   </div>
-                  <div style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
-                    <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">3-Month Risk</h4>
+                  <div style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06);position:relative">
+                    <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center">
+                      3-Month Risk
+                      <span class="info-tooltip" title="Probability of entering a sustained correction (>15% drawdown) within the next quarter. Incorporates medium-term momentum trends">?</span>
+                    </h4>
                     <div id="prob3m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
                   </div>
-                  <div style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
-                    <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">6-Month Risk</h4>
+                  <div style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06);position:relative">
+                    <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center">
+                      6-Month Risk
+                      <span class="info-tooltip" title="Probability of recession or bear market (>20% decline) within 6 months. Based on historical patterns and macro deterioration rates">?</span>
+                    </h4>
                     <div id="prob6m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
                   </div>
                 </div>
@@ -648,7 +739,22 @@
           </section>
 
           <section class="card">
-            <h3 style="margin:0 0 16px;font-size:20px">📊 Live Indicators</h3>
+            <h3 style="margin:0 0 16px;font-size:20px;display:flex;align-items:center">
+              📊 Live Indicators
+              <span class="info-tooltip" style="margin-left:8px" title="Hover over any indicator to see its description. Color dots show current stress level: Green = Normal, Amber = Elevated, Red = Stressed">?</span>
+            </h3>
+            <div style="margin-bottom:12px;padding:10px;background:rgba(255,255,255,.02);border-radius:8px;font-size:13px;color:var(--muted)">
+              <strong style="color:var(--text)">Legend:</strong>
+              <span style="display:inline-flex;align-items:center;margin-left:12px">
+                <span class="pill-status pill-status-green" style="margin-right:4px"></span> Normal
+              </span>
+              <span style="display:inline-flex;align-items:center;margin-left:12px">
+                <span class="pill-status pill-status-amber" style="margin-right:4px"></span> Elevated
+              </span>
+              <span style="display:inline-flex;align-items:center;margin-left:12px">
+                <span class="pill-status pill-status-red" style="margin-right:4px"></span> Stressed
+              </span>
+            </div>
             <div id="pillsGrid" class="pills-grid"></div>
           </section>
 
@@ -744,15 +850,20 @@
         grid.innerHTML = parts.map(p => {
           const arrow = p.change == null ? '' : (p.change > 0 ? '▲' : '▼');
           const changeTxt = p.change == null ? '' : `${p.change > 0 ? '+' : ''}${p.change.toFixed(2)}`;
+          const ragClass = `pill-status-${p.ragStatus || 'green'}`;
           
           return `
             <div class="pill" data-key="${p.key}">
               <div class="pill-header">
-                <div class="pill-title">${p.label}</div>
+                <div style="display:flex;align-items:center">
+                  <div class="pill-title">${p.label}</div>
+                  <span class="pill-status ${ragClass}"></span>
+                </div>
                 <div class="pill-badge ${p.freshClass}">${p.freshTxt}</div>
               </div>
               <div class="pill-value">${p.valueDisp}</div>
               <div class="pill-change"><span>${arrow}</span>${changeTxt}</div>
+              ${p.description ? `<div class="pill-tooltip">${p.description}</div>` : ''}
             </div>`;
         }).join('');
       }
