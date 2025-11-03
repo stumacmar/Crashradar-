@@ -1,5 +1,4 @@
 <!doctype html>
-
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -114,6 +113,39 @@
     .loading{text-align:center;padding:40px;color:var(--muted)}
     .error-state{background:rgba(255,96,112,.1);border:1px solid rgba(255,96,112,.3);padding:20px;border-radius:var(--radius);margin:20px 0}
 
+    /* Critical alerts */
+    .alert-banner {
+      background: linear-gradient(135deg, rgba(255,96,112,.15), rgba(255,140,66,.15));
+      border: 1px solid rgba(255,96,112,.3);
+      padding: 16px;
+      border-radius: var(--radius);
+      margin: 16px 0;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,96,112,.4); }
+      70% { box-shadow: 0 0 0 10px rgba(255,96,112,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,96,112,0); }
+    }
+
+    /* Historical comparison */
+    .historical-comparison {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .period-card {
+      background: rgba(255,255,255,.03);
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    .period-card.critical {
+      background: rgba(255,96,112,.1);
+      border-color: rgba(255,96,112,.3);
+    }
+
     @media (max-width:768px){
       .gauge-container{justify-content:center;text-align:center}
       .gauge-wrap{width:var(--ring-m);height:var(--ring-m)}
@@ -130,19 +162,16 @@
       <h1>⚡ Economic Crash Radar Pro</h1>
       <div class="subtitle">Advanced multi-timeframe market stress analysis with predictive analytics</div>
       <div id="statusBadge"></div>
+      <div id="alertBanner"></div>
       <div id="auditBox" class="audit"></div>
     </header>
 
-```
-<main id="mainContent">
-  <div class="loading">Loading economic data...</div>
-</main>
-```
-
+    <main id="mainContent">
+      <div class="loading">Loading economic data...</div>
+    </main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.1/dist/chartjs-plugin-annotation.min.js"></script>
 
   <script>
@@ -154,512 +183,535 @@
       CACHE_TIMEOUT: 10000,
       
       INDICATORS: {
-        T10Y3M:          { 
-          label:'Yield Curve',         
-          format:v=>v?.toFixed(2),               
-          weight:0.18, 
+        T10Y3M: { 
+          label:'Yield Curve',
+          format:v=>v?.toFixed(2),
+          weight:0.18,
           cadence:'daily',
-          description: 'Difference between 10-year and 3-month Treasury yields. Negative values (inverted curve) historically precede recessions by 6-18 months.',
-          thresholds: { green: [0.5, Infinity], amber: [-0.5, 0.5], red: [-Infinity, -0.5] }
+          description:'10y minus 3m Treasury spread. Inversions lead recessions by ~6–18m.',
+          thresholds:{ green:[0.5,Infinity], amber:[-0.5,0.5], red:[-Infinity,-0.5] },
+          momentumWeight:1.2,
+          crisisThreshold:-1.0,
+          crisisDirection:'below'
         },
-        CREDIT:          { 
-          label:'Credit Spread',       
-          format:v=>v?.toFixed(2),               
-          weight:0.14, 
+        CREDIT: { 
+          label:'Credit Spread',
+          format:v=>v?.toFixed(2),
+          weight:0.14,
           cadence:'daily',
-          description: 'High-yield bond spread over Treasuries. Widening spreads indicate investors demanding more compensation for risk and potential credit stress.',
-          thresholds: { green: [-Infinity, 0.40], amber: [0.40, 0.70], red: [0.70, Infinity] }
+          description:'US HY OAS / BAA spread proxy. Wider = risk stress.',
+          thresholds:{ green:[-Infinity,0.40], amber:[0.40,0.70], red:[0.70,Infinity] },
+          momentumWeight:1.1,
+          crisisThreshold:1.0,
+          crisisDirection:'above'
         },
-        UN_SLOPE6:       { 
-          label:'Unemployment Δ',      
-          format:v=>v?.toFixed(2),               
-          weight:0.12, 
+        SAHM_RULE: { 
+          label:'Sahm Rule',
+          format:v=>v?.toFixed(2),
+          weight:0.16,
           cadence:'monthly',
-          description: '6-month change in unemployment rate. Rising unemployment signals economic weakness. Sahm Rule: 0.5+ increase from 12-month low indicates recession.',
-          thresholds: { green: [-Infinity, 0.15], amber: [0.15, 0.35], red: [0.35, Infinity] }
+          description:'3m avg unemployment minus 12m low. ≥0.5 => recession likely begun.',
+          thresholds:{ green:[-Infinity,0.1], amber:[0.1,0.4], red:[0.4,Infinity] },
+          momentumWeight:1.4,
+          crisisThreshold:0.5,
+          crisisDirection:'above'
         },
-        DD_12M:          { 
-          label:'Market Drawdown',     
-          format:v=>((v??0)*100).toFixed(1)+'%', 
-          weight:0.20, 
+        DD_12M: { 
+          label:'Market Drawdown',
+          format:v=>((v??0)*100).toFixed(1)+'%',
+          weight:0.20,
           cadence:'daily',
-          description: 'S&P 500 decline from 12-month peak. Deep drawdowns often coincide with economic stress. -20% defines bear market territory.',
-          thresholds: { green: [-0.05, 0], amber: [-0.15, -0.05], red: [-Infinity, -0.15] }
+          description:'S&P 500 from 12m peak. ≤-20% = bear territory.',
+          thresholds:{ green:[-0.05,0], amber:[-0.15,-0.05], red:[-Infinity,-0.15] },
+          momentumWeight:1.3,
+          crisisThreshold:-0.25,
+          crisisDirection:'below'
         },
-        NFCI:            { 
+        NFCI: { 
           label:'Financial Conditions',
-          format:v=>v?.toFixed(3),               
-          weight:0.12, 
+          format:v=>v?.toFixed(3),
+          weight:0.12,
           cadence:'weekly',
-          description: 'Chicago Fed National Financial Conditions Index. Above zero = tighter conditions. Sharp increases precede downturns.',
-          thresholds: { green: [-Infinity, -0.20], amber: [-0.20, 0.20], red: [0.20, Infinity] }
+          description:'Chicago Fed NFCI. >0 = tight. Spikes precede downturns.',
+          thresholds:{ green:[-Infinity,-0.20], amber:[-0.20,0.20], red:[0.20,Infinity] },
+          momentumWeight:1.2,
+          crisisThreshold:0.5,
+          crisisDirection:'above'
         },
-        VIX_PROXY:       { 
-          label:'Volatility Index',    
-          format:v=>v?.toFixed(1),               
-          weight:0.10, 
+        VIX_PROXY: { 
+          label:'Volatility Index',
+          format:v=>v?.toFixed(1),
+          weight:0.10,
           cadence:'daily',
-          description: 'CBOE Volatility Index (VIX) - "fear gauge". <15 = calm, 15-25 = elevated, >30 = stressed. Sustained low VIX can signal complacency.',
-          thresholds: { green: [-Infinity, 18], amber: [18, 28], red: [28, Infinity] }
-        },
-        RETAIL_MOMENTUM: { 
-          label:'Retail Sales Δ',      
-          format:v=>(v*100)?.toFixed(2)+'%',     
-          weight:0.08, 
-          cadence:'monthly',
-          description: 'Month-over-month retail sales growth. Consumer spending is 70% of GDP. Negative growth indicates weakening demand.',
-          thresholds: { green: [0.01, Infinity], amber: [-0.01, 0.01], red: [-Infinity, -0.01] }
-        },
-        SENTIMENT:       { 
-          label:'Consumer Confidence', 
-          format:v=>v?.toFixed(1),               
-          weight:0.06, 
-          cadence:'monthly',
-          description: 'U. Michigan Consumer Sentiment Index. Measures household confidence. <80 = pessimistic, >100 = optimistic. Leading indicator for spending.',
-          thresholds: { green: [95, Infinity], amber: [75, 95], red: [-Infinity, 75] }
+          description:'VIX. <15 calm, 15–25 elevated, >30 stressed.',
+          thresholds:{ green:[-Infinity,18], amber:[18,28], red:[28,Infinity] },
+          momentumWeight:1.1,
+          crisisThreshold:40,
+          crisisDirection:'above'
         }
       },
 
-      FRESH_LIMITS: { 
-        daily:   { ok:7,  warn:30 }, 
-        weekly:  { ok:7,  warn:30 }, 
-        monthly: { ok:30, warn:60 } 
+      HISTORICAL_CRISES:{
+        '2008 GFC':      { score:92, date:'2008-10-15', indicators:{ T10Y3M:-1.5, CREDIT:1.8, SAHM_RULE:0.8, DD_12M:-0.45, VIX_PROXY:45 } },
+        '2020 COVID':    { score:88, date:'2020-03-23', indicators:{ T10Y3M:-0.8, CREDIT:1.2, SAHM_RULE:0.6, DD_12M:-0.34, VIX_PROXY:62 } },
+        '2000 Dot-com':  { score:78, date:'2001-03-12', indicators:{ T10Y3M:-0.3, CREDIT:0.9, SAHM_RULE:0.4, DD_12M:-0.28, VIX_PROXY:32 } },
+        '2022 Inflation':{ score:65, date:'2022-06-13', indicators:{ T10Y3M:0.8, CREDIT:0.6, SAHM_RULE:0.1, DD_12M:-0.23, VIX_PROXY:28 } }
       },
 
-      ZONE_COLORS: {
-        green: '#1ec28b',
-        amber: '#ffc247',
-        red: '#ff6070'
-      }
+      ALERTS:{ CRITICAL:80, WARNING:65, WATCH:50 },
+
+      FRESH_LIMITS:{ daily:{ok:7,warn:30}, weekly:{ok:7,warn:30}, monthly:{ok:30,warn:60} },
+
+      ZONE_COLORS:{ green:'#1ec28b', amber:'#ffc247', red:'#ff6070' }
     };
 
     // ==================== UTILITIES ====================
     const Utils = {
-      clamp: (x, min = 0, max = 100) => Math.max(min, Math.min(max, x)),
-      
-      map01: (val, good, bad) => {
-        if (val == null) return 50;
+      clamp:(x,min=0,max=100)=>Math.max(min,Math.min(max,x)),
+      map01:(val,good,bad)=>{
+        if(val==null) return 50;
         const denom = bad - good;
         if (Math.abs(denom) < 1e-9) return 50;
-        return ((val - good) / denom) * 100;
+        return ((val - good)/denom)*100;
       },
-
-      zoneOf: score => score <= 30 ? 'green' : (score <= 60 ? 'amber' : 'red'),
-      
-      heatColor: score => {
-        const r = Math.round(255 * (score / 100));
-        const g = Math.round(200 * (1 - score / 100));
+      zoneOf:s=>s<=30?'green':(s<=60?'amber':'red'),
+      heatColor:score=>{
+        const r=Math.round(255*(score/100));
+        const g=Math.round(200*(1-score/100));
         return `rgb(${r},${g},80)`;
       },
-
-      safeParseFloat: val => {
-        if (val == null || val === '.' || val === 'NaN' || val === '') return null;
-        const num = +val;
-        return isFinite(num) ? num : null;
+      safeParseFloat:val=>{
+        if(val==null||val==='.'||val==='NaN'||val==='') return null;
+        const num=+val; return isFinite(num)?num:null;
+      },
+      formatPercent:(val,dec=1)=> val==null?'—':`${val>0?'+':''}${(val*100).toFixed(dec)}%`,
+      calculateMomentum:(currentValues,historicalValues,lookback=30)=>{
+        const out={};
+        for(const [k,cur] of Object.entries(currentValues)){
+          const hist = historicalValues[k];
+          if(cur!=null && hist!=null) out[k]=(cur-hist)/lookback;
+        }
+        return out;
       }
     };
 
-    // ==================== DATA SCALING ====================
+    // ==================== SCALING ====================
     const SCALE = {
-      T10Y3M:          v => Utils.clamp(Utils.map01(v,  1.0, -2.0)),
-      CREDIT:          v => Utils.clamp(Utils.map01(v,  0.30, 1.00)),
-      UN_SLOPE6:       v => Utils.clamp(Utils.map01(v,  0.05, 0.50)),
-      DD_12M:          v => Utils.clamp(Utils.map01(v,  0.00, -0.20)),
-      NFCI:            v => Utils.clamp(Utils.map01(v, -0.80, 0.40)),
-      VIX_PROXY:       v => Utils.clamp(Utils.map01(v,  12,  35)),
-      RETAIL_MOMENTUM: v => Utils.clamp(Utils.map01(v,  0.03, -0.02)),
-      SENTIMENT:       v => Utils.clamp(Utils.map01(v, 110,  70))
+      T10Y3M:    v=>Utils.clamp(Utils.map01(v,  1.0,-2.0)),
+      CREDIT:    v=>Utils.clamp(Utils.map01(v,  0.30,1.00)),
+      SAHM_RULE: v=>Utils.clamp(Utils.map01(v,  0.0, 0.5)),
+      DD_12M:    v=>Utils.clamp(Utils.map01(v,  0.00,-0.20)),
+      NFCI:      v=>Utils.clamp(Utils.map01(v, -0.80,0.40)),
+      VIX_PROXY: v=>Utils.clamp(Utils.map01(v,  12,  35))
     };
 
     // ==================== DATA LAYER ====================
     class DataService {
-      static async loadFredCache() {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), CONFIG.CACHE_TIMEOUT);
-
-        try {
-          const res = await fetch(`${CONFIG.FRED_CACHE_PATH}?t=${Date.now()}`, { 
-            cache: 'no-store',
-            signal: controller.signal
-          });
-          
+      static async loadFredCache(){
+        const controller=new AbortController();
+        const timeout=setTimeout(()=>controller.abort(), CONFIG.CACHE_TIMEOUT);
+        try{
+          const res=await fetch(`${CONFIG.FRED_CACHE_PATH}?t=${Date.now()}`,{ cache:'no-store', signal:controller.signal });
           clearTimeout(timeout);
-          
-          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-          
-          const raw = await res.json();
+          if(!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          const raw=await res.json();
           return this.normalizeCache(raw);
-        } catch (err) {
+        }catch(err){
           clearTimeout(timeout);
-          if (err.name === 'AbortError') throw new Error('Request timeout');
+          if(err.name==='AbortError') throw new Error('Request timeout');
           throw err;
         }
       }
 
-      static normalizeCache(raw) {
-        const out = {};
-        
-        if (!raw) return out;
+      static normalizeCache(raw){
+        const out={};
+        if(!raw) return out;
 
-        // Direct format: { SERIES_ID: { observations: [...] } }
-        const directLike = typeof raw === 'object' && 
-          Object.keys(raw).some(k => raw[k] && Array.isArray(raw[k].observations));
-        
-        if (directLike) return raw;
+        const directLike = typeof raw==='object' && Object.keys(raw).some(k=>raw[k] && Array.isArray(raw[k].observations));
+        if(directLike) return raw;
 
-        // Array format with series property
-        if (Array.isArray(raw?.series)) {
-          for (const item of raw.series) {
-            const id = item?.id || item?.series_id || item?.name;
-            if (!id) continue;
-            const obs = Array.isArray(item.observations) ? item.observations :
-                       Array.isArray(item.data) ? item.data : [];
-            out[id] = { observations: obs, fetchedAt: item.fetchedAt };
+        if(Array.isArray(raw?.series)){
+          for(const item of raw.series){
+            const id=item?.id||item?.series_id||item?.name;
+            if(!id) continue;
+            const obs=Array.isArray(item.observations)?item.observations: (Array.isArray(item.data)?item.data:[]);
+            out[id]={ observations:obs, fetchedAt:item.fetchedAt };
           }
           return out;
         }
 
-        // Object with series property
-        if (raw.series && typeof raw.series === 'object' && !Array.isArray(raw.series)) {
-          for (const [id, item] of Object.entries(raw.series)) {
-            const obs = Array.isArray(item?.observations) ? item.observations :
-                       Array.isArray(item?.data) ? item.data : [];
-            out[id] = { observations: obs, fetchedAt: item.fetchedAt };
+        if(raw.series && typeof raw.series==='object' && !Array.isArray(raw.series)){
+          for(const [id,item] of Object.entries(raw.series)){
+            const obs=Array.isArray(item?.observations)?item.observations: (Array.isArray(item?.data)?item.data:[]);
+            out[id]={ observations:obs, fetchedAt:item.fetchedAt };
           }
           return out;
         }
 
-        // Direct array
-        if (Array.isArray(raw)) {
-          for (const item of raw) {
-            const id = item?.id || item?.series_id || item?.name;
-            if (!id) continue;
-            const obs = Array.isArray(item.observations) ? item.observations :
-                       Array.isArray(item.data) ? item.data : [];
-            out[id] = { observations: obs, fetchedAt: item.fetchedAt };
+        if(Array.isArray(raw)){
+          for(const item of raw){
+            const id=item?.id||item?.series_id||item?.name;
+            if(!id) continue;
+            const obs=Array.isArray(item.observations)?item.observations: (Array.isArray(item.data)?item.data:[]);
+            out[id]={ observations:obs, fetchedAt:item.fetchedAt };
           }
         }
-
         return out;
       }
 
-      static latest(series) {
-        const obs = series?.observations || [];
-        if (!obs.length) return null;
-        const o = obs[obs.length - 1];
-        const v = Utils.safeParseFloat(o.value);
-        return { value: v, date: o.date };
+      static latest(series){
+        const obs=series?.observations||[];
+        if(!obs.length) return null;
+        const o=obs[obs.length-1];
+        const v=Utils.safeParseFloat(o.value);
+        return { value:v, date:o.date };
       }
 
-      static seriesAgeDays(series, fetchedAt) {
-        const L = this.latest(series);
-        if (!L) return Infinity;
-        const d = new Date(L.date + 'T00:00:00Z');
-        const ref = new Date(fetchedAt || Date.now());
-        return Math.max(0, Math.round((ref - d) / 86400000));
+      static seriesAgeDays(series, fetchedAt){
+        const L=this.latest(series);
+        if(!L) return Infinity;
+        const d=new Date(L.date+'T00:00:00Z');
+        const ref=new Date(fetchedAt||Date.now());
+        return Math.max(0, Math.round((ref-d)/86400000));
+      }
+
+      static getHistoricalValue(series, daysBack=30){
+        const obs=series?.observations||[];
+        if(obs.length<2) return null;
+        const target=new Date(Date.now()-daysBack*86400000);
+        for(let i=obs.length-1;i>=0;i--){
+          const dt=new Date(obs[i].date+'T00:00:00Z');
+          if(dt<=target) return Utils.safeParseFloat(obs[i].value);
+        }
+        return null;
       }
     }
 
     // ==================== DERIVED SERIES ====================
     class DerivedSeries {
-      static deriveUnempSlope6(UNRATE) {
-        const obs = UNRATE?.observations || [];
-        if (!obs.length) return null;
-        
-        const byMonth = {};
-        for (const o of obs) {
-          const v = Utils.safeParseFloat(o.value);
-          if (v !== null) byMonth[o.date.slice(0, 7)] = v;
+      static deriveSahmRule(UNRATE){
+        const obs=UNRATE?.observations||[];
+        if(obs.length<12) return null;
+
+        const out=[];
+        for(let i=11;i<obs.length;i++){
+          const currentDate=obs[i].date;
+
+          // 3-month average
+          let sum=0, cnt=0;
+          for(let j=0;j<3;j++){
+            if(i-j>=0){
+              const v=Utils.safeParseFloat(obs[i-j].value);
+              if(v!=null){ sum+=v; cnt++; }
+            }
+          }
+          if(!cnt) continue;
+          const threeAvg=sum/cnt;
+
+          // 12-month minimum (look-back 12)
+          let minU=Infinity;
+          for(let j=1;j<=12;j++){
+            if(i-j>=0){
+              const v=Utils.safeParseFloat(obs[i-j].value);
+              if(v!=null && v<minU) minU=v;
+            }
+          }
+          if(minU===Infinity) continue;
+
+          const val=threeAvg - minU;
+          out.push({ date:currentDate, value:val.toFixed(3) });
         }
-        
-        const months = Object.keys(byMonth).sort();
-        if (months.length < 7) return null;
-        
-        const out = [];
-        for (let i = 6; i < months.length; i++) {
-          const m = months[i], prev = months[i - 6];
-          const delta = byMonth[m] - byMonth[prev];
-          const [yy, mm] = m.split('-').map(Number);
-          const d = new Date(Date.UTC(yy, mm, 0));
-          out.push({ date: d.toISOString().slice(0, 10), value: String(delta) });
-        }
-        
-        return { observations: out, fetchedAt: UNRATE.fetchedAt };
+        return { observations:out, fetchedAt:UNRATE.fetchedAt };
       }
 
-      static deriveDrawdown12m(SP500) {
-        const obs = SP500?.observations || [];
-        if (!obs.length) return null;
-        
-        const dates = obs.map(o => o.date);
-        const vals = obs.map(o => Utils.safeParseFloat(o.value));
-        const peak = [];
-        
-        for (let i = 0; i < vals.length; i++) {
-          const start = Math.max(0, i - 252);
-          let p = -Infinity;
-          for (let j = start; j <= i; j++) {
-            if (vals[j] !== null) p = Math.max(p, vals[j]);
+      static deriveDrawdown12m(SP500){
+        const obs=SP500?.observations||[];
+        if(!obs.length) return null;
+
+        const dates=obs.map(o=>o.date);
+        const vals =obs.map(o=>Utils.safeParseFloat(o.value));
+        const peak=[];
+        for(let i=0;i<vals.length;i++){
+          const start=Math.max(0,i-252);
+          let p=-Infinity;
+          for(let j=start;j<=i;j++){
+            if(vals[j]!=null) p=Math.max(p, vals[j]);
           }
           peak.push(p);
         }
-        
-        const dd = dates.map((d, i) => ({
-          date: d,
-          value: vals[i] !== null && peak[i] !== -Infinity ? String(vals[i] / peak[i] - 1) : '.'
-        }));
-        
-        return { observations: dd, fetchedAt: SP500.fetchedAt };
-      }
-
-      static deriveRetailMomentum(RSAFS) {
-        const o = RSAFS?.observations || [];
-        if (o.length < 2) return null;
-        
-        const last = Utils.safeParseFloat(o[o.length - 1].value);
-        let prev = null;
-        
-        for (let i = o.length - 2; i >= 0; i--) {
-          const v = Utils.safeParseFloat(o[i].value);
-          if (v !== null) {
-            prev = v;
-            break;
-          }
-        }
-        
-        if (prev === null || prev === 0 || last === null) return null;
-        
-        return {
-          observations: [{ date: o[o.length - 1].date, value: String(last / prev - 1) }],
-          fetchedAt: RSAFS.fetchedAt
-        };
+        const dd=dates.map((d,i)=>({ date:d, value: (vals[i]!=null && peak[i]!==-Infinity) ? String(vals[i]/peak[i]-1) : '.' }));
+        return { observations:dd, fetchedAt:SPP500?.fetchedAt ?? SP500.fetchedAt };
       }
     }
 
     // ==================== INDICATOR PROCESSOR ====================
     class IndicatorProcessor {
-      static mapIndicatorsFromCache(cache) {
-        const out = {};
-        
-        // Direct mappings
-        for (const k of Object.keys(CONFIG.INDICATORS)) {
-          if (cache[k]) out[k] = cache[k];
+      static mapIndicatorsFromCache(cache){
+        const out={};
+        // direct
+        for(const k of Object.keys(CONFIG.INDICATORS)){
+          if(cache[k]) out[k]=cache[k];
         }
-        
-        // Fallbacks
-        if (!out.CREDIT && (cache.BAMLH0A0HYM2 || cache.BAA10YM)) {
-          out.CREDIT = cache.BAMLH0A0HYM2 || cache.BAA10YM;
-        }
-        if (!out.VIX_PROXY && cache.VIXCLS) out.VIX_PROXY = cache.VIXCLS;
-        if (!out.SENTIMENT && cache.UMCSENT) out.SENTIMENT = cache.UMCSENT;
+        // fallbacks
+        if(!out.CREDIT && (cache.BAMLH0A0HYM2||cache.BAA10YM)) out.CREDIT = cache.BAMLH0A0HYM2 || cache.BAA10YM;
+        if(!out.VIX_PROXY && cache.VIXCLS) out.VIX_PROXY = cache.VIXCLS;
 
-        // Derived series
-        if (!out.UN_SLOPE6 && cache.UNRATE) {
-          out.UN_SLOPE6 = DerivedSeries.deriveUnempSlope6(cache.UNRATE) || 
-            { observations: [], fetchedAt: cache.UNRATE.fetchedAt };
+        // derived
+        if(!out.SAHM_RULE && cache.UNRATE){
+          out.SAHM_RULE = DerivedSeries.deriveSahmRule(cache.UNRATE) || { observations:[], fetchedAt:cache.UNRATE.fetchedAt };
         }
-        if (!out.DD_12M && cache.SP500) {
-          out.DD_12M = DerivedSeries.deriveDrawdown12m(cache.SP500) || 
-            { observations: [], fetchedAt: cache.SP500.fetchedAt };
+        if(!out.DD_12M && cache.SP500){
+          out.DD_12M = DerivedSeries.deriveDrawdown12m(cache.SP500) || { observations:[], fetchedAt:cache.SP500.fetchedAt };
         }
-        if (!out.RETAIL_MOMENTUM && cache.RSAFS) {
-          out.RETAIL_MOMENTUM = DerivedSeries.deriveRetailMomentum(cache.RSAFS) || 
-            { observations: [], fetchedAt: cache.RSAFS.fetchedAt };
-        }
-        
         return out;
       }
 
-      static freshnessPenalty(days, cadence, isCalm = false) {
-        const lim = CONFIG.FRESH_LIMITS[cadence] || CONFIG.FRESH_LIMITS.daily;
-        const ok = isCalm ? Math.floor(lim.ok / 2) : lim.ok;
-        const warn = isCalm ? Math.floor(lim.warn / 2) : lim.warn;
-        
-        if (days <= ok) return 1.00;
-        if (days <= warn) return 0.85;
+      static freshnessPenalty(days,cadence,isCalm=false){
+        const lim=CONFIG.FRESH_LIMITS[cadence]||CONFIG.FRESH_LIMITS.daily;
+        const ok=isCalm?Math.floor(lim.ok/2):lim.ok;
+        const warn=isCalm?Math.floor(lim.warn/2):lim.warn;
+        if(days<=ok) return 1.00;
+        if(days<=warn) return 0.85;
         return 0.70;
       }
 
-      static computeComposite(dataMap, isCalm) {
-        let num = 0, den = 0;
-        const parts = [];
-        
-        for (const [k, cfg] of Object.entries(CONFIG.INDICATORS)) {
-          const s = dataMap[k];
-          const obs = s?.observations || [];
-          if (!obs.length) continue;
-          
-          const L = DataService.latest(s);
-          if (!L || L.value === null) continue;
+      // momentum capped and only for daily series
+      static computeComposite(dataMap, isCalm){
+        let num=0, den=0;
+        const parts=[];
+        const currentValues={};
+        const historicalValues={};
 
-          const days = DataService.seriesAgeDays(s, s.fetchedAt);
-          const lim = CONFIG.FRESH_LIMITS[cfg.cadence] || CONFIG.FRESH_LIMITS.daily;
-          const badge = days <= lim.ok ? { cls: 'badge-fresh', txt: 'Fresh' } :
-                       days <= lim.warn ? { cls: 'badge-stale', txt: 'Stale' } :
-                       { cls: 'badge-old', txt: 'Old' };
+        // collect current/historical
+        for(const [k,cfg] of Object.entries(CONFIG.INDICATORS)){
+          const s=dataMap[k];
+          const obs=s?.observations||[];
+          if(!obs.length) continue;
+          const L=DataService.latest(s);
+          if(!L || L.value==null) continue;
+          currentValues[k]=L.value;
+          historicalValues[k]=DataService.getHistoricalValue(s,30) ?? L.value;
+        }
 
-          const scaled = SCALE[k](L.value);
-          const w = cfg.weight * this.freshnessPenalty(days, cfg.cadence, isCalm);
-          
-          if (Number.isFinite(scaled) && Number.isFinite(w)) {
-            num += scaled * w;
-            den += w;
+        const momentum=Utils.calculateMomentum(currentValues, historicalValues);
+
+        // compute parts
+        for(const [k,cfg] of Object.entries(CONFIG.INDICATORS)){
+          const s=dataMap[k];
+          const obs=s?.observations||[];
+          if(!obs.length) continue;
+          const L=DataService.latest(s);
+          if(!L || L.value==null) continue;
+
+          const days=DataService.seriesAgeDays(s, s.fetchedAt);
+          const lim=CONFIG.FRESH_LIMITS[cfg.cadence]||CONFIG.FRESH_LIMITS.daily;
+          const badge = days<=lim.ok ? {cls:'badge-fresh',txt:'Fresh'} :
+                        days<=lim.warn ? {cls:'badge-stale',txt:'Stale'} :
+                        {cls:'badge-old',txt:'Old'};
+
+          let scaled=SCALE[k](L.value);
+
+          // apply small momentum tilt only to daily series; cap to ±2% effect
+          let mom=0;
+          if(cfg.cadence==='daily'){
+            const rawMom=momentum[k]||0;                       // units/day
+            const capped=Math.max(-0.02, Math.min(0.02, rawMom));
+            const w=cfg.momentumWeight||1.0;
+            scaled = Utils.clamp( scaled * (1 + capped * w * 5) ); // effect ~±2–3 pts
+            mom=capped;
           }
 
-          // Determine RAG status based on actual value
-          let ragStatus = 'green';
-          const thresh = cfg.thresholds;
-          if (thresh) {
-            if (L.value >= thresh.red[0] && L.value <= thresh.red[1]) ragStatus = 'red';
-            else if (L.value >= thresh.amber[0] && L.value <= thresh.amber[1]) ragStatus = 'amber';
-            else ragStatus = 'green';
+          const w=cfg.weight * this.freshnessPenalty(days, cfg.cadence, isCalm);
+          if(Number.isFinite(scaled) && Number.isFinite(w)){ num+=scaled*w; den+=w; }
+
+          // RAG
+          let ragStatus='green';
+          const t=cfg.thresholds;
+          if(t){
+            if(L.value>=t.red[0] && L.value<=t.red[1]) ragStatus='red';
+            else if(L.value>=t.amber[0] && L.value<=t.amber[1]) ragStatus='amber';
           }
 
-          let change = null;
-          if (obs.length >= 2) {
-            const a = Utils.safeParseFloat(obs[obs.length - 1].value);
-            const b = Utils.safeParseFloat(obs[obs.length - 2].value);
-            if (a !== null && b !== null) change = a - b;
+          let change=null;
+          if(obs.length>=2){
+            const a=Utils.safeParseFloat(obs[obs.length-1].value);
+            const b=Utils.safeParseFloat(obs[obs.length-2].value);
+            if(a!=null && b!=null) change=a-b;
           }
 
           parts.push({
-            key: k,
-            label: cfg.label,
-            valueDisp: cfg.format?.(L.value) ?? L.value,
+            key:k,
+            label:cfg.label,
+            value:L.value,
+            valueDisp:cfg.format?.(L.value) ?? L.value,
             change,
-            freshClass: badge.cls,
-            freshTxt: badge.txt,
+            freshClass:badge.cls,
+            freshTxt:badge.txt,
             scaled,
             w,
             obs,
             ragStatus,
-            description: cfg.description
+            description:cfg.description,
+            momentum:mom,
+            crisisThreshold:cfg.crisisThreshold,
+            crisisDirection:cfg.crisisDirection
           });
         }
-        
-        return { parts, num, den };
+
+        return { parts, num, den, currentValues };
       }
     }
 
     // ==================== ANALYTICS ====================
     class Analytics {
-      static complacencyPenalty(dataMap) {
-        const vix = dataMap.VIX_PROXY?.observations || [];
-        const hy = dataMap.CREDIT?.observations || [];
-        const dd = dataMap.DD_12M?.observations || [];
-        
-        if (vix.length < 22 || hy.length < 1 || dd.length < 1) return 0;
+      static complacencyPenalty(dataMap){
+        const vix=dataMap.VIX_PROXY?.observations||[];
+        const hy =dataMap.CREDIT?.observations||[];
+        const dd =dataMap.DD_12M?.observations||[];
+        if(vix.length<22 || hy.length<1 || dd.length<1) return 0;
 
-        let streak = 0;
-        for (let i = vix.length - 1; i >= 0 && streak < 60; i--) {
-          const val = Utils.safeParseFloat(vix[i].value);
-          if (val !== null && val <= 13) streak++;
-          else break;
+        let streak=0;
+        for(let i=vix.length-1;i>=0 && streak<60;i--){
+          const val=Utils.safeParseFloat(vix[i].value);
+          if(val!=null && val<=13) streak++; else break;
         }
-        const vixScore = Math.min(1, streak / 30);
+        const vixScore=Math.min(1, streak/30);
 
-        const hyLast = Utils.safeParseFloat(hy[hy.length - 1].value);
-        const spreadTight = hyLast !== null && hyLast <= 0.35 ? 1 : 0;
+        const hyLast=Utils.safeParseFloat(hy[hy.length-1].value);
+        const spreadTight= (hyLast!=null && hyLast<=0.35) ? 1 : 0;
 
-        const ddLast = Utils.safeParseFloat(dd[dd.length - 1].value);
-        const shallowDD = ddLast !== null && ddLast >= -0.05 ? 1 : 0;
+        const ddLast=Utils.safeParseFloat(dd[dd.length-1].value);
+        const shallowDD= (ddLast!=null && ddLast>=-0.05) ? 1 : 0;
 
-        const raw = 0.5 * vixScore + 0.3 * spreadTight + 0.2 * shallowDD;
-        return Math.round(15 * raw);
+        const raw=0.5*vixScore + 0.3*spreadTight + 0.2*shallowDD;
+        return Math.round(15*raw);
       }
 
-      static inflationDriftPenalty(cache) {
-        const CPI = cache.CPI_YOY || cache.CPIAUCSL_YOY || null;
-        if (!CPI?.observations?.length) return 0;
-        
-        const o = CPI.observations;
-        const last = Utils.safeParseFloat(o[o.length - 1].value);
-        if (last === null) return 0;
-        
-        if (last <= 2.5) return 0;
-        if (last <= 3.5) return Math.round(1 + 2 * (last - 2.5));
-        return Math.min(6, Math.round(2 + 2 * (last - 3.5)));
+      static inflationDriftPenalty(cache){
+        const CPI=cache.CPI_YOY || cache.CPIAUCSL_YOY || null;
+        if(!CPI?.observations?.length) return 0;
+        const o=CPI.observations;
+        const last=Utils.safeParseFloat(o[o.length-1].value);
+        if(last==null) return 0;
+        if(last<=2.5) return 0;
+        if(last<=3.5) return Math.round(1+2*(last-2.5));
+        return Math.min(6, Math.round(2+2*(last-3.5)));
       }
 
-      static compositeMomentum(hist, lookbackDays) {
-        if (!hist?.length) return 0;
-        const n = hist.length;
-        const a = Math.max(0, n - 1 - lookbackDays);
-        const b = n - 1;
-        const da = hist[a]?.value ?? hist[0].value;
-        const db = hist[b]?.value ?? hist[n - 1].value;
-        return db - da;
+      static compositeMomentum(hist, lookbackDays){
+        if(!hist?.length) return 0;
+        const n=hist.length;
+        const a=Math.max(0, n-1-lookbackDays);
+        const b=n-1;
+        const da=hist[a]?.value ?? hist[0].value;
+        const db=hist[b]?.value ?? hist[n-1].value;
+        return db-da;
       }
 
-      static horizonRiskSmart(composite, hist) {
-        const m20 = this.compositeMomentum(hist, 20);
-        const m60 = this.compositeMomentum(hist, 60);
-        const m120 = this.compositeMomentum(hist, 120);
-        
-        const base = x => 1 / (1 + Math.exp(-(x - 50) / 10));
-        const p1 = base(composite) * (0.70 + 0.02 * m20);
-        const p3 = base(composite) * (0.95 + 0.015 * m60);
-        const p6 = base(composite) * (1.20 + 0.010 * m120);
-        
-        const clip = p => Math.round(Math.max(5, Math.min(95, 100 * p)));
-        return { p1: clip(p1), p3: clip(p3), p6: clip(p6) };
+      static horizonRiskSmart(composite, hist){
+        const m20=this.compositeMomentum(hist,20);
+        const m60=this.compositeMomentum(hist,60);
+        const m120=this.compositeMomentum(hist,120);
+        const base=x=>1/(1+Math.exp(-(x-50)/10));
+        const p1=base(composite)*(0.70+0.02*m20);
+        const p3=base(composite)*(0.95+0.015*m60);
+        const p6=base(composite)*(1.20+0.010*m120);
+        const clip=p=>Math.round(Math.max(5, Math.min(95, 100*p)));
+        return { p1:clip(p1), p3:clip(p3), p6:clip(p6) };
       }
 
-      static buildCompositeHistory(dataMap) {
-        const keysForHist = ['DD_12M', 'VIX_PROXY', 'T10Y3M', 'CREDIT', 'NFCI'];
-        const allDates = new Set();
-        
-        for (const k of keysForHist) {
-          (dataMap[k]?.observations || []).forEach(o => allDates.add(o.date));
-        }
-        
-        const dates = Array.from(allDates).sort();
-        
-        return dates.map(date => {
-          let n = 0, d = 0;
-          
-          for (const [k, cfg] of Object.entries(CONFIG.INDICATORS)) {
-            const s = dataMap[k];
-            if (!s) continue;
-            
-            const obs = s.observations;
-            let v = null;
-            
-            for (let i = obs.length - 1; i >= 0; i--) {
-              if (obs[i].date <= date) {
-                const vv = Utils.safeParseFloat(obs[i].value);
-                if (vv !== null) {
-                  v = vv;
-                  break;
-                }
+      static buildCompositeHistory(dataMap){
+        const keys=Object.keys(CONFIG.INDICATORS);
+        const allDates=new Set();
+        for(const k of keys){ (dataMap[k]?.observations||[]).forEach(o=>allDates.add(o.date)); }
+        const dates=Array.from(allDates).sort();
+
+        return dates.map(date=>{
+          let n=0,d=0;
+          for(const [k,cfg] of Object.entries(CONFIG.INDICATORS)){
+            const s=dataMap[k]; if(!s) continue;
+            const obs=s.observations; let v=null;
+            for(let i=obs.length-1;i>=0;i--){
+              if(obs[i].date<=date){
+                const vv=Utils.safeParseFloat(obs[i].value);
+                if(vv!=null){ v=vv; break; }
               }
             }
-            
-            if (v === null) continue;
-            const sc = SCALE[k](v);
-            n += sc * cfg.weight;
-            d += cfg.weight;
+            if(v==null) continue;
+            const sc=SCALE[k](v);
+            n+=sc*cfg.weight; d+=cfg.weight;
           }
-          
-          return { date, value: d > 0 ? +(n / d).toFixed(1) : null };
-        }).filter(x => x.value !== null);
+          return { date, value: d>0 ? +(n/d).toFixed(1) : null };
+        }).filter(x=>x.value!==null);
+      }
+
+      // === Patched: direction-aware alerts and robust similarity ===
+      static generateAlerts(parts, composite){
+        const alerts=[];
+        if(composite>=CONFIG.ALERTS.CRITICAL){
+          alerts.push({ level:'critical', message:`CRITICAL: Market stress at ${Math.round(composite)} - Similar to crisis levels`, type:'composite' });
+        } else if (composite>=CONFIG.ALERTS.WARNING){
+          alerts.push({ level:'warning', message:`WARNING: Elevated market stress (${Math.round(composite)}) - Monitor closely`, type:'composite' });
+        }
+
+        for(const p of parts){
+          const isRed = p.ragStatus==='red';
+          let hitsCrisis=false;
+          if(typeof p.crisisThreshold==='number'){
+            const dir = p.crisisDirection || 'above';
+            hitsCrisis = dir==='below' ? (p.value!=null && p.value<=p.crisisThreshold)
+                                       : (p.value!=null && p.value>=p.crisisThreshold);
+          }
+          if(hitsCrisis){
+            alerts.push({ level:'critical', message:`CRITICAL: ${p.label} at crisis level (${p.valueDisp})`, type:'indicator', indicator:p.key });
+          } else if (isRed){
+            alerts.push({ level:'warning', message:`WARNING: ${p.label} in stress zone (${p.valueDisp})`, type:'indicator', indicator:p.key });
+          }
+        }
+        return alerts;
+      }
+
+      static findHistoricalComparisons(currentValues, currentScore){
+        const comparisons=[];
+        for(const [period,data] of Object.entries(CONFIG.HISTORICAL_CRISES)){
+          let simSum=0, matched=0;
+          for(const [k,curRaw] of Object.entries(currentValues)){
+            const histRaw=data.indicators[k];
+            const scale=SCALE[k];
+            if(typeof histRaw==='number' && typeof curRaw==='number' && typeof scale==='function'){
+              const cur = scale(curRaw);   // 0–100
+              const his = scale(histRaw);  // 0–100
+              const curDist = Math.abs(cur-100);   // distance from "worst"
+              const hisDist = Math.abs(his-100);
+              const denom = Math.max(curDist, hisDist);
+              const term = denom===0 ? 1 : 1 - (Math.abs(curDist - hisDist)/denom);
+              simSum += term; matched++;
+            }
+          }
+          if(matched){
+            const similarity=Math.round((simSum/matched)*100);
+            comparisons.push({ period, score:data.score, date:data.date, similarity, currentScore });
+          }
+        }
+        return comparisons.sort((a,b)=>b.similarity-a.similarity).slice(0,3);
       }
     }
 
     // ==================== UI MANAGER ====================
     class UIManager {
-      constructor() {
+      constructor(){
         this.elements = {
           statusBadge: document.getElementById('statusBadge'),
+          alertBanner: document.getElementById('alertBanner'),
           auditBox: document.getElementById('auditBox'),
           mainContent: document.getElementById('mainContent')
         };
-        this.charts = { composite: null, decomp: null, traj: null };
-        this.currentTimeframe = '1m';
+        this.charts = { composite:null, decomp:null, traj:null };
+        this.currentTimeframe='1m';
       }
 
-      setStatus(zone, text) {
-        const color = CONFIG.ZONE_COLORS[zone] || '#8fb4ff';
+      setStatus(zone,text){
+        const color=CONFIG.ZONE_COLORS[zone] || '#8fb4ff';
         this.elements.statusBadge.innerHTML = `
           <div class="status" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)">
             <span class="status-dot" style="background:${color}"></span>
@@ -667,16 +719,49 @@
           </div>`;
       }
 
-      setErrorStatus(errText) {
-        this.elements.statusBadge.innerHTML = `
+      setErrorStatus(errText){
+        this.elements.statusBadge.innerHTML=`
           <div class="status" style="background:rgba(255,96,112,.12);border:1px solid rgba(255,96,112,.4)">
             <span class="status-dot" style="background:#ff6070"></span>
             <span>Data error: ${errText}</span>
           </div>`;
       }
 
-      showError(message) {
-        this.elements.mainContent.innerHTML = `
+      renderAlerts(alerts){
+        if(!alerts.length){ this.elements.alertBanner.innerHTML=''; return; }
+        const critical=alerts.filter(a=>a.level==='critical');
+        const warning =alerts.filter(a=>a.level==='warning');
+
+        let html='';
+        if(critical.length){
+          html=`
+            <div class="alert-banner">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="font-size:24px">🚨</span>
+                <div>
+                  <div style="font-weight:700;margin-bottom:4px">CRITICAL ALERT</div>
+                  <div style="font-size:14px">${critical[0].message}</div>
+                  ${critical.length>1?`<div style="font-size:12px;margin-top:4px">+${critical.length-1} more critical alerts</div>`:''}
+                </div>
+              </div>
+            </div>`;
+        } else if (warning.length){
+          html=`
+            <div class="alert-banner" style="background:rgba(255,194,71,.15);border-color:rgba(255,194,71,.3)">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="font-size:24px">⚠️</span>
+                <div>
+                  <div style="font-weight:700;margin-bottom:4px">WARNING</div>
+                  <div style="font-size:14px">${warning[0].message}</div>
+                </div>
+              </div>
+            </div>`;
+        }
+        this.elements.alertBanner.innerHTML=html;
+      }
+
+      showError(message){
+        this.elements.mainContent.innerHTML=`
           <div class="error-state">
             <h3 style="margin:0 0 8px;color:#ff9da6">⚠️ Unable to Load Data</h3>
             <p style="margin:0;color:var(--muted)">${message}</p>
@@ -686,8 +771,8 @@
           </div>`;
       }
 
-      renderMainUI() {
-        this.elements.mainContent.innerHTML = `
+      renderMainUI(){
+        this.elements.mainContent.innerHTML=`
           <section class="card">
             <div class="gauge-container">
               <div class="gauge-wrap">
@@ -703,7 +788,7 @@
               <div class="gauge-info">
                 <h2>Market Stress Index</h2>
                 <div style="color:var(--muted);font-size:14px;margin-bottom:8px">
-                  Real-time composite of <span id="indicatorCount">8</span> economic indicators
+                  Real-time composite of <span id="indicatorCount">--</span> economic indicators
                 </div>
                 <div class="confidence">
                   <span>Confidence:</span>
@@ -736,6 +821,14 @@
                 </div>
               </div>
             </div>
+          </section>
+
+          <section class="card" id="historicalSection" style="display:none">
+            <h3 style="margin:0 0 16px;font-size:20px;display:flex;align-items:center">
+              📈 Historical Context
+              <span class="info-tooltip" style="margin-left:8px" title="Compare current market conditions with historical crisis periods">?</span>
+            </h3>
+            <div id="historicalComparisons" class="historical-comparison"></div>
           </section>
 
           <section class="card">
@@ -806,52 +899,74 @@
               <div id="heatmap" class="heatmap"></div>
             </section>
           </div>`;
-        
         this.setupEventListeners();
       }
 
-      setupEventListeners() {
-        // Tab switching
-        document.querySelectorAll('.tab').forEach(tab => {
-          tab.addEventListener('click', (e) => {
-            const target = e.currentTarget.dataset.tab;
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      renderHistoricalComparisons(comps){
+        const section=document.getElementById('historicalSection');
+        const container=document.getElementById('historicalComparisons');
+        if(!comps.length){ section.style.display='none'; return; }
+        section.style.display='block';
+        container.innerHTML=comps.map(c=>{
+          const crit=c.similarity>70;
+          return `
+            <div class="period-card ${crit?'critical':''}">
+              <div style="font-weight:600;margin-bottom:8px">${c.period}</div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="color:var(--muted);font-size:12px">Peak Score:</span>
+                <span style="font-weight:700">${c.score}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="color:var(--muted);font-size:12px">Similarity:</span>
+                <span style="font-weight:700;color:${crit?CONFIG.ZONE_COLORS.red:CONFIG.ZONE_COLORS.amber}">${c.similarity}%</span>
+              </div>
+              <div style="font-size:11px;color:var(--muted)">${c.date}</div>
+            </div>`;
+        }).join('');
+      }
+
+      setupEventListeners(){
+        document.querySelectorAll('.tab').forEach(tab=>{
+          tab.addEventListener('click', e=>{
+            const target=e.currentTarget.dataset.tab;
+            document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
             e.currentTarget.classList.add('active');
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
             document.getElementById(`tab-${target}`).classList.add('active');
           });
         });
 
-        // Timeframe buttons
-        document.querySelectorAll('#timeframeButtons .btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            document.querySelectorAll('#timeframeButtons .btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('#timeframeButtons .btn').forEach(btn=>{
+          btn.addEventListener('click', e=>{
+            document.querySelectorAll('#timeframeButtons .btn').forEach(b=>b.classList.remove('active'));
             e.currentTarget.classList.add('active');
-            this.currentTimeframe = e.currentTarget.dataset.tf;
+            this.currentTimeframe=e.currentTarget.dataset.tf;
             app.renderCompositeChart();
           });
         });
       }
 
-      setGauge(score) {
-        const scoreEl = document.getElementById('scoreText');
-        const needleEl = document.getElementById('needle');
-        if (scoreEl) scoreEl.textContent = Math.round(score);
-        if (needleEl) {
-          const angle = (score / 100) * 360;
-          needleEl.style.setProperty('--angle', angle + 'deg');
+      setGauge(score){
+        const scoreEl=document.getElementById('scoreText');
+        const needleEl=document.getElementById('needle');
+        if(scoreEl) scoreEl.textContent=Math.round(score);
+        if(needleEl){
+          const angle=(score/100)*360;
+          needleEl.style.setProperty('--angle', angle+'deg');
         }
       }
 
-      renderPills(parts) {
-        const grid = document.getElementById('pillsGrid');
-        if (!grid) return;
-        
-        grid.innerHTML = parts.map(p => {
-          const arrow = p.change == null ? '' : (p.change > 0 ? '▲' : '▼');
-          const changeTxt = p.change == null ? '' : `${p.change > 0 ? '+' : ''}${p.change.toFixed(2)}`;
-          const ragClass = `pill-status-${p.ragStatus || 'green'}`;
-          
+      renderPills(parts){
+        const grid=document.getElementById('pillsGrid');
+        if(!grid) return;
+        grid.innerHTML=parts.map(p=>{
+          const arrow=p.change==null?'':(p.change>0?'▲':'▼');
+          const changeTxt=p.change==null?'':`${p.change>0?'+':''}${p.change.toFixed(2)}`;
+          const ragClass=`pill-status-${p.ragStatus||'green'}`;
+          const momentumIndicator = (p.momentum!==undefined && p.momentum!==0)
+            ? `<div style="font-size:10px;color:${p.momentum>0?CONFIG.ZONE_COLORS.red:CONFIG.ZONE_COLORS.green}">
+                 ${p.momentum>0?'↗':'↘'} ${Math.abs(p.momentum).toFixed(3)}/day
+               </div>` : '';
           return `
             <div class="pill" data-key="${p.key}">
               <div class="pill-header">
@@ -863,123 +978,87 @@
               </div>
               <div class="pill-value">${p.valueDisp}</div>
               <div class="pill-change"><span>${arrow}</span>${changeTxt}</div>
-              ${p.description ? `<div class="pill-tooltip">${p.description}</div>` : ''}
+              ${momentumIndicator}
+              ${p.description?`<div class="pill-tooltip">${p.description}</div>`:''}
             </div>`;
         }).join('');
       }
 
-      renderCompositeChart(history) {
-        const hist = history || [];
-        if (!hist.length) return;
-        
-        const now = new Date(hist[hist.length - 1].date + 'T00:00:00Z');
-        const spanDays = this.currentTimeframe === '1m' ? 30 :
-                        this.currentTimeframe === '3m' ? 90 :
-                        this.currentTimeframe === '6m' ? 180 :
-                        this.currentTimeframe === '1y' ? 365 : Infinity;
-        
-        const filtered = spanDays === Infinity ? hist : hist.filter(d => {
-          const dt = new Date(d.date + 'T00:00:00Z');
-          return (now - dt) / 86400000 <= spanDays;
+      renderCompositeChart(history){
+        const hist=history||[];
+        if(!hist.length) return;
+
+        const now=new Date(hist[hist.length-1].date+'T00:00:00Z');
+        const spanDays= this.currentTimeframe==='1m'?30 :
+                        this.currentTimeframe==='3m'?90 :
+                        this.currentTimeframe==='6m'?180 :
+                        this.currentTimeframe==='1y'?365 : Infinity;
+
+        const filtered= spanDays===Infinity ? hist : hist.filter(d=>{
+          const dt=new Date(d.date+'T00:00:00Z');
+          return (now-dt)/86400000 <= spanDays;
         });
-        
-        const labels = filtered.map(d => d.date);
-        const data = filtered.map(d => d.value);
-        
-        if (this.charts.composite) this.charts.composite.destroy();
-        
-        const ctx = document.getElementById('compositeChart');
-        if (!ctx) return;
-        
-        this.charts.composite = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [{
-              label: 'Composite Score',
-              data,
-              borderColor: CONFIG.ZONE_COLORS.amber,
-              backgroundColor: 'rgba(255,194,71,0.1)',
-              borderWidth: 2,
-              fill: true,
-              tension: 0.25,
-              pointRadius: 0,
-              pointHoverRadius: 4
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                mode: 'index',
-                intersect: false
-              }
-            },
-            scales: {
-              x: { display: true, grid: { color: 'rgba(255,255,255,0.05)' } },
-              y: { 
-                min: 0, 
-                max: 100,
-                grid: { color: 'rgba(255,255,255,0.05)' },
-                ticks: { 
-                  callback: (val) => val + '%'
-                }
-              }
+
+        const labels=filtered.map(d=>d.date);
+        const data  =filtered.map(d=>d.value);
+
+        if(this.charts.composite) this.charts.composite.destroy();
+        const ctx=document.getElementById('compositeChart'); if(!ctx) return;
+
+        this.charts.composite=new Chart(ctx,{
+          type:'line',
+          data:{ labels, datasets:[{
+            label:'Composite Score',
+            data,
+            borderColor:CONFIG.ZONE_COLORS.amber,
+            backgroundColor:'rgba(255,194,71,0.1)',
+            borderWidth:2,
+            fill:true,
+            tension:0.25,
+            pointRadius:0,
+            pointHoverRadius:4
+          }]},
+          options:{
+            responsive:true,
+            maintainAspectRatio:false,
+            plugins:{ legend:{display:false}, tooltip:{mode:'index',intersect:false} },
+            scales:{
+              x:{ display:true, grid:{ color:'rgba(255,255,255,0.05)' } },
+              y:{ min:0, max:100, grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ callback:val=>val+'%' } }
             }
           }
         });
       }
 
-      renderDecomp(parts) {
-        const labels = parts.map(p => p.label);
-        const contrib = parts.map(p => +(p.scaled * p.w).toFixed(1));
-        
-        if (this.charts.decomp) this.charts.decomp.destroy();
-        
-        const ctx = document.getElementById('decompChart');
-        if (!ctx) return;
-        
-        this.charts.decomp = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels,
-            datasets: [{
-              label: 'Contribution',
-              data: contrib,
-              backgroundColor: contrib.map(c => {
-                if (c < 10) return CONFIG.ZONE_COLORS.green;
-                if (c < 20) return CONFIG.ZONE_COLORS.amber;
-                return CONFIG.ZONE_COLORS.red;
-              }),
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              y: { 
-                beginAtZero: true,
-                max: Math.max(10, Math.ceil(Math.max(...contrib, 10) / 10) * 10),
-                grid: { color: 'rgba(255,255,255,0.05)' }
-              },
-              x: { grid: { display: false } }
+      renderDecomp(parts){
+        const labels=parts.map(p=>p.label);
+        const contrib=parts.map(p=>+(p.scaled*p.w).toFixed(1));
+        if(this.charts.decomp) this.charts.decomp.destroy();
+        const ctx=document.getElementById('decompChart'); if(!ctx) return;
+
+        this.charts.decomp=new Chart(ctx,{
+          type:'bar',
+          data:{ labels, datasets:[{
+            label:'Contribution',
+            data:contrib,
+            backgroundColor:contrib.map(c=> c<10?CONFIG.ZONE_COLORS.green : (c<20?CONFIG.ZONE_COLORS.amber:CONFIG.ZONE_COLORS.red)),
+            borderWidth:0
+          }]},
+          options:{
+            responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+            scales:{
+              y:{ beginAtZero:true, max:Math.max(10, Math.ceil(Math.max(...contrib,10)/10)*10), grid:{ color:'rgba(255,255,255,0.05)' } },
+              x:{ grid:{ display:false } }
             }
           }
         });
       }
 
-      renderHeatmap(parts) {
-        const heatmap = document.getElementById('heatmap');
-        if (!heatmap) return;
-        
-        const items = parts.length ? parts : [{ label: 'No data', scaled: 0, valueDisp: '—' }];
-        
-        heatmap.innerHTML = items.map(p => {
-          const color = Utils.heatColor(p.scaled);
+      renderHeatmap(parts){
+        const heatmap=document.getElementById('heatmap'); if(!heatmap) return;
+        const items=parts.length ? parts : [{label:'No data',scaled:0,valueDisp:'—'}];
+        heatmap.innerHTML=items.map(p=>{
+          const color=Utils.heatColor(p.scaled);
           return `
             <div class="heat-cell">
               <div class="heat-label">${p.label}</div>
@@ -989,23 +1068,20 @@
         }).join('');
       }
 
-      renderScenarios(composite, breadth) {
-        const stress = composite / 100;
-        const riskBias = (breadth - 50) / 50;
-        const baseProb = 60 - 20 * riskBias;
-        const downProb = Math.min(40, 20 + 40 * stress);
-        const upProb = Math.max(5, 100 - baseProb - downProb);
-        
-        const cards = [
-          { title: 'Base Case', prob: Math.round(baseProb), desc: 'Sideways-to-mildly volatile regime; conditions stabilize with modest dispersion.' },
-          { title: 'Downside (Stress)', prob: Math.round(downProb), desc: 'Tighter financial conditions and volatility spikes; drawdowns concentrated in cyclicals.' },
-          { title: 'Upside (Relief)', prob: Math.round(upProb), desc: 'Soft-landing drift; risk appetite improves as macro prints surprise positively.' }
+      renderScenarios(composite, breadth){
+        const stress=composite/100;
+        const riskBias=(breadth-50)/50;
+        const baseProb=60-20*riskBias;
+        const downProb=Math.min(40, 20+40*stress);
+        const upProb=Math.max(5, 100-baseProb-downProb);
+
+        const cards=[
+          { title:'Base Case', prob:Math.round(baseProb), desc:'Sideways-to-mildly volatile regime; conditions stabilize with modest dispersion.' },
+          { title:'Downside (Stress)', prob:Math.round(downProb), desc:'Tighter financial conditions and volatility spikes; drawdowns concentrated in cyclicals.' },
+          { title:'Upside (Relief)', prob:Math.round(upProb), desc:'Soft-landing drift; risk appetite improves as macro prints surprise positively.' }
         ];
-        
-        const grid = document.getElementById('scenarioGrid');
-        if (!grid) return;
-        
-        grid.innerHTML = cards.map(c => `
+        const grid=document.getElementById('scenarioGrid'); if(!grid) return;
+        grid.innerHTML=cards.map(c=>`
           <div style="background:rgba(255,255,255,.03);padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,.06)">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
               <div style="font-weight:600">${c.title}</div>
@@ -1015,224 +1091,155 @@
           </div>`).join('');
       }
 
-      renderTrajectory(composite) {
-        const steps = 26;
-        const phi = 0.85;
-        const target = 50;
-        let v = composite;
-        
-        const labels = [], path = [], upper = [], lower = [];
-        
-        for (let i = 1; i <= steps; i++) {
-          v = phi * v + (1 - phi) * target;
-          labels.push(`W+${i}`);
-          path.push(+v.toFixed(1));
-          
-          const band = 6 * Math.sqrt(i / steps);
-          upper.push(Math.min(100, +(v + band).toFixed(1)));
-          lower.push(Math.max(0, +(v - band).toFixed(1)));
+      renderTrajectory(composite){
+        const steps=26, phi=0.85, target=50;
+        let v=composite;
+        const labels=[], path=[], upper=[], lower=[];
+        for(let i=1;i<=steps;i++){
+          v = phi*v + (1-phi)*target;
+          labels.push(`W+${i}`); path.push(+v.toFixed(1));
+          const band=6*Math.sqrt(i/steps);
+          upper.push(Math.min(100, +(v+band).toFixed(1)));
+          lower.push(Math.max(0, +(v-band).toFixed(1)));
         }
-        
-        if (this.charts.traj) this.charts.traj.destroy();
-        
-        const ctx = document.getElementById('trajectoryChart');
-        if (!ctx) return;
-        
-        this.charts.traj = new Chart(ctx, {
-          type: 'line',
-          data: {
+        if(this.charts.traj) this.charts.traj.destroy();
+        const ctx=document.getElementById('trajectoryChart'); if(!ctx) return;
+
+        this.charts.traj=new Chart(ctx,{
+          type:'line',
+          data:{
             labels,
-            datasets: [
-              { label: 'Projected', data: path, borderWidth: 2, fill: false, tension: 0.25, borderColor: CONFIG.ZONE_COLORS.amber },
-              { label: 'Upper', data: upper, borderWidth: 1, fill: false, borderDash: [4, 4], borderColor: CONFIG.ZONE_COLORS.red },
-              { label: 'Lower', data: lower, borderWidth: 1, fill: false, borderDash: [4, 4], borderColor: CONFIG.ZONE_COLORS.green }
+            datasets:[
+              { label:'Projected', data:path, borderWidth:2, fill:false, tension:0.25, borderColor:CONFIG.ZONE_COLORS.amber },
+              { label:'Upper', data:upper, borderWidth:1, fill:false, borderDash:[4,4], borderColor:CONFIG.ZONE_COLORS.red },
+              { label:'Lower', data:lower, borderWidth:1, fill:false, borderDash:[4,4], borderColor:CONFIG.ZONE_COLORS.green }
             ]
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { 
-              legend: { 
-                display: true,
-                labels: { color: '#8b96b0' }
-              } 
-            },
-            scales: { 
-              y: { 
-                min: 0, 
-                max: 100,
-                grid: { color: 'rgba(255,255,255,0.05)' }
-              },
-              x: { grid: { color: 'rgba(255,255,255,0.05)' } }
-            }
+          options:{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ display:true, labels:{ color:'#8b96b0' } } },
+            scales:{ y:{ min:0,max:100, grid:{ color:'rgba(255,255,255,0.05)' } },
+                     x:{ grid:{ color:'rgba(255,255,255,0.05)' } } }
           }
         });
       }
 
-      updateAudit(missing, stale) {
-        const auditHTML = 
-          (missing.length ? `<div><b class="bad">Missing</b>: ${missing.join(', ')}</div>` : '') +
-          (stale.length ? `<div><b class="warn">Stale</b>: ${stale.join(', ')}</div>` : '');
-        
-        this.elements.auditBox.innerHTML = auditHTML || '<div style="color:var(--green)">✓ All data current</div>';
+      updateAudit(missing,stale){
+        const html=(missing.length?`<div><b class="bad">Missing</b>: ${missing.join(', ')}</div>`:'') +
+                   (stale.length?`<div><b class="warn">Stale</b>: ${stale.join(', ')}</div>`:'');
+        document.getElementById('auditBox').innerHTML = html || '<div style="color:var(--green)">✓ All data current</div>';
       }
     }
 
-    // ==================== MAIN APPLICATION ====================
-    class App {
-      constructor() {
-        this.ui = new UIManager();
-        this.state = {
-          dataMap: null,
-          compositeHistory: [],
-          cache: null
-        };
+    // ==================== APP ====================
+    class App{
+      constructor(){
+        this.ui=new UIManager();
+        this.state={ dataMap:null, compositeHistory:[], cache:null };
       }
 
-      async init() {
-        try {
-          this.ui.setStatus('green', 'Loading data…');
-          
-          const cache = await DataService.loadFredCache();
-          this.state.cache = cache;
-          
-          const dataMap = IndicatorProcessor.mapIndicatorsFromCache(cache);
-          this.state.dataMap = dataMap;
-          
-          // Check if calm regime for freshness penalties
-          const vixObs = dataMap.VIX_PROXY?.observations || [];
-          const creditObs = dataMap.CREDIT?.observations || [];
-          const isCalm = vixObs.slice(-1).some(o => Utils.safeParseFloat(o.value) <= 13) &&
-                        creditObs.slice(-1).some(o => Utils.safeParseFloat(o.value) <= 0.35);
-          
-          const { parts, num, den } = IndicatorProcessor.computeComposite(dataMap, isCalm);
-          
-          if (den <= 0) throw new Error('No valid indicators with positive weights');
-          
-          const compositeBase = num / den;
+      async init(){
+        try{
+          this.ui.setStatus('green','Loading data…');
+
+          const cache=await DataService.loadFredCache();
+          this.state.cache=cache;
+
+          const dataMap=IndicatorProcessor.mapIndicatorsFromCache(cache);
+          this.state.dataMap=dataMap;
+
+          const vixObs=dataMap.VIX_PROXY?.observations||[];
+          const creditObs=dataMap.CREDIT?.observations||[];
+          const isCalm = vixObs.slice(-1).some(o=>Utils.safeParseFloat(o.value)<=13) &&
+                         creditObs.slice(-1).some(o=>Utils.safeParseFloat(o.value)<=0.35);
+
+          const { parts, num, den, currentValues } = IndicatorProcessor.computeComposite(dataMap, isCalm);
+          if(den<=0) throw new Error('No valid indicators with positive weights');
+
+          const compositeBase = num/den;
           const penalty = Analytics.complacencyPenalty(dataMap);
-          const infl = Analytics.inflationDriftPenalty(cache);
+          const infl    = Analytics.inflationDriftPenalty(cache);
           const composite = Math.min(100, compositeBase + penalty + infl);
-          
-          // Build composite history
+
           this.state.compositeHistory = Analytics.buildCompositeHistory(dataMap);
-          
-          // Render UI
+
+          const alerts = Analytics.generateAlerts(parts, composite);
+          const histComps = Analytics.findHistoricalComparisons(currentValues, composite);
+
           this.ui.renderMainUI();
           this.ui.setGauge(composite);
-          
-          const zone = Utils.zoneOf(composite);
-          const badges = [];
-          if (penalty > 0) badges.push(`Complacency +${penalty}`);
-          if (infl > 0) badges.push(`Inflation +${infl}`);
-          
-          this.ui.setStatus(
-            zone,
-            `Composite: ${Math.round(composite)} (${zone.toUpperCase()}) ${badges.length ? '· ' + badges.join(' · ') : ''}`
-          );
-          
+
+          const zone=Utils.zoneOf(composite);
+          const badges=[];
+          if(penalty>0) badges.push(`Complacency +${penalty}`);
+          if(infl>0)    badges.push(`Inflation +${infl}`);
+
+          this.ui.setStatus(zone, `Composite: ${Math.round(composite)} (${zone.toUpperCase()}) ${badges.length?'· '+badges.join(' · '):''}`);
+
+          this.ui.renderAlerts(alerts);
+          this.ui.renderHistoricalComparisons(histComps);
+
           document.getElementById('indicatorCount').textContent = parts.length;
-          
-          // Add overlays to parts for display
-          const displayParts = [...parts];
-          if (penalty > 0) {
-            displayParts.push({ 
-              key: 'complacency',
-              label: 'Complacency Overlay', 
-              scaled: penalty, 
-              w: 1, 
-              valueDisp: `+${penalty}`, 
-              change: null,
-              freshClass: 'badge-fresh',
-              freshTxt: 'Active'
-            });
-          }
-          if (infl > 0) {
-            displayParts.push({ 
-              key: 'inflation',
-              label: 'Inflation Drift', 
-              scaled: infl, 
-              w: 1, 
-              valueDisp: `+${infl}`, 
-              change: null,
-              freshClass: 'badge-fresh',
-              freshTxt: 'Active'
-            });
-          }
-          
+
+          const displayParts=[...parts];
+          if(penalty>0){ displayParts.push({ key:'complacency', label:'Complacency Overlay', scaled:penalty, w:1, valueDisp:`+${penalty}`, change:null, freshClass:'badge-fresh', freshTxt:'Active' }); }
+          if(infl>0){ displayParts.push({ key:'inflation', label:'Inflation Drift', scaled:infl, w:1, valueDisp:`+${infl}`, change:null, freshClass:'badge-fresh', freshTxt:'Active' }); }
+
           this.ui.renderPills(displayParts);
           this.ui.renderCompositeChart(this.state.compositeHistory);
           this.ui.renderDecomp(displayParts);
           this.ui.renderHeatmap(parts);
-          
-          const breadth = parts.reduce((a, p) => a + p.scaled, 0) / parts.length;
+
+          const breadth = parts.reduce((a,p)=>a+p.scaled,0)/parts.length;
           this.ui.renderScenarios(composite, breadth);
           this.ui.renderTrajectory(composite);
-          
-          // Risk probabilities
-          const { p1, p3, p6 } = Analytics.horizonRiskSmart(composite, this.state.compositeHistory);
+
+          const { p1,p3,p6 } = Analytics.horizonRiskSmart(composite, this.state.compositeHistory);
           document.getElementById('prob1m').textContent = `${p1}%`;
           document.getElementById('prob3m').textContent = `${p3}%`;
           document.getElementById('prob6m').textContent = `${p6}%`;
-          
-          // Regime indicator
-          const regimeColor = CONFIG.ZONE_COLORS[zone];
-          const regimeName = zone === 'green' ? 'Normal' : zone === 'amber' ? 'Stressed' : 'Crisis';
-          document.getElementById('regimeIndicator').innerHTML = `
+
+          const regimeColor=CONFIG.ZONE_COLORS[zone];
+          const regimeName= zone==='green'?'Normal': (zone==='amber'?'Stressed':'Crisis');
+          document.getElementById('regimeIndicator').innerHTML=`
             <div class="status" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);display:inline-flex">
               <span class="status-dot" style="background:${regimeColor}"></span>
               <span>${regimeName} regime</span>
             </div>`;
-          
-          // Confidence and audit
+
           const { missing, stale } = this.auditData(parts);
-          const confidence = Math.max(40, 100 - (missing.length * 12 + stale.length * 4));
-          
+          const confidence = Math.max(40, 100 - (missing.length*12 + stale.length*4));
           document.getElementById('confidenceFill').style.width = confidence + '%';
           document.getElementById('confidenceText').textContent = confidence + '%';
-          
           this.ui.updateAudit(missing, stale);
-          
-        } catch (err) {
+
+        }catch(err){
           console.error('Initialization error:', err);
-          this.ui.setErrorStatus(err.message || 'Unknown error');
-          this.ui.showError(err.message || 'An unexpected error occurred');
+          this.ui.setErrorStatus(err.message||'Unknown error');
+          this.ui.showError(err.message||'An unexpected error occurred');
         }
       }
 
-      auditData(parts) {
-        const missing = [];
-        const stale = [];
-        
-        for (const [k, cfg] of Object.entries(CONFIG.INDICATORS)) {
-          const s = this.state.dataMap[k];
-          if (!s?.observations?.length) {
-            missing.push(k);
-            continue;
-          }
-          
-          const days = DataService.seriesAgeDays(s, s.fetchedAt);
-          const lim = CONFIG.FRESH_LIMITS[cfg.cadence] || CONFIG.FRESH_LIMITS.daily;
-          
-          if (days > lim.warn) {
-            stale.push(`${k} (${days}d)`);
-          }
+      auditData(parts){
+        const missing=[], stale=[];
+        for(const [k,cfg] of Object.entries(CONFIG.INDICATORS)){
+          const s=this.state.dataMap[k];
+          if(!s?.observations?.length){ missing.push(k); continue; }
+          const days=DataService.seriesAgeDays(s, s.fetchedAt);
+          const lim=CONFIG.FRESH_LIMITS[cfg.cadence]||CONFIG.FRESH_LIMITS.daily;
+          if(days>lim.warn){ stale.push(`${k} (${days}d)`); }
         }
-        
         return { missing, stale };
       }
 
-      renderCompositeChart() {
-        this.ui.renderCompositeChart(this.state.compositeHistory);
-      }
+      renderCompositeChart(){ this.ui.renderCompositeChart(this.state.compositeHistory); }
     }
 
-    // ==================== INITIALIZE ====================
-    const app = new App();
-    
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => app.init());
-    } else {
+    // ==================== BOOT ====================
+    const app=new App();
+    if(document.readyState==='loading'){
+      document.addEventListener('DOMContentLoaded', ()=>app.init());
+    }else{
       app.init();
     }
   </script>
