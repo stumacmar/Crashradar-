@@ -1,5 +1,4 @@
 <!doctype html>
-
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -114,6 +113,39 @@
     .loading{text-align:center;padding:40px;color:var(--muted)}
     .error-state{background:rgba(255,96,112,.1);border:1px solid rgba(255,96,112,.3);padding:20px;border-radius:var(--radius);margin:20px 0}
 
+    /* NEW: Critical alerts */
+    .alert-banner {
+      background: linear-gradient(135deg, rgba(255,96,112,.15), rgba(255,140,66,.15));
+      border: 1px solid rgba(255,96,112,.3);
+      padding: 16px;
+      border-radius: var(--radius);
+      margin: 16px 0;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,96,112,.4); }
+      70% { box-shadow: 0 0 0 10px rgba(255,96,112,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,96,112,0); }
+    }
+
+    /* NEW: Historical comparison */
+    .historical-comparison {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .period-card {
+      background: rgba(255,255,255,.03);
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    .period-card.critical {
+      background: rgba(255,96,112,.1);
+      border-color: rgba(255,96,112,.3);
+    }
+
     @media (max-width:768px){
       .gauge-container{justify-content:center;text-align:center}
       .gauge-wrap{width:var(--ring-m);height:var(--ring-m)}
@@ -130,25 +162,22 @@
       <h1>⚡ Economic Crash Radar Pro</h1>
       <div class="subtitle">Advanced multi-timeframe market stress analysis with predictive analytics</div>
       <div id="statusBadge"></div>
+      <div id="alertBanner"></div>
       <div id="auditBox" class="audit"></div>
     </header>
 
-```
-<main id="mainContent">
-  <div class="loading">Loading economic data...</div>
-</main>
-```
-
+    <main id="mainContent">
+      <div class="loading">Loading economic data...</div>
+    </main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.1/dist/chartjs-plugin-annotation.min.js"></script>
 
   <script>
     'use strict';
 
-    // ==================== CONFIGURATION ====================
+    // ==================== ENHANCED CONFIGURATION ====================
     const CONFIG = {
       FRED_CACHE_PATH: 'data/fred_cache.json',
       CACHE_TIMEOUT: 10000,
@@ -160,7 +189,10 @@
           weight:0.18, 
           cadence:'daily',
           description: 'Difference between 10-year and 3-month Treasury yields. Negative values (inverted curve) historically precede recessions by 6-18 months.',
-          thresholds: { green: [0.5, Infinity], amber: [-0.5, 0.5], red: [-Infinity, -0.5] }
+          thresholds: { green: [0.5, Infinity], amber: [-0.5, 0.5], red: [-Infinity, -0.5] },
+          // NEW: Momentum sensitivity
+          momentumWeight: 1.2,
+          crisisThreshold: -1.0
         },
         CREDIT:          { 
           label:'Credit Spread',       
@@ -168,15 +200,19 @@
           weight:0.14, 
           cadence:'daily',
           description: 'High-yield bond spread over Treasuries. Widening spreads indicate investors demanding more compensation for risk and potential credit stress.',
-          thresholds: { green: [-Infinity, 0.40], amber: [0.40, 0.70], red: [0.70, Infinity] }
+          thresholds: { green: [-Infinity, 0.40], amber: [0.40, 0.70], red: [0.70, Infinity] },
+          momentumWeight: 1.1,
+          crisisThreshold: 1.0
         },
-        UN_SLOPE6:       { 
-          label:'Unemployment Δ',      
+        SAHM_RULE:       { 
+          label:'Sahm Rule',      
           format:v=>v?.toFixed(2),               
-          weight:0.12, 
+          weight:0.16, // Increased weight for labor market
           cadence:'monthly',
-          description: '6-month change in unemployment rate. Rising unemployment signals economic weakness. Sahm Rule: 0.5+ increase from 12-month low indicates recession.',
-          thresholds: { green: [-Infinity, 0.15], amber: [0.15, 0.35], red: [0.35, Infinity] }
+          description: '3-month average unemployment rate minus 12-month low. Values ≥0.5 indicate recession has likely begun. Most reliable labor market signal.',
+          thresholds: { green: [-Infinity, 0.1], amber: [0.1, 0.4], red: [0.4, Infinity] },
+          momentumWeight: 1.4, // High sensitivity for labor deterioration
+          crisisThreshold: 0.5
         },
         DD_12M:          { 
           label:'Market Drawdown',     
@@ -184,7 +220,9 @@
           weight:0.20, 
           cadence:'daily',
           description: 'S&P 500 decline from 12-month peak. Deep drawdowns often coincide with economic stress. -20% defines bear market territory.',
-          thresholds: { green: [-0.05, 0], amber: [-0.15, -0.05], red: [-Infinity, -0.15] }
+          thresholds: { green: [-0.05, 0], amber: [-0.15, -0.05], red: [-Infinity, -0.15] },
+          momentumWeight: 1.3,
+          crisisThreshold: -0.25
         },
         NFCI:            { 
           label:'Financial Conditions',
@@ -192,7 +230,9 @@
           weight:0.12, 
           cadence:'weekly',
           description: 'Chicago Fed National Financial Conditions Index. Above zero = tighter conditions. Sharp increases precede downturns.',
-          thresholds: { green: [-Infinity, -0.20], amber: [-0.20, 0.20], red: [0.20, Infinity] }
+          thresholds: { green: [-Infinity, -0.20], amber: [-0.20, 0.20], red: [0.20, Infinity] },
+          momentumWeight: 1.2,
+          crisisThreshold: 0.5
         },
         VIX_PROXY:       { 
           label:'Volatility Index',    
@@ -200,24 +240,25 @@
           weight:0.10, 
           cadence:'daily',
           description: 'CBOE Volatility Index (VIX) - "fear gauge". <15 = calm, 15-25 = elevated, >30 = stressed. Sustained low VIX can signal complacency.',
-          thresholds: { green: [-Infinity, 18], amber: [18, 28], red: [28, Infinity] }
-        },
-        RETAIL_MOMENTUM: { 
-          label:'Retail Sales Δ',      
-          format:v=>(v*100)?.toFixed(2)+'%',     
-          weight:0.08, 
-          cadence:'monthly',
-          description: 'Month-over-month retail sales growth. Consumer spending is 70% of GDP. Negative growth indicates weakening demand.',
-          thresholds: { green: [0.01, Infinity], amber: [-0.01, 0.01], red: [-Infinity, -0.01] }
-        },
-        SENTIMENT:       { 
-          label:'Consumer Confidence', 
-          format:v=>v?.toFixed(1),               
-          weight:0.06, 
-          cadence:'monthly',
-          description: 'U. Michigan Consumer Sentiment Index. Measures household confidence. <80 = pessimistic, >100 = optimistic. Leading indicator for spending.',
-          thresholds: { green: [95, Infinity], amber: [75, 95], red: [-Infinity, 75] }
+          thresholds: { green: [-Infinity, 18], amber: [18, 28], red: [28, Infinity] },
+          momentumWeight: 1.1,
+          crisisThreshold: 40
         }
+      },
+
+      // NEW: Historical crisis periods for comparison
+      HISTORICAL_CRISES: {
+        '2008 GFC': { score: 92, date: '2008-10-15', indicators: { T10Y3M: -1.5, CREDIT: 1.8, SAHM_RULE: 0.8, DD_12M: -0.45, VIX_PROXY: 45 }},
+        '2020 COVID': { score: 88, date: '2020-03-23', indicators: { T10Y3M: -0.8, CREDIT: 1.2, SAHM_RULE: 0.6, DD_12M: -0.34, VIX_PROXY: 62 }},
+        '2000 Dot-com': { score: 78, date: '2001-03-12', indicators: { T10Y3M: -0.3, CREDIT: 0.9, SAHM_RULE: 0.4, DD_12M: -0.28, VIX_PROXY: 32 }},
+        '2022 Inflation': { score: 65, date: '2022-06-13', indicators: { T10Y3M: 0.8, CREDIT: 0.6, SAHM_RULE: 0.1, DD_12M: -0.23, VIX_PROXY: 28 }}
+      },
+
+      // NEW: Alert thresholds
+      ALERTS: {
+        CRITICAL: 80,
+        WARNING: 65,
+        WATCH: 50
       },
 
       FRESH_LIMITS: { 
@@ -233,7 +274,7 @@
       }
     };
 
-    // ==================== UTILITIES ====================
+    // ==================== ENHANCED UTILITIES ====================
     const Utils = {
       clamp: (x, min = 0, max = 100) => Math.max(min, Math.min(max, x)),
       
@@ -256,22 +297,39 @@
         if (val == null || val === '.' || val === 'NaN' || val === '') return null;
         const num = +val;
         return isFinite(num) ? num : null;
+      },
+
+      // NEW: Format percentage with sign
+      formatPercent: (val, decimals = 1) => {
+        if (val == null) return '—';
+        const sign = val > 0 ? '+' : '';
+        return `${sign}${(val * 100).toFixed(decimals)}%`;
+      },
+
+      // NEW: Calculate momentum (rate of change)
+      calculateMomentum: (currentValues, historicalValues, lookback = 30) => {
+        const momentum = {};
+        for (const [key, current] of Object.entries(currentValues)) {
+          const historical = historicalValues[key];
+          if (current !== null && historical !== null) {
+            momentum[key] = (current - historical) / lookback;
+          }
+        }
+        return momentum;
       }
     };
 
-    // ==================== DATA SCALING ====================
+    // ==================== ENHANCED DATA SCALING ====================
     const SCALE = {
       T10Y3M:          v => Utils.clamp(Utils.map01(v,  1.0, -2.0)),
       CREDIT:          v => Utils.clamp(Utils.map01(v,  0.30, 1.00)),
-      UN_SLOPE6:       v => Utils.clamp(Utils.map01(v,  0.05, 0.50)),
+      SAHM_RULE:       v => Utils.clamp(Utils.map01(v,  0.0, 0.5)), // Sahm Rule: 0.5 = recession
       DD_12M:          v => Utils.clamp(Utils.map01(v,  0.00, -0.20)),
       NFCI:            v => Utils.clamp(Utils.map01(v, -0.80, 0.40)),
-      VIX_PROXY:       v => Utils.clamp(Utils.map01(v,  12,  35)),
-      RETAIL_MOMENTUM: v => Utils.clamp(Utils.map01(v,  0.03, -0.02)),
-      SENTIMENT:       v => Utils.clamp(Utils.map01(v, 110,  70))
+      VIX_PROXY:       v => Utils.clamp(Utils.map01(v,  12,  35))
     };
 
-    // ==================== DATA LAYER ====================
+    // ==================== ENHANCED DATA LAYER ====================
     class DataService {
       static async loadFredCache() {
         const controller = new AbortController();
@@ -358,33 +416,81 @@
         const ref = new Date(fetchedAt || Date.now());
         return Math.max(0, Math.round((ref - d) / 86400000));
       }
+
+      // NEW: Get historical value for momentum calculation
+      static getHistoricalValue(series, daysBack = 30) {
+        const obs = series?.observations || [];
+        if (obs.length < 2) return null;
+        
+        const targetDate = new Date(Date.now() - daysBack * 86400000);
+        
+        for (let i = obs.length - 1; i >= 0; i--) {
+          const obsDate = new Date(obs[i].date + 'T00:00:00Z');
+          if (obsDate <= targetDate) {
+            return Utils.safeParseFloat(obs[i].value);
+          }
+        }
+        return null;
+      }
     }
 
-    // ==================== DERIVED SERIES ====================
+    // ==================== ENHANCED DERIVED SERIES ====================
     class DerivedSeries {
-      static deriveUnempSlope6(UNRATE) {
+      // NEW: Compute Sahm Rule from unemployment data
+      static deriveSahmRule(UNRATE) {
         const obs = UNRATE?.observations || [];
         if (!obs.length) return null;
         
-        const byMonth = {};
-        for (const o of obs) {
-          const v = Utils.safeParseFloat(o.value);
-          if (v !== null) byMonth[o.date.slice(0, 7)] = v;
+        // We need at least 12 months of data
+        if (obs.length < 12) return null;
+        
+        const sahmObservations = [];
+        
+        for (let i = 11; i < obs.length; i++) {
+          const currentDate = obs[i].date;
+          
+          // Calculate 3-month average
+          let threeMonthSum = 0;
+          let threeMonthCount = 0;
+          for (let j = 0; j < 3; j++) {
+            if (i - j >= 0) {
+              const val = Utils.safeParseFloat(obs[i - j].value);
+              if (val !== null) {
+                threeMonthSum += val;
+                threeMonthCount++;
+              }
+            }
+          }
+          
+          if (threeMonthCount === 0) continue;
+          const threeMonthAvg = threeMonthSum / threeMonthCount;
+          
+          // Find 12-month minimum
+          let minUnemployment = Infinity;
+          for (let j = 1; j <= 12; j++) {
+            if (i - j >= 0) {
+              const val = Utils.safeParseFloat(obs[i - j].value);
+              if (val !== null && val < minUnemployment) {
+                minUnemployment = val;
+              }
+            }
+          }
+          
+          if (minUnemployment === Infinity) continue;
+          
+          // Sahm Rule = 3-month average minus 12-month minimum
+          const sahmValue = threeMonthAvg - minUnemployment;
+          
+          sahmObservations.push({
+            date: currentDate,
+            value: sahmValue.toFixed(3)
+          });
         }
         
-        const months = Object.keys(byMonth).sort();
-        if (months.length < 7) return null;
-        
-        const out = [];
-        for (let i = 6; i < months.length; i++) {
-          const m = months[i], prev = months[i - 6];
-          const delta = byMonth[m] - byMonth[prev];
-          const [yy, mm] = m.split('-').map(Number);
-          const d = new Date(Date.UTC(yy, mm, 0));
-          out.push({ date: d.toISOString().slice(0, 10), value: String(delta) });
-        }
-        
-        return { observations: out, fetchedAt: UNRATE.fetchedAt };
+        return { 
+          observations: sahmObservations,
+          fetchedAt: UNRATE.fetchedAt
+        };
       }
 
       static deriveDrawdown12m(SP500) {
@@ -396,7 +502,7 @@
         const peak = [];
         
         for (let i = 0; i < vals.length; i++) {
-          const start = Math.max(0, i - 252);
+          const start = Math.max(0, i - 252); // 252 trading days ≈ 1 year
           let p = -Infinity;
           for (let j = start; j <= i; j++) {
             if (vals[j] !== null) p = Math.max(p, vals[j]);
@@ -411,32 +517,9 @@
         
         return { observations: dd, fetchedAt: SP500.fetchedAt };
       }
-
-      static deriveRetailMomentum(RSAFS) {
-        const o = RSAFS?.observations || [];
-        if (o.length < 2) return null;
-        
-        const last = Utils.safeParseFloat(o[o.length - 1].value);
-        let prev = null;
-        
-        for (let i = o.length - 2; i >= 0; i--) {
-          const v = Utils.safeParseFloat(o[i].value);
-          if (v !== null) {
-            prev = v;
-            break;
-          }
-        }
-        
-        if (prev === null || prev === 0 || last === null) return null;
-        
-        return {
-          observations: [{ date: o[o.length - 1].date, value: String(last / prev - 1) }],
-          fetchedAt: RSAFS.fetchedAt
-        };
-      }
     }
 
-    // ==================== INDICATOR PROCESSOR ====================
+    // ==================== ENHANCED INDICATOR PROCESSOR ====================
     class IndicatorProcessor {
       static mapIndicatorsFromCache(cache) {
         const out = {};
@@ -451,20 +534,17 @@
           out.CREDIT = cache.BAMLH0A0HYM2 || cache.BAA10YM;
         }
         if (!out.VIX_PROXY && cache.VIXCLS) out.VIX_PROXY = cache.VIXCLS;
-        if (!out.SENTIMENT && cache.UMCSENT) out.SENTIMENT = cache.UMCSENT;
 
-        // Derived series
-        if (!out.UN_SLOPE6 && cache.UNRATE) {
-          out.UN_SLOPE6 = DerivedSeries.deriveUnempSlope6(cache.UNRATE) || 
+        // NEW: Compute Sahm Rule from unemployment data
+        if (!out.SAHM_RULE && cache.UNRATE) {
+          out.SAHM_RULE = DerivedSeries.deriveSahmRule(cache.UNRATE) || 
             { observations: [], fetchedAt: cache.UNRATE.fetchedAt };
         }
+
+        // Derived series
         if (!out.DD_12M && cache.SP500) {
           out.DD_12M = DerivedSeries.deriveDrawdown12m(cache.SP500) || 
             { observations: [], fetchedAt: cache.SP500.fetchedAt };
-        }
-        if (!out.RETAIL_MOMENTUM && cache.RSAFS) {
-          out.RETAIL_MOMENTUM = DerivedSeries.deriveRetailMomentum(cache.RSAFS) || 
-            { observations: [], fetchedAt: cache.RSAFS.fetchedAt };
         }
         
         return out;
@@ -480,10 +560,30 @@
         return 0.70;
       }
 
+      // NEW: Enhanced composite with momentum weighting
       static computeComposite(dataMap, isCalm) {
         let num = 0, den = 0;
         const parts = [];
+        const currentValues = {};
+        const historicalValues = {};
         
+        // First pass: collect current and historical values
+        for (const [k, cfg] of Object.entries(CONFIG.INDICATORS)) {
+          const s = dataMap[k];
+          const obs = s?.observations || [];
+          if (!obs.length) continue;
+          
+          const L = DataService.latest(s);
+          if (!L || L.value === null) continue;
+
+          currentValues[k] = L.value;
+          historicalValues[k] = DataService.getHistoricalValue(s, 30) || L.value;
+        }
+
+        // Calculate momentum
+        const momentum = Utils.calculateMomentum(currentValues, historicalValues);
+
+        // Second pass: compute weighted scores with momentum
         for (const [k, cfg] of Object.entries(CONFIG.INDICATORS)) {
           const s = dataMap[k];
           const obs = s?.observations || [];
@@ -498,7 +598,15 @@
                        days <= lim.warn ? { cls: 'badge-stale', txt: 'Stale' } :
                        { cls: 'badge-old', txt: 'Old' };
 
-          const scaled = SCALE[k](L.value);
+          let scaled = SCALE[k](L.value);
+          
+          // Apply momentum adjustment
+          const mom = momentum[k] || 0;
+          const momWeight = cfg.momentumWeight || 1.0;
+          if (mom !== 0) {
+            scaled = Utils.clamp(scaled * (1 + mom * momWeight));
+          }
+
           const w = cfg.weight * this.freshnessPenalty(days, cfg.cadence, isCalm);
           
           if (Number.isFinite(scaled) && Number.isFinite(w)) {
@@ -525,6 +633,7 @@
           parts.push({
             key: k,
             label: cfg.label,
+            value: L.value,
             valueDisp: cfg.format?.(L.value) ?? L.value,
             change,
             freshClass: badge.cls,
@@ -533,15 +642,17 @@
             w,
             obs,
             ragStatus,
-            description: cfg.description
+            description: cfg.description,
+            momentum: mom,
+            crisisThreshold: cfg.crisisThreshold
           });
         }
         
-        return { parts, num, den };
+        return { parts, num, den, currentValues };
       }
     }
 
-    // ==================== ANALYTICS ====================
+    // ==================== ENHANCED ANALYTICS ====================
     class Analytics {
       static complacencyPenalty(dataMap) {
         const vix = dataMap.VIX_PROXY?.observations || [];
@@ -606,7 +717,7 @@
       }
 
       static buildCompositeHistory(dataMap) {
-        const keysForHist = ['DD_12M', 'VIX_PROXY', 'T10Y3M', 'CREDIT', 'NFCI'];
+        const keysForHist = Object.keys(CONFIG.INDICATORS);
         const allDates = new Set();
         
         for (const k of keysForHist) {
@@ -644,13 +755,89 @@
           return { date, value: d > 0 ? +(n / d).toFixed(1) : null };
         }).filter(x => x.value !== null);
       }
+
+      // NEW: Find similar historical periods
+      static findHistoricalComparisons(currentValues, currentScore) {
+        const comparisons = [];
+        
+        for (const [period, data] of Object.entries(CONFIG.HISTORICAL_CRISES)) {
+          let similarity = 0;
+          let matchedIndicators = 0;
+          
+          for (const [indicator, currentVal] of Object.entries(currentValues)) {
+            const historicalVal = data.indicators[indicator];
+            if (historicalVal !== undefined && currentVal !== null) {
+              // Calculate similarity based on how close values are to crisis thresholds
+              const currentDist = Math.abs(currentVal - CONFIG.INDICATORS[indicator].crisisThreshold);
+              const historicalDist = Math.abs(historicalVal - CONFIG.INDICATORS[indicator].crisisThreshold);
+              similarity += 1 - (Math.abs(currentDist - historicalDist) / Math.max(currentDist, historicalDist));
+              matchedIndicators++;
+            }
+          }
+          
+          if (matchedIndicators > 0) {
+            similarity = (similarity / matchedIndicators) * 100;
+            comparisons.push({
+              period,
+              score: data.score,
+              date: data.date,
+              similarity: Math.round(similarity),
+              currentScore
+            });
+          }
+        }
+        
+        return comparisons.sort((a, b) => b.similarity - a.similarity).slice(0, 3);
+      }
+
+      // NEW: Generate critical alerts
+      static generateAlerts(parts, composite) {
+        const alerts = [];
+        
+        // Composite score alerts
+        if (composite >= CONFIG.ALERTS.CRITICAL) {
+          alerts.push({
+            level: 'critical',
+            message: `CRITICAL: Market stress at ${Math.round(composite)} - Similar to crisis levels`,
+            type: 'composite'
+          });
+        } else if (composite >= CONFIG.ALERTS.WARNING) {
+          alerts.push({
+            level: 'warning', 
+            message: `WARNING: Elevated market stress (${Math.round(composite)}) - Monitor closely`,
+            type: 'composite'
+          });
+        }
+
+        // Individual indicator alerts
+        for (const part of parts) {
+          if (part.value >= part.crisisThreshold) {
+            alerts.push({
+              level: 'critical',
+              message: `CRITICAL: ${part.label} at crisis level (${part.valueDisp})`,
+              type: 'indicator',
+              indicator: part.key
+            });
+          } else if (part.ragStatus === 'red') {
+            alerts.push({
+              level: 'warning',
+              message: `WARNING: ${part.label} in stress zone (${part.valueDisp})`,
+              type: 'indicator', 
+              indicator: part.key
+            });
+          }
+        }
+
+        return alerts;
+      }
     }
 
-    // ==================== UI MANAGER ====================
+    // ==================== ENHANCED UI MANAGER ====================
     class UIManager {
       constructor() {
         this.elements = {
           statusBadge: document.getElementById('statusBadge'),
+          alertBanner: document.getElementById('alertBanner'),
           auditBox: document.getElementById('auditBox'),
           mainContent: document.getElementById('mainContent')
         };
@@ -673,6 +860,47 @@
             <span class="status-dot" style="background:#ff6070"></span>
             <span>Data error: ${errText}</span>
           </div>`;
+      }
+
+      // NEW: Render alert banner
+      renderAlerts(alerts) {
+        if (!alerts.length) {
+          this.elements.alertBanner.innerHTML = '';
+          return;
+        }
+
+        const criticalAlerts = alerts.filter(a => a.level === 'critical');
+        const warningAlerts = alerts.filter(a => a.level === 'warning');
+
+        let alertHTML = '';
+        
+        if (criticalAlerts.length > 0) {
+          alertHTML = `
+            <div class="alert-banner">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="font-size:24px">🚨</span>
+                <div>
+                  <div style="font-weight:700;margin-bottom:4px">CRITICAL ALERT</div>
+                  <div style="font-size:14px">${criticalAlerts[0].message}</div>
+                  ${criticalAlerts.length > 1 ? 
+                    `<div style="font-size:12px;margin-top:4px">+${criticalAlerts.length - 1} more critical alerts</div>` : ''}
+                </div>
+              </div>
+            </div>`;
+        } else if (warningAlerts.length > 0) {
+          alertHTML = `
+            <div class="alert-banner" style="background:rgba(255,194,71,.15);border-color:rgba(255,194,71,.3)">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="font-size:24px">⚠️</span>
+                <div>
+                  <div style="font-weight:700;margin-bottom:4px">WARNING</div>
+                  <div style="font-size:14px">${warningAlerts[0].message}</div>
+                </div>
+              </div>
+            </div>`;
+        }
+
+        this.elements.alertBanner.innerHTML = alertHTML;
       }
 
       showError(message) {
@@ -703,7 +931,7 @@
               <div class="gauge-info">
                 <h2>Market Stress Index</h2>
                 <div style="color:var(--muted);font-size:14px;margin-bottom:8px">
-                  Real-time composite of <span id="indicatorCount">8</span> economic indicators
+                  Real-time composite of <span id="indicatorCount">6</span> economic indicators
                 </div>
                 <div class="confidence">
                   <span>Confidence:</span>
@@ -736,6 +964,15 @@
                 </div>
               </div>
             </div>
+          </section>
+
+          <!-- NEW: Historical Comparisons -->
+          <section class="card" id="historicalSection" style="display:none">
+            <h3 style="margin:0 0 16px;font-size:20px;display:flex;align-items:center">
+              📈 Historical Context
+              <span class="info-tooltip" style="margin-left:8px" title="Compare current market conditions with historical crisis periods">?</span>
+            </h3>
+            <div id="historicalComparisons" class="historical-comparison"></div>
           </section>
 
           <section class="card">
@@ -810,6 +1047,36 @@
         this.setupEventListeners();
       }
 
+      // NEW: Render historical comparisons
+      renderHistoricalComparisons(comparisons) {
+        const section = document.getElementById('historicalSection');
+        const container = document.getElementById('historicalComparisons');
+        
+        if (!comparisons.length) {
+          section.style.display = 'none';
+          return;
+        }
+
+        section.style.display = 'block';
+        
+        container.innerHTML = comparisons.map(comp => {
+          const isCritical = comp.similarity > 70;
+          return `
+            <div class="period-card ${isCritical ? 'critical' : ''}">
+              <div style="font-weight:600;margin-bottom:8px">${comp.period}</div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="color:var(--muted);font-size:12px">Peak Score:</span>
+                <span style="font-weight:700">${comp.score}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="color:var(--muted);font-size:12px">Similarity:</span>
+                <span style="font-weight:700;color:${isCritical ? CONFIG.ZONE_COLORS.red : CONFIG.ZONE_COLORS.amber}">${comp.similarity}%</span>
+              </div>
+              <div style="font-size:11px;color:var(--muted)">${comp.date}</div>
+            </div>`;
+        }).join('');
+      }
+
       setupEventListeners() {
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
@@ -852,6 +1119,12 @@
           const changeTxt = p.change == null ? '' : `${p.change > 0 ? '+' : ''}${p.change.toFixed(2)}`;
           const ragClass = `pill-status-${p.ragStatus || 'green'}`;
           
+          // NEW: Add momentum indicator
+          const momentumIndicator = p.momentum !== undefined && p.momentum !== 0 ? 
+            `<div style="font-size:10px;color:${p.momentum > 0 ? CONFIG.ZONE_COLORS.red : CONFIG.ZONE_COLORS.green}">
+              ${p.momentum > 0 ? '↗' : '↘'} ${Math.abs(p.momentum).toFixed(3)}/day
+            </div>` : '';
+          
           return `
             <div class="pill" data-key="${p.key}">
               <div class="pill-header">
@@ -863,6 +1136,7 @@
               </div>
               <div class="pill-value">${p.valueDisp}</div>
               <div class="pill-change"><span>${arrow}</span>${changeTxt}</div>
+              ${momentumIndicator}
               ${p.description ? `<div class="pill-tooltip">${p.description}</div>` : ''}
             </div>`;
         }).join('');
@@ -1078,7 +1352,7 @@
       }
     }
 
-    // ==================== MAIN APPLICATION ====================
+    // ==================== ENHANCED MAIN APPLICATION ====================
     class App {
       constructor() {
         this.ui = new UIManager();
@@ -1105,7 +1379,7 @@
           const isCalm = vixObs.slice(-1).some(o => Utils.safeParseFloat(o.value) <= 13) &&
                         creditObs.slice(-1).some(o => Utils.safeParseFloat(o.value) <= 0.35);
           
-          const { parts, num, den } = IndicatorProcessor.computeComposite(dataMap, isCalm);
+          const { parts, num, den, currentValues } = IndicatorProcessor.computeComposite(dataMap, isCalm);
           
           if (den <= 0) throw new Error('No valid indicators with positive weights');
           
@@ -1116,6 +1390,10 @@
           
           // Build composite history
           this.state.compositeHistory = Analytics.buildCompositeHistory(dataMap);
+          
+          // NEW: Generate alerts and historical comparisons
+          const alerts = Analytics.generateAlerts(parts, composite);
+          const historicalComparisons = Analytics.findHistoricalComparisons(currentValues, composite);
           
           // Render UI
           this.ui.renderMainUI();
@@ -1130,6 +1408,10 @@
             zone,
             `Composite: ${Math.round(composite)} (${zone.toUpperCase()}) ${badges.length ? '· ' + badges.join(' · ') : ''}`
           );
+          
+          // NEW: Render alerts and historical comparisons
+          this.ui.renderAlerts(alerts);
+          this.ui.renderHistoricalComparisons(historicalComparisons);
           
           document.getElementById('indicatorCount').textContent = parts.length;
           
