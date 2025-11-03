@@ -19,7 +19,6 @@
       font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif}
 
     .wrap{max-width:1400px;margin:0 auto;padding:20px 16px 80px}
-
     header{margin-bottom:24px}
     h1{font-size:clamp(32px,5vw,48px);line-height:1.1;margin:0 0 8px;
       background:linear-gradient(135deg,var(--text),var(--accent-bright));
@@ -156,7 +155,6 @@
             </div>
             <div id="regimeIndicator" class="regime" style="margin-top:10px"></div>
 
-            <!-- Probabilities with explanation trigger -->
             <div class="prob-display" style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap">
               <div class="prob-item" style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
                 <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase">1-Month Risk</h4>
@@ -171,12 +169,13 @@
                 <div class="prob-value" id="prob6m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
               </div>
             </div>
+
             <div style="margin-top:10px">
               <button id="probExplainBtn" class="info-btn" type="button">ⓘ What do these mean?</button>
               <div id="probExplainNote" class="info-note">
                 <b>How to read 1M / 3M / 6M risk:</b><br/>
                 These are modelled chances (0–95%) that our <i>composite stress score</i> will enter or stay in a higher-risk regime within the next 1, 3, or 6 months.
-                They are **not** literal “crash odds.”<br/><br/>
+                They are <b>not</b> literal “crash odds.”<br/><br/>
                 • Derived from today’s composite via a logistic curve, then scaled for horizon (short term damped, long term amplified).<br/>
                 • If the composite is near “red”, the 3M/6M probabilities will naturally be higher than 1M.<br/>
                 • Use direction and level together: rising 3M/6M with flat 1M = pressure building beneath the surface.
@@ -258,8 +257,7 @@
             <button class="info-btn" data-note-target="heatmap">ⓘ Explain</button>
           </div>
           <div id="heatExplain" class="info-note">
-            Bars show <b>scaled risk (0–100)</b> for each KPI using fixed “good→bad” guardrails:
-            0 = benign, 50 = neutral, 100 = worst case for that KPI. Ticks 0|50|100 under each bar show the common scale.
+            Bars show <b>scaled risk (0–100)</b> for each KPI using fixed “good→bad” guardrails.
             Fresh/Stale/Old affects the <i>weight</i> in the composite, not the bar length.
           </div>
           <div id="heatmap" class="heatmap"></div>
@@ -284,42 +282,45 @@
     /* ===================== CONFIG ===================== */
     const FRED_CACHE_PATH = 'data/fred_cache.json';
 
-    /* ===================== CONFIG (revised) ===================== */
-const INDICATORS = {
-  T10Y3M:          { label:'Yield Curve',         format:v=>v?.toFixed(2),               weight:0.16, cadence:'daily',   tip:'10y–3m Treasury spread. Inversion (<0) precedes recessions.' },
-  CREDIT:          { label:'Credit Spread',       format:v=>v?.toFixed(2),               weight:0.16, cadence:'daily',   tip:'Spreads vs Treasuries. Wider = tighter credit; IG and HY scaled correctly.' },
-  UN_SLOPE6:       { label:'Unemployment Δ',      format:v=>v?.toFixed(2),               weight:0.12, cadence:'monthly', tip:'Six-month change in unemployment. Rising = labour softening.' },
-  DD_12M:          { label:'Market Drawdown',     format:v=>((v??0)*100).toFixed(1)+'%', weight:0.20, cadence:'daily',   tip:'S&P vs its 12-month peak. Negative = below recent high.' },
-  NFCI:            { label:'Financial Conditions',format:v=>v?.toFixed(3),               weight:0.12, cadence:'weekly',  tip:'Chicago Fed NFCI (lower=looser). Amber/red as it rises.' },
-  VIX_PROXY:       { label:'Volatility Index',    format:v=>v?.toFixed(1),               weight:0.10, cadence:'daily',   tip:'Implied equity vol. Higher = more stress.' },
-  RETAIL_MOMENTUM: { label:'Retail Sales Δ',      format:v=>(v*100)?.toFixed(2)+'%',     weight:0.08, cadence:'monthly', tip:'Latest MoM retail sales (control-group proxy).' },
-  SENTIMENT:       { label:'Consumer Confidence', format:v=>v?.toFixed(1),               weight:0.06, cadence:'monthly', tip:'UMich sentiment (modern scale). Lower = worse.' }
-};
+    const INDICATORS = {
+      T10Y3M:          { label:'Yield Curve',         format:v=>v?.toFixed(2),               weight:0.16, cadence:'daily',   tip:'10y–3m Treasury spread. Inversion (<0) precedes recessions.' },
+      CREDIT:          { label:'Credit Spread',       format:v=>v?.toFixed(2),               weight:0.16, cadence:'daily',   tip:'Spreads vs Treasuries. Wider = tighter credit.' },
+      UN_SLOPE6:       { label:'Unemployment Δ',      format:v=>v?.toFixed(2),               weight:0.12, cadence:'monthly', tip:'Six-month change in unemployment. Rising = labour softening.' },
+      DD_12M:          { label:'Market Drawdown',     format:v=>((v??0)*100).toFixed(1)+'%', weight:0.20, cadence:'daily',   tip:'S&P vs its 12-month peak. Negative = below recent high.' },
+      NFCI:            { label:'Financial Conditions',format:v=>v?.toFixed(3),               weight:0.12, cadence:'weekly',  tip:'Chicago Fed NFCI (lower=looser). Amber/red as it rises.' },
+      VIX_PROXY:       { label:'Volatility Index',    format:v=>v?.toFixed(1),               weight:0.10, cadence:'daily',   tip:'Implied equity vol. Higher = more stress.' },
+      RETAIL_MOMENTUM: { label:'Retail Sales Δ',      format:v=>(v*100)?.toFixed(2)+'%',     weight:0.08, cadence:'monthly', tip:'Latest MoM retail sales.' },
+      SENTIMENT:       { label:'Consumer Confidence', format:v=>v?.toFixed(1),               weight:0.06, cadence:'monthly', tip:'UMich sentiment. Lower = worse.' }
+    };
 
-/* Detect which credit series we actually have so scaling matches units */
-function mapIndicatorsFromCache(cache){
-  const out = {};
-  for(const k of Object.keys(INDICATORS)){ if(cache[k]) out[k]=cache[k]; }
-
-  // CREDIT precedence: HY OAS -> IG OAS -> BAA-10y yield gap ->
+    // Will be set by mapIndicatorsFromCache()
+    let CREDIT_KIND = null; // 'HY' | 'IG' | 'BAA10Y' | null
 
     const clamp = x => Math.max(0, Math.min(100, x));
     const map01 = (val, good, bad) => {
       if (val == null) return 50;
-      const denom = bad - good;
-      if (Math.abs(denom) < 1e-9) return 50;
-      return ((val - good) / denom) * 100;
+      const d = bad - good; if (Math.abs(d) < 1e-9) return 50;
+      return ((val - good) / d) * 100;
     };
+
     const SCALE = {
       T10Y3M:          v => clamp(map01(v,  1.0, -2.0)),
-      CREDIT:          v => clamp(map01(v,  0.30, 1.00)),
-      UN_SLOPE6:       v => clamp(map01(v,  0.05, 0.50)),
-      DD_12M:          v => clamp(map01(v,  0.00, -0.20)),
-      NFCI:            v => clamp(map01(v, -0.80, 0.40)),
-      VIX_PROXY:       v => clamp(map01(v,  12,  35)),
-      RETAIL_MOMENTUM: v => clamp(map01(v,  0.03, -0.02)),
-      SENTIMENT:       v => clamp(map01(v, 110,  70))
+      // CREDIT scaled by detected series kind:
+      CREDIT:          v => {
+        if (CREDIT_KIND === 'HY')    return clamp(map01(v, 3.0,  9.0));   // % OAS
+        if (CREDIT_KIND === 'IG')    return clamp(map01(v, 0.6,  2.0));   // % OAS
+        if (CREDIT_KIND === 'BAA10Y')return clamp(map01(v, 1.5,  3.0));   // % spread
+        return clamp(map01(v, 1.0, 3.0)); // fallback
+      },
+      UN_SLOPE6:       v => clamp(map01(v, 0.05, 0.50)),
+      DD_12M:          v => clamp(map01(v, 0.00, -0.20)),
+      NFCI:            v => clamp(map01(v, -0.80, 0.50)),
+      VIX_PROXY:       v => clamp(map01(v, 12, 35)),
+      RETAIL_MOMENTUM: v => clamp(map01(v, 0.03, -0.02)),
+      // UMich modern scale ~50–85 typical; don’t peg 55 at 100
+      SENTIMENT:       v => clamp(map01(v, 85, 50))
     };
+
     const FRESH_LIMITS = { daily:{ok:7,warn:30}, weekly:{ok:7,warn:30}, monthly:{ok:30,warn:60} };
     const zoneOf = s => s <= 30 ? 'green' : (s <= 60 ? 'amber' : 'red');
     const zoneLabel = z => z==='green'?'Normal':z==='amber'?'Stressed':'Crisis';
@@ -336,10 +337,8 @@ function mapIndicatorsFromCache(cache){
       const out = {};
       const directLike = raw && typeof raw === 'object' &&
         Object.keys(raw).some(k => raw[k] && Array.isArray(raw[k].observations));
-      if (directLike) {
-        for (const [k,v] of Object.entries(raw)) out[k] = v;
-        return out;
-      }
+      if (directLike) { for (const [k,v] of Object.entries(raw)) out[k] = v; return out; }
+
       if (Array.isArray(raw?.series)) {
         for (const item of raw.series) {
           const id = item?.id || item?.series_id || item?.name;
@@ -408,6 +407,7 @@ function mapIndicatorsFromCache(cache){
       }
       return { observations: out, fetchedAt: UNRATE.fetchedAt };
     }
+
     function deriveDrawdown12m(SP500){
       const obs = SP500?.observations||[];
       if(!obs.length) return null;
@@ -422,6 +422,7 @@ function mapIndicatorsFromCache(cache){
       const dd = dates.map((d,i)=>({date:d, value:String(vals[i]/peak[i]-1)}));
       return { observations: dd, fetchedAt: SP500.fetchedAt };
     }
+
     function deriveRetailMomentum(RSAFS){
       const o = RSAFS?.observations||[];
       if(o.length<2) return null;
@@ -432,16 +433,39 @@ function mapIndicatorsFromCache(cache){
       return { observations:[{date:o[o.length-1].date, value:String(last/prev-1)}], fetchedAt: RSAFS.fetchedAt };
     }
 
+    /* Map cache → choose best series + derive */
     function mapIndicatorsFromCache(cache){
       const out = {};
       for(const k of Object.keys(INDICATORS)){ if(cache[k]) out[k]=cache[k]; }
-      if(!out.CREDIT && (cache.BAMLH0A0HYM2 || cache.BAA10YM)) out.CREDIT = cache.BAMLH0A0HYM2 || cache.BAA10YM;
+
+      // CREDIT precedence detection
+      CREDIT_KIND = null;
+      if (!out.CREDIT){
+        if (cache.BAMLH0A0HYM2){ out.CREDIT = cache.BAMLH0A0HYM2; CREDIT_KIND = 'HY'; }
+        else if (cache.BAMLCC0A0CM){ out.CREDIT = cache.BAMLCC0A0CM; CREDIT_KIND = 'IG'; }
+        else if (cache.BAA10YM){ out.CREDIT = cache.BAA10YM; CREDIT_KIND = 'BAA10Y'; }
+      } else {
+        // If user provided CREDIT directly, guess kind by id-like keys
+        if (cache.BAMLH0A0HYM2 === out.CREDIT) CREDIT_KIND = 'HY';
+        else if (cache.BAMLCC0A0CM === out.CREDIT) CREDIT_KIND = 'IG';
+        else if (cache.BAA10YM === out.CREDIT) CREDIT_KIND = 'BAA10Y';
+      }
+      if (!CREDIT_KIND){
+        // Last resort: look for common keys to set a sensible default
+        if (cache.BAMLH0A0HYM2) CREDIT_KIND = 'HY';
+        else if (cache.BAMLCC0A0CM) CREDIT_KIND = 'IG';
+        else if (cache.BAA10YM) CREDIT_KIND = 'BAA10Y';
+      }
+
+      // VIX proxy & Sentiment proxy
       if(!out.VIX_PROXY && cache.VIXCLS) out.VIX_PROXY = cache.VIXCLS;
       if(!out.SENTIMENT && cache.UMCSENT) out.SENTIMENT = cache.UMCSENT;
 
+      // Derivations
       if(!out.UN_SLOPE6 && cache.UNRATE){ out.UN_SLOPE6 = deriveUnempSlope6(cache.UNRATE) || {observations:[],fetchedAt:cache.UNRATE.fetchedAt}; }
       if(!out.DD_12M   && cache.SP500 ){ out.DD_12M   = deriveDrawdown12m(cache.SP500 ) || {observations:[],fetchedAt:cache.SP500.fetchedAt}; }
       if(!out.RETAIL_MOMENTUM && cache.RSAFS){ out.RETAIL_MOMENTUM = deriveRetailMomentum(cache.RSAFS) || {observations:[],fetchedAt:cache.RSAFS.fetchedAt}; }
+
       return out;
     }
 
@@ -457,7 +481,7 @@ function mapIndicatorsFromCache(cache){
     /* ===================== STATE / CHART HANDLES ===================== */
     let STATE = {
       dataMap:null,
-      compositeHistory:[],   // [{date, value}]
+      compositeHistory:[],
       tf:'1m',
       charts:{ composite:null, decomp:null, traj:null }
     };
@@ -527,19 +551,18 @@ function mapIndicatorsFromCache(cache){
     function mkLine(ctx, labels, data){
       return new Chart(ctx, {
         type:'line',
-        data:{ labels, datasets:[{label:'Composite', data, borderWidth:2, fill:false, tension:0.25}] },
+        data:{ labels, datasets:[{label:'Composite', data, borderWidth:2, fill:false, tension:0.25, borderColor:'#6b9eff'}] },
         options:{ responsive:true, plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{min:0,max:100}} }
       });
     }
     function mkBar(ctx, labels, data){
       return new Chart(ctx, {
         type:'bar',
-        data:{ labels, datasets:[{label:'Contribution', data, borderWidth:1}] },
+        data:{ labels, datasets:[{label:'Contribution', data, borderWidth:1, backgroundColor:'rgba(107,158,255,.5)'}] },
         options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,max:Math.max(10,Math.ceil(Math.max(...data,10)/10)*10)}} }
       });
     }
 
-    // date-window filter for timeframes
     function renderCompositeChart(){
       const hist = STATE.compositeHistory;
       const tf = STATE.tf;
@@ -584,11 +607,10 @@ function mapIndicatorsFromCache(cache){
 
     function renderScenarios(composite, breadth){
       const stress = composite/100;
-      const riskBias = (breadth-50)/50; // <0 better, >0 worse
-      const baseProb = 60 - 20*riskBias;                 // ~40-80
-      const downProb = Math.min(40, 20 + 40*stress);     // capped
+      const riskBias = (breadth-50)/50;
+      const baseProb = 60 - 20*riskBias;
+      const downProb = Math.min(40, 20 + 40*stress);
       const upProb = Math.max(5, 100 - baseProb - downProb);
-
       const cards = [
         {title:'Base Case', prob:Math.round(baseProb), desc:'Sideways-to-mildly volatile regime; conditions stabilise with modest dispersion.'},
         {title:'Downside (Stress)', prob:Math.round(downProb), desc:'Tighter financial conditions and volatility spikes; drawdowns concentrated in cyclicals.'},
@@ -601,13 +623,12 @@ function mapIndicatorsFromCache(cache){
             <div class="scenario-prob" style="font-size:22px;font-weight:700;color:var(--accent-bright)">${c.prob}%</div>
           </div>
           <div class="scenario-desc" style="color:var(--muted);font-size:13px">${c.desc}</div>
-        </div>
-      `).join('');
+        </div>`).join('');
     }
 
     function renderTrajectory(composite){
       const steps = 26; // ~26 weeks
-      const phi = 0.85; // persistence
+      const phi = 0.85;
       const target = 50;
       let v = composite;
       const labels = [];
@@ -618,7 +639,7 @@ function mapIndicatorsFromCache(cache){
         v = phi*v + (1-phi)*target;
         labels.push(`W+${i}`);
         path.push(+v.toFixed(1));
-        const band = 6*Math.sqrt(i/steps); // widening band
+        const band = 6*Math.sqrt(i/steps);
         upper.push(Math.min(100, +(v+band).toFixed(1)));
         lower.push(Math.max(0,   +(v-band).toFixed(1)));
       }
@@ -627,11 +648,11 @@ function mapIndicatorsFromCache(cache){
         type:'line',
         data:{labels,
           datasets:[
-            {label:'Projected', data:path, borderWidth:2, fill:false, tension:0.25},
-            {label:'Upper', data:upper, borderWidth:1, fill:false, borderDash:[4,4]},
-            {label:'Lower', data:lower, borderWidth:1, fill:false, borderDash:[4,4]}
+            {label:'Projected', data:path, borderWidth:2, fill:false, tension:0.25, borderColor:'#6b9eff'},
+            {label:'Upper', data:upper, borderWidth:1, fill:false, borderDash:[4,4], borderColor:'rgba(255,96,112,0.7)'},
+            {label:'Lower', data:lower, borderWidth:1, fill:false, borderDash:[4,4], borderColor:'rgba(30,194,139,0.7)'}
           ]},
-        options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{min:0,max:100}}}
+        options:{responsive:true, plugins:{legend:{display:true, labels:{color:'rgba(255,255,255,0.7)'}}}, scales:{y:{min:0,max:100}}}
       });
     }
 
@@ -670,7 +691,14 @@ function mapIndicatorsFromCache(cache){
         const zone = zoneOf(composite);
         setStatus(zone, `Composite: ${Math.round(composite)} (${zone.toUpperCase()})`);
         document.getElementById('indicatorCount').textContent = parts.length;
-        els.pillsGrid.innerHTML = parts.map(p=>pillHTML(p)).join('');
+        document.getElementById('prob1m').textContent = `${horizonRisk(composite,1)}%`;
+        document.getElementById('prob3m').textContent = `${horizonRisk(composite,3)}%`;
+        document.getElementById('prob6m').textContent = `${horizonRisk(composite,6)}%`;
+        document.getElementById('regimeIndicator').innerHTML =
+          `<span class="status-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;background:${zone==='green'?'#1ec28b':zone==='amber'?'#ffc247':'#ff6070'}"></span> ${zoneLabel(zone)} regime`;
+
+        // Pills
+        document.getElementById('pillsGrid').innerHTML = parts.map(p=>pillHTML(p)).join('');
 
         // ===== composite history (sync by date across key series)
         const keysForHist = ['DD_12M','VIX_PROXY','T10Y3M','CREDIT','NFCI'];
@@ -698,21 +726,13 @@ function mapIndicatorsFromCache(cache){
         renderScenarios(composite, parts.reduce((a,p)=>a+p.scaled,0)/parts.length);
         renderTrajectory(composite);
 
-        // Probabilities
-        els.prob1m.textContent = `${horizonRisk(composite,1)}%`;
-        els.prob3m.textContent = `${horizonRisk(composite,3)}%`;
-        els.prob6m.textContent = `${horizonRisk(composite,6)}%`;
-        els.regimeIndicator.innerHTML =
-          `<span class="status-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;background:${zone==='green'?'#1ec28b':zone==='amber'?'#ffc247':'#ff6070'}"></span> ${zoneLabel(zone)} regime`;
-
-        // ===== Tab / timeframe handlers =====
+        // UI handlers
         window.switchTab = (e, id)=>{
           document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
           e.currentTarget.classList.add('active');
           document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
           document.getElementById('tab-'+id).classList.add('active');
         };
-
         document.querySelectorAll('.btn-group .btn').forEach(btn=>{
           btn.addEventListener('click', (evt)=>{
             document.querySelectorAll('.btn-group .btn').forEach(b=>b.classList.remove('active'));
@@ -721,32 +741,16 @@ function mapIndicatorsFromCache(cache){
             renderCompositeChart();
           });
         });
-
-        // Explain buttons (scenarios / trajectory / heatmap)
-        document.querySelectorAll('.info-btn').forEach(btn=>{
-          btn.addEventListener('click', ()=>{
-            const t = btn.getAttribute('data-note-target');
-            const id = t==='scenarios' ? 'scenariosNote' : t==='trajectory' ? 'trajectoryNote' : 'heatExplain';
-            const el = document.getElementById(id);
-            if(el) el.classList.toggle('show');
-          });
-        });
-
-        // Probability explanation toggle
-        if(els.probExplainBtn && els.probExplainNote){
-          els.probExplainBtn.addEventListener('click', ()=>{
-            els.probExplainNote.classList.toggle('show');
-          });
-        }
-
-        // KPI micro-notes toggle with persistence
         const key = 'helpMode';
         const saved = localStorage.getItem(key);
         if(saved==='on'){ document.body.classList.add('help-on'); }
-        els.kpiExplainToggle.addEventListener('click', ()=>{
+        document.getElementById('kpiExplainToggle').addEventListener('click', ()=>{
           document.body.classList.toggle('help-on');
           localStorage.setItem(key, document.body.classList.contains('help-on')?'on':'off');
         });
+        const probBtn = document.getElementById('probExplainBtn');
+        const probNote = document.getElementById('probExplainNote');
+        probBtn.addEventListener('click', ()=> probNote.classList.toggle('show') );
 
       }catch(err){
         console.error(err);
