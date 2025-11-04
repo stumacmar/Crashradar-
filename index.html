@@ -1,2322 +1,1235 @@
 <!doctype html>
-
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="World-class Economic Crash Radar with ML-powered predictive analytics, real-time monitoring, and institutional-grade risk assessment" />
-  <meta name="theme-color" content="#0a0e1a" />
-  <title>Economic Crash Radar Pro | Institutional Risk Analytics</title>
+  <meta name="description" content="Advanced Economic Crash Radar with predictive analytics and multi-timeframe analysis" />
+  <title>Economic Crash Radar Pro</title>
 
   <style>
-    /* ==================== DESIGN SYSTEM ==================== */
-    :root {
-      /* Color Palette */
-      --bg: #0a0e1a;
-      --bg-elevated: #0d1221;
-      --panel: #12182b;
-      --panel-hover: #151d33;
-      --panel-accent: #1a2342;
-      
-      /* Typography */
-      --text-primary: #e8eeff;
-      --text-secondary: #b8c3dd;
-      --text-muted: #8b96b0;
-      --text-dim: #6b7694;
-      
-      /* Accent Colors */
-      --accent: #6b9eff;
-      --accent-bright: #8fb4ff;
-      --accent-dim: #4a7fe8;
-      
-      /* Status Colors */
-      --green: #1ec28b;
-      --green-dim: #15a373;
-      --amber: #ffc247;
-      --amber-dim: #e6a32f;
-      --red: #ff6070;
-      --red-dim: #e54858;
-      --orange: #ff8c42;
-      
-      /* Data Visualization */
-      --chart-grid: rgba(255, 255, 255, 0.04);
-      --chart-line: rgba(107, 158, 255, 0.8);
-      
-      /* Dimensions */
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-      --radius-xl: 20px;
-      --ring: 220px;
-      --ring-m: 180px;
-      
-      /* Shadows */
-      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
-      --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.3);
-      --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.4);
-      --shadow-xl: 0 12px 60px rgba(0, 0, 0, 0.5);
-      
-      /* Transitions */
-      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-      --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-      --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+    :root{
+      --bg:#0a0e1a; --panel:#12182b; --panel-hover:#151d33; --muted:#8b96b0;
+      --text:#e8eeff; --accent:#6b9eff; --accent-bright:#8fb4ff;
+      --green:#1ec28b; --amber:#ffc247; --red:#ff6070; --orange:#ff8c42;
+      --radius:14px; --shadow:0 4px 24px rgba(0,0,0,.3);
+      --ring:200px; --ring-m:160px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text);
+      font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif}
+    .wrap{max-width:1400px;margin:0 auto;padding:20px 16px 80px}
+
+    header{margin-bottom:24px}
+    h1{font-size:clamp(32px,5vw,48px);line-height:1.1;margin:0 0 8px;
+      background:linear-gradient(135deg,var(--text),var(--accent-bright));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .subtitle{color:var(--muted);font-size:15px;margin:8px 0}
+
+    .card{background:var(--panel);border-radius:var(--radius);padding:24px;margin:20px 0;
+      box-shadow:var(--shadow),0 0 0 1px rgba(255,255,255,.04) inset;transition:transform .2s,box-shadow .2s}
+    .card:hover{transform:translateY(-2px);box-shadow:0 6px 32px rgba(0,0,0,.4)}
+
+    .gauge-container{display:flex;align-items:center;gap:32px;flex-wrap:wrap}
+    .gauge-wrap{position:relative;width:var(--ring);height:var(--ring)}
+    .multi-ring{position:absolute;inset:0}
+    .ring{position:absolute;border-radius:50%;transition:opacity .3s}
+    .ring-outer{inset:0;background:conic-gradient(var(--green)0 108deg,var(--amber)108deg 216deg,var(--red)216deg 360deg);opacity:.3}
+    .ring-mid{inset:15px;background:conic-gradient(var(--green)0 108deg,var(--amber)108deg 216deg,var(--red)216deg 360deg);opacity:.5}
+    .ring-inner{inset:30px;background:conic-gradient(var(--green)0 108deg,var(--amber)108deg 216deg,var(--red)216deg 360deg)}
+    .ring::after{content:"";position:absolute;inset:20px;border-radius:50%;background:var(--panel)}
+    .needle{position:absolute;inset:0;transition:transform .6s cubic-bezier(.34,1.56,.64,1)}
+    .needle::before{content:"";position:absolute;top:50%;left:50%;width:4px;height:45%;
+      background:linear-gradient(180deg,var(--accent-bright),var(--accent));
+      transform:translateX(-50%) translateY(-100%) rotate(var(--angle,0deg));
+      transform-origin:bottom center;border-radius:4px;box-shadow:0 0 12px var(--accent)}
+    .needle::after{content:"";position:absolute;top:50%;left:50%;width:16px;height:16px;background:var(--accent-bright);
+      border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 16px var(--accent),0 0 0 3px var(--panel)}
+    .score{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:48px;line-height:1}
+    .score-label{font-size:12px;font-weight:600;color:var(--muted);margin-top:4px;letter-spacing:.5px}
+
+    .gauge-info h2{font-size:28px;margin:0 0 8px;font-weight:700}
+    .confidence{display:inline-flex;align-items:center;gap:8px;background:rgba(107,158,255,.15);padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-top:8px}
+    .confidence-bar{width:60px;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+    .confidence-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
+
+    .pills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+    .pill{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);padding:14px 16px;border-radius:12px;transition:all .2s;cursor:pointer;position:relative}
+    .pill:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);transform:translateY(-2px)}
+    .pill:hover .pill-tooltip{opacity:1;visibility:visible;transform:translateY(0)}
+    .pill-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+    .pill-title{font-weight:600;font-size:13px}
+    .pill-badge{font-size:11px;padding:3px 8px;border-radius:6px;font-weight:600}
+    .pill-value{font-size:20px;font-weight:700;margin:4px 0}
+    .pill-change{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
+    .pill-status{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:8px}
+    .pill-status-green{background:var(--green)}
+    .pill-status-amber{background:var(--amber)}
+    .pill-status-red{background:var(--red)}
+    .pill-tooltip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-4px);
+      background:var(--panel-hover);border:1px solid rgba(255,255,255,.12);padding:12px;border-radius:8px;
+      font-size:12px;line-height:1.5;color:var(--text);width:280px;z-index:100;
+      box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;visibility:hidden;transition:all .2s;pointer-events:none}
+    .pill-tooltip::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);
+      border:6px solid transparent;border-top-color:var(--panel-hover)}
+    .badge-fresh{background:rgba(30,194,139,.15);color:var(--green)}
+    .badge-stale{background:rgba(255,194,71,.15);color:var(--amber)}
+    .badge-old{background:rgba(255,96,112,.15);color:var(--red)}
+    .info-tooltip{display:inline-block;width:16px;height:16px;line-height:16px;text-align:center;
+      background:rgba(255,255,255,.1);border-radius:50%;font-size:11px;font-weight:700;
+      cursor:help;margin-left:6px;color:var(--accent-bright)}
+    .info-tooltip:hover{background:rgba(255,255,255,.2)}
+
+    .chart-container{position:relative;height:320px;margin:16px 0}
+    .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:12px}
+    .chart-title{font-size:18px;font-weight:600;margin:0}
+    .chart-controls{display:flex;gap:8px}
+    .btn-group{display:flex;gap:4px;background:rgba(255,255,255,.03);padding:4px;border-radius:8px}
+    .btn{background:transparent;border:none;color:var(--muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s}
+    .btn:hover{color:var(--text);background:rgba(255,255,255,.06)}
+    .btn.active{background:var(--accent);color:#fff}
+
+    .tabs{display:flex;gap:8px;border-bottom:2px solid rgba(255,255,255,.06);margin-bottom:20px;overflow-x:auto}
+    .tab{background:transparent;border:none;color:var(--muted);padding:12px 20px;cursor:pointer;font-size:14px;font-weight:600;position:relative;white-space:nowrap}
+    .tab:hover{color:var(--text)}
+    .tab.active{color:var(--accent-bright)}
+    .tab.active::after{content:"";position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--accent)}
+    .tab-content{display:none}
+    .tab-content.active{display:block}
+
+    .status{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px}
+    .status-dot{width:8px;height:8px;border-radius:50%}
+
+    .heatmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+    .heat-cell{background:rgba(255,255,255,.03);padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,.06)}
+    .heat-label{font-size:12px;color:var(--muted)}
+    .heat-value{font-size:22px;font-weight:700}
+    .bar{height:6px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px}
+    .bar > span{display:block;height:100%;border-radius:4px}
+
+    .audit{font-size:12px;color:var(--muted);margin-top:8px}
+    .audit .bad{color:#ff9da6}
+    .audit .warn{color:#ffc247}
+
+    .loading{text-align:center;padding:40px;color:var(--muted)}
+    .error-state{background:rgba(255,96,112,.1);border:1px solid rgba(255,96,112,.3);padding:20px;border-radius:var(--radius);margin:20px 0}
+
+    .alert-banner {
+      background: linear-gradient(135deg, rgba(255,96,112,.15), rgba(255,140,66,.15));
+      border: 1px solid rgba(255,96,112,.3);
+      padding: 16px;
+      border-radius: var(--radius);
+      margin: 16px 0;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,96,112,.4); }
+      70% { box-shadow: 0 0 0 10px rgba(255,96,112,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,96,112,0); }
     }
 
-    /* ==================== BASE STYLES ==================== */
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    html {
-      font-size: 16px;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text-primary);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
-      font-size: 15px;
-      line-height: 1.6;
-      overflow-x: hidden;
-    }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 10px;
-      height: 10px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: var(--bg);
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--panel-hover);
-      border-radius: 5px;
-      border: 2px solid var(--bg);
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--panel-accent);
-    }
-
-    /* ==================== LAYOUT ==================== */
-    .wrap {
-      max-width: 1600px;
-      margin: 0 auto;
-      padding: 24px 20px 100px;
-    }
-
-    /* ==================== HEADER ==================== */
-    header {
-      margin-bottom: 32px;
-      position: relative;
-    }
-
-    .header-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 24px;
-      flex-wrap: wrap;
-    }
-
-    .header-main {
-      flex: 1;
-      min-width: 300px;
-    }
-
-    h1 {
-      font-size: clamp(36px, 6vw, 56px);
-      line-height: 1.1;
-      margin: 0 0 12px;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--text-primary), var(--accent-bright));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: -0.02em;
-    }
-
-    .subtitle {
-      color: var(--text-secondary);
-      font-size: 16px;
-      margin: 8px 0;
-      font-weight: 500;
-    }
-
-    .header-stats {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .header-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: var(--radius-md);
-      font-size: 13px;
-      font-weight: 600;
-      transition: all var(--transition-base);
-    }
-
-    .header-badge:hover {
-      background: rgba(255, 255, 255, 0.06);
-      border-color: rgba(255, 255, 255, 0.12);
-      transform: translateY(-1px);
-    }
-
-    .live-indicator {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--green);
-      animation: pulse-live 2s infinite;
-    }
-
-    @keyframes pulse-live {
-      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(30, 194, 139, 0.4); }
-      50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(30, 194, 139, 0); }
-    }
-
-    /* ==================== CARDS ==================== */
-    .card {
-      background: var(--panel);
-      border-radius: var(--radius-lg);
-      padding: 28px;
-      margin: 24px 0;
-      box-shadow: var(--shadow-md);
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      transition: all var(--transition-base);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-      opacity: 0;
-      transition: opacity var(--transition-base);
-    }
-
-    .card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-lg);
-      border-color: rgba(255, 255, 255, 0.08);
-    }
-
-    .card:hover::before {
-      opacity: 1;
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .card-title {
-      font-size: 22px;
-      font-weight: 700;
-      margin: 0;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--text-primary);
-    }
-
-    .card-subtitle {
-      font-size: 14px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* ==================== GAUGE ==================== */
-    .gauge-container {
-      display: flex;
-      align-items: center;
-      gap: 48px;
-      flex-wrap: wrap;
-    }
-
-    .gauge-wrap {
-      position: relative;
-      width: var(--ring);
-      height: var(--ring);
-      flex-shrink: 0;
-    }
-
-    .multi-ring {
-      position: absolute;
-      inset: 0;
-    }
-
-    .ring {
-      position: absolute;
-      border-radius: 50%;
-      transition: opacity var(--transition-slow);
-    }
-
-    .ring-outer {
-      inset: 0;
-      background: conic-gradient(
-        var(--green) 0deg 108deg,
-        var(--amber) 108deg 216deg,
-        var(--red) 216deg 360deg
-      );
-      opacity: 0.2;
-      filter: blur(1px);
-    }
-
-    .ring-mid {
-      inset: 18px;
-      background: conic-gradient(
-        var(--green) 0deg 108deg,
-        var(--amber) 108deg 216deg,
-        var(--red) 216deg 360deg
-      );
-      opacity: 0.4;
-    }
-
-    .ring-inner {
-      inset: 36px;
-      background: conic-gradient(
-        var(--green) 0deg 108deg,
-        var(--amber) 108deg 216deg,
-        var(--red) 216deg 360deg
-      );
-      opacity: 1;
-    }
-
-    .ring::after {
-      content: "";
-      position: absolute;
-      inset: 24px;
-      border-radius: 50%;
-      background: var(--panel);
-      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
-    }
-
-    .needle {
-      position: absolute;
-      inset: 0;
-      transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-      filter: drop-shadow(0 0 8px var(--accent));
-    }
-
-    .needle::before {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 5px;
-      height: 48%;
-      background: linear-gradient(180deg, var(--accent-bright), var(--accent));
-      transform: translateX(-50%) translateY(-100%) rotate(var(--angle, 0deg));
-      transform-origin: bottom center;
-      border-radius: 4px 4px 0 0;
-    }
-
-    .needle::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 18px;
-      height: 18px;
-      background: var(--accent-bright);
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      box-shadow: 0 0 20px var(--accent), 0 0 0 4px var(--panel);
-    }
-
-    .score {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      z-index: 1;
-    }
-
-    .score-value {
-      font-size: 56px;
-      line-height: 1;
-      background: linear-gradient(135deg, var(--text-primary), var(--accent-bright));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .score-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-muted);
-      margin-top: 6px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    /* ==================== GAUGE INFO ==================== */
-    .gauge-info {
-      flex: 1;
-      min-width: 300px;
-    }
-
-    .gauge-info h2 {
-      font-size: 32px;
-      margin: 0 0 12px;
-      font-weight: 800;
-      letter-spacing: -0.01em;
-    }
-
-    .gauge-description {
-      color: var(--text-secondary);
-      font-size: 15px;
-      margin-bottom: 16px;
-      line-height: 1.6;
-    }
-
-    .confidence-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      background: rgba(107, 158, 255, 0.12);
-      padding: 10px 16px;
-      border-radius: var(--radius-md);
-      font-size: 14px;
-      font-weight: 600;
-      margin: 12px 0;
-      border: 1px solid rgba(107, 158, 255, 0.2);
-    }
-
-    .confidence-bar {
-      width: 80px;
-      height: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .confidence-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent-dim), var(--accent-bright));
-      border-radius: 4px;
-      transition: width var(--transition-slow);
-      box-shadow: 0 0 10px var(--accent);
-    }
-
-    /* ==================== RISK HORIZON CARDS ==================== */
-    .risk-horizon-grid {
+    .historical-comparison {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px;
-      margin-top: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .period-card {
+      background: rgba(255,255,255,.03);
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    .period-card.critical {
+      background: rgba(255,96,112,.1);
+      border-color: rgba(255,96,112,.3);
     }
 
-    .risk-card {
-      background: rgba(255, 255, 255, 0.03);
-      padding: 20px;
-      border-radius: var(--radius-md);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      position: relative;
-      transition: all var(--transition-base);
+    @media (max-width:768px){
+      .gauge-container{justify-content:center;text-align:center}
+      .gauge-wrap{width:var(--ring-m);height:var(--ring-m)}
+      .score{font-size:36px}
+      .pills-grid{grid-template-columns:1fr}
+      .chart-header{flex-direction:column;align-items:flex-start}
     }
-
-    .risk-card:hover {
-      background: rgba(255, 255, 255, 0.05);
-      border-color: rgba(255, 255, 255, 0.12);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .risk-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .risk-card-title {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-muted);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .risk-card-value {
-      font-size: 32px;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent-bright), var(--accent-dim));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      line-height: 1;
-    }
-
-    .risk-card-trend {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 8px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    /* Continued in Part 2... */
-  </style>
-
-</head>
-<body>
-  <!-- HTML structure continues in Part 2 -->
-</body>
-</html> 
-/* ==================== CONTINUATION OF STYLING ==================== */
-
-```
-/* ==================== INDICATORS & PILLS ==================== */
-.pills-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 14px;
-}
-
-.pill {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 18px;
-  border-radius: var(--radius-md);
-  transition: all var(--transition-base);
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-.pill::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-bright));
-  transform: scaleX(0);
-  transition: transform var(--transition-base);
-}
-
-.pill:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-sm);
-}
-
-.pill:hover::before {
-  transform: scaleX(1);
-}
-
-.pill:hover .pill-tooltip {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.pill-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.pill-title {
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pill-badge {
-  font-size: 10px;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-}
-
-.pill-value {
-  font-size: 28px;
-  font-weight: 800;
-  margin: 8px 0;
-  line-height: 1;
-  color: var(--text-primary);
-}
-
-.pill-change {
-  font-size: 13px;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 500;
-}
-
-.pill-momentum {
-  font-size: 11px;
-  margin-top: 6px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.02);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.pill-status {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  box-shadow: 0 0 8px currentColor;
-}
-
-.pill-status-green { background: var(--green); color: var(--green); }
-.pill-status-amber { background: var(--amber); color: var(--amber); }
-.pill-status-red { background: var(--red); color: var(--red); }
-
-.pill-tooltip {
-  position: absolute;
-  bottom: calc(100% + 12px);
-  left: 50%;
-  transform: translateX(-50%) translateY(-8px);
-  background: var(--panel-hover);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 14px 16px;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--text-primary);
-  width: 320px;
-  max-width: 90vw;
-  z-index: 1000;
-  box-shadow: var(--shadow-lg);
-  opacity: 0;
-  visibility: hidden;
-  transition: all var(--transition-base);
-  pointer-events: none;
-}
-
-.pill-tooltip::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 8px solid transparent;
-  border-top-color: var(--panel-hover);
-}
-
-.badge-fresh {
-  background: rgba(30, 194, 139, 0.15);
-  color: var(--green);
-  border: 1px solid rgba(30, 194, 139, 0.3);
-}
-
-.badge-stale {
-  background: rgba(255, 194, 71, 0.15);
-  color: var(--amber);
-  border: 1px solid rgba(255, 194, 71, 0.3);
-}
-
-.badge-old {
-  background: rgba(255, 96, 112, 0.15);
-  color: var(--red);
-  border: 1px solid rgba(255, 96, 112, 0.3);
-}
-
-/* ==================== INFO TOOLTIPS ==================== */
-.info-tooltip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 50%;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: help;
-  margin-left: 6px;
-  color: var(--accent-bright);
-  transition: all var(--transition-fast);
-}
-
-.info-tooltip:hover {
-  background: var(--accent);
-  color: white;
-  transform: scale(1.1);
-}
-
-/* ==================== CHARTS ==================== */
-.chart-container {
-  position: relative;
-  height: 360px;
-  margin: 20px 0;
-}
-
-.chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.chart-title {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0;
-  color: var(--text-primary);
-}
-
-.chart-controls {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.btn-group {
-  display: flex;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 4px;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  transition: all var(--transition-fast);
-  white-space: nowrap;
-}
-
-.btn:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.btn.active {
-  background: var(--accent);
-  color: white;
-  box-shadow: 0 0 12px rgba(107, 158, 255, 0.3);
-}
-
-/* ==================== TABS ==================== */
-.tabs {
-  display: flex;
-  gap: 8px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.06);
-  margin-bottom: 24px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-
-.tab {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  padding: 14px 24px;
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
-  position: relative;
-  white-space: nowrap;
-  transition: all var(--transition-fast);
-}
-
-.tab:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.tab.active {
-  color: var(--accent-bright);
-}
-
-.tab.active::after {
-  content: "";
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-bright));
-  box-shadow: 0 0 8px var(--accent);
-}
-
-.tab-content {
-  display: none;
-  animation: fadeIn 0.3s ease-in;
-}
-
-.tab-content.active {
-  display: block;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ==================== STATUS INDICATORS ==================== */
-.status {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  border-radius: var(--radius-md);
-  font-weight: 600;
-  font-size: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  box-shadow: 0 0 10px currentColor;
-  animation: pulse-dot 2s infinite;
-}
-
-@keyframes pulse-dot {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.1); opacity: 0.8; }
-}
-
-/* ==================== ALERTS ==================== */
-.alert-banner {
-  background: linear-gradient(135deg, rgba(255, 96, 112, 0.15), rgba(255, 140, 66, 0.15));
-  border: 1px solid rgba(255, 96, 112, 0.3);
-  padding: 20px;
-  border-radius: var(--radius-lg);
-  margin: 20px 0;
-  animation: pulse-alert 2s infinite;
-  position: relative;
-  overflow: hidden;
-}
-
-.alert-banner::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  animation: shimmer 3s infinite;
-}
-
-@keyframes pulse-alert {
-  0% { box-shadow: 0 0 0 0 rgba(255, 96, 112, 0.4); }
-  70% { box-shadow: 0 0 0 15px rgba(255, 96, 112, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255, 96, 112, 0); }
-}
-
-@keyframes shimmer {
-  to { left: 100%; }
-}
-
-.alert-content {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  position: relative;
-  z-index: 1;
-}
-
-.alert-icon {
-  font-size: 32px;
-  flex-shrink: 0;
-}
-
-.alert-text {
-  flex: 1;
-}
-
-.alert-title {
-  font-weight: 800;
-  margin-bottom: 6px;
-  font-size: 16px;
-  letter-spacing: 0.5px;
-}
-
-.alert-message {
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.alert-count {
-  font-size: 12px;
-  margin-top: 6px;
-  opacity: 0.8;
-}
-
-/* ==================== HISTORICAL COMPARISONS ==================== */
-.historical-comparison {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.period-card {
-  background: rgba(255, 255, 255, 0.03);
-  padding: 20px;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: all var(--transition-base);
-  position: relative;
-  overflow: hidden;
-}
-
-.period-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background: linear-gradient(180deg, var(--amber), var(--red));
-  opacity: 0;
-  transition: opacity var(--transition-base);
-}
-
-.period-card:hover {
-  background: rgba(255, 255, 255, 0.05);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
-}
-
-.period-card:hover::before {
-  opacity: 1;
-}
-
-.period-card.critical {
-  background: rgba(255, 96, 112, 0.08);
-  border-color: rgba(255, 96, 112, 0.3);
-}
-
-.period-card.critical::before {
-  opacity: 1;
-}
-
-.period-name {
-  font-weight: 700;
-  font-size: 16px;
-  margin-bottom: 12px;
-  color: var(--text-primary);
-}
-
-.period-metric {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.period-label {
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.period-value {
-  font-weight: 700;
-  font-size: 16px;
-}
-
-.period-date {
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-/* Continued in Part 3... */
-```
-
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <div class="header-content">
-        <div class="header-main">
-          <h1>⚡ Economic Crash Radar Pro</h1>
-          <div class="subtitle">Institutional-grade market stress analysis with ML-powered predictive analytics</div>
-        </div>
-        <div class="header-stats">
-          <div class="header-badge">
-            <span class="live-indicator"></span>
-            <span>Live Data</span>
-          </div>
-          <div id="lastUpdateBadge" class="header-badge"></div>
-        </div>
-      </div>
-      <div id="statusBadge" style="margin-top: 16px;"></div>
+      <h1>⚡ Economic Crash Radar Pro</h1>
+      <div class="subtitle">Advanced multi-timeframe market stress analysis with predictive analytics</div>
+      <div id="statusBadge"></div>
       <div id="alertBanner"></div>
+      <div id="auditBox" class="audit"></div>
     </header>
 
-```
-<main id="mainContent">
-  <div class="loading-container">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">Initializing economic analytics engine...</div>
+    <main id="mainContent">
+      <div class="loading">Loading economic data...</div>
+    </main>
   </div>
-</main>
-```
-
-  </div>
-
-  <!-- Scripts in Part 3 -->
-
-</body>
-</html> 
-/* ==================== HEATMAP & DATA VISUALIZATION ==================== */
-.heatmap {
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-gap: 12px;
-}
-
-```
-.heat-cell {
-  background: rgba(255, 255, 255, 0.03);
-  padding: 18px;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: all var(--transition-base);
-  cursor: default;
-}
-
-.heat-cell:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.10);
-  transform: translateY(-2px);
-}
-
-.heat-label {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-weight: 600;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.heat-value {
-  font-size: 26px;
-  font-weight: 800;
-  margin-bottom: 10px;
-  color: var(--text-primary);
-  line-height: 1;
-}
-
-.bar {
-  height: 8px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  overflow: hidden;
-  margin-top: 10px;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.bar > span {
-  display: block;
-  height: 100%;
-  border-radius: 6px;
-  transition: width var(--transition-slow);
-  box-shadow: 0 0 8px currentColor;
-}
-
-/* ==================== SCENARIO CARDS ==================== */
-.scenario-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 16px;
-}
-
-.scenario-card {
-  background: rgba(255, 255, 255, 0.03);
-  padding: 24px;
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: all var(--transition-base);
-  position: relative;
-  overflow: hidden;
-}
-
-.scenario-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 100px;
-  height: 100px;
-  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
-  opacity: 0;
-  transition: opacity var(--transition-base);
-}
-
-.scenario-card:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.12);
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
-}
-
-.scenario-card:hover::before {
-  opacity: 0.1;
-}
-
-.scenario-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.scenario-title {
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--text-primary);
-}
-
-.scenario-probability {
-  font-size: 28px;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--accent-bright), var(--accent-dim));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.scenario-description {
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.6;
-  margin-top: 8px;
-}
-
-.scenario-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 12px;
-  padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-/* ==================== AUDIT BOX ==================== */
-.audit-container {
-  margin-top: 16px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  font-size: 13px;
-}
-
-.audit-title {
-  font-weight: 700;
-  margin-bottom: 8px;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.audit-status {
-  color: var(--text-secondary);
-  line-height: 1.6;
-}
-
-.audit-status .bad {
-  color: var(--red);
-  font-weight: 600;
-}
-
-.audit-status .warn {
-  color: var(--amber);
-  font-weight: 600;
-}
-
-.audit-status .good {
-  color: var(--green);
-  font-weight: 600;
-}
-
-/* ==================== LOADING STATES ==================== */
-.loading-container {
-  text-align: center;
-  padding: 80px 20px;
-}
-
-.loading-spinner {
-  width: 60px;
-  height: 60px;
-  margin: 0 auto 24px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-text {
-  color: var(--text-muted);
-  font-size: 15px;
-  font-weight: 500;
-}
-
-/* ==================== ERROR STATES ==================== */
-.error-state {
-  background: rgba(255, 96, 112, 0.1);
-  border: 1px solid rgba(255, 96, 112, 0.3);
-  padding: 32px;
-  border-radius: var(--radius-lg);
-  margin: 24px 0;
-  text-align: center;
-}
-
-.error-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
-.error-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 12px;
-  color: var(--red);
-}
-
-.error-message {
-  color: var(--text-secondary);
-  margin-bottom: 12px;
-  line-height: 1.6;
-}
-
-.error-details {
-  margin-top: 16px;
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  color: var(--text-muted);
-  font-family: 'Courier New', monospace;
-}
-
-/* ==================== REGIME INDICATOR ==================== */
-.regime-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-md);
-  font-weight: 600;
-  font-size: 14px;
-  margin-top: 16px;
-}
-
-.regime-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  box-shadow: 0 0 12px currentColor;
-}
-
-/* ==================== LEGEND ==================== */
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: var(--radius-md);
-  margin-bottom: 16px;
-  font-size: 13px;
-}
-
-.legend-title {
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-right: 8px;
-}
-
-.legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-secondary);
-}
-
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  box-shadow: 0 0 6px currentColor;
-}
-
-/* ==================== RESPONSIVE DESIGN ==================== */
-@media (max-width: 1024px) {
-  .wrap {
-    padding: 20px 16px 80px;
-  }
-
-  .gauge-container {
-    justify-content: center;
-  }
-
-  .gauge-wrap {
-    width: var(--ring-m);
-    height: var(--ring-m);
-  }
-
-  .score-value {
-    font-size: 48px;
-  }
-
-  .chart-container {
-    height: 300px;
-  }
-}
-
-@media (max-width: 768px) {
-  h1 {
-    font-size: 32px;
-  }
-
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .gauge-container {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .gauge-info {
-    width: 100%;
-  }
-
-  .risk-horizon-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .pills-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .chart-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .chart-controls {
-    width: 100%;
-    justify-content: stretch;
-  }
-
-  .btn-group {
-    width: 100%;
-  }
-
-  .btn {
-    flex: 1;
-  }
-
-  .tabs {
-    gap: 4px;
-  }
-
-  .tab {
-    padding: 12px 16px;
-    font-size: 14px;
-  }
-
-  .scenario-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .historical-comparison {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 480px) {
-  .card {
-    padding: 20px;
-  }
-
-  .pill {
-    padding: 14px;
-  }
-
-  .pill-value {
-    font-size: 24px;
-  }
-
-  .risk-card-value {
-    font-size: 28px;
-  }
-}
-
-/* ==================== PRINT STYLES ==================== */
-@media print {
-  body {
-    background: white;
-    color: black;
-  }
-
-  .card {
-    break-inside: avoid;
-    box-shadow: none;
-    border: 1px solid #ccc;
-  }
-
-  .btn, .tab {
-    display: none;
-  }
-
-  .alert-banner {
-    animation: none;
-  }
-}
-
-/* ==================== ACCESSIBILITY ==================== */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/* Focus styles for keyboard navigation */
-button:focus-visible,
-.pill:focus-visible,
-.tab:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* ==================== UTILITY CLASSES ==================== */
-.text-green { color: var(--green); }
-.text-amber { color: var(--amber); }
-.text-red { color: var(--red); }
-.text-muted { color: var(--text-muted); }
-
-.bg-green { background-color: var(--green); }
-.bg-amber { background-color: var(--amber); }
-.bg-red { background-color: var(--red); }
-
-.font-bold { font-weight: 700; }
-.font-extrabold { font-weight: 800; }
-
-.hidden { display: none; }
-
-/* ==================== ANIMATIONS ==================== */
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-in {
-  animation: slideInUp 0.4s ease-out;
-}
-
-/* ==================== DARK MODE ENHANCEMENTS ==================== */
-@media (prefers-color-scheme: light) {
-  /* Keep dark theme even in light mode preference */
-  /* This dashboard is optimized for dark display */
-}
-```
-
-  </style>
-</head>
-<body>
-  <!-- Body content from previous parts -->
-
-  <!-- Chart.js Library -->
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.1/dist/chartjs-plugin-annotation.min.js"></script>
 
-  <!-- Main Application Script continues in Part 4 -->
+  <script>
+  'use strict';
 
-</body>
-</html> 
-<script>
-'use strict';
+  // ==================== CONFIGURATION (Core-7) ====================
+  const CONFIG = {
+    FRED_CACHE_PATH: 'data/fred_cache.json',
+    CACHE_TIMEOUT: 10000,
 
-// ==================== ENHANCED CONFIGURATION ====================
-const CONFIG = {
-  // Data sources
-  FRED_CACHE_PATH: 'data/fred_cache.json',
-  CACHE_TIMEOUT: 15000, // Increased timeout for reliability
-  
-  // Core indicators with enhanced metadata
-  INDICATORS: {
-    T10Y3M: { 
-      label: 'Yield Curve',
-      shortLabel: 'Yield',
-      format: v => v?.toFixed(2) + '%',
-      weight: 0.18,
-      cadence: 'daily',
-      category: 'rates',
-      description: '10-year minus 3-month Treasury spread. Inversions historically precede recessions by 6-18 months, with high predictive accuracy.',
-      thresholds: { green: [0.5, Infinity], amber: [-0.5, 0.5], red: [-Infinity, -0.5] },
-      momentumWeight: 1.2,
-      crisisThreshold: -1.0,
-      crisisDirection: 'below',
-      historicalContext: 'Inverted before every recession since 1969'
+    // NOTE: TDSP added to composite. HOUST present with weight 0 for visual-only (optional).
+    INDICATORS: {
+      T10Y3M: {
+        label:'Yield Curve',
+        format:v=>v?.toFixed(2),
+        weight:0.18, cadence:'daily',
+        description:'10y minus 3m Treasury spread. Inversions often lead recessions by ~6–18m.',
+        thresholds:{ green:[0.5,Infinity], amber:[-0.5,0.5], red:[-Infinity,-0.5] },
+        momentumWeight:1.2, crisisThreshold:-1.0, crisisDirection:'below'
+      },
+      CREDIT: {
+        label:'Credit Spread',
+        format:v=>v?.toFixed(2),
+        weight:0.14, cadence:'daily',
+        description:'US HY OAS / BAA spread proxy. Wider = rising credit stress.',
+        thresholds:{ green:[-Infinity,0.40], amber:[0.40,0.70], red:[0.70,Infinity] },
+        momentumWeight:1.1, crisisThreshold:1.0, crisisDirection:'above'
+      },
+      NFCI: {
+        label:'Financial Conditions',
+        format:v=>v?.toFixed(3),
+        weight:0.12, cadence:'weekly',
+        description:'Chicago Fed NFCI. Above 0 = tight. Sharp rises precede downturns.',
+        thresholds:{ green:[-Infinity,-0.20], amber:[-0.20,0.20], red:[0.20,Infinity] },
+        momentumWeight:1.2, crisisThreshold:0.5, crisisDirection:'above'
+      },
+      DD_12M: {
+        label:'Market Drawdown',
+        format:v=>((v??0)*100).toFixed(1)+'%',
+        weight:0.20, cadence:'daily',
+        description:'S&P 500 drawdown from 12m peak. ≤-20% = bear territory.',
+        thresholds:{ green:[-0.05,0], amber:[-0.15,-0.05], red:[-Infinity,-0.15] },
+        momentumWeight:1.3, crisisThreshold:-0.25, crisisDirection:'below'
+      },
+      VIX_PROXY: {
+        label:'Volatility Index',
+        format:v=>v?.toFixed(1),
+        weight:0.10, cadence:'daily',
+        description:'VIX (or proxy). <15 calm, 15–25 elevated, >30 stressed.',
+        thresholds:{ green:[-Infinity,18], amber:[18,28], red:[28,Infinity] },
+        momentumWeight:1.1, crisisThreshold:40, crisisDirection:'above'
+      },
+      SAHM_RULE: {
+        label:'Sahm Rule',
+        format:v=>v?.toFixed(2),
+        weight:0.16, cadence:'monthly',
+        description:'3m avg unemployment minus 12m low. ≥0.5 => recession likely begun.',
+        thresholds:{ green:[-Infinity,0.1], amber:[0.1,0.4], red:[0.4,Infinity] },
+        momentumWeight:1.4, crisisThreshold:0.5, crisisDirection:'above'
+      },
+      TDSP: {
+        label:'Debt Service Ratio',
+        format:v=>v?.toFixed(2)+'%',
+        weight:0.10, cadence:'quarterly',
+        description:'Debt service payments as % of disposable income (TDSP). Higher = more fragility.',
+        // Direction: higher = worse
+        thresholds:{ green:[-Infinity,11.5], amber:[11.5,13.0], red:[13.0,Infinity] },
+        momentumWeight:0.0, // momentum off (slow, quarterly)
+        crisisThreshold:13.5, crisisDirection:'above'
+      },
+
+      // Optional visual-only macro early-cycle: does not affect composite (weight 0)
+      HOUST: {
+        label:'Housing Starts (opt.)',
+        format:v=>v?.toFixed(0),
+        weight:0.00, cadence:'monthly',
+        description:'New privately-owned housing starts (HOUST). Early-cycle signal. Visual-only by default.',
+        thresholds:{ green:[1200,Infinity], amber:[900,1200], red:[-Infinity,900] },
+        momentumWeight:0.6, crisisThreshold:800, crisisDirection:'below'
+      }
     },
-    CREDIT: { 
-      label: 'Credit Spread',
-      shortLabel: 'Credit',
-      format: v => v?.toFixed(2) + '%',
-      weight: 0.14,
-      cadence: 'daily',
-      category: 'credit',
-      description: 'High-yield credit spread (OAS). Wider spreads indicate heightened credit risk and reduced market liquidity.',
-      thresholds: { green: [-Infinity, 0.40], amber: [0.40, 0.70], red: [0.70, Infinity] },
-      momentumWeight: 1.1,
-      crisisThreshold: 1.0,
-      crisisDirection: 'above',
-      historicalContext: 'Spiked to 18%+ during 2008 GFC'
+
+    HISTORICAL_CRISES:{
+      '2008 GFC':      { score:92, date:'2008-10-15', indicators:{ T10Y3M:-1.5, CREDIT:1.8, SAHM_RULE:0.8, DD_12M:-0.45, VIX_PROXY:45, NFCI:1.0, TDSP:13.7 } },
+      '2020 COVID':    { score:88, date:'2020-03-23', indicators:{ T10Y3M:-0.8, CREDIT:1.2, SAHM_RULE:0.6, DD_12M:-0.34, VIX_PROXY:62, NFCI:0.9, TDSP:13.2 } },
+      '2000 Dot-com':  { score:78, date:'2001-03-12', indicators:{ T10Y3M:-0.3, CREDIT:0.9, SAHM_RULE:0.4, DD_12M:-0.28, VIX_PROXY:32, NFCI:0.4, TDSP:12.6 } }
     },
-    SAHM_RULE: { 
-      label: 'Sahm Rule',
-      shortLabel: 'Sahm',
-      format: v => v?.toFixed(2),
-      weight: 0.16,
-      cadence: 'monthly',
-      category: 'employment',
-      description: '3-month average unemployment rate minus 12-month low. Values ≥0.5 indicate recession has likely begun.',
-      thresholds: { green: [-Infinity, 0.1], amber: [0.1, 0.4], red: [0.4, Infinity] },
-      momentumWeight: 1.4,
-      crisisThreshold: 0.5,
-      crisisDirection: 'above',
-      historicalContext: 'Never triggered a false positive since 1970'
+
+    ALERTS:{ CRITICAL:80, WARNING:65, WATCH:50 },
+
+    FRESH_LIMITS:{ daily:{ok:7,warn:30}, weekly:{ok:7,warn:30}, monthly:{ok:30,warn:60}, quarterly:{ok:120,warn:240} },
+
+    ZONE_COLORS:{ green:'#1ec28b', amber:'#ffc247', red:'#ff6070' }
+  };
+
+  // ==================== UTILITIES ====================
+  const Utils = {
+    clamp:(x,min=0,max=100)=>Math.max(min,Math.min(max,x)),
+    map01:(val,good,bad)=>{
+      if(val==null) return 50;
+      const denom = bad - good;
+      if (Math.abs(denom) < 1e-9) return 50;
+      return ((val - good)/denom)*100;
     },
-    DD_12M: { 
-      label: 'Market Drawdown',
-      shortLabel: 'Drawdown',
-      format: v => ((v ?? 0) * 100).toFixed(1) + '%',
-      weight: 0.20,
-      cadence: 'daily',
-      category: 'equity',
-      description: 'S&P 500 decline from 12-month peak. -20% threshold defines bear market territory.',
-      thresholds: { green: [-0.05, 0], amber: [-0.15, -0.05], red: [-Infinity, -0.15] },
-      momentumWeight: 1.3,
-      crisisThreshold: -0.25,
-      crisisDirection: 'below',
-      historicalContext: 'Average bear market drawdown is -35%'
+    zoneOf:s=>s<=30?'green':(s<=60?'amber':'red'),
+    heatColor:score=>{
+      const r=Math.round(255*(score/100));
+      const g=Math.round(200*(1-score/100));
+      return `rgb(${r},${g},80)`;
     },
-    NFCI: { 
-      label: 'Financial Conditions',
-      shortLabel: 'NFCI',
-      format: v => v?.toFixed(3),
-      weight: 0.12,
-      cadence: 'weekly',
-      category: 'financial',
-      description: 'Chicago Fed National Financial Conditions Index. Values >0 indicate tighter-than-average conditions.',
-      thresholds: { green: [-Infinity, -0.20], amber: [-0.20, 0.20], red: [0.20, Infinity] },
-      momentumWeight: 1.2,
-      crisisThreshold: 0.5,
-      crisisDirection: 'above',
-      historicalContext: 'Peaked at +6 during 2008 crisis'
+    safeParseFloat:val=>{
+      if(val==null||val==='.'||val==='NaN'||val==='') return null;
+      const num=+val; return isFinite(num)?num:null;
     },
-    VIX_PROXY: { 
-      label: 'Volatility Index',
-      shortLabel: 'VIX',
-      format: v => v?.toFixed(1),
-      weight: 0.10,
-      cadence: 'daily',
-      category: 'sentiment',
-      description: 'CBOE Volatility Index. <15 = calm, 15-25 = elevated, 25-35 = stressed, >35 = fear.',
-      thresholds: { green: [-Infinity, 18], amber: [18, 28], red: [28, Infinity] },
-      momentumWeight: 1.1,
-      crisisThreshold: 40,
-      crisisDirection: 'above',
-      historicalContext: 'Spiked to 82.69 on March 16, 2020'
+    formatPercent:(val,dec=1)=> val==null?'—':`${val>0?'+':''}${(val*100).toFixed(dec)}%`,
+    calculateMomentum:(currentValues,historicalValues,lookback=30)=>{
+      const out={};
+      for(const [k,cur] of Object.entries(currentValues)){
+        const hist = historicalValues[k];
+        if(cur!=null && hist!=null) out[k]=(cur-hist)/lookback;
+      }
+      return out;
     }
-  },
+  };
 
-  // Historical crisis benchmarks with enhanced metadata
-  HISTORICAL_CRISES: {
-    '2008 GFC': { 
-      score: 92, 
-      date: '2008-10-15',
-      phase: 'Crisis Peak',
-      duration: '18 months',
-      maxDrawdown: '-57%',
-      indicators: { 
-        T10Y3M: -1.5, 
-        CREDIT: 1.8, 
-        SAHM_RULE: 0.8, 
-        DD_12M: -0.45, 
-        VIX_PROXY: 45,
-        NFCI: 3.8
-      }
-    },
-    '2020 COVID': { 
-      score: 88, 
-      date: '2020-03-23',
-      phase: 'Pandemic Shock',
-      duration: '2 months',
-      maxDrawdown: '-34%',
-      indicators: { 
-        T10Y3M: -0.8, 
-        CREDIT: 1.2, 
-        SAHM_RULE: 0.6, 
-        DD_12M: -0.34, 
-        VIX_PROXY: 62,
-        NFCI: 1.2
-      }
-    },
-    '2000 Dot-com': { 
-      score: 78, 
-      date: '2001-03-12',
-      phase: 'Tech Bubble Burst',
-      duration: '30 months',
-      maxDrawdown: '-49%',
-      indicators: { 
-        T10Y3M: -0.3, 
-        CREDIT: 0.9, 
-        SAHM_RULE: 0.4, 
-        DD_12M: -0.28, 
-        VIX_PROXY: 32
-      }
-    },
-    '2022 Inflation': { 
-      score: 65, 
-      date: '2022-06-13',
-      phase: 'Rate Shock',
-      duration: '9 months',
-      maxDrawdown: '-25%',
-      indicators: { 
-        T10Y3M: 0.8, 
-        CREDIT: 0.6, 
-        SAHM_RULE: 0.1, 
-        DD_12M: -0.23, 
-        VIX_PROXY: 28
-      }
-    },
-    '2011 Eurozone': {
-      score: 72,
-      date: '2011-08-08',
-      phase: 'Sovereign Debt Crisis',
-      duration: '24 months',
-      maxDrawdown: '-19%',
-      indicators: {
-        T10Y3M: -0.2,
-        CREDIT: 0.8,
-        SAHM_RULE: 0.2,
-        DD_12M: -0.18,
-        VIX_PROXY: 38
-      }
-    }
-  },
+  // ==================== SCALING ====================
+  const SCALE = {
+    T10Y3M:    v=>Utils.clamp(Utils.map01(v,  1.0,-2.0)),
+    CREDIT:    v=>Utils.clamp(Utils.map01(v,  0.30,1.00)),
+    NFCI:      v=>Utils.clamp(Utils.map01(v, -0.80,0.40)),
+    DD_12M:    v=>Utils.clamp(Utils.map01(v,  0.00,-0.20)),
+    VIX_PROXY: v=>Utils.clamp(Utils.map01(v,  12,  35)),
+    SAHM_RULE: v=>Utils.clamp(Utils.map01(v,  0.0, 0.5)),
+    TDSP:      v=>Utils.clamp(Utils.map01(v, 11.0, 13.8)), // higher = worse
+    HOUST:     v=>Utils.clamp(Utils.map01(v, 1600, 800))   // lower starts = worse (visual-only)
+  };
 
-  // Alert thresholds
-  ALERTS: { 
-    CRITICAL: 80,  // Immediate action required
-    WARNING: 65,   // Heightened monitoring
-    WATCH: 50      // Elevated attention
-  },
-
-  // Data freshness limits (in days)
-  FRESH_LIMITS: { 
-    daily: { ok: 7, warn: 30, critical: 60 }, 
-    weekly: { ok: 14, warn: 45, critical: 90 }, 
-    monthly: { ok: 45, warn: 75, critical: 120 } 
-  },
-
-  // Visualization colors
-  ZONE_COLORS: { 
-    green: '#1ec28b', 
-    amber: '#ffc247', 
-    red: '#ff6070',
-    blue: '#6b9eff'
-  },
-
-  // Risk calculation parameters
-  RISK_PARAMS: {
-    baselineVolatility: 15,
-    stressMultiplier: 2.5,
-    momentumDecay: 0.85,
-    confidenceFloor: 40,
-    complacencyThreshold: 13
-  },
-
-  // Feature flags
-  FEATURES: {
-    enableMachineLearning: true,
-    enableHistoricalComparison: true,
-    enableRealTimeUpdates: false, // Set to true when WebSocket available
-    enableExport: true
-  }
-};
-
-// ==================== UTILITY FUNCTIONS ====================
-const Utils = {
-  // Mathematical utilities
-  clamp: (x, min = 0, max = 100) => Math.max(min, Math.min(max, x)),
-  
-  map01: (val, good, bad) => {
-    if (val == null) return 50;
-    const denom = bad - good;
-    if (Math.abs(denom) < 1e-9) return 50;
-    return ((val - good) / denom) * 100;
-  },
-
-  // Exponential moving average
-  ema: (values, alpha = 0.1) => {
-    if (!values || values.length === 0) return null;
-    let ema = values[0];
-    for (let i = 1; i < values.length; i++) {
-      ema = alpha * values[i] + (1 - alpha) * ema;
-    }
-    return ema;
-  },
-
-  // Statistical functions
-  mean: arr => arr.reduce((a, b) => a + b, 0) / arr.length,
-  
-  stdDev: arr => {
-    const mean = Utils.mean(arr);
-    const variance = arr.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / arr.length;
-    return Math.sqrt(variance);
-  },
-
-  // Zone classification
-  zoneOf: s => s <= 30 ? 'green' : (s <= 60 ? 'amber' : 'red'),
-  
-  // Color generation for heatmaps
-  heatColor: score => {
-    const r = Math.round(255 * (score / 100));
-    const g = Math.round(200 * (1 - score / 100));
-    const b = 80;
-    return `rgb(${r}, ${g}, ${b})`;
-  },
-
-  // Safe parsing
-  safeParseFloat: val => {
-    if (val == null || val === '.' || val === 'NaN' || val === '') return null;
-    const num = +val;
-    return isFinite(num) ? num : null;
-  },
-
-  // Formatting
-  formatPercent: (val, dec = 1) => 
-    val == null ? '—' : `${val > 0 ? '+' : ''}${(val * 100).toFixed(dec)}%`,
-  
-  formatNumber: (val, dec = 2) =>
-    val == null ? '—' : val.toFixed(dec),
-
-  formatDate: date => {
-    const d = new Date(date);
-    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-  },
-
-  formatDateTime: date => {
-    const d = new Date(date);
-    return d.toLocaleString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  },
-
-  // Momentum calculation with adaptive lookback
-  calculateMomentum: (currentValues, historicalValues, lookback = 30) => {
-    const momentum = {};
-    for (const [key, current] of Object.entries(currentValues)) {
-      const historical = historicalValues[key];
-      if (current != null && historical != null) {
-        momentum[key] = (current - historical) / lookback;
-      }
-    }
-    return momentum;
-  },
-
-  // Calculate percentile rank
-  percentileRank: (value, array) => {
-    const sorted = [...array].sort((a, b) => a - b);
-    const index = sorted.findIndex(v => v >= value);
-    if (index === -1) return 100;
-    return (index / sorted.length) * 100;
-  },
-
-  // Debounce function for performance
-  debounce: (func, wait) => {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
+  // ==================== DATA LAYER ====================
+  class DataService {
+    static async loadFredCache(){
+      const controller=new AbortController();
+      const timeout=setTimeout(()=>controller.abort(), CONFIG.CACHE_TIMEOUT);
+      try{
+        const res=await fetch(`${CONFIG.FRED_CACHE_PATH}?t=${Date.now()}`,{ cache:'no-store', signal:controller.signal });
         clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  },
+        if(!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        const raw=await res.json();
+        return this.normalizeCache(raw);
+      }catch(err){
+        clearTimeout(timeout);
+        if(err.name==='AbortError') throw new Error('Request timeout');
+        throw err;
+      }
+    }
 
-  // Generate unique ID
-  generateId: () => `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-};
+    static normalizeCache(raw){
+      const out={};
+      if(!raw) return out;
 
-// ==================== SCALING FUNCTIONS ====================
-const SCALE = {
-  T10Y3M: v => Utils.clamp(Utils.map01(v, 1.0, -2.0)),
-  CREDIT: v => Utils.clamp(Utils.map01(v, 0.30, 1.00)),
-  SAHM_RULE: v => Utils.clamp(Utils.map01(v, 0.0, 0.5)),
-  DD_12M: v => Utils.clamp(Utils.map01(v, 0.00, -0.20)),
-  NFCI: v => Utils.clamp(Utils.map01(v, -0.80, 0.40)),
-  VIX_PROXY: v => Utils.clamp(Utils.map01(v, 12, 35))
-};
+      const directLike = typeof raw==='object' && Object.keys(raw).some(k=>raw[k] && Array.isArray(raw[k].observations));
+      if(directLike) return raw;
 
-// Continued in Part 5...
-</script> 
-<script>
-// ==================== DATA SERVICE ====================
-class DataService {
-  static async loadFredCache() {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), CONFIG.CACHE_TIMEOUT);
-    
-    try {
-      const response = await fetch(
-        `${CONFIG.FRED_CACHE_PATH}?t=${Date.now()}`,
-        { 
-          cache: 'no-store', 
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json'
+      if(Array.isArray(raw?.series)){
+        for(const item of raw.series){
+          const id=item?.id||item?.series_id||item?.name;
+          if(!id) continue;
+          const obs=Array.isArray(item.observations)?item.observations: (Array.isArray(item.data)?item.data:[]);
+          out[id]={ observations:obs, fetchedAt:item.fetchedAt };
+        }
+        return out;
+      }
+
+      if(raw.series && typeof raw.series==='object' && !Array.isArray(raw.series)){
+        for(const [id,item] of Object.entries(raw.series)){
+          const obs=Array.isArray(item?.observations)?item.observations: (Array.isArray(item?.data)?item.data:[]);
+          out[id]={ observations:obs, fetchedAt:item.fetchedAt };
+        }
+        return out;
+      }
+
+      if(Array.isArray(raw)){
+        for(const item of raw){
+          const id=item?.id||item?.series_id||item?.name;
+          if(!id) continue;
+          const obs=Array.isArray(item.observations)?item.observations: (Array.isArray(item.data)?item.data:[]);
+          out[id]={ observations:obs, fetchedAt:item.fetchedAt };
+        }
+      }
+      return out;
+    }
+
+    static latest(series){
+      const obs=series?.observations||[];
+      if(!obs.length) return null;
+      const o=obs[obs.length-1];
+      const v=Utils.safeParseFloat(o.value);
+      return { value:v, date:o.date };
+    }
+
+    static seriesAgeDays(series, fetchedAt){
+      const L=this.latest(series);
+      if(!L) return Infinity;
+      const d=new Date(L.date+'T00:00:00Z');
+      const ref=new Date(fetchedAt||Date.now());
+      return Math.max(0, Math.round((ref-d)/86400000));
+    }
+
+    static getHistoricalValue(series, daysBack=30){
+      const obs=series?.observations||[];
+      if(obs.length<2) return null;
+      const target=new Date(Date.now()-daysBack*86400000);
+      for(let i=obs.length-1;i>=0;i--){
+        const dt=new Date(obs[i].date+'T00:00:00Z');
+        if(dt<=target) return Utils.safeParseFloat(obs[i].value);
+      }
+      return null;
+    }
+  }
+
+  // ==================== DERIVED SERIES ====================
+  class DerivedSeries {
+    static deriveSahmRule(UNRATE){
+      const obs=UNRATE?.observations||[];
+      if(obs.length<12) return null;
+
+      const out=[];
+      for(let i=11;i<obs.length;i++){
+        const currentDate=obs[i].date;
+
+        let sum=0, cnt=0;
+        for(let j=0;j<3;j++){
+          if(i-j>=0){
+            const v=Utils.safeParseFloat(obs[i-j].value);
+            if(v!=null){ sum+=v; cnt++; }
           }
         }
-      );
-      
-      clearTimeout(timeout);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const rawData = await response.json();
-      const normalized = this.normalizeCache(rawData);
-      
-      // Add metadata
-      normalized._metadata = {
-        loadedAt: new Date().toISOString(),
-        seriesCount: Object.keys(normalized).filter(k => k !== '_metadata').length
-      };
-      
-      return normalized;
-    } catch (err) {
-      clearTimeout(timeout);
-      if (err.name === 'AbortError') {
-        throw new Error('Request timeout - data server may be unavailable');
-      }
-      throw err;
-    }
-  }
+        if(!cnt) continue;
+        const threeAvg=sum/cnt;
 
-  static normalizeCache(raw) {
-    const output = {};
-    if (!raw) return output;
-
-    // Direct format check
-    const directFormat = typeof raw === 'object' && 
-      Object.keys(raw).some(k => raw[k] && Array.isArray(raw[k].observations));
-    
-    if (directFormat) return raw;
-
-    // Handle nested series array
-    if (Array.isArray(raw?.series)) {
-      for (const item of raw.series) {
-        const id = item?.id || item?.series_id || item?.name;
-        if (!id) continue;
-        
-        const observations = Array.isArray(item.observations) 
-          ? item.observations 
-          : (Array.isArray(item.data) ? item.data : []);
-        
-        output[id] = { 
-          observations, 
-          fetchedAt: item.fetchedAt || raw.fetchedAt || Date.now()
-        };
-      }
-      return output;
-    }
-
-    // Handle series object
-    if (raw.series && typeof raw.series === 'object' && !Array.isArray(raw.series)) {
-      for (const [id, item] of Object.entries(raw.series)) {
-        const observations = Array.isArray(item?.observations) 
-          ? item.observations 
-          : (Array.isArray(item?.data) ? item.data : []);
-        
-        output[id] = { 
-          observations, 
-          fetchedAt: item.fetchedAt || raw.fetchedAt || Date.now()
-        };
-      }
-      return output;
-    }
-
-    // Handle flat array
-    if (Array.isArray(raw)) {
-      for (const item of raw) {
-        const id = item?.id || item?.series_id || item?.name;
-        if (!id) continue;
-        
-        const observations = Array.isArray(item.observations) 
-          ? item.observations 
-          : (Array.isArray(item.data) ? item.data : []);
-        
-        output[id] = { 
-          observations, 
-          fetchedAt: item.fetchedAt || Date.now()
-        };
-      }
-    }
-
-    return output;
-  }
-
-  static latest(series) {
-    const observations = series?.observations || [];
-    if (!observations.length) return null;
-    
-    const lastObs = observations[observations.length - 1];
-    const value = Utils.safeParseFloat(lastObs.value);
-    
-    return { 
-      value, 
-      date: lastObs.date,
-      timestamp: new Date(lastObs.date + 'T00:00:00Z').getTime()
-    };
-  }
-
-  static seriesAgeDays(series, fetchedAt) {
-    const latestData = this.latest(series);
-    if (!latestData) return Infinity;
-    
-    const dataDate = new Date(latestData.date + 'T00:00:00Z');
-    const referenceDate = new Date(fetchedAt || Date.now());
-    
-    return Math.max(0, Math.round((referenceDate - dataDate) / 86400000));
-  }
-
-  static getHistoricalValue(series, daysBack = 30) {
-    const observations = series?.observations || [];
-    if (observations.length < 2) return null;
-    
-    const targetDate = new Date(Date.now() - daysBack * 86400000);
-    
-    for (let i = observations.length - 1; i >= 0; i--) {
-      const obsDate = new Date(observations[i].date + 'T00:00:00Z');
-      if (obsDate <= targetDate) {
-        return Utils.safeParseFloat(observations[i].value);
-      }
-    }
-    
-    return null;
-  }
-
-  static getValueAtDate(series, targetDate) {
-    const observations = series?.observations || [];
-    const target = new Date(targetDate);
-    
-    for (let i = observations.length - 1; i >= 0; i--) {
-      const obsDate = new Date(observations[i].date + 'T00:00:00Z');
-      if (obsDate <= target) {
-        return Utils.safeParseFloat(observations[i].value);
-      }
-    }
-    
-    return null;
-  }
-
-  static getTimeSeriesWindow(series, startDate, endDate) {
-    const observations = series?.observations || [];
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    return observations
-      .filter(obs => {
-        const date = new Date(obs.date + 'T00:00:00Z');
-        return date >= start && date <= end;
-      })
-      .map(obs => ({
-        date: obs.date,
-        value: Utils.safeParseFloat(obs.value)
-      }));
-  }
-}
-
-// ==================== DERIVED SERIES ====================
-class DerivedSeries {
-  static deriveSahmRule(UNRATE) {
-    const observations = UNRATE?.observations || [];
-    if (observations.length < 12) return null;
-
-    const output = [];
-    
-    for (let i = 11; i < observations.length; i++) {
-      const currentDate = observations[i].date;
-
-      // Calculate 3-month average
-      let sum = 0, count = 0;
-      for (let j = 0; j < 3; j++) {
-        if (i - j >= 0) {
-          const value = Utils.safeParseFloat(observations[i - j].value);
-          if (value != null) { 
-            sum += value; 
-            count++; 
+        let minU=Infinity;
+        for(let j=1;j<=12;j++){
+          if(i-j>=0){
+            const v=Utils.safeParseFloat(obs[i-j].value);
+            if(v!=null && v<minU) minU=v;
           }
         }
-      }
-      
-      if (!count) continue;
-      const threeMonthAvg = sum / count;
+        if(minU===Infinity) continue;
 
-      // Find 12-month minimum
-      let minUnemployment = Infinity;
-      for (let j = 1; j <= 12; j++) {
-        if (i - j >= 0) {
-          const value = Utils.safeParseFloat(observations[i - j].value);
-          if (value != null && value < minUnemployment) {
-            minUnemployment = value;
-          }
-        }
+        const val=threeAvg - minU;
+        out.push({ date:currentDate, value:val.toFixed(3) });
       }
-      
-      if (minUnemployment === Infinity) continue;
-
-      const sahmValue = threeMonthAvg - minUnemployment;
-      output.push({ 
-        date: currentDate, 
-        value: sahmValue.toFixed(3) 
-      });
+      return { observations:out, fetchedAt:UNRATE.fetchedAt };
     }
 
-    return { 
-      observations: output, 
-      fetchedAt: UNRATE.fetchedAt,
-      derived: true,
-      sourceIndicator: 'UNRATE'
-    };
+    static deriveDrawdown12m(SP500){
+      const obs=SP500?.observations||[];
+      if(!obs.length) return null;
+
+      const dates=obs.map(o=>o.date);
+      const vals =obs.map(o=>Utils.safeParseFloat(o.value));
+      const peak=[];
+      for(let i=0;i<vals.length;i++){
+        const start=Math.max(0,i-252);
+        let p=-Infinity;
+        for(let j=start;j<=i;j++){
+          if(vals[j]!=null) p=Math.max(p, vals[j]);
+        }
+        peak.push(p);
+      }
+      const dd=dates.map((d,i)=>({ date:d, value: (vals[i]!=null && peak[i]!==-Infinity) ? String(vals[i]/peak[i]-1) : '.' }));
+      return { observations: dd, fetchedAt: (SP500 && SP500.fetchedAt) ? SP500.fetchedAt : undefined };
+    }
   }
 
-  static deriveDrawdown12m(SP500) {
-    const observations = SP500?.observations || [];
-    if (!observations.length) return null;
-
-    const dates = observations.map(o => o.date);
-    const values = observations.map(o => Utils.safeParseFloat(o.value));
-    
-    // Calculate rolling 12-month peak
-    const peaks = [];
-    for (let i = 0; i < values.length; i++) {
-      const start = Math.max(0, i - 252); // ~252 trading days in a year
-      let peak = -Infinity;
-      
-      for (let j = start; j <= i; j++) {
-        if (values[j] != null) {
-          peak = Math.max(peak, values[j]);
-        }
+  // ==================== INDICATOR PROCESSOR ====================
+  class IndicatorProcessor {
+    static mapIndicatorsFromCache(cache){
+      const out={};
+      // direct
+      for(const k of Object.keys(CONFIG.INDICATORS)){
+        if(cache[k]) out[k]=cache[k];
       }
-      
-      peaks.push(peak);
+      // fallbacks for credit/vix
+      if(!out.CREDIT && (cache.BAMLH0A0HYM2||cache.BAA10YM)) out.CREDIT = cache.BAMLH0A0HYM2 || cache.BAA10YM;
+      if(!out.VIX_PROXY && cache.VIXCLS) out.VIX_PROXY = cache.VIXCLS;
+
+      // derived series
+      if(!out.SAHM_RULE && cache.UNRATE){
+        out.SAHM_RULE = DerivedSeries.deriveSahmRule(cache.UNRATE) || { observations:[], fetchedAt:cache.UNRATE.fetchedAt };
+      }
+      if(!out.DD_12M && cache.SP500){
+        out.DD_12M = DerivedSeries.deriveDrawdown12m(cache.SP500) || { observations:[], fetchedAt:cache.SP500.fetchedAt };
+      }
+      return out;
     }
 
-    // Calculate drawdowns
-    const drawdowns = dates.map((date, i) => ({
-      date,
-      value: (values[i] != null && peaks[i] !== -Infinity) 
-        ? String(values[i] / peaks[i] - 1) 
-        : '.'
-    }));
+    static freshnessPenalty(days,cadence,isCalm=false){
+      const lim=CONFIG.FRESH_LIMITS[cadence]||CONFIG.FRESH_LIMITS.daily;
+      const ok=isCalm?Math.floor(lim.ok/2):lim.ok;
+      const warn=isCalm?Math.floor(lim.warn/2):lim.warn;
+      if(days<=ok) return 1.00;
+      if(days<=warn) return 0.85;
+      return 0.70;
+    }
 
-    return { 
-      observations: drawdowns, 
-      fetchedAt: SP500?.fetchedAt,
-      derived: true,
-      sourceIndicator: 'SP500'
-    };
-  }
+    static computeComposite(dataMap, isCalm){
+      let num=0, den=0;
+      const parts=[];
+      const currentValues={};
+      const historicalValues={};
 
-  static deriveVolatility(series, window = 20) {
-    const observations = series?.observations || [];
-    if (observations.length < window) return null;
+      // collect current/historical
+      for(const [k,cfg] of Object.entries(CONFIG.INDICATORS)){
+        const s=dataMap[k];
+        const obs=s?.observations||[];
+        if(!obs.length) continue;
+        const L=DataService.latest(s);
+        if(!L || L.value==null) continue;
+        currentValues[k]=L.value;
+        // momentum baseline: 30 days for daily/weekly/monthly; quarters don't use momentum
+        const back = cfg.cadence==='quarterly' ? 120 : 30;
+        historicalValues[k]=DataService.getHistoricalValue(s,back) ?? L.value;
+      }
 
-    const output = [];
-    const values = observations.map(o => Utils.safeParseFloat(o.value));
+      const momentum=Utils.calculateMomentum(currentValues, historicalValues);
 
-    for (let i = window - 1; i < values.length; i++) {
-      const windowValues = values.slice(i - window + 1, i + 1).filter(v => v != null);
-      
-      if (windowValues.length >= window * 0.8) { // At least 80% non-null
-        const returns = [];
-        for (let j = 1; j < windowValues.length; j++) {
-          returns.push(Math.log(windowValues[j] / windowValues[j - 1]));
+      // compute parts
+      for(const [k,cfg] of Object.entries(CONFIG.INDICATORS)){
+        const s=dataMap[k];
+        const obs=s?.observations||[];
+        if(!obs.length) continue;
+        const L=DataService.latest(s);
+        if(!L || L.value==null) continue;
+
+        const days=DataService.seriesAgeDays(s, s.fetchedAt);
+        const lim=CONFIG.FRESH_LIMITS[cfg.cadence]||CONFIG.FRESH_LIMITS.daily;
+        const badge = days<=lim.ok ? {cls:'badge-fresh',txt:'Fresh'} :
+                      days<=lim.warn ? {cls:'badge-stale',txt:'Stale'} :
+                      {cls:'badge-old',txt:'Old'};
+
+        let scaled=SCALE[k](L.value);
+
+        // apply small momentum tilt to faster series only
+        let mom=0;
+        if(cfg.cadence!=='quarterly' && (cfg.momentumWeight||0)>0){
+          const rawMom=momentum[k]||0;                 // units/day
+          const capped=Math.max(-0.02, Math.min(0.02, rawMom));
+          const w=cfg.momentumWeight||1.0;
+          scaled = Utils.clamp( scaled * (1 + capped * w * 5) );
+          mom=capped;
         }
-        
-        const volatility = Utils.stdDev(returns) * Math.sqrt(252); // Annualized
-        output.push({
-          date: observations[i].date,
-          value: volatility.toFixed(4)
+
+        const w=cfg.weight * this.freshnessPenalty(days, cfg.cadence, isCalm);
+        if(Number.isFinite(scaled) && Number.isFinite(w)){ num+=scaled*w; den+=w; }
+
+        // RAG boundaries (direction-aware)
+        let ragStatus='green';
+        const t=cfg.thresholds;
+        if(t){
+          if(L.value>=t.red[0] && L.value<=t.red[1]) ragStatus='red';
+          else if(L.value>=t.amber[0] && L.value<=t.amber[1]) ragStatus='amber';
+        }
+
+        let change=null;
+        if(obs.length>=2){
+          const a=Utils.safeParseFloat(obs[obs.length-1].value);
+          const b=Utils.safeParseFloat(obs[obs.length-2].value);
+          if(a!=null && b!=null) change=a-b;
+        }
+
+        parts.push({
+          key:k, label:cfg.label, value:L.value,
+          valueDisp:cfg.format?.(L.value) ?? L.value,
+          change, freshClass:badge.cls, freshTxt:badge.txt,
+          scaled, w, obs, ragStatus, description:cfg.description,
+          momentum:mom, crisisThreshold:cfg.crisisThreshold, crisisDirection:cfg.crisisDirection
         });
       }
+
+      return { parts, num, den, currentValues };
     }
-
-    return {
-      observations: output,
-      fetchedAt: series?.fetchedAt,
-      derived: true,
-      sourceIndicator: series.sourceIndicator || 'UNKNOWN'
-    };
-  }
-}
-
-// ==================== INDICATOR PROCESSOR ====================
-class IndicatorProcessor {
-  static mapIndicatorsFromCache(cache) {
-    const output = {};
-
-    // Direct mapping
-    for (const key of Object.keys(CONFIG.INDICATORS)) {
-      if (cache[key]) {
-        output[key] = cache[key];
-      }
-    }
-
-    // Fallback mappings
-    if (!output.CREDIT && (cache.BAMLH0A0HYM2 || cache.BAA10YM)) {
-      output.CREDIT = cache.BAMLH0A0HYM2 || cache.BAA10YM;
-    }
-    
-    if (!output.VIX_PROXY && cache.VIXCLS) {
-      output.VIX_PROXY = cache.VIXCLS;
-    }
-
-    // Derived indicators
-    if (!output.SAHM_RULE && cache.UNRATE) {
-      output.SAHM_RULE = DerivedSeries.deriveSahmRule(cache.UNRATE) || { 
-        observations: [], 
-        fetchedAt: cache.UNRATE.fetchedAt 
-      };
-    }
-
-    if (!output.DD_12M && cache.SP500) {
-      output.DD_12M = DerivedSeries.deriveDrawdown12m(cache.SP500) || { 
-        observations: [], 
-        fetchedAt: cache.SP500.fetchedAt 
-      };
-    }
-
-    return output;
   }
 
-  static freshnessPenalty(days, cadence, isCalm = false) {
-    const limits = CONFIG.FRESH_LIMITS[cadence] || CONFIG.FRESH_LIMITS.daily;
-    const okThreshold = isCalm ? Math.floor(limits.ok / 2) : limits.ok;
-    const warnThreshold = isCalm ? Math.floor(limits.warn / 2) : limits.warn;
-    
-    if (days <= okThreshold) return 1.00;
-    if (days <= warnThreshold) return 0.85;
-    if (days <= limits.critical) return 0.70;
-    return 0.50; // Severely stale
-  }
+  // ==================== ANALYTICS ====================
+  class Analytics {
+    static complacencyPenalty(dataMap){
+      const vix=dataMap.VIX_PROXY?.observations||[];
+      const hy =dataMap.CREDIT?.observations||[];
+      const dd =dataMap.DD_12M?.observations||[];
+      if(vix.length<22 || hy.length<1 || dd.length<1) return 0;
 
-  static computeComposite(dataMap, isCalm) {
-    let numerator = 0, denominator = 0;
-    const parts = [];
-    const currentValues = {};
-    const historicalValues = {};
+      let streak=0;
+      for(let i=vix.length-1;i>=0 && streak<60;i--){
+        const val=Utils.safeParseFloat(vix[i].value);
+        if(val!=null && val<=13) streak++; else break;
+      }
+      const vixScore=Math.min(1, streak/30);
 
-    // Collect current and historical values
-    for (const [key, config] of Object.entries(CONFIG.INDICATORS)) {
-      const series = dataMap[key];
-      const observations = series?.observations || [];
-      
-      if (!observations.length) continue;
-      
-      const latest = DataService.latest(series);
-      if (!latest || latest.value == null) continue;
+      const hyLast=Utils.safeParseFloat(hy[hy.length-1].value);
+      const spreadTight= (hyLast!=null && hyLast<=0.35) ? 1 : 0;
 
-      currentValues[key] = latest.value;
-      historicalValues[key] = DataService.getHistoricalValue(series, 30) ?? latest.value;
+      const ddLast=Utils.safeParseFloat(dd[dd.length-1].value);
+      const shallowDD= (ddLast!=null && ddLast>=-0.05) ? 1 : 0;
+
+      const raw=0.5*vixScore + 0.3*spreadTight + 0.2*shallowDD;
+      return Math.round(15*raw);
     }
 
-    const momentum = Utils.calculateMomentum(currentValues, historicalValues);
+    static inflationDriftPenalty(cache){
+      const CPI=cache.CPI_YOY || cache.CPIAUCSL_YOY || null;
+      if(!CPI?.observations?.length) return 0;
+      const o=CPI.observations;
+      const last=Utils.safeParseFloat(o[o.length-1].value);
+      if(last==null) return 0;
+      if(last<=2.5) return 0;
+      if(last<=3.5) return Math.round(1+2*(last-2.5));
+      return Math.min(6, Math.round(2+2*(last-3.5)));
+    }
 
-    // Compute indicator parts with momentum adjustment
-    for (const [key, config] of Object.entries(CONFIG.INDICATORS)) {
-      const series = dataMap[key];
-      const observations = series?.observations || [];
-      
-      if (!observations.length) continue;
-      
-      const latest = DataService.latest(series);
-      if (!latest || latest.value == null) continue;
+    static compositeMomentum(hist, lookbackDays){
+      if(!hist?.length) return 0;
+      const n=hist.length;
+      const a=Math.max(0, n-1-lookbackDays);
+      const b=n-1;
+      const da=hist[a]?.value ?? hist[0].value;
+      const db=hist[b]?.value ?? hist[n-1].value;
+      return db-da;
+    }
 
-      const days = DataService.seriesAgeDays(series, series.fetchedAt);
-      const limits = CONFIG.FRESH_LIMITS[config.cadence] || CONFIG.FRESH_LIMITS.daily;
-      
-      const badge = days <= limits.ok 
-        ? { cls: 'badge-fresh', txt: 'Fresh' }
-        : days <= limits.warn 
-        ? { cls: 'badge-stale', txt: 'Stale' }
-        : { cls: 'badge-old', txt: 'Old' };
+    static horizonRiskSmart(composite, hist){
+      const m20=this.compositeMomentum(hist,20);
+      const m60=this.compositeMomentum(hist,60);
+      const m120=this.compositeMomentum(hist,120);
+      const base=x=>1/(1+Math.exp(-(x-50)/10));
+      const p1=base(composite)*(0.70+0.02*m20);
+      const p3=base(composite)*(0.95+0.015*m60);
+      const p6=base(composite)*(1.20+0.010*m120);
+      const clip=p=>Math.round(Math.max(5, Math.min(95, 100*p)));
+      return { p1:clip(p1), p3:clip(p3), p6:clip(p6) };
+    }
 
-      let scaled = SCALE[key](latest.value);
+    static buildCompositeHistory(dataMap){
+      const keys=Object.keys(CONFIG.INDICATORS);
+      const allDates=new Set();
+      for(const k of keys){ (dataMap[k]?.observations||[]).forEach(o=>allDates.add(o.date)); }
+      const dates=Array.from(allDates).sort();
 
-      // Apply momentum tilt (only for daily indicators)
-      let momentumValue = 0;
-      if (config.cadence === 'daily') {
-        const rawMomentum = momentum[key] || 0;
-        const cappedMomentum = Math.max(-0.02, Math.min(0.02, rawMomentum));
-        const weight = config.momentumWeight || 1.0;
-        scaled = Utils.clamp(scaled * (1 + cappedMomentum * weight * 5));
-        momentumValue = cappedMomentum;
+      return dates.map(date=>{
+        let n=0,d=0;
+        for(const [k,cfg] of Object.entries(CONFIG.INDICATORS)){
+          const s=dataMap[k]; if(!s) continue;
+          const obs=s.observations; let v=null;
+          for(let i=obs.length-1;i>=0;i--){
+            if(obs[i].date<=date){
+              const vv=Utils.safeParseFloat(obs[i].value);
+              if(vv!=null){ v=vv; break; }
+            }
+          }
+          if(v==null) continue;
+          const sc=SCALE[k](v);
+          n+=sc*cfg.weight; d+=cfg.weight;
+        }
+        return { date, value: d>0 ? +(n/d).toFixed(1) : null };
+      }).filter(x=>x.value!==null);
+    }
+
+    static generateAlerts(parts, composite){
+      const alerts=[];
+      if(composite>=CONFIG.ALERTS.CRITICAL){
+        alerts.push({ level:'critical', message:`CRITICAL: Market stress at ${Math.round(composite)} - Similar to crisis levels`, type:'composite' });
+      } else if (composite>=CONFIG.ALERTS.WARNING){
+        alerts.push({ level:'warning', message:`WARNING: Elevated market stress (${Math.round(composite)}) - Monitor closely`, type:'composite' });
       }
 
-      const indicatorWeight = config.weight * 
-        this.freshnessPenalty(days, config.cadence, isCalm);
-
-      if (Number.isFinite(scaled) && Number.isFinite(indicatorWeight)) {
-        numerator += scaled * indicatorWeight;
-        denominator += indicatorWeight;
-      }
-
-      // Determine RAG status
-      let ragStatus = 'green';
-      const thresholds = config.thresholds;
-      if (thresholds) {
-        if (latest.value >= thresholds.red[0] && latest.value <= thresholds.red[1]) {
-          ragStatus = 'red';
-        } else if (latest.value >= thresholds.amber[0] && latest.value <= thresholds.amber[1]) {
-          ragStatus = 'amber';
+      for(const p of parts){
+        const isRed = p.ragStatus==='red';
+        let hitsCrisis=false;
+        if(typeof p.crisisThreshold==='number'){
+          const dir = p.crisisDirection || 'above';
+          hitsCrisis = dir==='below' ? (p.value!=null && p.value<=p.crisisThreshold)
+                                     : (p.value!=null && p.value>=p.crisisThreshold);
+        }
+        if(hitsCrisis){
+          alerts.push({ level:'critical', message:`CRITICAL: ${p.label} at crisis level (${p.valueDisp})`, type:'indicator', indicator:p.key });
+        } else if (isRed){
+          alerts.push({ level:'warning', message:`WARNING: ${p.label} in stress zone (${p.valueDisp})`, type:'indicator', indicator:p.key });
         }
       }
+      return alerts;
+    }
 
-      // Calculate change from previous value
-      let change = null;
-      if (observations.length >= 2) {
-        const current = Utils.safeParseFloat(observations[observations.length - 1].value);
-        const previous = Utils.safeParseFloat(observations[observations.length - 2].value);
-        if (current != null && previous != null) {
-          change = current - previous;
+    static findHistoricalComparisons(currentValues, currentScore){
+      const comparisons=[];
+      for(const [period,data] of Object.entries(CONFIG.HISTORICAL_CRISES)){
+        let simSum=0, matched=0;
+        for(const [k,curRaw] of Object.entries(currentValues)){
+          const histRaw=data.indicators[k];
+          const scale=SCALE[k];
+          if(typeof histRaw==='number' && typeof curRaw==='number' && typeof scale==='function'){
+            const cur = scale(curRaw);
+            const his = scale(histRaw);
+            const curDist = Math.abs(cur-100);
+            const hisDist = Math.abs(his-100);
+            const denom = Math.max(curDist, hisDist);
+            const term = denom===0 ? 1 : 1 - (Math.abs(curDist - hisDist)/denom);
+            simSum += term; matched++;
+          }
+        }
+        if(matched){
+          const similarity=Math.round((simSum/matched)*100);
+          comparisons.push({ period, score:data.score, date:data.date, similarity, currentScore });
         }
       }
+      return comparisons.sort((a,b)=>b.similarity-a.similarity).slice(0,3);
+    }
+  }
 
-      parts.push({
-        key,
-        label: config.label,
-        shortLabel: config.shortLabel,
-        category: config.category,
-        value: latest.value,
-        valueDisp: config.format?.(latest.value) ?? latest.value,
-        change,
-        freshClass: badge.cls,
-        freshTxt: badge.txt,
-        scaled,
-        weight: indicatorWeight,
-        observations,
-        ragStatus,
-        description: config.description,
-        historicalContext: config.historicalContext,
-        momentum: momentumValue,
-        crisisThreshold: config.crisisThreshold,
-        crisisDirection: config.crisisDirection,
-        ageInDays: days
+  // ==================== UI MANAGER ====================
+  class UIManager {
+    constructor(){
+      this.elements = {
+        statusBadge: document.getElementById('statusBadge'),
+        alertBanner: document.getElementById('alertBanner'),
+        auditBox: document.getElementById('auditBox'),
+        mainContent: document.getElementById('mainContent')
+      };
+      this.charts = { composite:null, decomp:null, traj:null };
+      this.currentTimeframe='1m';
+    }
+
+    setStatus(zone,text){
+      const color=CONFIG.ZONE_COLORS[zone] || '#8fb4ff';
+      this.elements.statusBadge.innerHTML = `
+        <div class="status" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)">
+          <span class="status-dot" style="background:${color}"></span>
+          <span>${text}</span>
+        </div>`;
+    }
+
+    setErrorStatus(errText){
+      this.elements.statusBadge.innerHTML=`
+        <div class="status" style="background:rgba(255,96,112,.12);border:1px solid rgba(255,96,112,.4)">
+          <span class="status-dot" style="background:#ff6070"></span>
+          <span>Data error: ${errText}</span>
+        </div>`;
+    }
+
+    renderAlerts(alerts){
+      if(!alerts.length){ this.elements.alertBanner.innerHTML=''; return; }
+      const critical=alerts.filter(a=>a.level==='critical');
+      const warning =alerts.filter(a=>a.level==='warning');
+
+      let html='';
+      if(critical.length){
+        html=`
+          <div class="alert-banner">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-size:24px">🚨</span>
+              <div>
+                <div style="font-weight:700;margin-bottom:4px">CRITICAL ALERT</div>
+                <div style="font-size:14px">${critical[0].message}</div>
+                ${critical.length>1?`<div style="font-size:12px;margin-top:4px">+${critical.length-1} more critical alerts</div>`:''}
+              </div>
+            </div>
+          </div>`;
+      } else if (warning.length){
+        html=`
+          <div class="alert-banner" style="background:rgba(255,194,71,.15);border-color:rgba(255,194,71,.3)">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-size:24px">⚠️</span>
+              <div>
+                <div style="font-weight:700;margin-bottom:4px">WARNING</div>
+                <div style="font-size:14px">${warning[0].message}</div>
+              </div>
+            </div>
+          </div>`;
+      }
+      this.elements.alertBanner.innerHTML=html;
+    }
+
+    showError(message){
+      this.elements.mainContent.innerHTML=`
+        <div class="error-state">
+          <h3 style="margin:0 0 8px;color:#ff9da6">⚠️ Unable to Load Data</h3>
+          <p style="margin:0;color:var(--muted)">${message}</p>
+          <p style="margin:8px 0 0;font-size:13px;color:var(--muted)">
+            Please ensure the data file exists at: <code>${CONFIG.FRED_CACHE_PATH}</code>
+          </p>
+        </div>`;
+    }
+
+    renderMainUI(){
+      this.elements.mainContent.innerHTML=`
+        <section class="card">
+          <div class="gauge-container">
+            <div class="gauge-wrap">
+              <div class="multi-ring">
+                <div class="ring ring-outer"></div>
+                <div class="ring ring-mid"></div>
+                <div class="ring ring-inner"></div>
+              </div>
+              <div id="needle" class="needle"></div>
+              <div class="score"><div id="scoreText">--</div><div class="score-label">COMPOSITE</div></div>
+            </div>
+
+            <div class="gauge-info">
+              <h2>Market Stress Index</h2>
+              <div style="color:var(--muted);font-size:14px;margin-bottom:8px">
+                Real-time composite of <span id="indicatorCount">--</span> economic indicators
+              </div>
+              <div class="confidence">
+                <span>Confidence:</span>
+                <div class="confidence-bar"><div id="confidenceFill" class="confidence-fill"></div></div>
+                <span id="confidenceText">--</span>
+              </div>
+              <div id="regimeIndicator" style="margin-top:12px"></div>
+              <div style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap">
+                <div style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06);position:relative">
+                  <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center">
+                    1-Month Risk
+                    <span class="info-tooltip" title="Probability of a significant market downturn (>10% drawdown) within the next month based on current stress levels">?</span>
+                  </h4>
+                  <div id="prob1m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
+                </div>
+                <div style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06);position:relative">
+                  <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center">
+                    3-Month Risk
+                    <span class="info-tooltip" title="Probability of entering a sustained correction (>15% drawdown) within the next quarter. Incorporates medium-term momentum trends">?</span>
+                  </h4>
+                  <div id="prob3m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
+                </div>
+                <div style="flex:1;min-width:140px;background:rgba(255,255,255,.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.06);position:relative">
+                  <h4 style="margin:0 0 4px;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center">
+                    6-Month Risk
+                    <span class="info-tooltip" title="Probability of recession or bear market (>20% decline) within 6 months. Based on historical patterns and macro deterioration rates">?</span>
+                  </h4>
+                  <div id="prob6m" style="font-size:24px;font-weight:700;color:var(--accent-bright)">--</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" id="historicalSection" style="display:none">
+          <h3 style="margin:0 0 16px;font-size:20px;display:flex;align-items:center">
+            📈 Historical Context
+            <span class="info-tooltip" style="margin-left:8px" title="Compare current market conditions with historical crisis periods">?</span>
+          </h3>
+          <div id="historicalComparisons" class="historical-comparison"></div>
+        </section>
+
+        <section class="card">
+          <h3 style="margin:0 0 16px;font-size:20px;display:flex;align-items:center">
+            📊 Live Indicators
+            <span class="info-tooltip" style="margin-left:8px" title="Hover over any indicator to see its description. Color dots show current stress level: Green = Normal, Amber = Elevated, Red = Stressed">?</span>
+          </h3>
+          <div style="margin-bottom:12px;padding:10px;background:rgba(255,255,255,.02);border-radius:8px;font-size:13px;color:var(--muted)">
+            <strong style="color:var(--text)">Legend:</strong>
+            <span style="display:inline-flex;align-items:center;margin-left:12px">
+              <span class="pill-status pill-status-green" style="margin-right:4px"></span> Normal
+            </span>
+            <span style="display:inline-flex;align-items:center;margin-left:12px">
+              <span class="pill-status pill-status-amber" style="margin-right:4px"></span> Elevated
+            </span>
+            <span style="display:inline-flex;align-items:center;margin-left:12px">
+              <span class="pill-status pill-status-red" style="margin-right:4px"></span> Stressed
+            </span>
+          </div>
+          <div id="pillsGrid" class="pills-grid"></div>
+        </section>
+
+        <div class="tabs">
+          <button class="tab active" data-tab="composite">Composite</button>
+          <button class="tab" data-tab="scenarios">Scenarios</button>
+          <button class="tab" data-tab="indicators">Indicators</button>
+        </div>
+
+        <div id="tab-composite" class="tab-content active">
+          <section class="card">
+            <div class="chart-header">
+              <h3 class="chart-title">Composite Risk Score</h3>
+              <div class="chart-controls">
+                <div class="btn-group" id="timeframeButtons">
+                  <button class="btn active" data-tf="1m">1M</button>
+                  <button class="btn" data-tf="3m">3M</button>
+                  <button class="btn" data-tf="6m">6M</button>
+                  <button class="btn" data-tf="1y">1Y</button>
+                  <button class="btn" data-tf="all">ALL</button>
+                </div>
+              </div>
+            </div>
+            <div class="chart-container"><canvas id="compositeChart"></canvas></div>
+          </section>
+
+          <section class="card">
+            <h3 style="margin:0 0 16px">Risk Decomposition</h3>
+            <div class="chart-container"><canvas id="decompChart"></canvas></div>
+          </section>
+        </div>
+
+        <div id="tab-scenarios" class="tab-content">
+          <section class="card">
+            <h3 style="margin:0 0 8px">Forward-Looking Scenarios</h3>
+            <p style="color:var(--muted);margin:0 0 16px;font-size:14px">Probability-weighted forecasts</p>
+            <div id="scenarioGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px"></div>
+          </section>
+
+          <section class="card">
+            <h3 style="margin:0 0 16px">Risk Trajectory</h3>
+            <div class="chart-container"><canvas id="trajectoryChart"></canvas></div>
+          </section>
+        </div>
+
+        <div id="tab-indicators" class="tab-content">
+          <section class="card">
+            <h3 style="margin:0 0 16px">Indicator Heat Map</h3>
+            <div id="heatmap" class="heatmap"></div>
+          </section>
+        </div>`;
+      this.setupEventListeners();
+    }
+
+    renderHistoricalComparisons(comps){
+      const section=document.getElementById('historicalSection');
+      const container=document.getElementById('historicalComparisons');
+      if(!comps.length){ section.style.display='none'; return; }
+      section.style.display='block';
+      container.innerHTML=comps.map(c=>{
+        const crit=c.similarity>70;
+        return `
+          <div class="period-card ${crit?'critical':''}">
+            <div style="font-weight:600;margin-bottom:8px">${c.period}</div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="color:var(--muted);font-size:12px">Peak Score:</span>
+              <span style="font-weight:700">${c.score}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="color:var(--muted);font-size:12px">Similarity:</span>
+              <span style="font-weight:700;color:${crit?CONFIG.ZONE_COLORS.red:CONFIG.ZONE_COLORS.amber}">${c.similarity}%</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted)">${c.date}</div>
+          </div>`;
+      }).join('');
+    }
+
+    setupEventListeners(){
+      document.querySelectorAll('.tab').forEach(tab=>{
+        tab.addEventListener('click', e=>{
+          const target=e.currentTarget.dataset.tab;
+          document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+          e.currentTarget.classList.add('active');
+          document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+          document.getElementById(`tab-${target}`).classList.add('active');
+        });
+      });
+
+      document.querySelectorAll('#timeframeButtons .btn').forEach(btn=>{
+        btn.addEventListener('click', e=>{
+          document.querySelectorAll('#timeframeButtons .btn').forEach(b=>b.classList.remove('active'));
+          e.currentTarget.classList.add('active');
+          this.currentTimeframe=e.currentTarget.dataset.tf;
+          app.renderCompositeChart();
+        });
       });
     }
 
-    return { parts, numerator, denominator, currentValues };
-  }
-}
+    setGauge(score){
+      const scoreEl=document.getElementById('scoreText');
+      const needleEl=document.getElementById('needle');
+      if(scoreEl) scoreEl.textContent=Math.round(score);
+      if(needleEl){
+        const angle=(score/100)*360;
+        needleEl.style.setProperty('--angle', angle+'deg');
+      }
+    }
 
-// Continued in final part...
-</script>
+    renderPills(parts){
+      const grid=document.getElementById('pillsGrid');
+      if(!grid) return;
+      grid.innerHTML=parts.map(p=>{
+        const arrow=p.change==null?'':(p.change>0?'▲':'▼');
+        const changeTxt=p.change==null?'':`${p.change>0?'+':''}${p.change.toFixed(2)}`;
+        const ragClass=`pill-status-${p.ragStatus||'green'}`;
+        const momentumIndicator = (p.momentum!==undefined && p.momentum!==0)
+          ? `<div style="font-size:10px;color:${p.momentum>0?CONFIG.ZONE_COLORS.red:CONFIG.ZONE_COLORS.green}">
+               ${p.momentum>0?'↗':'↘'} ${Math.abs(p.momentum).toFixed(3)}/day
+             </div>` : '';
+        return `
+          <div class="pill" data-key="${p.key}">
+            <div class="pill-header">
+              <div style="display:flex;align-items:center">
+                <div class="pill-title">${p.label}</div>
+                <span class="pill-status ${ragClass}"></span>
+              </div>
+              <div class="pill-badge ${p.freshClass}">${p.freshTxt}</div>
+            </div>
+            <div class="pill-value">${p.valueDisp}</div>
+            <div class="pill-change"><span>${arrow}</span>${changeTxt}</div>
+            ${momentumIndicator}
+            ${p.description?`<div class="pill-tooltip">${p.description}</div>`:''}
+          </div>`;
+      }).join('');
+    }
+
+    renderCompositeChart(history){
+      const hist=history||[];
+      if(!hist.length) return;
+
+      const now=new Date(hist[hist.length-1].date+'T00:00:00Z');
+      const spanDays= this.currentTimeframe==='1m'?30 :
+                      this.currentTimeframe==='3m'?90 :
+                      this.currentTimeframe==='6m'?180 :
+                      this.currentTimeframe==='1y'?365 : Infinity;
+
+      const filtered= spanDays===Infinity ? hist : hist.filter(d=>{
+        const dt=new Date(d.date+'T00:00:00Z');
+        return (now-dt)/86400000 <= spanDays;
+      });
+
+      const labels=filtered.map(d=>d.date);
+      const data  =filtered.map(d=>d.value);
+
+      if(this.charts.composite) this.charts.composite.destroy();
+      const ctx=document.getElementById('compositeChart'); if(!ctx) return;
+
+      this.charts.composite=new Chart(ctx,{
+        type:'line',
+        data:{ labels, datasets:[{
+          label:'Composite Score',
+          data,
+          borderColor:CONFIG.ZONE_COLORS.amber,
+          backgroundColor:'rgba(255,194,71,0.1)',
+          borderWidth:2,
+          fill:true,
+          tension:0.25,
+          pointRadius:0,
+          pointHoverRadius:4
+        }]},
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{ legend:{display:false}, tooltip:{mode:'index',intersect:false} },
+          scales:{
+            x:{ display:true, grid:{ color:'rgba(255,255,255,0.05)' } },
+            y:{ min:0, max:100, grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ callback:val=>val+'%' } }
+          }
+        }
+      });
+    }
+
+    renderDecomp(parts){
+      const labels=parts.map(p=>p.label);
+      const contrib=parts.map(p=>+(p.scaled*p.w).toFixed(1));
+      if(this.charts.decomp) this.charts.decomp.destroy();
+      const ctx=document.getElementById('decompChart'); if(!ctx) return;
+
+      this.charts.decomp=new Chart(ctx,{
+        type:'bar',
+        data:{ labels, datasets:[{
+          label:'Contribution',
+          data:contrib,
+          backgroundColor:contrib.map(c=> c<10?CONFIG.ZONE_COLORS.green : (c<20?CONFIG.ZONE_COLORS.amber:CONFIG.ZONE_COLORS.red)),
+          borderWidth:0
+        }]},
+        options:{
+          responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+          scales:{
+            y:{ beginAtZero:true, max:Math.max(10, Math.ceil(Math.max(...contrib,10)/10)*10), grid:{ color:'rgba(255,255,255,0.05)' } },
+            x:{ grid:{ display:false } }
+          }
+        }
+      });
+    }
+
+    renderHeatmap(parts){
+      const heatmap=document.getElementById('heatmap'); if(!heatmap) return;
+      const items=parts.length ? parts : [{label:'No data',scaled:0,valueDisp:'—'}];
+      heatmap.innerHTML=items.map(p=>{
+        const color=Utils.heatColor(p.scaled);
+        return `
+          <div class="heat-cell">
+            <div class="heat-label">${p.label}</div>
+            <div class="heat-value">${p.valueDisp ?? '—'}</div>
+            <div class="bar"><span style="width:${p.scaled}%;background:${color}"></span></div>
+          </div>`;
+      }).join('');
+    }
+
+    renderScenarios(composite, breadth){
+      const stress=composite/100;
+      const riskBias=(breadth-50)/50;
+      const baseProb=60-20*riskBias;
+      const downProb=Math.min(40, 20+40*stress);
+      const upProb=Math.max(5, 100-baseProb-downProb);
+
+      const cards=[
+        { title:'Base Case', prob:Math.round(baseProb), desc:'Sideways-to-mildly volatile regime; conditions stabilize with modest dispersion.' },
+        { title:'Downside (Stress)', prob:Math.round(downProb), desc:'Tighter financial conditions and volatility spikes; drawdowns concentrated in cyclicals.' },
+        { title:'Upside (Relief)', prob:Math.round(upProb), desc:'Soft-landing drift; risk appetite improves as macro prints surprise positively.' }
+      ];
+      const grid=document.getElementById('scenarioGrid'); if(!grid) return;
+      grid.innerHTML=cards.map(c=>`
+        <div style="background:rgba(255,255,255,.03);padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,.06)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-weight:600">${c.title}</div>
+            <div style="font-size:22px;font-weight:700;color:var(--accent-bright)">${c.prob}%</div>
+          </div>
+          <div style="color:var(--muted);font-size:13px">${c.desc}</div>
+        </div>`).join('');
+    }
+
+    renderTrajectory(composite){
+      const steps=26, phi=0.85, target=50;
+      let v=composite;
+      const labels=[], path=[], upper=[], lower=[];
+      for(let i=1;i<=steps;i++){
+        v = phi*v + (1-phi)*target;
+        labels.push(`W+${i}`); path.push(+v.toFixed(1));
+        const band=6*Math.sqrt(i/steps);
+        upper.push(Math.min(100, +(v+band).toFixed(1)));
+        lower.push(Math.max(0, +(v-band).toFixed(1)));
+      }
+      if(this.charts.traj) this.charts.traj.destroy();
+      const ctx=document.getElementById('trajectoryChart'); if(!ctx) return;
+
+      this.charts.traj=new Chart(ctx,{
+        type:'line',
+        data:{
+          labels,
+          datasets:[
+            { label:'Projected', data:path, borderWidth:2, fill:false, tension:0.25, borderColor:CONFIG.ZONE_COLORS.amber },
+            { label:'Upper', data:upper, borderWidth:1, fill:false, borderDash:[4,4], borderColor:CONFIG.ZONE_COLORS.red },
+            { label:'Lower', data:lower, borderWidth:1, fill:false, borderDash:[4,4], borderColor:CONFIG.ZONE_COLORS.green }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{ display:true, labels:{ color:'#8b96b0' } } },
+          scales:{ y:{ min:0,max:100, grid:{ color:'rgba(255,255,255,0.05)' } },
+                   x:{ grid:{ color:'rgba(255,255,255,0.05)' } } }
+        }
+      });
+    }
+
+    updateAudit(missing,stale){
+      const html=(missing.length?`<div><b class="bad">Missing</b>: ${missing.join(', ')}</div>`:'') +
+                 (stale.length?`<div><b class="warn">Stale</b>: ${stale.join(', ')}</div>`:'');
+      document.getElementById('auditBox').innerHTML = html || '<div style="color:var(--green)">✓ All data current</div>';
+    }
+  }
+
+  // ==================== APP ====================
+  class App{
+    constructor(){
+      this.ui=new UIManager();
+      this.state={ dataMap:null, compositeHistory:[], cache:null };
+    }
+
+    async init(){
+      try{
+        this.ui.setStatus('green','Loading data…');
+
+        const cache=await DataService.loadFredCache();
+        this.state.cache=cache;
+
+        const dataMap=IndicatorProcessor.mapIndicatorsFromCache(cache);
+        this.state.dataMap=dataMap;
+
+        const vixObs=dataMap.VIX_PROXY?.observations||[];
+        const creditObs=dataMap.CREDIT?.observations||[];
+        const isCalm = vixObs.slice(-1).some(o=>Utils.safeParseFloat(o.value)<=13) &&
+                       creditObs.slice(-1).some(o=>Utils.safeParseFloat(o.value)<=0.35);
+
+        const { parts, num, den, currentValues } = IndicatorProcessor.computeComposite(dataMap, isCalm);
+        if(den<=0) throw new Error('No valid indicators with positive weights');
+
+        const compositeBase = num/den;
+        const penalty = Analytics.complacencyPenalty(dataMap);
+        const infl    = Analytics.inflationDriftPenalty(cache);
+        const composite = Math.min(100, compositeBase + penalty + infl);
+
+        this.state.compositeHistory = Analytics.buildCompositeHistory(dataMap);
+
+        const alerts = Analytics.generateAlerts(parts, composite);
+        const histComps = Analytics.findHistoricalComparisons(currentValues, composite);
+
+        this.ui.renderMainUI();
+        this.ui.setGauge(composite);
+
+        const zone=Utils.zoneOf(composite);
+        const badges=[];
+        if(penalty>0) badges.push(`Complacency +${penalty}`);
+        if(infl>0)    badges.push(`Inflation +${infl}`);
+        this.ui.setStatus(zone, `Composite: ${Math.round(composite)} (${zone.toUpperCase()}) ${badges.length?'· '+badges.join(' · '):''}`);
+
+        this.ui.renderAlerts(alerts);
+        this.ui.renderHistoricalComparisons(histComps);
+
+        document.getElementById('indicatorCount').textContent = parts.length;
+
+        const displayParts=[...parts];
+        if(penalty>0){ displayParts.push({ key:'complacency', label:'Complacency Overlay', scaled:penalty, w:1, valueDisp:`+${penalty}`, change:null, freshClass:'badge-fresh', freshTxt:'Active' }); }
+        if(infl>0){ displayParts.push({ key:'inflation', label:'Inflation Drift', scaled:infl, w:1, valueDisp:`+${infl}`, change:null, freshClass:'badge-fresh', freshTxt:'Active' }); }
+
+        this.ui.renderPills(displayParts);
+        this.ui.renderCompositeChart(this.state.compositeHistory);
+        this.ui.renderDecomp(displayParts);
+        this.ui.renderHeatmap(parts);
+
+        const breadth = parts.reduce((a,p)=>a+p.scaled,0)/parts.length;
+        this.ui.renderScenarios(composite, breadth);
+        this.ui.renderTrajectory(composite);
+
+        const { p1,p3,p6 } = Analytics.horizonRiskSmart(composite, this.state.compositeHistory);
+        document.getElementById('prob1m').textContent = `${p1}%`;
+        document.getElementById('prob3m').textContent = `${p3}%`;
+        document.getElementById('prob6m').textContent = `${p6}%`;
+
+        const regimeColor=CONFIG.ZONE_COLORS[zone];
+        const regimeName= zone==='green'?'Normal': (zone==='amber'?'Stressed':'Crisis');
+        document.getElementById('regimeIndicator').innerHTML=`
+          <div class="status" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);display:inline-flex">
+            <span class="status-dot" style="background:${regimeColor}"></span>
+            <span>${regimeName} regime</span>
+          </div>`;
+
+        const { missing, stale } = this.auditData(parts);
+        const confidence = Math.max(40, 100 - (missing.length*12 + stale.length*4));
+        document.getElementById('confidenceFill').style.width = confidence + '%';
+        document.getElementById('confidenceText').textContent = confidence + '%';
+        this.ui.updateAudit(missing, stale);
+
+      }catch(err){
+        console.error('Initialization error:', err);
+        this.ui.setErrorStatus(err.message||'Unknown error');
+        this.ui.showError(err.message||'An unexpected error occurred');
+      }
+    }
+
+    auditData(parts){
+      const missing=[], stale=[];
+      for(const [k,cfg] of Object.entries(CONFIG.INDICATORS)){
+        const s=this.state.dataMap[k];
+        if(!s?.observations?.length){ missing.push(k); continue; }
+        const days=DataService.seriesAgeDays(s, s.fetchedAt);
+        const lim=CONFIG.FRESH_LIMITS[cfg.cadence]||CONFIG.FRESH_LIMITS.daily;
+        if(days>lim.warn){ stale.push(`${k} (${days}d)`); }
+      }
+      return { missing, stale };
+    }
+
+    renderCompositeChart(){ this.ui.renderCompositeChart(this.state.compositeHistory); }
+  }
+
+  // ==================== BOOT ====================
+  const app=new App();
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', ()=>app.init());
+  }else{
+    app.init();
+  }
+  </script>
+</body>
+</html>
