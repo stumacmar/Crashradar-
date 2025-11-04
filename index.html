@@ -116,13 +116,13 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
       <div style="flex:1;min-width:280px">
         <h2 style="margin:0 0 6px">Market Stress Index</h2>
         <div class="small" id="partsNote">Composite derived from 0 indicators</div>
-        
+
         <div style="margin-top:10px;display:flex;align-items:center;gap:10px" class="badge">
           <span>Data Quality</span>
           <div style="width:90px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden"><div id="qfill" style="height:100%;background:linear-gradient(90deg,#4a7fe8,var(--accent-bright));width:0%"></div></div>
           <strong id="qtxt">--</strong>
         </div>
-        
+
         <div class="risk-meter">
           <span class="small">Risk Level:</span>
           <div class="risk-level">
@@ -135,7 +135,7 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
           <span>High</span>
           <span>Critical</span>
         </div>
-        
+
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px">
           <div class="kpi"><div class="small">1-Month Risk</div><div class="val" id="r1m">--</div><div class="small" id="m1dir">→ Momentum</div></div>
           <div class="kpi"><div class="small">3-Month Risk</div><div class="val" id="r3m">--</div><div class="small" id="m3dir">→ Elevated</div></div>
@@ -143,7 +143,7 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
         </div>
       </div>
     </div>
-    
+
     <div class="insight-card" id="insightCard" style="display:none">
       <h4>💡 Market Insight</h4>
       <div id="insightText"></div>
@@ -201,7 +201,7 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
       <h3 style="margin-bottom:10px">📈 Historical Crisis Comparisons</h3>
       <div id="crises" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px"></div>
     </div>
-    
+
     <div class="card">
       <h3 style="margin-bottom:10px">Crisis Timeline</h3>
       <div class="chart"><canvas id="crisisTimeline"></canvas></div>
@@ -218,13 +218,13 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
       <div class="chart"><canvas id="traj"></canvas></div>
     </div>
   </div>
-  
+
   <div id="view-news" class="view">
     <div class="card">
       <h3 style="margin-bottom:10px">📰 Market News & Events</h3>
       <div id="newsFeed" class="loading">Loading market news...</div>
     </div>
-    
+
     <div class="card">
       <h3 style="margin-bottom:10px">🗓️ Upcoming Economic Events</h3>
       <div id="economicCalendar" class="loading">Loading economic calendar...</div>
@@ -254,8 +254,8 @@ const CONFIG = {
       desc:'Chicago Fed NFCI. >0 = tighter than average; stress rises with + readings.'},
     VIX_PROXY:{label:'Volatility',short:'VIX',weight:0.06,format:v=>v?.toFixed(1),crisis:40,dir:'above',
       desc:'VIXCLS. <15 calm, 15–25 elevated, 25–35 stressed, >35 fear.'},
-    RETAIL_MOMENTUM:{label:'Retail Momentum',short:'Retail',weight:0.04,format:v=>v?.toFixed(1)+'%',
-      crisis:-2.0,dir:'below',desc:'RSAFS 3-m/3-m annualised growth (approx). Weak consumer = macro risk.'},
+    RETAIL_MOMENTUM:{label:'Retail Momentum',short:'Retail',weight:0.04,format:v=>v?.toFixed(1)+'%',crisis:-2.0,dir:'below',
+      desc:'RSAFS 3-m/3-m annualised growth (approx). Weak consumer = macro risk.'},
     SENTIMENT:{label:'Consumer Sentiment',short:'Sent',weight:0.08,format:v=>v?.toFixed(0),
       crisis:60,dir:'below',desc:'UMich Sentiment. Persistent lows correlate with weak demand & risk-off.'}
   },
@@ -276,7 +276,7 @@ const CONFIG = {
     {name:'2008 GFC',score:92,date:'2008-10-15',phase:'Crisis Peak',duration:'18 months',drawdown:'-57%'}
   ],
   INSIGHTS: [
-    {min: 0, max: 30, text: "Market conditions are favorable with low stress levels. Consider growth opportunities while maintaining standard risk management."},
+    {min: 0, max: 30, text: "Market conditions are favourable with low stress levels. Consider growth opportunities while maintaining standard risk management."},
     {min: 31, max: 50, text: "Moderate stress levels detected. Markets are showing early warning signs. Review portfolio allocations and consider defensive positioning."},
     {min: 51, max: 70, text: "Elevated stress levels suggest increased market volatility. Implement defensive strategies and consider reducing risk exposure."},
     {min: 71, max: 85, text: "High stress levels indicate significant market pressure. Prepare for potential corrections and maintain high liquidity."},
@@ -299,7 +299,7 @@ const SCALE = {
 function clamp(x){return Math.max(0,Math.min(100,x));}
 
 // ---------- LOAD & PREP ----------
-let app={};
+let app={ boundPeriods:false, boundTabs:false };  // PATCH: guard binds
 window.addEventListener('DOMContentLoaded',init);
 
 async function init(){
@@ -309,7 +309,6 @@ async function init(){
     const now = new Date();
     byId('upd').textContent = 'Last Update: ' + now.toLocaleTimeString();
 
-    // Resolve base series
     const s = k=> resolveSeries(cache, CONFIG.ALIAS[k]);
 
     const ser = {
@@ -323,17 +322,13 @@ async function init(){
       SPX:    s('SPX')
     };
 
-    // Build derivations
     const deriv = buildDerived(ser);
 
-    // Compose latest values for all KPIs
     const kpis = computeLatestKPIs(ser, deriv);
 
-    // Build composite history using SPX dates (fallback T10Y3M/CREDIT)
     const anchorDates = pickAnchorDates(ser);
     const history = buildCompositeHistory(anchorDates, ser, deriv);
 
-    // UI render
     renderTop(kpis, history);
     renderPills(kpis);
     renderHeat(kpis);
@@ -344,10 +339,10 @@ async function init(){
     renderNewsFeed();
     setupTabs();
     setupPeriodButtons(history);
-    
+
     byId('refreshBtn').onclick = ()=>refreshData();
     byId('exportBtn').onclick = ()=>exportReport(kpis, history);
-    
+
     showLoadingState(false);
   } catch (error) {
     console.error('Failed to load data:', error);
@@ -375,7 +370,6 @@ function showErrorState() {
   `;
 }
 
-// ---------- HELPERS ----------
 function byId(id){return document.getElementById(id)}
 function resolveSeries(cache, arr){for(const k of arr){if(cache && cache[k]) return cache[k]}return null}
 function lastValidObs(series){
@@ -389,23 +383,18 @@ function lastValidObs(series){
 function parseDate(d){return new Date(d)}
 function daysSince(d){return Math.floor((Date.now()-parseDate(d))/86400000)}
 
-// ---------- DERIVATIONS ----------
 function buildDerived(ser){
   const out={};
 
-  // SAHM_RULE & UN_SLOPE6 from UNRATE (monthly)
   if(ser.UNRATE?.observations){
     const map = obsMap(ser.UNRATE.observations);
-    const mkeys = Object.keys(map).sort(); // YYYY-MM
+    const mkeys = Object.keys(map).sort();
     const sahm=[], slope6=[];
     for(const ym of mkeys){
-      const [y,m]=ym.split('-').map(Number);
       const cur = map[ym];
-      // 3m avg
       const prevMs = monthOffset(ym,-1), prevM2 = monthOffset(ym,-2);
       if(map[prevMs]!==undefined && map[prevM2]!==undefined){
         const avg3 = (cur+map[prevMs]+map[prevM2])/3;
-        // 12m low
         let low12=Infinity;
         for(let i=0;i<12;i++){
           const key=monthOffset(ym,-i);
@@ -413,7 +402,6 @@ function buildDerived(ser){
         }
         if(low12<Infinity) sahm.push({date: ym+'-01', value: +(avg3-low12).toFixed(2)});
       }
-      // slope 6m
       const back6 = monthOffset(ym,-6);
       if(map[back6]!==undefined){
         slope6.push({date: ym+'-01', value: +(cur - map[back6]).toFixed(2)});
@@ -423,7 +411,6 @@ function buildDerived(ser){
     out.UN_SLOPE6 = {observations: slope6};
   }
 
-  // Drawdown from SPX daily: 252-day rolling high
   if(ser.SPX?.observations){
     const obs=ser.SPX.observations.filter(o=>isFinite(parseFloat(o.value)));
     const vals=[], outObs=[];
@@ -433,13 +420,12 @@ function buildDerived(ser){
       const start=Math.max(0,i-252);
       let max=-Infinity;
       for(let j=start;j<=i;j++) if(vals[j]>max) max=vals[j];
-      const dd = p/max - 1; // negative in drawdown
+      const dd = p/max - 1;
       outObs.push({date:obs[i].date, value:+dd.toFixed(4)});
     }
     out.DD_12M = {observations: outObs};
   }
 
-  // Retail momentum: RSAFS monthly, 3m/3m (annualised approx)
   if(ser.RSAFS?.observations){
     const map = obsMap(ser.RSAFS.observations);
     const mkeys = Object.keys(map).sort();
@@ -447,14 +433,13 @@ function buildDerived(ser){
     for(const ym of mkeys){
       const back3=monthOffset(ym,-3);
       if(map[back3]!==undefined){
-        const g = ((map[ym]/map[back3])-1)*4*100; // approx annualized %
+        const g = ((map[ym]/map[back3])-1)*4*100;
         outR.push({date: ym+'-01', value:+g.toFixed(2)});
       }
     }
     out.RETAIL_MOMENTUM = {observations: outR};
   }
 
-  // Pass-throughs for simple series
   if(ser.VIX) out.VIX_PROXY = ser.VIX;
   if(ser.UMCSENT) out.SENTIMENT = ser.UMCSENT;
 
@@ -465,7 +450,7 @@ function obsMap(observations){
   const m={};
   for(const o of observations){
     const v=parseFloat(o.value); if(!isFinite(v)) continue;
-    const ym=o.date.slice(0,7); // YYYY-MM
+    const ym=o.date.slice(0,7);
     m[ym]=v;
   }
   return m;
@@ -476,7 +461,6 @@ function monthOffset(ym,off){
   return d.toISOString().slice(0,7);
 }
 
-// ---------- LATEST KPI VALUES ----------
 function computeLatestKPIs(ser, deriv){
   const out=[];
   const defs=CONFIG.INDICATORS;
@@ -508,7 +492,6 @@ function computeLatestKPIs(ser, deriv){
   return out;
 }
 
-// ---------- HISTORY ----------
 function pickAnchorDates(ser){
   const s = ser.SPX?.observations?.length ? ser.SPX
         : ser.T10Y3M?.observations?.length ? ser.T10Y3M
@@ -518,7 +501,6 @@ function pickAnchorDates(ser){
 }
 
 function valueOnOrBefore(seriesObs, date){
-  // binary search latest <= date
   const arr=seriesObs; if(!arr?.length) return null;
   let lo=0, hi=arr.length-1, ans=null;
   while(lo<=hi){
@@ -538,7 +520,6 @@ function buildCompositeHistory(anchorDates, ser, deriv){
     return ser[k];
   };
 
-  // Make sorted numeric obs arrays for fast lookup
   const obs = {};
   for(const k of keys){
     const src = look(k);
@@ -568,7 +549,6 @@ function buildCompositeHistory(anchorDates, ser, deriv){
   return hist;
 }
 
-// ---------- RENDER ----------
 function renderTop(kpis, history){
   const composite = history.length? history[history.length-1].composite : 50;
   const zone = composite<=30?'green':(composite<=60?'amber':'red');
@@ -577,10 +557,8 @@ function renderTop(kpis, history){
   byId('partsNote').textContent = `Composite derived from ${kpis.length} indicators`;
   byId('indicatorsCount').textContent = `Indicators: ${kpis.length}/9`;
 
-  // Update risk meter
   byId('riskFill').style.width = `${composite}%`;
 
-  // data quality = missing/stale penalty
   const now=new Date();
   const missing = Object.keys(CONFIG.INDICATORS).length - kpis.length;
   let stale=0;
@@ -598,34 +576,31 @@ function renderTop(kpis, history){
   if(composite>=80){
     alertBox.style.display='block';
     alertBox.innerHTML = `🚨 <strong>CRITICAL MARKET ALERT</strong> — Stress ${Math.round(composite)}. ${alerts.length} indicator(s) at crisis levels.`;
-  }else if(alerts.length>0){
+  } else if(alerts.length>0){
     alertBox.style.display='block';
     alertBox.innerHTML = `⚠️ <strong>ATTENTION</strong> — ${alerts.length} indicator(s) at crisis threshold.`;
-  }else alertBox.style.display='none';
+  } else alertBox.style.display='none';
 
-  // simple horizon risks tied to composite
   const r1m = Math.round(20 + composite*0.6);
   const r3m = Math.round(30 + composite*0.7);
   const r6m = Math.round(40 + composite*0.8);
-  
+
   byId('r1m').textContent = r1m + '%';
   byId('r3m').textContent = r3m + '%';
   byId('r6m').textContent = r6m + '%';
-  
-  // Add trend indicators
+
   byId('m1dir').innerHTML = getTrendIndicator(r1m);
   byId('m3dir').innerHTML = getTrendIndicator(r3m);
   byId('m6dir').innerHTML = getTrendIndicator(r6m);
 
-  // Show insight card
   const insight = CONFIG.INSIGHTS.find(i => composite >= i.min && composite <= i.max);
   if (insight) {
     byId('insightText').textContent = insight.text;
     byId('insightCard').style.display = 'block';
   }
 
-  // initial trend chart
-  drawTrend(history,'90d');
+  // PATCH: default trend period should match the active button (30D)
+  drawTrend(history,'30d');
 }
 
 function getTrendIndicator(value) {
@@ -652,7 +627,6 @@ function renderPills(kpis){
       <div class="desc">${k.desc}</div>
     </div>`;
   }).join('');
-  // interactivity
   kpis.forEach(k=> pill(byId('pill-'+k.key)));
 }
 
@@ -705,7 +679,7 @@ function renderRadar(kpis) {
   const labels = kpis.map(k => k.short);
   const data = kpis.map(k => k.scaled);
   const colors = kpis.map(k => k.rag==='g'?'#1ec28b':(k.rag==='a'?'#ffc247':'#ff6070'));
-  
+
   if (charts.radar) charts.radar.destroy();
   charts.radar = new Chart(ctx, {
     type: 'radar',
@@ -741,7 +715,7 @@ function renderRadar(kpis) {
           angleLines: { color: 'rgba(255,255,255,0.1)' },
           grid: { color: 'rgba(255,255,255,0.1)' },
           pointLabels: { color: '#8b96b0', font: { size: 11 } },
-          ticks: { 
+          ticks: {
             color: '#8b96b0',
             backdropColor: 'transparent',
             callback: function(value) { return value + '%'; }
@@ -771,8 +745,7 @@ function renderCrises(history){
     </div>`;
   }).join('');
   box.innerHTML = items;
-  
-  // Draw crisis timeline
+
   drawCrisisTimeline(history);
 }
 
@@ -796,7 +769,6 @@ function renderScenarios(history){
 }
 
 function renderNewsFeed() {
-  // Simulated news feed - in a real app, this would fetch from an API
   const news = [
     {title: "Fed Holds Rates Steady, Signals Caution on Inflation", source: "Financial Times", time: "2 hours ago", impact: "medium"},
     {title: "Q3 GDP Growth Exceeds Expectations at 2.8%", source: "Bloomberg", time: "5 hours ago", impact: "low"},
@@ -804,7 +776,7 @@ function renderNewsFeed() {
     {title: "Housing Market Shows Signs of Cooling as Rates Bite", source: "WSJ", time: "1 day ago", impact: "medium"},
     {title: "Oil Prices Surge on Middle East Tensions", source: "CNBC", time: "2 days ago", impact: "high"}
   ];
-  
+
   const calendar = [
     {event: "FOMC Meeting Minutes", date: "Tomorrow", importance: "high"},
     {event: "CPI Inflation Data", date: "Nov 14", importance: "high"},
@@ -812,7 +784,7 @@ function renderNewsFeed() {
     {event: "Initial Jobless Claims", date: "Nov 16", importance: "medium"},
     {event: "Consumer Sentiment", date: "Nov 17", importance: "low"}
   ];
-  
+
   const newsHtml = news.map(item => `
     <div class="cell" style="display:flex;align-items:flex-start;gap:12px;padding:12px">
       <div style="width:8px;height:8px;border-radius:50%;margin-top:6px;background:${item.impact==='high'?'var(--red)':item.impact==='medium'?'var(--amber)':'var(--green)'}"></div>
@@ -822,7 +794,7 @@ function renderNewsFeed() {
       </div>
     </div>
   `).join('');
-  
+
   const calendarHtml = calendar.map(item => `
     <div class="cell" style="display:flex;justify-content:space-between;align-items:center;padding:12px">
       <div>
@@ -832,13 +804,12 @@ function renderNewsFeed() {
       <span class="badge ${item.importance==='high'?'b-stale':'b-fresh'}">${item.importance.toUpperCase()}</span>
     </div>
   `).join('');
-  
+
   byId('newsFeed').innerHTML = newsHtml;
   byId('economicCalendar').innerHTML = calendarHtml;
 }
 
-// ---------- CHARTS ----------
-function drawTrend(history, period='90d'){
+function drawTrend(history, period='30d'){  // PATCH: default changed
   const ctx=byId('mainChart').getContext('2d');
   const sliced = sliceHistory(history, period);
   const labels = sliced.map(x=>formatLabel(x.date));
@@ -876,9 +847,9 @@ function drawTrend(history, period='90d'){
           grid:{color:'rgba(255,255,255,.06)'}
         }
       },
-      interaction: {
-        intersect: false,
-        mode: 'index'
+      interaction:{
+        intersect:false,
+        mode:'index'
       }
     }
   });
@@ -886,21 +857,21 @@ function drawTrend(history, period='90d'){
 
 function drawCrisisTimeline(history) {
   const ctx = byId('crisisTimeline').getContext('2d');
-  const sliced = sliceHistory(history, '5y');
+  const sliced = sliceHistory(history, '5y');  // PATCH: supports 5y
   const labels = sliced.map(x => {
     const date = new Date(x.date);
-    return date.getFullYear() + '-' + (date.getMonth() + 1);
-  }).filter((v, i, a) => a.indexOf(v) === i); // Unique values
-  
+    const m = String(date.getMonth()+1).padStart(2,'0');
+    return date.getFullYear() + '-' + m;
+  });
   const data = sliced.map(x => x.composite);
-  
+
   if (charts.crisisTimeline) charts.crisisTimeline.destroy();
   charts.crisisTimeline = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: labels.filter((_, i) => i % 6 === 0), // Show every 6th label to avoid crowding
+      labels,
       datasets: [{
-        data: data,
+        data,
         fill: true,
         tension: 0.4,
         borderWidth: 2,
@@ -931,13 +902,16 @@ function drawCrisisTimeline(history) {
       },
       scales: {
         y: {
-          min: 0,
-          max: 100,
+          min: 0, max: 100,
           ticks: { color: '#8b96b0', callback: v => v + '%' },
           grid: { color: 'rgba(255,255,255,.06)' }
         },
         x: {
-          ticks: { color: '#8b96b0', maxTicksLimit: 10 },
+          ticks: {
+            color: '#8b96b0',
+            autoSkip: true,
+            maxTicksLimit: 10
+          },
           grid: { color: 'rgba(255,255,255,.06)' }
         }
       }
@@ -969,25 +943,15 @@ function drawTrajectory(cur){
       responsive:true,
       plugins:{
         legend:{labels:{color:'#8b96b0'}},
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              return `${context.dataset.label}: ${context.parsed.y}%`;
-            }
+        tooltip:{
+          callbacks:{
+            label: function(context){ return `${context.dataset.label}: ${context.parsed.y}%`; }
           }
         }
       },
       scales:{
-        y:{
-          min:0,
-          max:100,
-          ticks:{color:'#8b96b0',callback:v=>v+'%'},
-          grid:{color:'rgba(255,255,255,.06)'}
-        },
-        x:{
-          ticks:{color:'#8b96b0'},
-          grid:{color:'rgba(255,255,255,.06)'}
-        }
+        y:{min:0,max:100,ticks:{color:'#8b96b0',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.06)'}},
+        x:{ticks:{color:'#8b96b0'},grid:{color:'rgba(255,255,255,.06)'}}
       }
     }
   });
@@ -998,27 +962,38 @@ function sliceHistory(history, period){
   if(period==='all') return history;
   const end = parseDate(history[history.length-1].date);
   let start = new Date(end);
+
   if(period==='30d') start.setDate(start.getDate()-30);
   else if(period==='90d') start.setDate(start.getDate()-90);
   else if(period==='6m') start.setMonth(start.getMonth()-6);
   else if(period==='1y') start.setFullYear(start.getFullYear()-1);
+  else if(period==='2y') start.setFullYear(start.getFullYear()-2);
+  else if(period==='3y') start.setFullYear(start.getFullYear()-3);
+  else if(period==='5y') start.setFullYear(start.getFullYear()-5);  // PATCH: added
+
   return history.filter(x=>parseDate(x.date)>=start);
 }
 
 function formatLabel(d){
-  const dt=new Date(d); return dt.toLocaleDateString('en-GB',{month:'short',day:'numeric'});
+  const dt=new Date(d);
+  return dt.toLocaleDateString('en-GB',{month:'short',day:'numeric'});
 }
 
 function setupPeriodButtons(history){
+  if (app.boundPeriods) return;  // PATCH: guard duplicate
+  app.boundPeriods = true;
   document.querySelectorAll('.btns button').forEach(b=>{
     b.addEventListener('click',()=>{
       document.querySelectorAll('.btns button').forEach(x=>x.classList.remove('active'));
-      b.classList.add('active'); drawTrend(history, b.dataset.p);
+      b.classList.add('active');
+      drawTrend(history, b.dataset.p);
     });
   });
 }
 
 function setupTabs(){
+  if (app.boundTabs) return;   // PATCH: guard duplicate
+  app.boundTabs = true;
   document.querySelectorAll('.tab').forEach(t=>{
     t.onclick=()=>{
       document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
@@ -1030,7 +1005,6 @@ function setupTabs(){
   });
 }
 
-// ---------- EXPORT ----------
 function exportReport(kpis, history){
   const report={
     timestamp:new Date().toISOString(),
@@ -1046,8 +1020,6 @@ function exportReport(kpis, history){
 function refreshData() {
   init();
 }
-
-// ---------- COMPOSITE UTILS ----------
 </script>
 </body>
 </html>
