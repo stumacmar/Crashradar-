@@ -2,98 +2,2321 @@
 
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Economic Crash Radar Pro</title>
-<style>
-:root{--bg:#0a0e1a;--panel:#12182b;--muted:#8b96b0;--text:#e8eeff;--accent:#6b9eff;--green:#1ec28b;--amber:#ffc247;--red:#ff6070}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font:15px/1.6 -apple-system,sans-serif;padding:20px}
-.wrap{max-width:1400px;margin:0 auto}
-h1{font-size:42px;margin-bottom:8px;background:linear-gradient(135deg,var(--text),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.subtitle{color:var(--muted);margin-bottom:24px}
-.card{background:var(--panel);border-radius:14px;padding:24px;margin:20px 0;box-shadow:0 4px 24px rgba(0,0,0,.3)}
-.gauge-section{display:flex;gap:32px;align-items:center;flex-wrap:wrap}
-.gauge{width:200px;height:200px;position:relative;flex-shrink:0}
-.gauge-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--green) 0 108deg,var(--amber) 108deg 216deg,var(--red) 216deg 360deg)}
-.gauge-ring::after{content:"";position:absolute;inset:20px;border-radius:50%;background:var(--panel)}
-.gauge-needle{position:absolute;inset:0;transition:transform .6s}
-.gauge-needle::before{content:"";position:absolute;top:50%;left:50%;width:4px;height:45%;background:var(--accent);transform:translateX(-50%) translateY(-100%) rotate(var(--angle,0deg));transform-origin:bottom;border-radius:4px}
-.gauge-score{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:48px;font-weight:800}
-.gauge-info{flex:1;min-width:300px}
-.gauge-info h2{font-size:28px;margin-bottom:8px}
-.info-box{background:rgba(107,158,255,.08);border-left:3px solid var(--accent);padding:12px;border-radius:8px;margin:12px 0;font-size:13px;line-height:1.6}
-.regime-box{background:rgba(255,255,255,.04);padding:16px;border-radius:10px;margin:16px 0}
-.regime-header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
-.regime-dot{width:12px;height:12px;border-radius:50%}
-.regime-title{font-size:18px;font-weight:700}
-.regime-desc{font-size:13px;color:var(--muted);margin-bottom:12px}
-.regime-actions{display:grid;gap:8px;margin-top:12px}
-.regime-action{background:rgba(255,255,255,.03);padding:10px;border-radius:8px;font-size:12px}
-.action-title{font-weight:600;margin-bottom:2px}
-.risk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:16px 0}
-.risk-card{background:rgba(255,255,255,.03);padding:18px;border-radius:12px}
-.risk-title{font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.risk-value{font-size:32px;font-weight:800;color:var(--accent);margin-bottom:8px}
-.risk-desc{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px}
-.risk-detail{font-size:11px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)}
-.pills{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
-.pill{background:rgba(255,255,255,.03);border-left:4px solid;padding:16px;border-radius:10px;transition:transform .2s}
-.pill:hover{transform:translateY(-2px)}
-.pill.rag-green{border-left-color:var(--green)}
-.pill.rag-amber{border-left-color:var(--amber)}
-.pill.rag-red{border-left-color:var(--red)}
-.pill-header{display:flex;justify-content:space-between;margin-bottom:8px}
-.pill-title{font-weight:600;font-size:14px}
-.pill-status{font-size:10px;padding:4px 8px;border-radius:6px;text-transform:uppercase;font-weight:600}
-.status-green{background:rgba(30,194,139,.15);color:var(--green)}
-.status-amber{background:rgba(255,194,71,.15);color:var(--amber)}
-.status-red{background:rgba(255,96,112,.15);color:var(--red)}
-.pill-value{font-size:22px;font-weight:700;margin:6px 0}
-.pill-desc{font-size:11px;color:var(--muted);line-height:1.4;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)}
-.pill-action{font-size:11px;font-weight:600;margin-top:6px;padding:6px;background:rgba(255,255,255,.02);border-radius:6px}
-.tabs{display:flex;gap:8px;border-bottom:2px solid rgba(255,255,255,.06);margin:20px 0}
-.tab{background:transparent;border:none;color:var(--muted);padding:12px 20px;cursor:pointer;font-size:14px;font-weight:600;position:relative}
-.tab:hover{color:var(--text)}
-.tab.active{color:var(--accent)}
-.tab.active::after{content:"";position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--accent)}
-.tab-content{display:none}
-.tab-content.active{display:block}
-.heatmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
-.heat-cell{background:rgba(255,255,255,.03);padding:16px;border-radius:10px;border-left:4px solid}
-.heat-cell.rag-green{border-left-color:var(--green)}
-.heat-cell.rag-amber{border-left-color:var(--amber)}
-.heat-cell.rag-red{border-left-color:var(--red)}
-.heat-label{font-size:13px;font-weight:600;margin-bottom:6px}
-.heat-value{font-size:26px;font-weight:700;margin:6px 0}
-.heat-status{font-size:11px;color:var(--muted)}
-.loading{text-align:center;padding:40px;color:var(--muted)}
-.error{background:rgba(255,96,112,.1);border:1px solid rgba(255,96,112,.3);padding:20px;border-radius:14px;margin:20px 0;color:#ff9da6}
-.chart-container{height:320px;margin:16px 0}
-@media(max-width:768px){.gauge-section{justify-content:center}.pills{grid-template-columns:1fr}}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="World-class Economic Crash Radar with ML-powered predictive analytics, real-time monitoring, and institutional-grade risk assessment" />
+  <meta name="theme-color" content="#0a0e1a" />
+  <title>Economic Crash Radar Pro | Institutional Risk Analytics</title>
+
+  <style>
+    /* ==================== DESIGN SYSTEM ==================== */
+    :root {
+      /* Color Palette */
+      --bg: #0a0e1a;
+      --bg-elevated: #0d1221;
+      --panel: #12182b;
+      --panel-hover: #151d33;
+      --panel-accent: #1a2342;
+      
+      /* Typography */
+      --text-primary: #e8eeff;
+      --text-secondary: #b8c3dd;
+      --text-muted: #8b96b0;
+      --text-dim: #6b7694;
+      
+      /* Accent Colors */
+      --accent: #6b9eff;
+      --accent-bright: #8fb4ff;
+      --accent-dim: #4a7fe8;
+      
+      /* Status Colors */
+      --green: #1ec28b;
+      --green-dim: #15a373;
+      --amber: #ffc247;
+      --amber-dim: #e6a32f;
+      --red: #ff6070;
+      --red-dim: #e54858;
+      --orange: #ff8c42;
+      
+      /* Data Visualization */
+      --chart-grid: rgba(255, 255, 255, 0.04);
+      --chart-line: rgba(107, 158, 255, 0.8);
+      
+      /* Dimensions */
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --ring: 220px;
+      --ring-m: 180px;
+      
+      /* Shadows */
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+      --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.4);
+      --shadow-xl: 0 12px 60px rgba(0, 0, 0, 0.5);
+      
+      /* Transitions */
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ==================== BASE STYLES ==================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--panel-hover);
+      border-radius: 5px;
+      border: 2px solid var(--bg);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--panel-accent);
+    }
+
+    /* ==================== LAYOUT ==================== */
+    .wrap {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 24px 20px 100px;
+    }
+
+    /* ==================== HEADER ==================== */
+    header {
+      margin-bottom: 32px;
+      position: relative;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .header-main {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    h1 {
+      font-size: clamp(36px, 6vw, 56px);
+      line-height: 1.1;
+      margin: 0 0 12px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--text-primary), var(--accent-bright));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 16px;
+      margin: 8px 0;
+      font-weight: 500;
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      transition: all var(--transition-base);
+    }
+
+    .header-badge:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .live-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse-live 2s infinite;
+    }
+
+    @keyframes pulse-live {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(30, 194, 139, 0.4); }
+      50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(30, 194, 139, 0); }
+    }
+
+    /* ==================== CARDS ==================== */
+    .card {
+      background: var(--panel);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin: 24px 0;
+      box-shadow: var(--shadow-md);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      transition: all var(--transition-base);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      opacity: 0;
+      transition: opacity var(--transition-base);
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .card-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-primary);
+    }
+
+    .card-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ==================== GAUGE ==================== */
+    .gauge-container {
+      display: flex;
+      align-items: center;
+      gap: 48px;
+      flex-wrap: wrap;
+    }
+
+    .gauge-wrap {
+      position: relative;
+      width: var(--ring);
+      height: var(--ring);
+      flex-shrink: 0;
+    }
+
+    .multi-ring {
+      position: absolute;
+      inset: 0;
+    }
+
+    .ring {
+      position: absolute;
+      border-radius: 50%;
+      transition: opacity var(--transition-slow);
+    }
+
+    .ring-outer {
+      inset: 0;
+      background: conic-gradient(
+        var(--green) 0deg 108deg,
+        var(--amber) 108deg 216deg,
+        var(--red) 216deg 360deg
+      );
+      opacity: 0.2;
+      filter: blur(1px);
+    }
+
+    .ring-mid {
+      inset: 18px;
+      background: conic-gradient(
+        var(--green) 0deg 108deg,
+        var(--amber) 108deg 216deg,
+        var(--red) 216deg 360deg
+      );
+      opacity: 0.4;
+    }
+
+    .ring-inner {
+      inset: 36px;
+      background: conic-gradient(
+        var(--green) 0deg 108deg,
+        var(--amber) 108deg 216deg,
+        var(--red) 216deg 360deg
+      );
+      opacity: 1;
+    }
+
+    .ring::after {
+      content: "";
+      position: absolute;
+      inset: 24px;
+      border-radius: 50%;
+      background: var(--panel);
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .needle {
+      position: absolute;
+      inset: 0;
+      transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: drop-shadow(0 0 8px var(--accent));
+    }
+
+    .needle::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 5px;
+      height: 48%;
+      background: linear-gradient(180deg, var(--accent-bright), var(--accent));
+      transform: translateX(-50%) translateY(-100%) rotate(var(--angle, 0deg));
+      transform-origin: bottom center;
+      border-radius: 4px 4px 0 0;
+    }
+
+    .needle::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 18px;
+      height: 18px;
+      background: var(--accent-bright);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 20px var(--accent), 0 0 0 4px var(--panel);
+    }
+
+    .score {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      z-index: 1;
+    }
+
+    .score-value {
+      font-size: 56px;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--text-primary), var(--accent-bright));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .score-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-top: 6px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* ==================== GAUGE INFO ==================== */
+    .gauge-info {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .gauge-info h2 {
+      font-size: 32px;
+      margin: 0 0 12px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .gauge-description {
+      color: var(--text-secondary);
+      font-size: 15px;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    .confidence-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(107, 158, 255, 0.12);
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 600;
+      margin: 12px 0;
+      border: 1px solid rgba(107, 158, 255, 0.2);
+    }
+
+    .confidence-bar {
+      width: 80px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .confidence-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-dim), var(--accent-bright));
+      border-radius: 4px;
+      transition: width var(--transition-slow);
+      box-shadow: 0 0 10px var(--accent);
+    }
+
+    /* ==================== RISK HORIZON CARDS ==================== */
+    .risk-horizon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .risk-card {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 20px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      position: relative;
+      transition: all var(--transition-base);
+    }
+
+    .risk-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.12);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .risk-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .risk-card-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .risk-card-value {
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent-bright), var(--accent-dim));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+
+    .risk-card-trend {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Continued in Part 2... */
+  </style>
+
 </head>
 <body>
-<div class="wrap">
-<header>
-<h1>⚡ Economic Crash Radar Pro</h1>
-<div class="subtitle">Real-time market stress monitoring with forward-looking risk assessment</div>
-<div id="status"></div>
-</header>
-<main id="app"><div class="loading">Loading economic data...</div></main>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- HTML structure continues in Part 2 -->
+</body>
+</html> 
+/* ==================== CONTINUATION OF STYLING ==================== */
+
+```
+/* ==================== INDICATORS & PILLS ==================== */
+.pills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.pill {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 18px;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-base);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.pill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-bright));
+  transform: scaleX(0);
+  transition: transform var(--transition-base);
+}
+
+.pill:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-sm);
+}
+
+.pill:hover::before {
+  transform: scaleX(1);
+}
+
+.pill:hover .pill-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.pill-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.pill-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pill-badge {
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.pill-value {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 8px 0;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.pill-change {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.pill-momentum {
+  font-size: 11px;
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pill-status {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.pill-status-green { background: var(--green); color: var(--green); }
+.pill-status-amber { background: var(--amber); color: var(--amber); }
+.pill-status-red { background: var(--red); color: var(--red); }
+
+.pill-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background: var(--panel-hover);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  width: 320px;
+  max-width: 90vw;
+  z-index: 1000;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-base);
+  pointer-events: none;
+}
+
+.pill-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: var(--panel-hover);
+}
+
+.badge-fresh {
+  background: rgba(30, 194, 139, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(30, 194, 139, 0.3);
+}
+
+.badge-stale {
+  background: rgba(255, 194, 71, 0.15);
+  color: var(--amber);
+  border: 1px solid rgba(255, 194, 71, 0.3);
+}
+
+.badge-old {
+  background: rgba(255, 96, 112, 0.15);
+  color: var(--red);
+  border: 1px solid rgba(255, 96, 112, 0.3);
+}
+
+/* ==================== INFO TOOLTIPS ==================== */
+.info-tooltip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: help;
+  margin-left: 6px;
+  color: var(--accent-bright);
+  transition: all var(--transition-fast);
+}
+
+.info-tooltip:hover {
+  background: var(--accent);
+  color: white;
+  transform: scale(1.1);
+}
+
+/* ==================== CHARTS ==================== */
+.chart-container {
+  position: relative;
+  height: 360px;
+  margin: 20px 0;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.chart-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.chart-controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-group {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.btn.active {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 0 12px rgba(107, 158, 255, 0.3);
+}
+
+/* ==================== TABS ==================== */
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 24px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 14px 24px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  position: relative;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.tab:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tab.active {
+  color: var(--accent-bright);
+}
+
+.tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-bright));
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.tab-content {
+  display: none;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==================== STATUS INDICATORS ==================== */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 10px currentColor;
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+/* ==================== ALERTS ==================== */
+.alert-banner {
+  background: linear-gradient(135deg, rgba(255, 96, 112, 0.15), rgba(255, 140, 66, 0.15));
+  border: 1px solid rgba(255, 96, 112, 0.3);
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  margin: 20px 0;
+  animation: pulse-alert 2s infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.alert-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes pulse-alert {
+  0% { box-shadow: 0 0 0 0 rgba(255, 96, 112, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(255, 96, 112, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 96, 112, 0); }
+}
+
+@keyframes shimmer {
+  to { left: 100%; }
+}
+
+.alert-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.alert-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.alert-text {
+  flex: 1;
+}
+
+.alert-title {
+  font-weight: 800;
+  margin-bottom: 6px;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+}
+
+.alert-message {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.alert-count {
+  font-size: 12px;
+  margin-top: 6px;
+  opacity: 0.8;
+}
+
+/* ==================== HISTORICAL COMPARISONS ==================== */
+.historical-comparison {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.period-card {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.period-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--amber), var(--red));
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.period-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.period-card:hover::before {
+  opacity: 1;
+}
+
+.period-card.critical {
+  background: rgba(255, 96, 112, 0.08);
+  border-color: rgba(255, 96, 112, 0.3);
+}
+
+.period-card.critical::before {
+  opacity: 1;
+}
+
+.period-name {
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.period-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.period-label {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.period-value {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.period-date {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Continued in Part 3... */
+```
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="header-content">
+        <div class="header-main">
+          <h1>⚡ Economic Crash Radar Pro</h1>
+          <div class="subtitle">Institutional-grade market stress analysis with ML-powered predictive analytics</div>
+        </div>
+        <div class="header-stats">
+          <div class="header-badge">
+            <span class="live-indicator"></span>
+            <span>Live Data</span>
+          </div>
+          <div id="lastUpdateBadge" class="header-badge"></div>
+        </div>
+      </div>
+      <div id="statusBadge" style="margin-top: 16px;"></div>
+      <div id="alertBanner"></div>
+    </header>
+
+```
+<main id="mainContent">
+  <div class="loading-container">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Initializing economic analytics engine...</div>
+  </div>
+</main>
+```
+
+  </div>
+
+  <!-- Scripts in Part 3 -->
+
+</body>
+</html> 
+/* ==================== HEATMAP & DATA VISUALIZATION ==================== */
+.heatmap {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+gap: 12px;
+}
+
+```
+.heat-cell {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all var(--transition-base);
+  cursor: default;
+}
+
+.heat-cell:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.10);
+  transform: translateY(-2px);
+}
+
+.heat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.heat-value {
+  font-size: 26px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.bar {
+  height: 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  margin-top: 10px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  transition: width var(--transition-slow);
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* ==================== SCENARIO CARDS ==================== */
+.scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.scenario-card {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.scenario-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.scenario-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.scenario-card:hover::before {
+  opacity: 0.1;
+}
+
+.scenario-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.scenario-title {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.scenario-probability {
+  font-size: 28px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent-bright), var(--accent-dim));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.scenario-description {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-top: 8px;
+}
+
+.scenario-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ==================== AUDIT BOX ==================== */
+.audit-container {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 13px;
+}
+
+.audit-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.audit-status {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.audit-status .bad {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.audit-status .warn {
+  color: var(--amber);
+  font-weight: 600;
+}
+
+.audit-status .good {
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* ==================== LOADING STATES ==================== */
+.loading-container {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 24px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  color: var(--text-muted);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* ==================== ERROR STATES ==================== */
+.error-state {
+  background: rgba(255, 96, 112, 0.1);
+  border: 1px solid rgba(255, 96, 112, 0.3);
+  padding: 32px;
+  border-radius: var(--radius-lg);
+  margin: 24px 0;
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.error-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--red);
+}
+
+.error-message {
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.error-details {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--text-muted);
+  font-family: 'Courier New', monospace;
+}
+
+/* ==================== REGIME INDICATOR ==================== */
+.regime-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+.regime-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 12px currentColor;
+}
+
+/* ==================== LEGEND ==================== */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.legend-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-right: 8px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+@media (max-width: 1024px) {
+  .wrap {
+    padding: 20px 16px 80px;
+  }
+
+  .gauge-container {
+    justify-content: center;
+  }
+
+  .gauge-wrap {
+    width: var(--ring-m);
+    height: var(--ring-m);
+  }
+
+  .score-value {
+    font-size: 48px;
+  }
+
+  .chart-container {
+    height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 32px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .gauge-container {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .gauge-info {
+    width: 100%;
+  }
+
+  .risk-horizon-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pills-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chart-controls {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .btn-group {
+    width: 100%;
+  }
+
+  .btn {
+    flex: 1;
+  }
+
+  .tabs {
+    gap: 4px;
+  }
+
+  .tab {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  .scenario-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .historical-comparison {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 20px;
+  }
+
+  .pill {
+    padding: 14px;
+  }
+
+  .pill-value {
+    font-size: 24px;
+  }
+
+  .risk-card-value {
+    font-size: 28px;
+  }
+}
+
+/* ==================== PRINT STYLES ==================== */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+
+  .card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+
+  .btn, .tab {
+    display: none;
+  }
+
+  .alert-banner {
+    animation: none;
+  }
+}
+
+/* ==================== ACCESSIBILITY ==================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus styles for keyboard navigation */
+button:focus-visible,
+.pill:focus-visible,
+.tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ==================== UTILITY CLASSES ==================== */
+.text-green { color: var(--green); }
+.text-amber { color: var(--amber); }
+.text-red { color: var(--red); }
+.text-muted { color: var(--text-muted); }
+
+.bg-green { background-color: var(--green); }
+.bg-amber { background-color: var(--amber); }
+.bg-red { background-color: var(--red); }
+
+.font-bold { font-weight: 700; }
+.font-extrabold { font-weight: 800; }
+
+.hidden { display: none; }
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: slideInUp 0.4s ease-out;
+}
+
+/* ==================== DARK MODE ENHANCEMENTS ==================== */
+@media (prefers-color-scheme: light) {
+  /* Keep dark theme even in light mode preference */
+  /* This dashboard is optimized for dark display */
+}
+```
+
+  </style>
+</head>
+<body>
+  <!-- Body content from previous parts -->
+
+  <!-- Chart.js Library -->
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.1/dist/chartjs-plugin-annotation.min.js"></script>
+
+  <!-- Main Application Script continues in Part 4 -->
+
+</body>
+</html> 
 <script>
 'use strict';
-const C={P:'data/fred_cache.json',I:{T10Y3M:{l:'Yield Curve',f:v=>v?.toFixed(2)+'%',w:.18,c:'daily',d:'10Y-3M Treasury spread',i:'Inverted curves precede recessions 6-18 months',t:{g:[.5,99],a:[-.5,.5],r:[-99,-.5]},act:{g:'Normal - continue allocation',a:'Flattening - monitor closely',r:'INVERTED - Reduce equity exposure'}},CREDIT:{l:'Credit Spread',f:v=>v?.toFixed(2)+'%',w:.14,c:'daily',d:'High-yield spread over Treasuries',i:'Widening = rising default risk. >7% = distress',t:{g:[-99,4.5],a:[4.5,7],r:[7,99]},act:{g:'Healthy credit markets',a:'Rising risk premium',r:'CRUNCH - Exit high-yield'}},UN_SLOPE6:{l:'Unemployment Trend',f:v=>(v>=0?'+':'')+v?.toFixed(2)+'%',w:.12,c:'monthly',d:'6-month unemployment change',i:'Sahm Rule: >0.5% rise signals recession',t:{g:[-99,.15],a:[.15,.35],r:[.35,99]},act:{g:'Stable labor market',a:'Softening employment',r:'RECESSION LIKELY'}},DD_12M:{l:'Market Drawdown',f:v=>((v??0)*100).toFixed(1)+'%',w:.2,c:'daily',d:'S&P 500 from peak',i:'-10%=correction, -20%=bear',t:{g:[-5,0],a:[-15,-5],r:[-99,-15]},act:{g:'Near highs',a:'Correction territory',r:'BEAR MARKET'}},NFCI:{l:'Financial Conditions',f:v=>v?.toFixed(2),w:.12,c:'weekly',d:'Chicago Fed NFCI',i:'>0=tight. Sharp rises precede downturns',t:{g:[-99,-.2],a:[-.2,.3],r:[.3,99]},act:{g:'Easy conditions',a:'Tightening',r:'STRESS rising'}},VIX_PROXY:{l:'Volatility',f:v=>v?.toFixed(1),w:.1,c:'daily',d:'VIX fear gauge',i:'<15=calm, 20-30=elevated, >30=panic',t:{g:[-99,20],a:[20,30],r:[30,99]},act:{g:'Low volatility',a:'Rising fear',r:'MARKET PANIC'}},RETAIL_MOMENTUM:{l:'Retail Sales',f:v=>((v??0)*100).toFixed(2)+'%',w:.08,c:'monthly',d:'Consumer spending (70% GDP)',i:'Negative for 2+ months = recession risk',t:{g:[.01,99],a:[-.01,.01],r:[-99,-.01]},act:{g:'Strong spending',a:'Stalling',r:'RETRENCHMENT'}},SENTIMENT:{l:'Consumer Confidence',f:v=>v?.toFixed(1),w:.06,c:'monthly',d:'U. Michigan sentiment',i:'<80=pessimistic. Sharp drops precede recessions',t:{g:[90,999],a:[70,90],r:[-99,70]},act:{g:'Optimistic',a:'Cautious',r:'FEARFUL consumers'}}}};
-const U={p:v=>{if(v==null||v==='.'||v==='NaN'||v==='')return null;const n=+v;return isFinite(n)?n:null},m:(v,g,b)=>{if(v==null)return 50;const d=b-g;return Math.max(0,Math.min(100,((v-g)/d)*100))},z:s=>s<=30?'green':(s<=60?'amber':'red'),rag:(v,t)=>{if(!t||v==null)return'amber';if(v>=t.r[0]&&v<=t.r[1])return'red';if(v>=t.a[0]&&v<=t.a[1])return'amber';return'green'}};
-const S={T10Y3M:v=>U.m(v,1,-2),CREDIT:v=>U.m(v,3,8),UN_SLOPE6:v=>U.m(v,.05,.5),DD_12M:v=>U.m(v,0,-.2),NFCI:v=>U.m(v,-.8,.4),VIX_PROXY:v=>U.m(v,12,35),RETAIL_MOMENTUM:v=>U.m(v,.03,-.02),SENTIMENT:v=>U.m(v,110,70)};
-class D{static async load(){const r=await fetch(`${C.P}?t=${Date.now()}`,{cache:'no-store'});if(!r.ok)throw new Error(`HTTP ${r.status}`);return this.norm(await r.json())}static norm(raw){const o={};if(!raw)return o;if(typeof raw==='object'&&Object.keys(raw).some(k=>raw[k]&&Array.isArray(raw[k].observations)))return raw;if(Array.isArray(raw?.series)){for(const s of raw.series){const id=s.id||s.series_id||s.name;if(id)o[id]={observations:s.observations||s.data||[],fetchedAt:s.fetchedAt}}return o}if(raw.series&&typeof raw.series==='object'){for(const[id,s]of Object.entries(raw.series)){o[id]={observations:s?.observations||s?.data||[],fetchedAt:s.fetchedAt}}return o}return o}static lat(s){const obs=s?.observations||[];if(!obs.length)return null;const o=obs[obs.length-1];return{value:U.p(o.value),date:o.date}}static age(s){const l=this.lat(s);if(!l)return 999;return Math.round((Date.now()-new Date(l.date+'T00:00:00Z'))/86400000)}}
-class Der{static un6(U){const obs=U?.observations||[];if(!obs.length)return null;const m={};for(const o of obs){const v=U.p(o.value);if(v!==null)m[o.date.slice(0,7)]=v}const mons=Object.keys(m).sort();if(mons.length<7)return null;const out=[];for(let i=6;i<mons.length;i++){const cur=mons[i],prv=mons[i-6];const d=m[cur]-m[prv];const[y,mm]=cur.split('-').map(Number);out.push({date:new Date(Date.UTC(y,mm,0)).toISOString().slice(0,10),value:String(d)})}return{observations:out,fetchedAt:U.fetchedAt}}static dd12(SP){const obs=SP?.observations||[];if(!obs.length)return null;const dates=obs.map(o=>o.date);const vals=obs.map(o=>U.p(o.value));const pk=[];for(let i=0;i<vals.length;i++){let p=-Infinity;for(let j=Math.max(0,i-252);j<=i;j++){if(vals[j]!==null)p=Math.max(p,vals[j])}pk.push(p)}return{observations:dates.map((d,i)=>({date:d,value:vals[i]!==null&&pk[i]!==-Infinity?String(vals[i]/pk[i]-1):'.'})),fetchedAt:SP.fetchedAt}}static ret(R){const o=R?.observations||[];if(o.length<2)return null;const last=U.p(o[o.length-1].value);let prv=null;for(let i=o.length-2;i>=0;i--){const v=U.p(o[i].value);if(v!==null){prv=v;break}}if(prv===null||prv===0||last===null)return null;return{observations:[{date:o[o.length-1].date,value:String(last/prv-1)}],fetchedAt:R.fetchedAt}}}
-class P{static map(c){const o={};for(const k of Object.keys(C.I)){if(c[k])o[k]=c[k]}if(!o.CREDIT&&c.BAMLH0A0HYM2)o.CREDIT=c.BAMLH0A0HYM2;if(!o.VIX_PROXY&&c.VIXCLS)o.VIX_PROXY=c.VIXCLS;if(!o.SENTIMENT&&c.UMCSENT)o.SENTIMENT=c.UMCSENT;if(!o.UN_SLOPE6&&c.UNRATE)o.UN_SLOPE6=Der.un6(c.UNRATE)||{observations:[],fetchedAt:c.UNRATE.fetchedAt};if(!o.DD_12M&&c.SP500)o.DD_12M=Der.dd12(c.SP500)||{observations:[],fetchedAt:c.SP500.fetchedAt};if(!o.RETAIL_MOMENTUM&&c.RSAFS)o.RETAIL_MOMENTUM=Der.ret(c.RSAFS)||{observations:[],fetchedAt:c.RSAFS.fetchedAt};return o}static comp(dm){let n=0,d=0;const pts=[];for(const[k,cfg]of Object.entries(C.I)){const s=dm[k];if(!s?.observations?.length)continue;const l=D.lat(s);if(!l||l.value===null)continue;const age=D.age(s);const sc=S[k](l.value);const w=cfg.w*(age<=30?1:.8);if(isFinite(sc)&&isFinite(w)){n+=sc*w;d+=w}const rag=U.rag(l.value,cfg.t);pts.push({k,l:cfg.l,v:l.value,d:cfg.f(l.value),sc,rag,age,desc:cfg.d,int:cfg.i,act:cfg.act})}return{pts,comp:d>0?n/d:50}}static risk(c,h){const base=x=>1/(1+Math.exp(-(x-50)/10));const p1=Math.round(base(c)*.7*100);const p3=Math.round(base(c)*.95*100);const p6=Math.round(base(c)*1.2*100);return{p1:Math.max(5,Math.min(95,p1)),p3:Math.max(5,Math.min(95,p3)),p6:Math.max(5,Math.min(95,p6))}}}
-class App{constructor(){this.app=document.getElementById('app')}async init(){try{const c=await D.load();const dm=P.map(c);const{pts,comp}=P.comp(dm);const z=U.z(comp);const{p1,p3,p6}=P.risk(comp,[]);const conf=Math.round((pts.filter(p=>p.age<=30).length/pts.length)*100);const red=pts.filter(p=>p.rag==='red');const zc={'green':'#1ec28b','amber':'#ffc247','red':'#ff6070'}[z];const zn={'green':'Normal','amber':'Stressed','red':'Crisis'}[z];const zd={'green':'Economic fundamentals stable. Normal volatility expected. Continue regular investment approach.','amber':'Elevated stress across indicators. Increased volatility probability. Monitor closely, consider reducing risk.','red':'Critical stress levels. Multiple recession signals triggered. High downturn probability. Defensive positioning recommended.'}[z];this.app.innerHTML=`<div class="card"><div class="gauge-section"><div class="gauge"><div class="gauge-ring"></div><div class="gauge-needle" style="--angle:${(comp/100)*360}deg"></div><div class="gauge-score">${Math.round(comp)}</div></div><div class="gauge-info"><h2>Market Stress: ${Math.round(comp)}/100</h2><div style="color:var(--muted);margin-bottom:12px">Composite of ${pts.length} indicators</div><div class="info-box"><strong>Data Confidence: ${conf}%</strong><br>${conf>=80?'High - all current':conf>=60?'Moderate - some stale data':'Low - significant staleness'}</div><div class="regime-box"><div class="regime-header"><div class="regime-dot" style="background:${zc}"></div><div class="regime-title">${zn} Regime</div></div><div class="regime-desc">${zd}</div>${red.length>0?`<div class="regime-actions">${red.map(p=>`<div class="regime-action"><div class="action-title">⚠️ ${p.l}</div>${p.act[p.rag]}</div>`).join('')}</div>`:''}</div></div></div></div><div class="card"><h3 style="margin:0 0 16px">Forward Risk Horizon</h3><div class="risk-grid"><div class="risk-card"><div class="risk-title">1-Month Risk</div><div class="risk-value">${p1}%</div><div class="risk-desc">Probability of >10% drawdown in 30 days based on current stress and momentum.</div><div class="risk-detail"><strong>Means:</strong> ${p1<20?'Low near-term risk':p1<40?'Elevated volatility expected':'High crash probability'}</div></div><div class="risk-card"><div class="risk-title">3-Month Risk</div><div class="risk-value">${p3}%</div><div class="risk-desc">Probability of >15% correction in next quarter incorporating medium-term trends.</div><div class="risk-detail"><strong>Means:</strong> ${p3<25?'Markets should stay stable':p3<50?'Correction possible':'High correction risk'}</div></div><div class="risk-card"><div class="risk-title">6-Month Risk</div><div class="risk-value">${p6}%</div><div class="risk-desc">Probability of bear market (>20%) or recession based on historical patterns.</div><div class="risk-detail"><strong>Means:</strong> ${p6<30?'Low recession risk':p6<60?'Elevated recession risk':'Recession likely'}</div></div></div></div><div class="tabs"><button class="tab active" onclick="app.show('ind')">Indicators</button><button class="tab" onclick="app.show('heat')">Heat Map</button></div><div id="tab-ind" class="tab-content active"><div class="card"><h3 style="margin:0 0 16px">Individual Indicators</h3><div class="pills">${pts.map(p=>`<div class="pill rag-${p.rag}"><div class="pill-header"><div class="pill-title">${p.l}</div><div class="pill-status status-${p.rag}">${p.rag.toUpperCase()}</div></div><div class="pill-value">${p.d}</div><div class="pill-desc"><strong>${p.desc}</strong><br>${p.int}</div><div class="pill-action" style="color:var(--${p.rag})">${p.act[p.rag]}</div>${p.age>30?`<div style="font-size:10px;color:var(--amber);margin-top:6px">⚠️ Data ${p.age} days old</div>`:''}</div>`).join('')}</div></div></div><div id="tab-heat" class="tab-content"><div class="card"><h3 style="margin:0 0 16px">Heat Map</h3><div class="heatmap">${pts.map(p=>`<div class="heat-cell rag-${p.rag}"><div class="heat-label">${p.l}</div><div class="heat-value">${p.d}</div><div class="heat-status">${p.rag.toUpperCase()} - ${p.act[p.rag]}</div></div>`).join('')}</div></div></div>`;document.getElementById('status').innerHTML=`<div style="color:${zc};margin:8px 0">● Composite: ${Math.round(comp)} (${zn})</div>`}catch(e){console.error(e);this.app.innerHTML=`<div class="error"><h3>⚠️ Error</h3><p>${e.message}</p></div>`}}show(t){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));event.target.classList.add('active');document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));document.getElementById('tab-'+t).classList.add('active')}}
-const app=new App();
-document.addEventListener('DOMContentLoaded',()=>app.init());
+
+// ==================== ENHANCED CONFIGURATION ====================
+const CONFIG = {
+  // Data sources
+  FRED_CACHE_PATH: 'data/fred_cache.json',
+  CACHE_TIMEOUT: 15000, // Increased timeout for reliability
+  
+  // Core indicators with enhanced metadata
+  INDICATORS: {
+    T10Y3M: { 
+      label: 'Yield Curve',
+      shortLabel: 'Yield',
+      format: v => v?.toFixed(2) + '%',
+      weight: 0.18,
+      cadence: 'daily',
+      category: 'rates',
+      description: '10-year minus 3-month Treasury spread. Inversions historically precede recessions by 6-18 months, with high predictive accuracy.',
+      thresholds: { green: [0.5, Infinity], amber: [-0.5, 0.5], red: [-Infinity, -0.5] },
+      momentumWeight: 1.2,
+      crisisThreshold: -1.0,
+      crisisDirection: 'below',
+      historicalContext: 'Inverted before every recession since 1969'
+    },
+    CREDIT: { 
+      label: 'Credit Spread',
+      shortLabel: 'Credit',
+      format: v => v?.toFixed(2) + '%',
+      weight: 0.14,
+      cadence: 'daily',
+      category: 'credit',
+      description: 'High-yield credit spread (OAS). Wider spreads indicate heightened credit risk and reduced market liquidity.',
+      thresholds: { green: [-Infinity, 0.40], amber: [0.40, 0.70], red: [0.70, Infinity] },
+      momentumWeight: 1.1,
+      crisisThreshold: 1.0,
+      crisisDirection: 'above',
+      historicalContext: 'Spiked to 18%+ during 2008 GFC'
+    },
+    SAHM_RULE: { 
+      label: 'Sahm Rule',
+      shortLabel: 'Sahm',
+      format: v => v?.toFixed(2),
+      weight: 0.16,
+      cadence: 'monthly',
+      category: 'employment',
+      description: '3-month average unemployment rate minus 12-month low. Values ≥0.5 indicate recession has likely begun.',
+      thresholds: { green: [-Infinity, 0.1], amber: [0.1, 0.4], red: [0.4, Infinity] },
+      momentumWeight: 1.4,
+      crisisThreshold: 0.5,
+      crisisDirection: 'above',
+      historicalContext: 'Never triggered a false positive since 1970'
+    },
+    DD_12M: { 
+      label: 'Market Drawdown',
+      shortLabel: 'Drawdown',
+      format: v => ((v ?? 0) * 100).toFixed(1) + '%',
+      weight: 0.20,
+      cadence: 'daily',
+      category: 'equity',
+      description: 'S&P 500 decline from 12-month peak. -20% threshold defines bear market territory.',
+      thresholds: { green: [-0.05, 0], amber: [-0.15, -0.05], red: [-Infinity, -0.15] },
+      momentumWeight: 1.3,
+      crisisThreshold: -0.25,
+      crisisDirection: 'below',
+      historicalContext: 'Average bear market drawdown is -35%'
+    },
+    NFCI: { 
+      label: 'Financial Conditions',
+      shortLabel: 'NFCI',
+      format: v => v?.toFixed(3),
+      weight: 0.12,
+      cadence: 'weekly',
+      category: 'financial',
+      description: 'Chicago Fed National Financial Conditions Index. Values >0 indicate tighter-than-average conditions.',
+      thresholds: { green: [-Infinity, -0.20], amber: [-0.20, 0.20], red: [0.20, Infinity] },
+      momentumWeight: 1.2,
+      crisisThreshold: 0.5,
+      crisisDirection: 'above',
+      historicalContext: 'Peaked at +6 during 2008 crisis'
+    },
+    VIX_PROXY: { 
+      label: 'Volatility Index',
+      shortLabel: 'VIX',
+      format: v => v?.toFixed(1),
+      weight: 0.10,
+      cadence: 'daily',
+      category: 'sentiment',
+      description: 'CBOE Volatility Index. <15 = calm, 15-25 = elevated, 25-35 = stressed, >35 = fear.',
+      thresholds: { green: [-Infinity, 18], amber: [18, 28], red: [28, Infinity] },
+      momentumWeight: 1.1,
+      crisisThreshold: 40,
+      crisisDirection: 'above',
+      historicalContext: 'Spiked to 82.69 on March 16, 2020'
+    }
+  },
+
+  // Historical crisis benchmarks with enhanced metadata
+  HISTORICAL_CRISES: {
+    '2008 GFC': { 
+      score: 92, 
+      date: '2008-10-15',
+      phase: 'Crisis Peak',
+      duration: '18 months',
+      maxDrawdown: '-57%',
+      indicators: { 
+        T10Y3M: -1.5, 
+        CREDIT: 1.8, 
+        SAHM_RULE: 0.8, 
+        DD_12M: -0.45, 
+        VIX_PROXY: 45,
+        NFCI: 3.8
+      }
+    },
+    '2020 COVID': { 
+      score: 88, 
+      date: '2020-03-23',
+      phase: 'Pandemic Shock',
+      duration: '2 months',
+      maxDrawdown: '-34%',
+      indicators: { 
+        T10Y3M: -0.8, 
+        CREDIT: 1.2, 
+        SAHM_RULE: 0.6, 
+        DD_12M: -0.34, 
+        VIX_PROXY: 62,
+        NFCI: 1.2
+      }
+    },
+    '2000 Dot-com': { 
+      score: 78, 
+      date: '2001-03-12',
+      phase: 'Tech Bubble Burst',
+      duration: '30 months',
+      maxDrawdown: '-49%',
+      indicators: { 
+        T10Y3M: -0.3, 
+        CREDIT: 0.9, 
+        SAHM_RULE: 0.4, 
+        DD_12M: -0.28, 
+        VIX_PROXY: 32
+      }
+    },
+    '2022 Inflation': { 
+      score: 65, 
+      date: '2022-06-13',
+      phase: 'Rate Shock',
+      duration: '9 months',
+      maxDrawdown: '-25%',
+      indicators: { 
+        T10Y3M: 0.8, 
+        CREDIT: 0.6, 
+        SAHM_RULE: 0.1, 
+        DD_12M: -0.23, 
+        VIX_PROXY: 28
+      }
+    },
+    '2011 Eurozone': {
+      score: 72,
+      date: '2011-08-08',
+      phase: 'Sovereign Debt Crisis',
+      duration: '24 months',
+      maxDrawdown: '-19%',
+      indicators: {
+        T10Y3M: -0.2,
+        CREDIT: 0.8,
+        SAHM_RULE: 0.2,
+        DD_12M: -0.18,
+        VIX_PROXY: 38
+      }
+    }
+  },
+
+  // Alert thresholds
+  ALERTS: { 
+    CRITICAL: 80,  // Immediate action required
+    WARNING: 65,   // Heightened monitoring
+    WATCH: 50      // Elevated attention
+  },
+
+  // Data freshness limits (in days)
+  FRESH_LIMITS: { 
+    daily: { ok: 7, warn: 30, critical: 60 }, 
+    weekly: { ok: 14, warn: 45, critical: 90 }, 
+    monthly: { ok: 45, warn: 75, critical: 120 } 
+  },
+
+  // Visualization colors
+  ZONE_COLORS: { 
+    green: '#1ec28b', 
+    amber: '#ffc247', 
+    red: '#ff6070',
+    blue: '#6b9eff'
+  },
+
+  // Risk calculation parameters
+  RISK_PARAMS: {
+    baselineVolatility: 15,
+    stressMultiplier: 2.5,
+    momentumDecay: 0.85,
+    confidenceFloor: 40,
+    complacencyThreshold: 13
+  },
+
+  // Feature flags
+  FEATURES: {
+    enableMachineLearning: true,
+    enableHistoricalComparison: true,
+    enableRealTimeUpdates: false, // Set to true when WebSocket available
+    enableExport: true
+  }
+};
+
+// ==================== UTILITY FUNCTIONS ====================
+const Utils = {
+  // Mathematical utilities
+  clamp: (x, min = 0, max = 100) => Math.max(min, Math.min(max, x)),
+  
+  map01: (val, good, bad) => {
+    if (val == null) return 50;
+    const denom = bad - good;
+    if (Math.abs(denom) < 1e-9) return 50;
+    return ((val - good) / denom) * 100;
+  },
+
+  // Exponential moving average
+  ema: (values, alpha = 0.1) => {
+    if (!values || values.length === 0) return null;
+    let ema = values[0];
+    for (let i = 1; i < values.length; i++) {
+      ema = alpha * values[i] + (1 - alpha) * ema;
+    }
+    return ema;
+  },
+
+  // Statistical functions
+  mean: arr => arr.reduce((a, b) => a + b, 0) / arr.length,
+  
+  stdDev: arr => {
+    const mean = Utils.mean(arr);
+    const variance = arr.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / arr.length;
+    return Math.sqrt(variance);
+  },
+
+  // Zone classification
+  zoneOf: s => s <= 30 ? 'green' : (s <= 60 ? 'amber' : 'red'),
+  
+  // Color generation for heatmaps
+  heatColor: score => {
+    const r = Math.round(255 * (score / 100));
+    const g = Math.round(200 * (1 - score / 100));
+    const b = 80;
+    return `rgb(${r}, ${g}, ${b})`;
+  },
+
+  // Safe parsing
+  safeParseFloat: val => {
+    if (val == null || val === '.' || val === 'NaN' || val === '') return null;
+    const num = +val;
+    return isFinite(num) ? num : null;
+  },
+
+  // Formatting
+  formatPercent: (val, dec = 1) => 
+    val == null ? '—' : `${val > 0 ? '+' : ''}${(val * 100).toFixed(dec)}%`,
+  
+  formatNumber: (val, dec = 2) =>
+    val == null ? '—' : val.toFixed(dec),
+
+  formatDate: date => {
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  },
+
+  formatDateTime: date => {
+    const d = new Date(date);
+    return d.toLocaleString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  },
+
+  // Momentum calculation with adaptive lookback
+  calculateMomentum: (currentValues, historicalValues, lookback = 30) => {
+    const momentum = {};
+    for (const [key, current] of Object.entries(currentValues)) {
+      const historical = historicalValues[key];
+      if (current != null && historical != null) {
+        momentum[key] = (current - historical) / lookback;
+      }
+    }
+    return momentum;
+  },
+
+  // Calculate percentile rank
+  percentileRank: (value, array) => {
+    const sorted = [...array].sort((a, b) => a - b);
+    const index = sorted.findIndex(v => v >= value);
+    if (index === -1) return 100;
+    return (index / sorted.length) * 100;
+  },
+
+  // Debounce function for performance
+  debounce: (func, wait) => {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  },
+
+  // Generate unique ID
+  generateId: () => `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+};
+
+// ==================== SCALING FUNCTIONS ====================
+const SCALE = {
+  T10Y3M: v => Utils.clamp(Utils.map01(v, 1.0, -2.0)),
+  CREDIT: v => Utils.clamp(Utils.map01(v, 0.30, 1.00)),
+  SAHM_RULE: v => Utils.clamp(Utils.map01(v, 0.0, 0.5)),
+  DD_12M: v => Utils.clamp(Utils.map01(v, 0.00, -0.20)),
+  NFCI: v => Utils.clamp(Utils.map01(v, -0.80, 0.40)),
+  VIX_PROXY: v => Utils.clamp(Utils.map01(v, 12, 35))
+};
+
+// Continued in Part 5...
+</script> 
+<script>
+// ==================== DATA SERVICE ====================
+class DataService {
+  static async loadFredCache() {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), CONFIG.CACHE_TIMEOUT);
+    
+    try {
+      const response = await fetch(
+        `${CONFIG.FRED_CACHE_PATH}?t=${Date.now()}`,
+        { 
+          cache: 'no-store', 
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
+      );
+      
+      clearTimeout(timeout);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const rawData = await response.json();
+      const normalized = this.normalizeCache(rawData);
+      
+      // Add metadata
+      normalized._metadata = {
+        loadedAt: new Date().toISOString(),
+        seriesCount: Object.keys(normalized).filter(k => k !== '_metadata').length
+      };
+      
+      return normalized;
+    } catch (err) {
+      clearTimeout(timeout);
+      if (err.name === 'AbortError') {
+        throw new Error('Request timeout - data server may be unavailable');
+      }
+      throw err;
+    }
+  }
+
+  static normalizeCache(raw) {
+    const output = {};
+    if (!raw) return output;
+
+    // Direct format check
+    const directFormat = typeof raw === 'object' && 
+      Object.keys(raw).some(k => raw[k] && Array.isArray(raw[k].observations));
+    
+    if (directFormat) return raw;
+
+    // Handle nested series array
+    if (Array.isArray(raw?.series)) {
+      for (const item of raw.series) {
+        const id = item?.id || item?.series_id || item?.name;
+        if (!id) continue;
+        
+        const observations = Array.isArray(item.observations) 
+          ? item.observations 
+          : (Array.isArray(item.data) ? item.data : []);
+        
+        output[id] = { 
+          observations, 
+          fetchedAt: item.fetchedAt || raw.fetchedAt || Date.now()
+        };
+      }
+      return output;
+    }
+
+    // Handle series object
+    if (raw.series && typeof raw.series === 'object' && !Array.isArray(raw.series)) {
+      for (const [id, item] of Object.entries(raw.series)) {
+        const observations = Array.isArray(item?.observations) 
+          ? item.observations 
+          : (Array.isArray(item?.data) ? item.data : []);
+        
+        output[id] = { 
+          observations, 
+          fetchedAt: item.fetchedAt || raw.fetchedAt || Date.now()
+        };
+      }
+      return output;
+    }
+
+    // Handle flat array
+    if (Array.isArray(raw)) {
+      for (const item of raw) {
+        const id = item?.id || item?.series_id || item?.name;
+        if (!id) continue;
+        
+        const observations = Array.isArray(item.observations) 
+          ? item.observations 
+          : (Array.isArray(item.data) ? item.data : []);
+        
+        output[id] = { 
+          observations, 
+          fetchedAt: item.fetchedAt || Date.now()
+        };
+      }
+    }
+
+    return output;
+  }
+
+  static latest(series) {
+    const observations = series?.observations || [];
+    if (!observations.length) return null;
+    
+    const lastObs = observations[observations.length - 1];
+    const value = Utils.safeParseFloat(lastObs.value);
+    
+    return { 
+      value, 
+      date: lastObs.date,
+      timestamp: new Date(lastObs.date + 'T00:00:00Z').getTime()
+    };
+  }
+
+  static seriesAgeDays(series, fetchedAt) {
+    const latestData = this.latest(series);
+    if (!latestData) return Infinity;
+    
+    const dataDate = new Date(latestData.date + 'T00:00:00Z');
+    const referenceDate = new Date(fetchedAt || Date.now());
+    
+    return Math.max(0, Math.round((referenceDate - dataDate) / 86400000));
+  }
+
+  static getHistoricalValue(series, daysBack = 30) {
+    const observations = series?.observations || [];
+    if (observations.length < 2) return null;
+    
+    const targetDate = new Date(Date.now() - daysBack * 86400000);
+    
+    for (let i = observations.length - 1; i >= 0; i--) {
+      const obsDate = new Date(observations[i].date + 'T00:00:00Z');
+      if (obsDate <= targetDate) {
+        return Utils.safeParseFloat(observations[i].value);
+      }
+    }
+    
+    return null;
+  }
+
+  static getValueAtDate(series, targetDate) {
+    const observations = series?.observations || [];
+    const target = new Date(targetDate);
+    
+    for (let i = observations.length - 1; i >= 0; i--) {
+      const obsDate = new Date(observations[i].date + 'T00:00:00Z');
+      if (obsDate <= target) {
+        return Utils.safeParseFloat(observations[i].value);
+      }
+    }
+    
+    return null;
+  }
+
+  static getTimeSeriesWindow(series, startDate, endDate) {
+    const observations = series?.observations || [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    return observations
+      .filter(obs => {
+        const date = new Date(obs.date + 'T00:00:00Z');
+        return date >= start && date <= end;
+      })
+      .map(obs => ({
+        date: obs.date,
+        value: Utils.safeParseFloat(obs.value)
+      }));
+  }
+}
+
+// ==================== DERIVED SERIES ====================
+class DerivedSeries {
+  static deriveSahmRule(UNRATE) {
+    const observations = UNRATE?.observations || [];
+    if (observations.length < 12) return null;
+
+    const output = [];
+    
+    for (let i = 11; i < observations.length; i++) {
+      const currentDate = observations[i].date;
+
+      // Calculate 3-month average
+      let sum = 0, count = 0;
+      for (let j = 0; j < 3; j++) {
+        if (i - j >= 0) {
+          const value = Utils.safeParseFloat(observations[i - j].value);
+          if (value != null) { 
+            sum += value; 
+            count++; 
+          }
+        }
+      }
+      
+      if (!count) continue;
+      const threeMonthAvg = sum / count;
+
+      // Find 12-month minimum
+      let minUnemployment = Infinity;
+      for (let j = 1; j <= 12; j++) {
+        if (i - j >= 0) {
+          const value = Utils.safeParseFloat(observations[i - j].value);
+          if (value != null && value < minUnemployment) {
+            minUnemployment = value;
+          }
+        }
+      }
+      
+      if (minUnemployment === Infinity) continue;
+
+      const sahmValue = threeMonthAvg - minUnemployment;
+      output.push({ 
+        date: currentDate, 
+        value: sahmValue.toFixed(3) 
+      });
+    }
+
+    return { 
+      observations: output, 
+      fetchedAt: UNRATE.fetchedAt,
+      derived: true,
+      sourceIndicator: 'UNRATE'
+    };
+  }
+
+  static deriveDrawdown12m(SP500) {
+    const observations = SP500?.observations || [];
+    if (!observations.length) return null;
+
+    const dates = observations.map(o => o.date);
+    const values = observations.map(o => Utils.safeParseFloat(o.value));
+    
+    // Calculate rolling 12-month peak
+    const peaks = [];
+    for (let i = 0; i < values.length; i++) {
+      const start = Math.max(0, i - 252); // ~252 trading days in a year
+      let peak = -Infinity;
+      
+      for (let j = start; j <= i; j++) {
+        if (values[j] != null) {
+          peak = Math.max(peak, values[j]);
+        }
+      }
+      
+      peaks.push(peak);
+    }
+
+    // Calculate drawdowns
+    const drawdowns = dates.map((date, i) => ({
+      date,
+      value: (values[i] != null && peaks[i] !== -Infinity) 
+        ? String(values[i] / peaks[i] - 1) 
+        : '.'
+    }));
+
+    return { 
+      observations: drawdowns, 
+      fetchedAt: SP500?.fetchedAt,
+      derived: true,
+      sourceIndicator: 'SP500'
+    };
+  }
+
+  static deriveVolatility(series, window = 20) {
+    const observations = series?.observations || [];
+    if (observations.length < window) return null;
+
+    const output = [];
+    const values = observations.map(o => Utils.safeParseFloat(o.value));
+
+    for (let i = window - 1; i < values.length; i++) {
+      const windowValues = values.slice(i - window + 1, i + 1).filter(v => v != null);
+      
+      if (windowValues.length >= window * 0.8) { // At least 80% non-null
+        const returns = [];
+        for (let j = 1; j < windowValues.length; j++) {
+          returns.push(Math.log(windowValues[j] / windowValues[j - 1]));
+        }
+        
+        const volatility = Utils.stdDev(returns) * Math.sqrt(252); // Annualized
+        output.push({
+          date: observations[i].date,
+          value: volatility.toFixed(4)
+        });
+      }
+    }
+
+    return {
+      observations: output,
+      fetchedAt: series?.fetchedAt,
+      derived: true,
+      sourceIndicator: series.sourceIndicator || 'UNKNOWN'
+    };
+  }
+}
+
+// ==================== INDICATOR PROCESSOR ====================
+class IndicatorProcessor {
+  static mapIndicatorsFromCache(cache) {
+    const output = {};
+
+    // Direct mapping
+    for (const key of Object.keys(CONFIG.INDICATORS)) {
+      if (cache[key]) {
+        output[key] = cache[key];
+      }
+    }
+
+    // Fallback mappings
+    if (!output.CREDIT && (cache.BAMLH0A0HYM2 || cache.BAA10YM)) {
+      output.CREDIT = cache.BAMLH0A0HYM2 || cache.BAA10YM;
+    }
+    
+    if (!output.VIX_PROXY && cache.VIXCLS) {
+      output.VIX_PROXY = cache.VIXCLS;
+    }
+
+    // Derived indicators
+    if (!output.SAHM_RULE && cache.UNRATE) {
+      output.SAHM_RULE = DerivedSeries.deriveSahmRule(cache.UNRATE) || { 
+        observations: [], 
+        fetchedAt: cache.UNRATE.fetchedAt 
+      };
+    }
+
+    if (!output.DD_12M && cache.SP500) {
+      output.DD_12M = DerivedSeries.deriveDrawdown12m(cache.SP500) || { 
+        observations: [], 
+        fetchedAt: cache.SP500.fetchedAt 
+      };
+    }
+
+    return output;
+  }
+
+  static freshnessPenalty(days, cadence, isCalm = false) {
+    const limits = CONFIG.FRESH_LIMITS[cadence] || CONFIG.FRESH_LIMITS.daily;
+    const okThreshold = isCalm ? Math.floor(limits.ok / 2) : limits.ok;
+    const warnThreshold = isCalm ? Math.floor(limits.warn / 2) : limits.warn;
+    
+    if (days <= okThreshold) return 1.00;
+    if (days <= warnThreshold) return 0.85;
+    if (days <= limits.critical) return 0.70;
+    return 0.50; // Severely stale
+  }
+
+  static computeComposite(dataMap, isCalm) {
+    let numerator = 0, denominator = 0;
+    const parts = [];
+    const currentValues = {};
+    const historicalValues = {};
+
+    // Collect current and historical values
+    for (const [key, config] of Object.entries(CONFIG.INDICATORS)) {
+      const series = dataMap[key];
+      const observations = series?.observations || [];
+      
+      if (!observations.length) continue;
+      
+      const latest = DataService.latest(series);
+      if (!latest || latest.value == null) continue;
+
+      currentValues[key] = latest.value;
+      historicalValues[key] = DataService.getHistoricalValue(series, 30) ?? latest.value;
+    }
+
+    const momentum = Utils.calculateMomentum(currentValues, historicalValues);
+
+    // Compute indicator parts with momentum adjustment
+    for (const [key, config] of Object.entries(CONFIG.INDICATORS)) {
+      const series = dataMap[key];
+      const observations = series?.observations || [];
+      
+      if (!observations.length) continue;
+      
+      const latest = DataService.latest(series);
+      if (!latest || latest.value == null) continue;
+
+      const days = DataService.seriesAgeDays(series, series.fetchedAt);
+      const limits = CONFIG.FRESH_LIMITS[config.cadence] || CONFIG.FRESH_LIMITS.daily;
+      
+      const badge = days <= limits.ok 
+        ? { cls: 'badge-fresh', txt: 'Fresh' }
+        : days <= limits.warn 
+        ? { cls: 'badge-stale', txt: 'Stale' }
+        : { cls: 'badge-old', txt: 'Old' };
+
+      let scaled = SCALE[key](latest.value);
+
+      // Apply momentum tilt (only for daily indicators)
+      let momentumValue = 0;
+      if (config.cadence === 'daily') {
+        const rawMomentum = momentum[key] || 0;
+        const cappedMomentum = Math.max(-0.02, Math.min(0.02, rawMomentum));
+        const weight = config.momentumWeight || 1.0;
+        scaled = Utils.clamp(scaled * (1 + cappedMomentum * weight * 5));
+        momentumValue = cappedMomentum;
+      }
+
+      const indicatorWeight = config.weight * 
+        this.freshnessPenalty(days, config.cadence, isCalm);
+
+      if (Number.isFinite(scaled) && Number.isFinite(indicatorWeight)) {
+        numerator += scaled * indicatorWeight;
+        denominator += indicatorWeight;
+      }
+
+      // Determine RAG status
+      let ragStatus = 'green';
+      const thresholds = config.thresholds;
+      if (thresholds) {
+        if (latest.value >= thresholds.red[0] && latest.value <= thresholds.red[1]) {
+          ragStatus = 'red';
+        } else if (latest.value >= thresholds.amber[0] && latest.value <= thresholds.amber[1]) {
+          ragStatus = 'amber';
+        }
+      }
+
+      // Calculate change from previous value
+      let change = null;
+      if (observations.length >= 2) {
+        const current = Utils.safeParseFloat(observations[observations.length - 1].value);
+        const previous = Utils.safeParseFloat(observations[observations.length - 2].value);
+        if (current != null && previous != null) {
+          change = current - previous;
+        }
+      }
+
+      parts.push({
+        key,
+        label: config.label,
+        shortLabel: config.shortLabel,
+        category: config.category,
+        value: latest.value,
+        valueDisp: config.format?.(latest.value) ?? latest.value,
+        change,
+        freshClass: badge.cls,
+        freshTxt: badge.txt,
+        scaled,
+        weight: indicatorWeight,
+        observations,
+        ragStatus,
+        description: config.description,
+        historicalContext: config.historicalContext,
+        momentum: momentumValue,
+        crisisThreshold: config.crisisThreshold,
+        crisisDirection: config.crisisDirection,
+        ageInDays: days
+      });
+    }
+
+    return { parts, numerator, denominator, currentValues };
+  }
+}
+
+// Continued in final part...
 </script>
-</body>
-</html>
