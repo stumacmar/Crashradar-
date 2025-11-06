@@ -8,7 +8,6 @@
 :root{
   --bg:#0a0e1a; --panel:#12182b; --panel-hover:#151d33; --text:#e8eeff; --muted:#8b96b0;
   --accent:#6b9eff; --accent-bright:#8fb4ff; --green:#1ec28b; --amber:#ffc247; --red:#ff6070;
-  --purple:#a78bfa; --cyan:#22d3ee;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
@@ -19,17 +18,18 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
 .badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 .badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:10px;font-weight:700}
 .live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer;transition:all 0.2s ease}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer;transition:all .2s}
 .btn:hover{background:var(--accent-bright);transform:translateY(-1px)}
-.card{background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:24px;margin:18px 0;box-shadow:0 4px 24px rgba(0,0,0,.3);transition:all 0.3s ease}
+.card{background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:24px;margin:18px 0;box-shadow:0 4px 24px rgba(0,0,0,.3);transition:all .3s}
 .card:hover{box-shadow:0 8px 32px rgba(0,0,0,.4);transform:translateY(-2px)}
 .status-pill{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.04);font-weight:700}
 .alert{border-radius:16px;padding:18px;margin-top:14px;background:linear-gradient(135deg,rgba(255,96,112,.12),rgba(255,194,71,.12));border:1px solid rgba(255,96,112,.25)}
+.audit{border-radius:12px;padding:12px;margin:12px 0;background:rgba(255,96,112,.08);border:1px dashed rgba(255,96,112,.4);display:none}
 .tabs{display:flex;gap:8px;border-bottom:2px solid rgba(255,255,255,.06);margin-top:8px}
-.tab{background:transparent;border:none;color:var(--muted);padding:12px 18px;font-weight:800;cursor:pointer;border-radius:8px 8px 0 0;transition:all 0.2s ease}
+.tab{background:transparent;border:none;color:var(--muted);padding:12px 18px;font-weight:800;cursor:pointer;border-radius:8px 8px 0 0;transition:all .2s}
 .tab.active{color:var(--accent-bright);background:rgba(255,255,255,.03)}
 .tab:hover:not(.active){color:var(--text);background:rgba(255,255,255,.02)}
-.view{display:none;animation:fadeIn 0.5s ease}.view.active{display:block}
+.view{display:none;animation:fadeIn .5s ease}.view.active{display:block}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .gauge{display:flex;gap:36px;align-items:center;flex-wrap:wrap}
 .gauge-wrap{position:relative;width:220px;height:220px}
@@ -42,7 +42,7 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
 .score .v{font-size:56px;background:linear-gradient(135deg,var(--text),var(--accent-bright));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .score .l{font-size:11px;color:var(--muted);letter-spacing:1px;margin-top:4px}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.kpi{border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px;background:rgba(255,255,255,.03);transition:all 0.2s ease}
+.kpi{border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px;background:rgba(255,255,255,.03);transition:all .2s}
 .kpi:hover{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.05)}
 .kpi h4{display:flex;align-items:center;justify-content:space-between;font-size:14px;margin-bottom:6px}
 .dot{width:10px;height:10px;border-radius:50%}
@@ -54,31 +54,26 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
 .badge{font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid}
 .b-fresh{color:var(--green);border-color:rgba(30,194,139,.35);background:rgba(30,194,139,.15)}
 .b-stale{color:var(--amber);border-color:rgba(255,194,71,.5);background:rgba(255,194,71,.15)}
-.toggle-desc{cursor:pointer;font-size:12px;color:var(--accent-bright);transition:color 0.2s ease}
+.toggle-desc{cursor:pointer;font-size:12px;color:var(--accent-bright);transition:color .2s}
 .toggle-desc:hover{color:var(--accent-bright)}
 .desc{display:none;font-size:12px;color:var(--muted);margin-top:6px}
 .show .desc{display:block}
 .btns{display:flex;gap:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);padding:4px;border-radius:10px}
-.btns button{background:transparent;border:none;color:var(--muted);padding:6px 10px;border-radius:8px;font-weight:700;cursor:pointer;transition:all 0.2s ease}
+.btns button{background:transparent;border:none;color:var(--muted);padding:6px 10px;border-radius:8px;font-weight:700;cursor:pointer;transition:all .2s}
 .btns button.active{background:var(--accent);color:#fff}
 .btns button:hover:not(.active){background:rgba(255,255,255,.05);color:var(--text)}
 .chart{position:relative;height:360px;margin-top:12px}
 .heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
-.cell{border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;background:rgba(255,255,255,.03);transition:all 0.2s ease}
+.cell{border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;background:rgba(255,255,255,.03);transition:all .2s}
 .cell:hover{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.05)}
 .bar{height:8px;border-radius:6px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:8px}
-.bar>span{display:block;height:100%;transition:width 0.5s ease}
+.bar>span{display:block;height:100%;transition:width .5s ease}
 .radar-chart{height:320px;margin-top:20px}
 .risk-meter{display:flex;align-items:center;gap:12px;margin-top:8px}
 .risk-level{width:100%;height:8px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden}
-.risk-level>div{height:100%;transition:width 0.5s ease}
+.risk-level>div{height:100%;transition:width .5s ease}
 .risk-labels{display:flex;justify-content:space-between;margin-top:4px}
 .risk-labels span{font-size:10px;color:var(--muted)}
-.tooltip{position:absolute;background:rgba(24,30,50,.95);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px;font-size:12px;color:var(--text);z-index:100;pointer-events:none;opacity:0;transition:opacity 0.2s;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
-.progress-ring{transform:rotate(-90deg);width:120px;height:120px}
-.progress-ring circle{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.5s ease}
-.insight-card{background:linear-gradient(135deg, rgba(107,158,255,.1), rgba(139,187,255,.05));border:1px solid rgba(107,158,255,.2);border-radius:12px;padding:16px;margin-top:16px}
-.insight-card h4{display:flex;align-items:center;gap:8px;margin-bottom:8px;color:var(--accent-bright)}
 .loading{display:flex;justify-content:center;align-items:center;height:200px;font-size:16px;color:var(--muted)}
 @media (max-width:768px){.gauge{flex-direction:column;align-items:center}}
 </style>
@@ -103,6 +98,7 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
     <div class="badge" id="indicatorsCount">Indicators: --/10</div>
   </div>
 
+  <div class="audit" id="auditBox"></div>
   <div class="status-pill" id="regime">--</div>
   <div class="alert" id="alert" style="display:none"></div>
 
@@ -130,10 +126,7 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
           </div>
         </div>
         <div class="risk-labels">
-          <span>Low</span>
-          <span>Medium</span>
-          <span>High</span>
-          <span>Critical</span>
+          <span>Low</span><span>Medium</span><span>High</span><span>Critical</span>
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px">
@@ -142,11 +135,6 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
           <div class="kpi"><div class="small">6-Month Risk</div><div class="val" id="r6m">--</div><div class="small" id="m6dir">↗ Accelerating</div></div>
         </div>
       </div>
-    </div>
-
-    <div class="insight-card" id="insightCard" style="display:none">
-      <h4>💡 Market Insight</h4>
-      <div id="insightText"></div>
     </div>
   </div>
 
@@ -236,11 +224,11 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
 <script>
 'use strict';
 
-// ---------- CONFIG ----------
+/* ===================== CONFIG ===================== */
 const CONFIG = {
   FRED_CACHE_PATH: 'data/fred_cache.json',
 
-  // Economically-robust weights + valuation
+  // 10 indicators; SAHM is shown but unweighted (flag).
   INDICATORS: {
     T10Y3M:{label:'Yield Curve',short:'Yield',weight:0.20,format:v=>v?.toFixed(2)+'%',crisis:-1.0,dir:'below',
       desc:'10y–3m Treasury spread. Inversions typically precede recessions by 6–18 months.'},
@@ -266,6 +254,7 @@ const CONFIG = {
       desc:'Unemployment 3m avg minus 12m low. Useful flag; not weighted in composite.'}
   },
 
+  // Accept multiple possible keys from the cache
   ALIAS:{
     T10Y3M:['T10Y3M'],
     CREDIT:['BAMLH0A0HYM2'],
@@ -274,79 +263,66 @@ const CONFIG = {
     SENTIMENT:['UMCSENT'],
     RETAIL_BASE:['RSAFS'],
     UNRATE:['UNRATE'],
-    SPX:['SP500','SPX','^GSPC'],         // extra fallbacks okay if your cache uses them
-    VALUATION:['DDDM01USA156NWDB','Q13051USQ156NNBR'] // MC/GDP, fallback Earnings Yield
+    SPX:['SP500','SPX','^GSPC'],
+    VALUATION:['DDDM01USA156NWDB','Q13051USQ156NNBR'] // MC/GDP, fallback: Earnings Yield
   },
 
   INSIGHTS: [
-    {min: 0, max: 30, text: "Favourable: stress low; keep risk discipline but conditions are benign."},
-    {min: 31, max: 50, text: "Moderate stress: review tilts; consider mild defensives."},
-    {min: 51, max: 70, text: "Elevated: tighten risk, raise liquidity, hedge tail risk."},
-    {min: 71, max: 85, text: "High: crisis risk rising; execute contingency playbook."},
-    {min: 86, max: 100, text: "Critical: crisis protocols; maximum defense and cash/liquidity."}
+    {min: 0, max: 30, text: "Favourable: stress low; conditions benign but keep discipline."},
+    {min: 31, max: 50, text: "Moderate stress: early warning; review tilts and buffers."},
+    {min: 51, max: 70, text: "Elevated: volatility risk higher; raise liquidity/hedges."},
+    {min: 71, max: 85, text: "High: crisis probability rising; execute contingency steps."},
+    {min: 86, max: 100, text: "Critical: crisis protocols; maximum defense/liquidity."}
   ]
 };
 
-// ---------- SCALE (0–100 where higher = more stress) ----------
+/* ===================== SCALE (0–100 stress) ===================== */
 const SCALE = {
-  // Inversion stress only; positive spread ~ 0
   T10Y3M:v=>clamp((Math.max(0,-v)/1.5)*100),
-
-  // HY OAS: <4% green; 4–5.5% amber; >5.5% red
   CREDIT:v=>{
     if (v<=4.0) return clamp((v/4.0)*10);
     if (v<=5.5) return clamp(10 + ((v-4.0)/1.5)*60);
     return clamp(70 + Math.min(30,(v-5.5)/3.0*30));
   },
-
   NFCI:v=>clamp(((v + 0.80)/1.20)*100),
   UN_SLOPE6:v=>clamp(((v - 0)/0.6)*100),
-
-  // Valuation mapper (adaptive to series chosen)
   VALUATION:v=>{
     if (v==null || !isFinite(v)) return 0;
-    if (v>20) return clamp(((v - 100)/80)*100); // MC/GDP in %, 100→0, 180→100
-    return clamp(((6 - v)/4)*100);               // Earnings Yield %, lower → more stress
+    if (v>20) return clamp(((v - 100)/80)*100); // MC/GDP % : 100→0, 180→100
+    return clamp(((6 - v)/4)*100);              // Earnings Yield % : lower→more stress
   },
-
-  DD_12M:v=>clamp((0 - v)/0.20*100), // v negative in drawdowns
+  DD_12M:v=>clamp((0 - v)/0.20*100),
   SENTIMENT:v=>clamp(((80 - v)/40)*100),
   RETAIL_MOMENTUM:v=>clamp(((2 - v)/4)*100),
   VIX_PROXY:v=>clamp(((v - 12)/23)*100),
-  SAHM_RULE:v=>clamp((v/0.5)*100) // unweighted but shown
+  SAHM_RULE:v=>clamp((v/0.5)*100) // unweighted but displayed
 };
 function clamp(x){return Math.max(0,Math.min(100,x));}
 
-// ---------- LOAD ----------
-let app={ boundPeriods:false, boundTabs:false };
+/* ===================== BOOT ===================== */
+let app={boundPeriods:false,boundTabs:false};
 window.addEventListener('DOMContentLoaded',init);
 
 async function init(){
-  showLoadingState(true);
-  try {
+  setLoading(true);
+  try{
     const cache = await fetch(`${CONFIG.FRED_CACHE_PATH}?t=${Date.now()}`,{cache:'no-store'}).then(r=>r.json());
-    const now = new Date();
-    byId('upd').textContent = 'Last Update: ' + now.toLocaleTimeString();
-
     const s = k=> resolveSeries(cache, CONFIG.ALIAS[k]);
+    const now = new Date(); byId('upd').textContent='Last Update: '+now.toLocaleTimeString();
 
     const ser = {
-      T10Y3M: s('T10Y3M'),
-      CREDIT: s('CREDIT'),
-      NFCI:   s('NFCI'),
-      VIX:    s('VIX_PROXY'),
-      UMCSENT:s('SENTIMENT'),
-      RSAFS:  s('RETAIL_BASE'),
-      UNRATE: s('UNRATE'),
-      SPX:    s('SPX'),
-      VALUATION: s('VALUATION')
+      T10Y3M:s('T10Y3M'), CREDIT:s('CREDIT'), NFCI:s('NFCI'),
+      VIX:s('VIX_PROXY'), UMCSENT:s('SENTIMENT'), RSAFS:s('RETAIL_BASE'),
+      UNRATE:s('UNRATE'), SPX:s('SPX'), VALUATION:s('VALUATION')
     };
 
     const deriv = buildDerived(ser);
     const kpis  = computeLatestKPIs(ser, deriv);
 
-    const anchorDates = pickAnchorDates(ser);
-    const history = buildCompositeHistory(anchorDates, ser, deriv);
+    // ===== Audit: show any missing series clearly
+    auditMissing(ser, deriv);
+
+    const history = buildCompositeHistory(pickAnchorDates(ser), ser, deriv);
 
     renderTop(kpis, history);
     renderPills(kpis);
@@ -359,139 +335,95 @@ async function init(){
     setupTabs();
     setupPeriodButtons(history);
 
-    byId('refreshBtn').onclick = ()=>refreshData();
-    byId('exportBtn').onclick = ()=>exportReport(kpis, history);
-
-    showLoadingState(false);
-  } catch (error) {
-    console.error('Failed to load data:', error);
-    showErrorState();
-  }
+    byId('refreshBtn').onclick = ()=>init();
+    byId('exportBtn').onclick  = ()=>exportReport(kpis, history);
+  }catch(e){
+    console.error(e); showError();
+  }finally{ setLoading(false); }
 }
 
-function showLoadingState(show){document.body.style.opacity=show?'0.7':'1';document.body.style.pointerEvents=show?'none':'auto'}
-function showErrorState(){
-  document.body.innerHTML = `
-    <div class="wrap" style="text-align:center;padding-top:100px">
-      <h1 style="color:var(--red)">⚠️ Data Loading Error</h1>
-      <p style="color:var(--muted);margin:20px 0">Unable to load economic data. Please check your connection and try again.</p>
-      <button class="btn" onclick="location.reload()">🔄 Retry</button>
-    </div>`;
+function setLoading(b){document.body.style.opacity=b?'0.7':'1';document.body.style.pointerEvents=b?'none':'auto'}
+function showError(){
+  document.body.innerHTML=`<div class="wrap" style="text-align:center;padding-top:100px">
+    <h1 style="color:var(--red)">⚠️ Data Loading Error</h1>
+    <p style="color:var(--muted);margin:20px 0">Couldn’t load <code>data/fred_cache.json</code>. Check path/case & schema.</p>
+    <button class="btn" onclick="location.reload()">🔄 Retry</button></div>`;
 }
 function byId(id){return document.getElementById(id)}
-function resolveSeries(cache, aliases){
-  if(!cache || !aliases) return null;
-  for(const k of aliases){ if(cache[k]) return cache[k]; }
-  return null;
-}
+function resolveSeries(cache, aliases){ if(!cache||!aliases) return null; for(const k of aliases){ if(cache[k]) return cache[k]; } return null; }
 function lastValidObs(series){
   if(!series?.observations?.length) return null;
   for(let i=series.observations.length-1;i>=0;i--){
     const v=parseFloat(series.observations[i].value);
     if(isFinite(v)) return {date:series.observations[i].date, value:v};
-  }
-  return null;
+  } return null;
 }
 function parseDate(d){return new Date(d)}
 function daysSince(d){return Math.floor((Date.now()-parseDate(d))/86400000)}
 
-// ---------- Derived series ----------
+/* ===================== DERIVED ===================== */
 function buildDerived(ser){
   const out={};
 
+  // SAHM & slope 6m from UNRATE
   if(ser.UNRATE?.observations){
-    const map = obsMap(ser.UNRATE.observations);
-    const mkeys = Object.keys(map).sort();
+    const map = obsMap(ser.UNRATE.observations), mkeys=Object.keys(map).sort();
     const sahm=[], slope6=[];
     for(const ym of mkeys){
-      const cur = map[ym];
-      const prevMs = monthOffset(ym,-1), prevM2 = monthOffset(ym,-2);
-      if(map[prevMs]!==undefined && map[prevM2]!==undefined){
-        const avg3 = (cur+map[prevMs]+map[prevM2])/3;
-        let low12=Infinity;
-        for(let i=0;i<12;i++){
-          const key=monthOffset(ym,-i);
-          if(map[key]!==undefined) low12=Math.min(low12,map[key]);
-        }
-        if(low12<Infinity) sahm.push({date: ym+'-01', value: +(avg3-low12).toFixed(2)});
+      const cur = map[ym], m1=map[monthOffset(ym,-1)], m2=map[monthOffset(ym,-2)];
+      if(m1!==undefined && m2!==undefined){
+        const avg3=(cur+m1+m2)/3;
+        let low12=Infinity; for(let i=0;i<12;i++){ const k=monthOffset(ym,-i); if(map[k]!==undefined) low12=Math.min(low12,map[k]); }
+        if(low12<Infinity) sahm.push({date:ym+'-01', value:+(avg3-low12).toFixed(2)});
       }
-      const back6 = monthOffset(ym,-6);
-      if(map[back6]!==undefined){
-        slope6.push({date: ym+'-01', value: +(cur - map[back6]).toFixed(2)});
-      }
+      const back6 = map[monthOffset(ym,-6)]; if(back6!==undefined) slope6.push({date:ym+'-01', value:+(cur-back6).toFixed(2)});
     }
-    out.SAHM_RULE = {observations: sahm};
-    out.UN_SLOPE6 = {observations: slope6};
+    out.SAHM_RULE={observations:sahm}; out.UN_SLOPE6={observations:slope6};
   }
 
+  // 12-month drawdown from SPX
   if(ser.SPX?.observations){
     const obs=ser.SPX.observations.filter(o=>isFinite(parseFloat(o.value)));
     const vals=[], outObs=[];
     for(let i=0;i<obs.length;i++){
-      const p=parseFloat(obs[i].value);
-      vals.push(p);
-      const start=Math.max(0,i-252);
-      let max=-Infinity;
-      for(let j=start;j<=i;j++) if(vals[j]>max) max=vals[j];
-      const dd = p/max - 1;
-      outObs.push({date:obs[i].date, value:+dd.toFixed(4)});
+      const p=parseFloat(obs[i].value); vals.push(p);
+      const start=Math.max(0,i-252); let max=-Infinity; for(let j=start;j<=i;j++) if(vals[j]>max) max=vals[j];
+      outObs.push({date:obs[i].date, value:+(p/max - 1).toFixed(4)});
     }
     out.DD_12M = {observations: outObs};
   }
 
+  // Retail momentum (3m/3m annualised)
   if(ser.RSAFS?.observations){
-    const map = obsMap(ser.RSAFS.observations);
-    const mkeys = Object.keys(map).sort();
-    const outR=[];
+    const map = obsMap(ser.RSAFS.observations), mkeys=Object.keys(map).sort(), outR=[];
     for(const ym of mkeys){
-      const back3=monthOffset(ym,-3);
-      if(map[back3]!==undefined){
-        const g = ((map[ym]/map[back3])-1)*4*100;
-        outR.push({date: ym+'-01', value:+g.toFixed(2)});
-      }
+      const back3=map[monthOffset(ym,-3)];
+      if(back3!==undefined){ const g=((map[ym]/back3)-1)*4*100; outR.push({date:ym+'-01', value:+g.toFixed(2)}); }
     }
-    out.RETAIL_MOMENTUM = {observations: outR};
+    out.RETAIL_MOMENTUM={observations:outR};
   }
 
-  if(ser.VIX) out.VIX_PROXY = ser.VIX;
-  if(ser.UMCSENT) out.SENTIMENT = ser.UMCSENT;
-  if(ser.VALUATION) out.VALUATION = ser.VALUATION; // pass-through
+  if(ser.VIX) out.VIX_PROXY=ser.VIX;
+  if(ser.UMCSENT) out.SENTIMENT=ser.UMCSENT;
+  if(ser.VALUATION) out.VALUATION=ser.VALUATION; // pass-through (monthly/quarterly ok)
 
   return out;
 }
-function obsMap(observations){
-  const m={};
-  for(const o of observations){
-    const v=parseFloat(o.value); if(!isFinite(v)) continue;
-    const ym=o.date.slice(0,7);
-    m[ym]=v;
-  }
-  return m;
-}
-function monthOffset(ym,off){
-  const [y,m]=ym.split('-').map(Number);
-  const d=new Date(y,m-1,1); d.setMonth(d.getMonth()+off);
-  return d.toISOString().slice(0,7);
-}
+function obsMap(observations){const m={}; for(const o of observations){const v=parseFloat(o.value); if(!isFinite(v)) continue; m[o.date.slice(0,7)]=v;} return m;}
+function monthOffset(ym,off){const [y,m]=ym.split('-').map(Number); const d=new Date(y,m-1,1); d.setMonth(d.getMonth()+off); return d.toISOString().slice(0,7);}
 
-// ---------- KPIs (latest) ----------
+/* ===================== KPIs ===================== */
 function computeLatestKPIs(ser, deriv){
   const out=[];
   const defs=CONFIG.INDICATORS;
   function add(key, source){
-    const def=defs[key];
-    const lv=lastValidObs(source);
+    const def=defs[key], lv=lastValidObs(source);
     if(!lv) return;
-    const raw=lv.value;
-    const scaled=SCALE[key](raw);
+    const raw=lv.value, scaled=SCALE[key](raw);
     const rag= scaled<30?'g':(scaled<60?'a':'r');
     const crisis = def.crisis==null ? false : (def.dir==='below' ? raw<=def.crisis : raw>=def.crisis);
-    out.push({
-      key,label:def.label,short:def.short,desc:def.desc,weight:def.weight,
-      date:lv.date,raw,scaled,disp:def.format(raw),rag,crisis
-    });
+    out.push({key,label:def.label,short:def.short,desc:def.desc,weight:def.weight,date:lv.date,raw,scaled,disp:def.format(raw),rag,crisis});
   }
-
   add('T10Y3M', ser.T10Y3M);
   add('CREDIT', ser.CREDIT);
   add('NFCI',   ser.NFCI);
@@ -501,12 +433,11 @@ function computeLatestKPIs(ser, deriv){
   add('SENTIMENT', deriv.SENTIMENT);
   add('RETAIL_MOMENTUM', deriv.RETAIL_MOMENTUM);
   add('VIX_PROXY', deriv.VIX_PROXY);
-  add('SAHM_RULE', deriv.SAHM_RULE); // display only (weight 0)
-
+  add('SAHM_RULE', deriv.SAHM_RULE); // display only
   return out;
 }
 
-// ---------- History ----------
+/* ===================== HISTORY ===================== */
 function pickAnchorDates(ser){
   const s = ser.SPX?.observations?.length ? ser.SPX
         : ser.T10Y3M?.observations?.length ? ser.T10Y3M
@@ -514,64 +445,62 @@ function pickAnchorDates(ser){
         : ser.NFCI;
   return (s?.observations||[]).filter(o=>isFinite(parseFloat(o.value))).map(o=>o.date);
 }
-function valueOnOrBefore(seriesObs, date){
-  const arr=seriesObs; if(!arr?.length) return null;
-  let lo=0, hi=arr.length-1, ans=null;
-  while(lo<=hi){
-    const mid=(lo+hi)>>1;
-    const d=arr[mid].date;
-    if(d<=date){ ans=arr[mid]; lo=mid+1; } else hi=mid-1;
-  }
-  return ans ? {value:parseFloat(ans.value), date:ans.date} : null;
+function valueOnOrBefore(arr, date){
+  if(!arr?.length) return null;
+  let lo=0,hi=arr.length-1,ans=null;
+  while(lo<=hi){ const mid=(lo+hi)>>1, d=arr[mid].date; if(d<=date){ans=arr[mid]; lo=mid+1}else hi=mid-1 }
+  return ans ? parseFloat(ans.value) : null;
 }
 function buildCompositeHistory(anchorDates, ser, deriv){
   const keys = Object.keys(CONFIG.INDICATORS);
-  const look = (k)=>{
-    if(['VIX_PROXY','SENTIMENT','RETAIL_MOMENTUM','SAHM_RULE','UN_SLOPE6','DD_12M','VALUATION'].includes(k)){
-      return deriv[k] || ser[k];
-    }
-    return ser[k];
-  };
+  const look = k => (['VIX_PROXY','SENTIMENT','RETAIL_MOMENTUM','SAHM_RULE','UN_SLOPE6','DD_12M','VALUATION'].includes(k) ? (deriv[k]||ser[k]) : ser[k]);
 
-  const obs = {};
+  const obs={};
   for(const k of keys){
-    const src = look(k);
-    if(!src?.observations) continue;
-    const arr = src.observations
-      .filter(o=>isFinite(parseFloat(o.value)))
-      .sort((a,b)=>a.date.localeCompare(b.date));
-    obs[k]=arr;
+    const src=look(k); if(!src?.observations) continue;
+    obs[k]=src.observations.filter(o=>isFinite(parseFloat(o.value))).sort((a,b)=>a.date.localeCompare(b.date));
   }
 
   const hist=[];
   for(const d of anchorDates){
-    let sum=0, wsum=0;
+    let sum=0,wsum=0;
     for(const k of keys){
       const arr=obs[k]; if(!arr) continue;
-      const hit = valueOnOrBefore(arr,d);
-      if(!hit) continue;
-      const scaled=SCALE[k](hit.value);
-      const w=CONFIG.INDICATORS[k].weight; // SAHM has 0
-      sum += scaled*w; wsum += w;
+      const v=valueOnOrBefore(arr,d); if(v==null) continue;
+      const w=CONFIG.INDICATORS[k].weight; sum+=SCALE[k](v)*w; wsum+=w;
     }
-    if(wsum>0) hist.push({date:d, composite: +(sum/wsum).toFixed(2)});
+    if(wsum>0) hist.push({date:d, composite:+(sum/wsum).toFixed(2)});
   }
   return hist;
 }
 
-// ---------- Composite (current, freshness-aware) ----------
+/* ===================== COMPOSITE & AUDIT ===================== */
 function compositeFromKPIs(kpis){
-  let sum=0, wsum=0;
+  let sum=0,wsum=0;
   kpis.forEach(k=>{
-    let w = k.weight;
-    const staleCut = (k.key==='VALUATION') ? 60 : 7;
-    if (daysSince(k.date) > staleCut) w *= 0.5;
-    sum += k.scaled*w; wsum += w;
+    let w=k.weight; const staleCut=(k.key==='VALUATION'?60:7);
+    if(daysSince(k.date)>staleCut) w*=0.5;
+    sum+=k.scaled*w; wsum+=w;
   });
   return wsum>0 ? +(sum/wsum).toFixed(2) : 50;
 }
+function auditMissing(ser, deriv){
+  const need = {
+    T10Y3M:ser.T10Y3M, CREDIT:ser.CREDIT, NFCI:ser.NFCI, UN_SLOPE6:deriv.UN_SLOPE6,
+    VALUATION:deriv.VALUATION||ser.VALUATION, DD_12M:deriv.DD_12M, SENTIMENT:deriv.SENTIMENT,
+    RETAIL_MOMENTUM:deriv.RETAIL_MOMENTUM, VIX_PROXY:deriv.VIX_PROXY, SAHM_RULE:deriv.SAHM_RULE
+  };
+  const missing = Object.entries(need).filter(([,v])=>!v||!v.observations?.length).map(([k])=>k);
+  const box=byId('auditBox');
+  if(missing.length){
+    box.style.display='block';
+    box.innerHTML = `🔎 Missing or empty series in <code>fred_cache.json</code>: <strong>${missing.join(', ')}</strong><br/>
+    Expected keys present? <code>${JSON.stringify(CONFIG.ALIAS)}</code><br/>
+    Tip: open DevTools console and run <code>window.CR_DEBUG()</code> to inspect cache keys.`;
+  }else box.style.display='none';
+}
 
-// ---------- Rendering ----------
+/* ===================== RENDER ===================== */
 function renderTop(kpis, history){
   const composite = compositeFromKPIs(kpis);
   const zone = composite<=30?'green':(composite<=60?'amber':'red');
@@ -581,11 +510,11 @@ function renderTop(kpis, history){
   byId('indicatorsCount').textContent = `Indicators: ${kpis.length}/10`;
   byId('riskFill').style.width = `${composite}%`;
 
-  const missing = Object.keys(CONFIG.INDICATORS).length - kpis.length;
+  // Quality: missing + stale penalty
+  const missing = 10 - kpis.length;
   let stale=0; kpis.forEach(k=>{ if(daysSince(k.date)>(k.key==='VALUATION'?60:7)) stale++; });
   const quality = Math.max(40, 100 - (missing*12 + stale*6));
-  byId('qfill').style.width = quality+'%';
-  byId('qtxt').textContent = quality+'%';
+  byId('qfill').style.width = quality+'%'; byId('qtxt').textContent = quality+'%';
   byId('qual').textContent = 'Quality: '+quality+'%';
 
   const status = zone==='green'?'Normal':(zone==='amber'?'Elevated':'Critical');
@@ -593,38 +522,39 @@ function renderTop(kpis, history){
 
   const alerts = kpis.filter(p=>p.crisis);
   const alertBox = byId('alert');
-  if(composite>=80){
-    alertBox.style.display='block';
-    alertBox.innerHTML = `🚨 <strong>CRITICAL MARKET ALERT</strong> — Stress ${Math.round(composite)}. ${alerts.length} indicator(s) at crisis levels.`;
-  } else if(alerts.length>0){
-    alertBox.style.display='block';
-    alertBox.innerHTML = `⚠️ <strong>ATTENTION</strong> — ${alerts.length} indicator(s) at crisis threshold.`;
-  } else alertBox.style.display='none';
+  if(composite>=80){ alertBox.style.display='block'; alertBox.innerHTML = `🚨 <strong>CRITICAL</strong> — Stress ${Math.round(composite)}. ${alerts.length} indicator(s) at crisis.`; }
+  else if(alerts.length>0){ alertBox.style.display='block'; alertBox.innerHTML = `⚠️ <strong>ATTENTION</strong> — ${alerts.length} indicator(s) at crisis threshold.`; }
+  else alertBox.style.display='none';
 
+  // Simple horizon “risk” dials (heuristics)
   const r1m = Math.round(20 + composite*0.6);
   const r3m = Math.round(30 + composite*0.7);
   const r6m = Math.round(40 + composite*0.8);
-  byId('r1m').textContent = r1m + '%';
-  byId('r3m').textContent = r3m + '%';
-  byId('r6m').textContent = r6m + '%';
+  byId('r1m').textContent = r1m + '%'; byId('r3m').textContent = r3m + '%'; byId('r6m').textContent = r6m + '%';
   byId('m1dir').innerHTML = getTrendIndicator(r1m);
   byId('m3dir').innerHTML = getTrendIndicator(r3m);
   byId('m6dir').innerHTML = getTrendIndicator(r6m);
 
   const insight = CONFIG.INSIGHTS.find(i => composite >= i.min && composite <= i.max);
-  if (insight) { byId('insightText').textContent = insight.text; byId('insightCard').style.display = 'block'; }
-
+  if (insight) { // optional insight card suppressed if no match
+    const cardText = insight.text + (alerts.length? ` (${alerts.length} crisis flag${alerts.length>1?'s':''})`:'');
+    addInsight(cardText);
+  }
   drawTrend(history,'30d');
 }
-function getTrendIndicator(value){ if (value < 30) return '↓ Low Risk'; if (value < 50) return '→ Moderate'; if (value < 70) return '↗ Elevated'; return '↗↑ High Risk'; }
+function getTrendIndicator(v){ if(v<30) return '↓ Low Risk'; if(v<50) return '→ Moderate'; if(v<70) return '↗ Elevated'; return '↗↑ High Risk'; }
+function addInsight(txt){
+  let card=document.querySelector('.card .insight-card'); if(!card){ card=document.createElement('div'); card.className='insight-card'; document.querySelector('.card').appendChild(card); card.innerHTML='<h4>💡 Market Insight</h4><div id="insightText"></div>'; }
+  byId('insightText').textContent = txt;
+}
 
 function pill(node){ node.addEventListener('click',()=>node.classList.toggle('show')); }
 function renderPills(kpis){
   const grid=byId('pillGrid');
   grid.innerHTML = kpis.map(k=>{
-    const staleCut = (k.key==='VALUATION'?60:7);
-    const badge = daysSince(k.date)<=staleCut ? '<span class="badge b-fresh">FRESH</span>' : '<span class="badge b-stale">STALE</span>';
-    const rag = k.rag==='g'?'g':(k.rag==='a'?'a':'r');
+    const staleCut=(k.key==='VALUATION'?60:7);
+    const badge=daysSince(k.date)<=staleCut?'<span class="badge b-fresh">FRESH</span>':'<span class="badge b-stale">STALE</span>';
+    const rag=k.rag==='g'?'g':(k.rag==='a'?'a':'r');
     return `<div class="kpi show" id="pill-${k.key}">
       <h4>${k.label} <span class="dot ${rag}"></span></h4>
       <div class="val">${k.disp}</div>
@@ -633,251 +563,146 @@ function renderPills(kpis){
       <div class="desc">${k.desc}</div>
     </div>`;
   }).join('');
-  kpis.forEach(k=> pill(byId('pill-'+k.key)));
-}
-function renderHeat(kpis){
-  const heat=byId('heat');
-  heat.innerHTML = kpis.map(k=>{
-    const pct = Math.round(k.scaled);
-    const col = pct<30?'var(--green)':(pct<60?'var(--amber)':'var(--red)');
-    return `<div class="cell">
-      <div class="small" style="text-transform:uppercase;font-weight:800">${k.short}</div>
-      <div style="font-weight:800;font-size:26px;margin:6px 0">${k.disp}</div>
-      <div class="bar"><span style="width:${pct}%;background:${col};box-shadow:0 0 8px ${col}"></span></div>
-    </div>`;
-  }).join('');
+  kpis.forEach(k=>pill(byId('pill-'+k.key)));
 }
 
 let charts={};
+function renderHeat(kpis){
+  const heat=byId('heat');
+  heat.innerHTML = kpis.map(k=>{
+    const pct=Math.round(k.scaled), col = pct<30?'var(--green)':(pct<60?'var(--amber)':'var(--red)');
+    return `<div class="cell"><div class="small" style="text-transform:uppercase;font-weight:800">${k.short}</div>
+      <div style="font-weight:800;font-size:26px;margin:6px 0">${k.disp}</div>
+      <div class="bar"><span style="width:${pct}%;background:${col};box-shadow:0 0 8px ${col}"></span></div></div>`;
+  }).join('');
+}
 function renderDecomp(kpis){
   const ctx=byId('decomp').getContext('2d');
-  const adj = kpis.map(k=>{
-    let w=k.weight; const staleCut=(k.key==='VALUATION'?60:7);
-    if(daysSince(k.date)>staleCut) w*=0.5;
-    return {label:k.short, contrib:+(k.scaled*w).toFixed(2), rag:k.rag, disp:k.disp, scaled:k.scaled, w:k.weight};
+  const adj=kpis.filter(k=>k.weight>0).map(k=>{
+    let w=k.weight; const staleCut=(k.key==='VALUATION'?60:7); if(daysSince(k.date)>staleCut) w*=0.5;
+    return {label:k.short,contrib:+(k.scaled*w).toFixed(2),rag:k.rag,disp:k.disp,scaled:k.scaled,w:k.weight};
   });
-  const labels = adj.map(x=>x.label);
-  const data   = adj.map(x=>x.contrib);
-  const colors = adj.map(x=> x.rag==='g'?'#1ec28b':(x.rag==='a'?'#ffc247':'#ff6070'));
+  const labels=adj.map(x=>x.label), data=adj.map(x=>x.contrib), colors=adj.map(x=>x.rag==='g'?'#1ec28b':(x.rag==='a'?'#ffc247':'#ff6070'));
   if(charts.decomp) charts.decomp.destroy();
-  charts.decomp = new Chart(ctx,{
-    type:'bar',
-    data:{labels,datasets:[{data,backgroundColor:colors}]},
-    options:{
-      responsive:true,
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{label:(ctx)=>`${kpis[ctx.dataIndex].label}: ${adj[ctx.dataIndex].disp} (${Math.round(adj[ctx.dataIndex].scaled)} stress, w=${kpis[ctx.dataIndex].weight.toFixed(2)})`}}
-      },
-      scales:{
-        x:{ticks:{color:'#8b96b0'}},
-        y:{ticks:{color:'#8b96b0', callback: v => v + ''},grid:{color:'rgba(255,255,255,.06)'}}
-      }
-    }
-  });
+  charts.decomp=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:colors}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:(c)=>`${kpis[c.dataIndex].label}: ${adj[c.dataIndex].disp} (${Math.round(adj[c.dataIndex].scaled)} stress, w=${kpis[c.dataIndex].weight.toFixed(2)})`}}},
+      scales:{x:{ticks:{color:'#8b96b0'}},y:{ticks:{color:'#8b96b0'},grid:{color:'rgba(255,255,255,.06)'}}}});
 }
 function renderRadar(kpis){
-  const ctx = byId('radarChart').getContext('2d');
-  const labels = kpis.map(k => k.short);
-  const data = kpis.map(k => k.scaled);
-  const colors = kpis.map(k => k.rag==='g'?'#1ec28b':(k.rag==='a'?'#ffc247':'#ff6070'));
-  if (charts.radar) charts.radar.destroy();
-  charts.radar = new Chart(ctx, {
-    type: 'radar',
-    data: { labels, datasets: [{ data, backgroundColor:'rgba(107,158,255,0.2)', borderColor:'#6b9eff',
-      pointBackgroundColor: colors, pointBorderColor:'#fff', pointHoverBackgroundColor:'#fff', pointHoverBorderColor: colors, pointRadius:4, pointHoverRadius:6 }]},
-    options: {
-      responsive:true,
-      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(ctx)=>`${kpis[ctx.dataIndex].label}: ${kpis[ctx.dataIndex].disp} (${Math.round(kpis[ctx.dataIndex].scaled)} stress)`}}},
-      scales:{ r:{ angleLines:{color:'rgba(255,255,255,0.1)'}, grid:{color:'rgba(255,255,255,0.1)'},
-        pointLabels:{color:'#8b96b0',font:{size:11}}, ticks:{color:'#8b96b0',backdropColor:'transparent',callback:(v)=>v+'%'}, min:0, max:100 }}
-  });
+  const ctx=byId('radarChart').getContext('2d');
+  const labels=kpis.map(k=>k.short), data=kpis.map(k=>k.scaled), colors=kpis.map(k=>k.rag==='g'?'#1ec28b':(k.rag==='a'?'#ffc247':'#ff6070'));
+  if(charts.radar) charts.radar.destroy();
+  charts.radar=new Chart(ctx,{type:'radar',data:{labels,datasets:[{data,backgroundColor:'rgba(107,158,255,.2)',borderColor:'#6b9eff',pointBackgroundColor:colors,pointBorderColor:'#fff',pointRadius:4,pointHoverRadius:6}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{r:{angleLines:{color:'rgba(255,255,255,0.1)'},grid:{color:'rgba(255,255,255,0.1)'},pointLabels:{color:'#8b96b0',font:{size:11}},ticks:{color:'#8b96b0',backdropColor:'transparent',callback:v=>v+'%'},min:0,max:100}}});
 }
 function renderCrises(history){
-  const cur = history.length? history[history.length-1].composite : 50;
+  const cur=history.length?history[history.length-1].composite:50;
+  const CRISES=[
+    {name:'2022 Inflation',score:65,date:'2022-06-13',phase:'Rate Shock',duration:'9m',drawdown:'-25%'},
+    {name:'2000 Dot-com',score:78,date:'2001-03-12',phase:'Tech Bubble',duration:'30m',drawdown:'-49%'},
+    {name:'2020 COVID',score:88,date:'2020-03-23',phase:'Pandemic',duration:'2m',drawdown:'-34%'},
+    {name:'2008 GFC',score:92,date:'2008-10-15',phase:'Credit',duration:'18m',drawdown:'-57%'}
+  ];
   const box=byId('crises');
-  const items = [
-    {name:'2022 Inflation',score:65,date:'2022-06-13',phase:'Rate Shock',duration:'9 months',drawdown:'-25%'},
-    {name:'2000 Dot-com',score:78,date:'2001-03-12',phase:'Tech Bubble',duration:'30 months',drawdown:'-49%'},
-    {name:'2020 COVID',score:88,date:'2020-03-23',phase:'Pandemic Shock',duration:'2 months',drawdown:'-34%'},
-    {name:'2008 GFC',score:92,date:'2008-10-15',phase:'Crisis Peak',duration:'18 months',drawdown:'-57%'}
-  ].map(c=>{
-    const sim = Math.max(50, 100 - Math.abs(cur - c.score));
-    const col = sim>70?'var(--red)':'var(--amber)';
-    return `<div class="cell" style="border-radius:12px">
-      <div style="font-weight:800;margin-bottom:6px">${c.name}</div>
+  box.innerHTML=CRISES.map(c=>{
+    const sim=Math.max(50,100-Math.abs(cur-c.score)), col=sim>70?'var(--red)':'var(--amber)';
+    return `<div class="cell" style="border-radius:12px"><div style="font-weight:800;margin-bottom:6px">${c.name}</div>
       <div class="badge" style="margin-bottom:6px">${c.phase}</div>
-      <div class="small">Peak Stress Score</div><div style="font-weight:800">${c.score}</div>
-      <div class="small" style="margin-top:6px">Pattern Similarity</div>
-      <div style="font-weight:800;color:${col}">${Math.round(sim)}%</div>
+      <div class="small">Peak Stress</div><div style="font-weight:800">${c.score}</div>
+      <div class="small" style="margin-top:6px">Similarity</div><div style="font-weight:800;color:${col}">${Math.round(sim)}%</div>
       <div class="small" style="margin-top:6px">Max Drawdown</div><div style="font-weight:800">${c.drawdown}</div>
-      <div class="small" style="margin-top:6px">${c.date} • Duration: ${c.duration}</div>
-    </div>`;
+      <div class="small" style="margin-top:6px">${c.date} • ${c.duration}</div></div>`;
   }).join('');
-  box.innerHTML = items;
   drawCrisisTimeline(history);
 }
 function renderScenarios(history){
-  const cur = history.length? history[history.length-1].composite : 50;
-  const base = Math.max(10, Math.min(80, Math.round(60 - cur*0.2)));
-  const down = Math.max(5, Math.min(80, Math.round(20 + cur*0.4)));
-  const up   = Math.max(5, Math.min(80, 100 - base - down));
+  const cur=history.length?history[history.length-1].composite:50;
+  const base=Math.max(10,Math.min(80,Math.round(60-cur*0.2)));
+  const down=Math.max(5,Math.min(80,Math.round(20+cur*0.4)));
+  const up=Math.max(5,Math.min(80,100-base-down));
   const box=byId('scenarios');
-  box.innerHTML = `
-    <div class="cell"><div style="font-weight:800;margin-bottom:6px">Base Case</div>
+  box.innerHTML=`<div class="cell"><div style="font-weight:800;margin-bottom:6px">Base Case</div>
       <div style="font-size:28px;font-weight:800;background:linear-gradient(135deg,var(--accent-bright),#4a7fe8);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${base}%</div>
-      <div class="small" style="margin-top:6px">Sideways-to-mild volatility; gradual improvement in 3–6m.</div></div>
-    <div class="cell"><div style="font-weight:800;margin-bottom:6px">Downside Risk</div>
+      <div class="small" style="margin-top:6px">Sideways to mild vol; improve in 3–6m.</div></div>
+    <div class="cell"><div style="font-weight:800;margin-bottom:6px">Downside</div>
       <div style="font-size:28px;font-weight:800;color:var(--red)">${down}%</div>
-      <div class="small" style="margin-top:6px">Tighter financial conditions; correction risk.</div></div>
-    <div class="cell"><div style="font-weight:800;margin-bottom:6px">Upside Relief</div>
+      <div class="small" style="margin-top:6px">Tighter conditions; correction risk.</div></div>
+    <div class="cell"><div style="font-weight:800;margin-bottom:6px">Upside</div>
       <div style="font-size:28px;font-weight:800;color:var(--green)">${up}%</div>
-      <div class="small" style="margin-top:6px">Soft-landing prints; easing conditions.</div></div>`;
+      <div class="small" style="margin-top:6px">Soft-landing prints; easing stress.</div></div>`;
   drawTrajectory(cur);
 }
-function renderNewsFeed() {
-  const news = [
-    {title: "Fed Holds Rates Steady, Signals Caution on Inflation", source: "Financial Times", time: "2 hours ago", impact: "medium"},
-    {title: "Q3 GDP Growth Exceeds Expectations at 2.8%", source: "Bloomberg", time: "5 hours ago", impact: "low"},
-    {title: "Corporate Bond Spreads Widen Amid Market Volatility", source: "Reuters", time: "1 day ago", impact: "high"},
-    {title: "Housing Market Shows Signs of Cooling as Rates Bite", source: "WSJ", time: "1 day ago", impact: "medium"},
-    {title: "Oil Prices Surge on Middle East Tensions", source: "CNBC", time: "2 days ago", impact: "high"}
-  ];
-  const calendar = [
-    {event: "FOMC Meeting Minutes", date: "Tomorrow", importance: "high"},
-    {event: "CPI Inflation Data", date: "Nov 14", importance: "high"},
-    {event: "Retail Sales Report", date: "Nov 15", importance: "medium"},
-    {event: "Initial Jobless Claims", date: "Nov 16", importance: "medium"},
-    {event: "Consumer Sentiment", date: "Nov 17", importance: "low"}
-  ];
-  byId('newsFeed').innerHTML = news.map(item => `
-    <div class="cell" style="display:flex;align-items:flex-start;gap:12px;padding:12px">
-      <div style="width:8px;height:8px;border-radius:50%;margin-top:6px;background:${item.impact==='high'?'var(--red)':item.impact==='medium'?'var(--amber)':'var(--green)'}"></div>
-      <div style="flex:1">
-        <div style="font-weight:700;margin-bottom:4px">${item.title}</div>
-        <div class="small">${item.source} • ${item.time}</div>
-      </div>
-    </div>`).join('');
-  byId('economicCalendar').innerHTML = calendar.map(item => `
-    <div class="cell" style="display:flex;justify-content:space-between;align-items:center;padding:12px">
-      <div><div style="font-weight:700;margin-bottom:4px">${item.event}</div>
-        <div class="small">${item.date}</div></div>
-      <span class="badge ${item.importance==='high'?'b-stale':'b-fresh'}">${item.importance.toUpperCase()}</span>
-    </div>`).join('');
+function renderNewsFeed(){
+  const news=[{title:"Bond spreads widen amid equity selloff",source:"Reuters",time:"Today",impact:"high"},
+              {title:"Fed minutes due",source:"FT",time:"Tomorrow",impact:"high"},
+              {title:"Housing shows cooling",source:"WSJ",time:"This week",impact:"medium"}];
+  const cal=[{event:"FOMC Minutes",date:"Tomorrow",importance:"high"},
+             {event:"CPI",date:"Nov 14",importance:"high"},
+             {event:"Retail Sales",date:"Nov 15",importance:"medium"}];
+  byId('newsFeed').innerHTML = news.map(n=>`<div class="cell" style="display:flex;gap:12px;padding:12px">
+    <div style="width:8px;height:8px;border-radius:50%;margin-top:6px;background:${n.impact==='high'?'var(--red)':n.impact==='medium'?'var(--amber)':'var(--green)'}"></div>
+    <div><div style="font-weight:700;margin-bottom:4px">${n.title}</div><div class="small">${n.source} • ${n.time}</div></div></div>`).join('');
+  byId('economicCalendar').innerHTML = cal.map(c=>`<div class="cell" style="display:flex;justify-content:space-between;align-items:center;padding:12px">
+    <div><div style="font-weight:700">${c.event}</div><div class="small">${c.date}</div></div>
+    <span class="badge ${c.importance==='high'?'b-stale':'b-fresh'}">${c.importance.toUpperCase()}</span></div>`).join('');
 }
 
-function drawTrend(history, period='30d'){
+function drawTrend(history,period='30d'){
   const ctx=byId('mainChart').getContext('2d');
-  const sliced = sliceHistory(history, period);
-  const labels = sliced.map(x=>formatLabel(x.date));
-  const data = sliced.map(x=>x.composite);
+  const sliced=sliceHistory(history,period), labels=sliced.map(x=>fmt(x.date)), data=sliced.map(x=>x.composite);
   if(charts.main) charts.main.destroy();
-  charts.main = new Chart(ctx,{
-    type:'line',
-    data:{labels,datasets:[{data,fill:true,tension:0.35,borderWidth:2,borderColor:'#6b9eff',backgroundColor:'rgba(107,158,255,.12)',pointRadius:0}]},
-    options:{
-      responsive:true,
-      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,backgroundColor:'rgba(18,24,43,.95)',titleColor:'#e8eeff',bodyColor:'#8b96b0',callbacks:{label:(c)=>`Stress: ${c.parsed.y}%`}}},
-      scales:{y:{min:0,max:100,ticks:{color:'#8b96b0',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.06)'}},x:{ticks:{color:'#8b96b0'},grid:{color:'rgba(255,255,255,.06)'}}},
-      interaction:{intersect:false,mode:'index'}
-    }
-  });
-}
+  charts.main=new Chart(ctx,{type:'line',data:{labels,datasets:[{data,fill:true,tension:.35,borderWidth:2,borderColor:'#6b9eff',backgroundColor:'rgba(107,158,255,.12)',pointRadius:0}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,backgroundColor:'rgba(18,24,43,.95)',titleColor:'#e8eeff',bodyColor:'#8b96b0',callbacks:{label:(c)=>`Stress: ${c.parsed.y}%`}}},
+    scales:{y:{min:0,max:100,ticks:{color:'#8b96b0',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.06)'}},x:{ticks:{color:'#8b96b0'},grid:{color:'rgba(255,255,255,.06)'}}},interaction:{intersect:false,mode:'index'}}); }
 function drawCrisisTimeline(history){
-  const ctx = byId('crisisTimeline').getContext('2d');
-  const sliced = sliceHistory(history, '5y');
-  const labels = sliced.map(x => { const d=new Date(x.date); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); });
-  const data = sliced.map(x => x.composite);
-  if (charts.crisisTimeline) charts.crisisTimeline.destroy();
-  charts.crisisTimeline = new Chart(ctx, {
-    type: 'line',
-    data: {labels, datasets: [{data,fill:true,tension:0.4,borderWidth:2,borderColor:'#6b9eff',backgroundColor:'rgba(107,158,255,.12)',pointRadius:0,
-      segment:{borderColor: ctx => { const v=ctx.p0.parsed.y; if (v<30) return '#1ec28b'; if (v<60) return '#ffc247'; return '#ff6070'; }}}]},
-    options:{responsive:true,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,backgroundColor:'rgba(18,24,43,.95)',titleColor:'#e8eeff',bodyColor:'#8b96b0'}},
-      scales:{y:{min:0,max:100,ticks:{color:'#8b96b0',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.06)'}},x:{ticks:{color:'#8b96b0',autoSkip:true,maxTicksLimit:10},grid:{color:'rgba(255,255,255,.06)'}}}}
-  });
-}
+  const ctx=byId('crisisTimeline').getContext('2d');
+  const sliced=sliceHistory(history,'5y'), labels=sliced.map(x=>{const d=new Date(x.date);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}); const data=sliced.map(x=>x.composite);
+  if(charts.crisisTimeline) charts.crisisTimeline.destroy();
+  charts.crisisTimeline=new Chart(ctx,{type:'line',data:{labels,datasets:[{data,fill:true,tension:.4,borderWidth:2,borderColor:'#6b9eff',backgroundColor:'rgba(107,158,255,.12)',pointRadius:0,segment:{borderColor:c=>{const v=c.p0.parsed.y;return v<30?'#1ec28b':(v<60?'#ffc247':'#ff6070')}}}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{color:'#8b96b0',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.06)'}},x:{ticks:{color:'#8b96b0',autoSkip:true,maxTicksLimit:10},grid:{color:'rgba(255,255,255,.06)'}}}}); }
 function drawTrajectory(cur){
-  const ctx=byId('traj').getContext('2d');
-  const weeks=26, path=[], upper=[], lower=[];
-  let v=cur;
-  for(let i=0;i<weeks;i++){
-    v = 0.85*v + 0.15*50;
-    const band = 6*Math.sqrt((i+1)/weeks);
-    path.push(+v.toFixed(1));
-    upper.push(Math.min(100, +(v+band).toFixed(1)));
-    lower.push(Math.max(0, +(v-band).toFixed(1)));
-  }
+  const ctx=byId('traj').getContext('2d'); const weeks=26, path=[],upper=[],lower=[]; let v=cur;
+  for(let i=0;i<weeks;i++){ v=0.85*v+0.15*50; const b=6*Math.sqrt((i+1)/weeks); path.push(+v.toFixed(1)); upper.push(Math.min(100,+(v+b).toFixed(1))); lower.push(Math.max(0,+(v-b).toFixed(1))); }
   if(charts.traj) charts.traj.destroy();
-  charts.traj = new Chart(ctx,{
-    type:'line',
-    data:{labels:Array.from({length:weeks},(_,i)=>'W+'+(i+1)),
-      datasets:[
-        {label:'Projected',data:path,borderColor:'#ffc247',borderWidth:2,tension:.35,fill:false},
-        {label:'Upper',data:upper,borderColor:'#ff6070',borderDash:[4,4],borderWidth:1,fill:false},
-        {label:'Lower',data:lower,borderColor:'#1ec28b',borderDash:[4,4],borderWidth:1,fill:false}
-      ]},
-    options:{
-      responsive:true,
-      plugins:{legend:{labels:{color:'#8b96b0'}},tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.y}%`}}},
-      scales:{y:{min:0,max:100,ticks:{color:'#8b96b0',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.06)'}},x:{ticks:{color:'#8b96b0'},grid:{color:'rgba(255,255,255,.06)'}}}
-    }
-  });
-}
+  charts.traj=new Chart(ctx,{type:'line',data:{labels:Array.from({length:weeks},(_,i)=>'W+'+(i+1)),datasets:[{label:'Projected',data:path,borderColor:'#ffc247',borderWidth:2,tension:.35,fill:false},{label:'Upper',data:upper,borderColor:'#ff6070',borderDash:[4,4],borderWidth:1,fill:false},{label:'Lower',data:lower,borderColor:'#1ec28b',borderDash:[4,4],borderWidth:1,fill:false}]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#8b96b0'}}},scales:{y:{min:0,max:100,ticks:{color:'#8b96b0',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.06)'}},x:{ticks:{color:'#8b96b0'},grid:{color:'rgba(255,255,255,.06)'}}}}); }
 
-function sliceHistory(history, period){
-  if(!history.length) return [];
-  if(period==='all') return history;
-  const end = parseDate(history[history.length-1].date);
-  let start = new Date(end);
-  if(period==='30d') start.setDate(start.getDate()-30);
-  else if(period==='90d') start.setDate(start.getDate()-90);
-  else if(period==='6m') start.setMonth(start.getMonth()-6);
-  else if(period==='1y') start.setFullYear(start.getFullYear()-1);
-  else if(period==='2y') start.setFullYear(start.getFullYear()-2);
-  else if(period==='3y') start.setFullYear(start.getFullYear()-3);
-  else if(period==='5y') start.setFullYear(start.getFullYear()-5);
-  return history.filter(x=>parseDate(x.date)>=start);
-}
-function formatLabel(d){ const dt=new Date(d); return dt.toLocaleDateString('en-GB',{month:'short',day:'numeric'}); }
+function sliceHistory(history,period){ if(!history.length) return []; if(period==='all') return history; const end=parseDate(history[history.length-1].date); let start=new Date(end);
+  if(period==='30d') start.setDate(start.getDate()-30); else if(period==='90d') start.setDate(start.getDate()-90);
+  else if(period==='6m') start.setMonth(start.getMonth()-6); else if(period==='1y') start.setFullYear(start.getFullYear()-1);
+  else if(period==='2y') start.setFullYear(start.getFullYear()-2); else if(period==='3y') start.setFullYear(start.getFullYear()-3); else if(period==='5y') start.setFullYear(start.getFullYear()-5);
+  return history.filter(x=>parseDate(x.date)>=start); }
+function fmt(d){const dt=new Date(d);return dt.toLocaleDateString('en-GB',{month:'short',day:'numeric'});}
 
 function setupPeriodButtons(history){
-  if (app.boundPeriods) return;
-  app.boundPeriods = true;
+  if(app.boundPeriods) return; app.boundPeriods=true;
   document.querySelectorAll('.btns button').forEach(b=>{
-    b.addEventListener('click',()=>{
-      document.querySelectorAll('.btns button').forEach(x=>x.classList.remove('active'));
-      b.classList.add('active');
-      drawTrend(history, b.dataset.p);
-    });
+    b.addEventListener('click',()=>{ document.querySelectorAll('.btns button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); drawTrend(history,b.dataset.p); });
   });
 }
 function setupTabs(){
-  if (app.boundTabs) return;
-  app.boundTabs = true;
-  document.querySelectorAll('.tab').forEach(t=>{
-    t.onclick=()=>{
-      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-      t.classList.add('active');
-      const key=t.dataset.t;
-      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-      document.getElementById('view-'+key).classList.add('active');
-    }
-  });
+  if(app.boundTabs) return; app.boundTabs=true;
+  document.querySelectorAll('.tab').forEach(t=>{ t.onclick=()=>{ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); byId('view-'+t.dataset.t).classList.add('active'); }; });
 }
 
-function exportReport(kpis, history){
-  const report={
-    timestamp:new Date().toISOString(),
-    composite: compositeFromKPIs(kpis),
-    quality: byId('qtxt').textContent,
-    indicators: kpis.map(k=>({name:k.label,value:k.disp,status:k.rag,crisis:k.crisis,last:k.date,weight:k.weight}))
-  };
+/* ===================== EXPORT ===================== */
+function exportReport(kpis,history){
+  const report={timestamp:new Date().toISOString(),composite:compositeFromKPIs(kpis),quality:byId('qtxt').textContent,
+    indicators:kpis.map(k=>({name:k.label,value:k.disp,status:k.rag,crisis:k.crisis,last:k.date,weight:k.weight}))};
   const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob); const a=document.createElement('a');
-  a.href=url; a.download=`crash-radar-report-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url);
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`crash-radar-report-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url);
 }
-function refreshData(){ init(); }
+
+/* ===================== CONSOLE DEBUG HELPERS ===================== */
+window.CR_DEBUG = async function(){
+  const res = await fetch(`${CONFIG.FRED_CACHE_PATH}?nocache=${Date.now()}`).then(r=>r.json());
+  console.log('Cache keys:', Object.keys(res));
+  const need = ['T10Y3M','BAMLH0A0HYM2','NFCI','VIXCLS','UMCSENT','RSAFS','UNRATE','SP500','DDDM01USA156NWDB','Q13051USQ156NNBR'];
+  console.table(need.map(k=>({k, present: !!res[k]})));
+  const pick = k => (res[k] && res[k].observations && res[k].observations.slice(-3)) || null;
+  console.log('Sample obs:', {CREDIT:pick('BAMLH0A0HYM2'), SP500:pick('SP500'), VALUATION:pick('DDDM01USA156NWDB')||pick('Q13051USQ156NNBR')});
+};
 </script>
 </body>
 </html>
