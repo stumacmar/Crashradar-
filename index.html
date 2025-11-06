@@ -239,7 +239,8 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
 // ---------- CONFIG ----------
 const CONFIG = {
   FRED_CACHE_PATH: 'data/fred_cache.json',
-  // New robust weighting: leaders (curve/credit/NFCI) carry most; valuation added; Sahm shown but weight 0
+
+  // Economically-robust weights + valuation
   INDICATORS: {
     T10Y3M:{label:'Yield Curve',short:'Yield',weight:0.20,format:v=>v?.toFixed(2)+'%',crisis:-1.0,dir:'below',
       desc:'10y–3m Treasury spread. Inversions typically precede recessions by 6–18 months.'},
@@ -249,20 +250,22 @@ const CONFIG = {
       desc:'Chicago Fed NFCI. >0 = tighter than average; stress rises with + readings.'},
     UN_SLOPE6:{label:'Unemp Slope (6m)',short:'U-Slope6',weight:0.10,format:v=>v?.toFixed(2)+' pp',crisis:0.30,dir:'above',
       desc:'Change in unemployment rate over 6 months (percentage points).'},
-    VALUATION:{label:'Valuation',short:'Valuation',weight:0.10,format:v=>v>20? (v?.toFixed(0)+'% MC/GDP') : (v?.toFixed(2)+'% EY'),
-      crisis: null, dir:'above',
-      desc:'Market-cap/GDP (Buffett Indicator) or Earnings Yield fallback. High MC/GDP or low EY = elevated crash susceptibility.'},
+    VALUATION:{label:'Valuation',short:'Valuation',weight:0.10,
+      format:v=>v>20? (v?.toFixed(0)+'% MC/GDP') : (v?.toFixed(2)+'% EY'),
+      crisis:null,dir:'above',
+      desc:'Market-cap/GDP (Buffett) or Earnings Yield fallback. High MC/GDP or low EY = higher crash susceptibility.'},
     DD_12M:{label:'Market Drawdown',short:'Drawdown',weight:0.08,format:v=>((v??0)*100).toFixed(1)+'%',crisis:-0.25,dir:'below',
       desc:'S&P 500 drawdown from 12-month peak. < −20% = bear territory.'},
     SENTIMENT:{label:'Consumer Sentiment',short:'Sent',weight:0.07,format:v=>v?.toFixed(0),crisis:60,dir:'below',
       desc:'UMich Sentiment. Persistent lows correlate with weak demand & risk-off.'},
     RETAIL_MOMENTUM:{label:'Retail Momentum',short:'Retail',weight:0.05,format:v=>v?.toFixed(1)+'%',crisis:-2.0,dir:'below',
-      desc:'RSAFS 3-m/3-m annualised growth (approx). Weak consumer = macro risk.'},
+      desc:'RSAFS 3m/3m annualised growth. Weaker growth → higher stress.'},
     VIX_PROXY:{label:'Volatility',short:'VIX',weight:0.05,format:v=>v?.toFixed(1),crisis:40,dir:'above',
       desc:'VIXCLS. <15 calm, 15–25 elevated, 25–35 stressed, >35 fear.'},
     SAHM_RULE:{label:'Sahm Rule (flag)',short:'Sahm',weight:0.00,format:v=>v?.toFixed(2),crisis:0.50,dir:'above',
-      desc:'Unemployment 3m avg minus 12m low. Reliable recession flag, but contemporaneous — not weighted.'}
+      desc:'Unemployment 3m avg minus 12m low. Useful flag; not weighted in composite.'}
   },
+
   ALIAS:{
     T10Y3M:['T10Y3M'],
     CREDIT:['BAMLH0A0HYM2'],
@@ -271,10 +274,10 @@ const CONFIG = {
     SENTIMENT:['UMCSENT'],
     RETAIL_BASE:['RSAFS'],
     UNRATE:['UNRATE'],
-    SPX:['SP500'],
-    // Valuation prefers Market-cap/GDP; falls back to Earnings Yield
-    VALUATION:['DDDM01USA156NWDB','Q13051USQ156NNBR']
+    SPX:['SP500','SPX','^GSPC'],         // extra fallbacks okay if your cache uses them
+    VALUATION:['DDDM01USA156NWDB','Q13051USQ156NNBR'] // MC/GDP, fallback Earnings Yield
   },
+
   INSIGHTS: [
     {min: 0, max: 30, text: "Favourable: stress low; keep risk discipline but conditions are benign."},
     {min: 31, max: 50, text: "Moderate stress: review tilts; consider mild defensives."},
@@ -286,36 +289,35 @@ const CONFIG = {
 
 // ---------- SCALE (0–100 where higher = more stress) ----------
 const SCALE = {
-  // Only penalise inversion; positive spread → 0 stress
+  // Inversion stress only; positive spread ~ 0
   T10Y3M:v=>clamp((Math.max(0,-v)/1.5)*100),
+
   // HY OAS: <4% green; 4–5.5% amber; >5.5% red
   CREDIT:v=>{
     if (v<=4.0) return clamp((v/4.0)*10);
     if (v<=5.5) return clamp(10 + ((v-4.0)/1.5)*60);
     return clamp(70 + Math.min(30,(v-5.5)/3.0*30));
   },
+
   NFCI:v=>clamp(((v + 0.80)/1.20)*100),
   UN_SLOPE6:v=>clamp(((v - 0)/0.6)*100),
-  // Adaptive valuation mapping:
-  // If value looks like % Market Cap/GDP (e.g., 120–200), map 100→0 stress, 180→~100.
-  // Else treat as Earnings Yield % (e.g., 4–8) where lower yield → higher stress.
+
+  // Valuation mapper (adaptive to series chosen)
   VALUATION:v=>{
     if (v==null || !isFinite(v)) return 0;
-    if (v>20) { // likely MC/GDP in %
-      return clamp(((v - 100)/80)*100); // 100%→0, 180%→100
-    } else {    // likely Earnings Yield %
-      return clamp(((6 - v)/4)*100);    // 6% neutral; 4% → high stress
-    }
+    if (v>20) return clamp(((v - 100)/80)*100); // MC/GDP in %, 100→0, 180→100
+    return clamp(((6 - v)/4)*100);               // Earnings Yield %, lower → more stress
   },
+
   DD_12M:v=>clamp((0 - v)/0.20*100), // v negative in drawdowns
   SENTIMENT:v=>clamp(((80 - v)/40)*100),
   RETAIL_MOMENTUM:v=>clamp(((2 - v)/4)*100),
   VIX_PROXY:v=>clamp(((v - 12)/23)*100),
-  SAHM_RULE:v=>clamp((v/0.5)*100) // not weighted but displayed
+  SAHM_RULE:v=>clamp((v/0.5)*100) // unweighted but shown
 };
 function clamp(x){return Math.max(0,Math.min(100,x));}
 
-// ---------- LOAD & PREP ----------
+// ---------- LOAD ----------
 let app={ boundPeriods:false, boundTabs:false };
 window.addEventListener('DOMContentLoaded',init);
 
@@ -377,7 +379,11 @@ function showErrorState(){
     </div>`;
 }
 function byId(id){return document.getElementById(id)}
-function resolveSeries(cache, arr){for(const k of arr){if(cache && cache[k]) return cache[k]}return null}
+function resolveSeries(cache, aliases){
+  if(!cache || !aliases) return null;
+  for(const k of aliases){ if(cache[k]) return cache[k]; }
+  return null;
+}
 function lastValidObs(series){
   if(!series?.observations?.length) return null;
   for(let i=series.observations.length-1;i>=0;i--){
@@ -508,7 +514,6 @@ function pickAnchorDates(ser){
         : ser.NFCI;
   return (s?.observations||[]).filter(o=>isFinite(parseFloat(o.value))).map(o=>o.date);
 }
-
 function valueOnOrBefore(seriesObs, date){
   const arr=seriesObs; if(!arr?.length) return null;
   let lo=0, hi=arr.length-1, ans=null;
@@ -519,9 +524,7 @@ function valueOnOrBefore(seriesObs, date){
   }
   return ans ? {value:parseFloat(ans.value), date:ans.date} : null;
 }
-
 function buildCompositeHistory(anchorDates, ser, deriv){
-  // Historical composite excludes freshness penalty (point-in-time)
   const keys = Object.keys(CONFIG.INDICATORS);
   const look = (k)=>{
     if(['VIX_PROXY','SENTIMENT','RETAIL_MOMENTUM','SAHM_RULE','UN_SLOPE6','DD_12M','VALUATION'].includes(k)){
@@ -548,7 +551,7 @@ function buildCompositeHistory(anchorDates, ser, deriv){
       const hit = valueOnOrBefore(arr,d);
       if(!hit) continue;
       const scaled=SCALE[k](hit.value);
-      const w=CONFIG.INDICATORS[k].weight; // SAHM has 0, so included visually but not in composite
+      const w=CONFIG.INDICATORS[k].weight; // SAHM has 0
       sum += scaled*w; wsum += w;
     }
     if(wsum>0) hist.push({date:d, composite: +(sum/wsum).toFixed(2)});
@@ -556,15 +559,13 @@ function buildCompositeHistory(anchorDates, ser, deriv){
   return hist;
 }
 
-// ---------- Composite (current, with freshness penalty) ----------
+// ---------- Composite (current, freshness-aware) ----------
 function compositeFromKPIs(kpis){
   let sum=0, wsum=0;
   kpis.forEach(k=>{
     let w = k.weight;
-    // valuation is slow-moving → don't penalise unless >60d
-    const staleDays = daysSince(k.date);
     const staleCut = (k.key==='VALUATION') ? 60 : 7;
-    if (staleDays>staleCut) w *= 0.5;
+    if (daysSince(k.date) > staleCut) w *= 0.5;
     sum += k.scaled*w; wsum += w;
   });
   return wsum>0 ? +(sum/wsum).toFixed(2) : 50;
@@ -576,7 +577,7 @@ function renderTop(kpis, history){
   const zone = composite<=30?'green':(composite<=60?'amber':'red');
   byId('scoreV').textContent = Math.round(composite);
   byId('needle').style.setProperty('--angle', `${composite*3.6}deg`);
-  byId('partsNote').textContent = `Composite derived from ${kpis.filter(k=>k.weight>0).length} weighted indicators`;
+  byId('partsNote').textContent = `Composite derived from ${kpis.filter(k=>k.weight>0).length} indicators`;
   byId('indicatorsCount').textContent = `Indicators: ${kpis.length}/10`;
   byId('riskFill').style.width = `${composite}%`;
 
