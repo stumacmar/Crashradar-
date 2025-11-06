@@ -208,14 +208,10 @@ h1{
       <div class="badge" aria-live="polite"><span class="live-dot"></span> Live Data</div>
       <div class="badge" id="upd" aria-live="polite">Last Update: --</div>
       <div class="badge" id="qual">Quality: --</div>
-      <div class="badge" id="indicatorsCount">Indicators: --/10</div>
+      <div class="badge" id="indicatorsCount">Indicators: --/9</div>
     </div>
 
     <div class="status-pill" id="regime" role="status" aria-live="polite">--</div>
-    <div class="card" id="auditBox" style="display:none;padding:12px;border:1px dashed rgba(255,96,112,.4);background:rgba(255,96,112,.06);border-radius:12px;margin-top:10px">
-      <div style="font-weight:700;margin-bottom:4px">Data audit</div>
-      <div class="small" id="auditMsg">Checking required series…</div>
-    </div>
     <div class="alert" id="alert" style="display:none" role="alert" aria-live="assertive"></div>
   </header>
 
@@ -378,28 +374,24 @@ const CONFIG = {
   RETRY_DELAY: 1000,
   REQUEST_TIMEOUT: 10000,
   INDICATORS: {
-    T10Y3M:{label:'Yield Curve',short:'Yield',weight:0.20,format:v=>v?.toFixed(2)+'%',crisis:-0.2,severe:-0.5,dir:'below',
+    T10Y3M:{label:'Yield Curve',short:'Yield',weight:0.18,format:v=>v?.toFixed(2)+'%',crisis:-0.2,severe:-0.5,dir:'below',
       desc:'10y–3m Treasury spread.'},
-    CREDIT:{label:'Credit Spread',short:'Credit',weight:0.20,format:v=>v?.toFixed(2)+'%',crisis:4.5,elevated:6.0,severe:8.0,dir:'above',
+    CREDIT:{label:'Credit Spread',short:'Credit',weight:0.16,format:v=>v?.toFixed(2)+'%',crisis:4.5,elevated:6.0,severe:8.0,dir:'above',
       desc:'US HY OAS (BAMLH0A0HYM2).'},
-    SAHM_RULE:{label:'Sahm Rule',short:'Sahm',weight:0.00,format:v=>v?.toFixed(2),crisis:0.50,watch:0.20,caution:0.35,dir:'above',
+    SAHM_RULE:{label:'Sahm Rule',short:'Sahm',weight:0.20,format:v=>v?.toFixed(2),crisis:0.50,watch:0.20,caution:0.35,dir:'above',
       desc:'Unemployment 3m avg minus 12m low.'},
-    DD_12M:{label:'Market Drawdown',short:'Drawdown',weight:0.08,format:v=>((v??0)*100).toFixed(1)+'%',correction:-0.10,crisis:-0.20,severe:-0.30,dir:'below',
+    DD_12M:{label:'Market Drawdown',short:'Drawdown',weight:0.15,format:v=>((v??0)*100).toFixed(1)+'%',correction:-0.10,crisis:-0.20,severe:-0.30,dir:'below',
       desc:'S&P 500 drawdown from 12m peak.'},
-    UN_SLOPE6:{label:'Unemp Slope (6m)',short:'U-Slope6',weight:0.10,format:v=>v?.toFixed(2)+' pp',crisis:0.30,warning:0.15,dir:'above',
+    UN_SLOPE6:{label:'Unemp Slope (6m)',short:'U-Slope6',weight:0.08,format:v=>v?.toFixed(2)+' pp',crisis:0.30,warning:0.15,dir:'above',
       desc:'Δ unemployment over 6 months.'},
-    NFCI:{label:'Financial Conditions',short:'NFCI',weight:0.15,format:v=>v?.toFixed(3),crisis:0.50,elevated:0.80,severe:1.50,dir:'above',
+    NFCI:{label:'Financial Conditions',short:'NFCI',weight:0.13,format:v=>v?.toFixed(3),crisis:0.50,elevated:0.80,severe:1.50,dir:'above',
       desc:'Chicago Fed NFCI.'},
-    VIX_PROXY:{label:'Volatility',short:'VIX',weight:0.05,format:v=>v?.toFixed(1),elevated:25,crisis:35,panic:50,dir:'above',
+    VIX_PROXY:{label:'Volatility',short:'VIX',weight:0.03,format:v=>v?.toFixed(1),elevated:25,crisis:35,panic:50,dir:'above',
       desc:'VIXCLS.'},
-    RETAIL_MOMENTUM:{label:'Retail Momentum',short:'Retail',weight:0.05,format:v=>v?.toFixed(1)+'%',crisis:0.0,severe:-2.0,dir:'below',
+    RETAIL_MOMENTUM:{label:'Retail Momentum',short:'Retail',weight:0.02,format:v=>v?.toFixed(1)+'%',crisis:0.0,severe:-2.0,dir:'below',
       desc:'RSAFS 3m/3m annualised.'},
-    SENTIMENT:{label:'Consumer Sentiment',short:'Sent',weight:0.07,format:v=>v?.toFixed(0),crisis:55,concerned:65,dir:'below',
-      desc:'UMich Sentiment.'},
-    VALUATION:{label:'Valuation',short:'Valuation',weight:0.10,
-      format:v=>v>20? (v?.toFixed(0)+'% MC/GDP') : (v?.toFixed(2)+'% EY'),
-      crisis:null,dir:'above',
-      desc:'Market-cap/GDP (Buffett) or Earnings Yield fallback. High MC/GDP or low EY = higher crash susceptibility.'}
+    SENTIMENT:{label:'Consumer Sentiment',short:'Sent',weight:0.05,format:v=>v?.toFixed(0),crisis:55,concerned:65,dir:'below',
+      desc:'UMich Sentiment.'}
   },
   ALIAS:{
     T10Y3M:['T10Y3M'],
@@ -409,8 +401,7 @@ const CONFIG = {
     SENTIMENT:['UMCSENT'],
     RETAIL_BASE:['RSAFS'],
     UNRATE:['UNRATE'],
-    SPX:['SP500','SPX','^GSPC'],
-    VALUATION:['DDDM01USA156NWDB','Q13051USQ156NNBR'] /* MC/GDP primary, Earnings Yield fallback */
+    SPX:['SP500']
   },
   CRISES:[
     {name:'2022 Inflation',score:65,date:'2022-06-13',phase:'Rate Shock',duration:'9 months',drawdown:'-25%'},
@@ -436,14 +427,7 @@ const SCALE = {
   NFCI:v=>{ if(v<=-0.3)return 0; if(v<=0.3)return((v+0.3)/0.6)*40; if(v<=0.8)return 40+((v-0.3)/0.5)*35; return 75+Math.min(25,((v-0.8)/0.7)*25); },
   VIX_PROXY:v=>{ if(v<15)return 0; if(v<25)return((v-15)/10)*40; if(v<35)return 40+((v-25)/10)*35; return 75+Math.min(25,((v-35)/15)*25); },
   RETAIL_MOMENTUM:v=>{ if(v>=4)return 0; if(v>=0)return((4-v)/4)*50; return 50+Math.min(50,((-v)/4)*50); },
-  SENTIMENT:v=>{ if(v>=90)return 0; if(v>=75)return((90-v)/15)*30; if(v>=55)return 30+((75-v)/20)*45; return 75+Math.min(25,((55-v)/15)*25); },
-  VALUATION:v=>{
-    if (v==null || !isFinite(v)) return 0;
-    // If value is >20 we treat it as MC/GDP % (typical range 70–200+).
-    if (v>20) return clamp(((v - 100)/80)*100); // 100 → 0 stress, 180 → 100 stress
-    // Otherwise treat as Earnings Yield % (typical 3–8%); lower yield = more stress.
-    return clamp(((6 - v)/4)*100);               // 6%→0 stress, 2%→100 stress
-  }
+  SENTIMENT:v=>{ if(v>=90)return 0; if(v>=75)return((90-v)/15)*30; if(v>=55)return 30+((75-v)/20)*45; return 75+Math.min(25,((55-v)/15)*25); }
 };
 function clamp(x){return Math.max(0,Math.min(100,x));}
 
@@ -531,7 +515,6 @@ function buildDerived(ser){
   }
   if(ser.VIX) out.VIX_PROXY=ser.VIX;
   if(ser.UMCSENT) out.SENTIMENT=ser.UMCSENT;
-  if(ser.VALUATION) out.VALUATION=ser.VALUATION; // pass-through (monthly/quarterly ok)
   return out;
 }
 function obsMap(observations){ const m={}; for(const o of observations){ const v=parseFloat(o.value); if(!isFinite(v)) continue; const ym=o.date.slice(0,7); m[ym]=v; } return m; }
@@ -542,7 +525,7 @@ function computeLatestKPIs(ser,deriv){
   function add(key, source){
     const def=defs[key]; const lv=lastValidObs(source); if(!lv) return;
     const raw=lv.value; const scaled=SCALE[key](raw); const rag=scaled<30?'g':(scaled<60?'a':'r');
-    const crisis = def.crisis==null ? false : (def.dir==='below' ? raw<=def.crisis : raw>=def.crisis);
+    const crisis = def.dir==='below' ? raw<=def.crisis : raw>=def.crisis;
     out.push({ key,label:def.label,short:def.short,desc:def.desc,weight:def.weight,date:lv.date,raw,scaled,disp:def.format(raw),rag,crisis });
   }
   add('T10Y3M', ser.T10Y3M);
@@ -554,7 +537,6 @@ function computeLatestKPIs(ser,deriv){
   add('SAHM_RULE', deriv.SAHM_RULE);
   add('UN_SLOPE6', deriv.UN_SLOPE6);
   add('DD_12M', deriv.DD_12M);
-  add('VALUATION', deriv.VALUATION || ser.VALUATION);
   return out;
 }
 
@@ -578,7 +560,7 @@ function valueOnOrBefore(seriesObs,date){
 
 function buildCompositeHistory(anchorDates,ser,deriv){
   const keys=Object.keys(CONFIG.INDICATORS);
-  const look=(k)=> (['VIX_PROXY','SENTIMENT','RETAIL_MOMENTUM','SAHM_RULE','UN_SLOPE6','DD_12M','VALUATION'].includes(k) ? (deriv[k]||ser[k]) : ser[k]);
+  const look=(k)=> (k==='VIX_PROXY'||k==='SENTIMENT'||k==='RETAIL_MOMENTUM'||k==='SAHM_RULE'||k==='UN_SLOPE6'||k==='DD_12M') ? deriv[k] : ser[k];
   const obs={};
   for(const k of keys){
     const src=look(k); if(!src?.observations) continue;
@@ -606,11 +588,11 @@ function renderTop(kpis,history){
   scoreEl.setAttribute('aria-label',`Composite stress score: ${Math.round(composite)} out of 100`);
   byId('needle').style.setProperty('--angle', `${composite*3.6}deg`);
   byId('partsNote').textContent=`Composite derived from ${kpis.length} indicators`;
-  byId('indicatorsCount').textContent=`Indicators: ${kpis.length}/10`;
+  byId('indicatorsCount').textContent=`Indicators: ${kpis.length}/9`;
   const riskFill=byId('riskFill'); riskFill.style.width=`${composite}%`; riskFill.parentElement.setAttribute('aria-valuenow',Math.round(composite));
   const now=new Date(); const missing=Object.keys(CONFIG.INDICATORS).length - kpis.length;
-  let stale=0; kpis.forEach(k=>{ if(daysSince(k.date)>60) stale++; }); // allow 60d window for slow series (valuation etc.)
-  const quality=Math.max(30, 100 - (missing*12 + stale*6));
+  let stale=0; kpis.forEach(k=>{ if(daysSince(k.date)>7) stale++; });
+  const quality=Math.max(40, 100 - (missing*12 + stale*6));
   byId('qfill').style.width=quality+'%'; byId('qtxt').textContent=quality+'%'; byId('qual').textContent='Quality: '+quality+'%';
   byId('upd').textContent='Last Update: ' + now.toLocaleTimeString();
 
@@ -634,30 +616,9 @@ function renderTop(kpis,history){
 
   const insight=CONFIG.INSIGHTS.find(i=>composite>=i.min && composite<=i.max);
   if(insight){ byId('insightText').textContent=insight.text; byId('insightCard').style.display='block'; }
-
   drawTrend(history,'30d');
-
-  // Audit panel
-  runAudit(kpis);
 }
 function getTrendIndicator(v){ if(v<30) return '<span aria-hidden="true">↓</span> Low Risk'; if(v<50) return '<span aria-hidden="true">→</span> Moderate'; if(v<70) return '<span aria-hidden="true">↗</span> Elevated'; return '<span aria-hidden="true">↗↑</span> High Risk'; }
-
-function runAudit(kpis){
-  const required = Object.keys(CONFIG.INDICATORS);
-  const have = new Set(kpis.map(k=>k.key));
-  const missing = required.filter(k=>!have.has(k));
-  const stale = kpis.filter(k=>daysSince(k.date)>60).map(k=>k.key);
-  const box = byId('auditBox'); const msg = byId('auditMsg');
-  if(missing.length || stale.length){
-    box.style.display='block';
-    const parts=[];
-    if(missing.length) parts.push(`Missing: ${missing.join(', ')}`);
-    if(stale.length) parts.push(`Stale (>60d): ${stale.join(', ')}`);
-    msg.textContent = parts.join(' • ');
-  } else {
-    box.style.display='none';
-  }
-}
 
 function pill(node){
   node.addEventListener('click',()=>node.classList.toggle('show'));
@@ -670,7 +631,7 @@ const fadeInStyle=document.createElement('style'); fadeInStyle.textContent='@key
 function renderPills(kpis){
   const grid=byId('pillGrid'); const frag=document.createDocumentFragment();
   kpis.forEach((k,idx)=>{
-    const fresh=daysSince(k.date)<=60 ? '<span class="badge b-fresh">FRESH</span>' : '<span class="badge b-stale">STALE</span>';
+    const fresh=daysSince(k.date)<=7 ? '<span class="badge b-fresh">FRESH</span>' : '<span class="badge b-stale">STALE</span>';
     const rag=k.rag==='g'?'g':(k.rag==='a'?'a':'r');
     const div=document.createElement('div');
     div.className='kpi show'; div.id=`pill-${k.key}`; div.setAttribute('aria-label',`${k.label}: ${k.disp}`);
@@ -897,8 +858,7 @@ async function init(){
     if(!window.Chart) throw new Error('Chart.js library failed to load.');
     const cache=await loadDataWithRetry();
     const s=k=> resolveSeries(cache, CONFIG.ALIAS[k]);
-    const ser={ T10Y3M:s('T10Y3M'), CREDIT:s('CREDIT'), NFCI:s('NFCI'), VIX:s('VIX_PROXY'), UMCSENT:s('SENTIMENT'),
-               RSAFS:s('RETAIL_BASE'), UNRATE:s('UNRATE'), SPX:s('SPX'), VALUATION:s('VALUATION') };
+    const ser={ T10Y3M:s('T10Y3M'), CREDIT:s('CREDIT'), NFCI:s('NFCI'), VIX:s('VIX_PROXY'), UMCSENT:s('SENTIMENT'), RSAFS:s('RETAIL_BASE'), UNRATE:s('UNRATE'), SPX:s('SPX') };
     const deriv=buildDerived(ser);
     const kpis=computeLatestKPIs(ser,deriv);
     const anchors=pickAnchorDates(ser);
