@@ -140,6 +140,7 @@ h1{
 .view{display:none;animation:fadeIn 0.3s ease}
 .view.active{display:block}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
 .gauge{
   display:flex;
   gap:24px;
@@ -220,6 +221,7 @@ h1{
   margin-top:4px;
   text-align:center
 }
+
 .kpi-grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
@@ -252,8 +254,8 @@ h1{
 .dot.a{background:var(--amber);box-shadow:0 0 8px var(--amber)}
 .dot.r{background:var(--red);box-shadow:0 0 8px var(--red)}
 .small{font-size:10px;color:var(--muted)}
-.kpi .val{font-size:18px;font-weight:700;margin:4px 0 2px}
-.kpi .zscore{font-size:11px;font-weight:600;color:var(--accent-bright);margin-bottom:2px}
+.val{font-size:18px;font-weight:700;margin:4px 0 2px}
+.zscore{font-size:11px;font-weight:600;color:var(--accent-bright);margin-bottom:2px}
 .desc{
   font-size:10px;
   color:var(--muted);
@@ -270,6 +272,7 @@ h1{
   font-size:12px;
   color:var(--accent-bright)
 }
+
 .insight-card{
   background:linear-gradient(135deg,rgba(107,158,255,.08),rgba(139,187,255,.03));
   border:1px solid rgba(107,158,255,.18);
@@ -286,6 +289,7 @@ h1{
   color:var(--accent-bright);
   font-size:12px;
 }
+
 .methodology{
   background:rgba(255,255,255,.02);
   border:1px solid rgba(255,255,255,.06);
@@ -302,12 +306,14 @@ h1{
 }
 .methodology ul{margin-left:16px;margin-top:4px}
 .methodology li{margin:4px 0}
+
 .audit-list{
   font-size:10px;
   color:var(--muted);
   margin-top:4px;
 }
 .audit-list div{margin-bottom:2px}
+
 @media (max-width:768px){
   .gauge{flex-direction:column;align-items:center}
   .wrap{padding:16px 10px 40px}
@@ -325,25 +331,25 @@ h1{
     <div>
       <h1>📊 Economic Stress Index (ESI)</h1>
       <div class="subtitle">
-        Composite U.S. recession & financial-stress monitor built on transparent, auditable rules.
-        No official Fed/IMF endorsement. Calibrate before using with real size.
+        Live U.S. stress monitor using FRED data. Transparent rules. No fake endorsements.
+        Calibrate and backtest before you size risk.
       </div>
       <div class="badges">
-        <div class="badge"><span class="live-dot"></span> Demo data & production-ready wiring hooks</div>
+        <div class="badge"><span class="live-dot"></span><span id="dataMode">Awaiting FRED API key…</span></div>
         <div class="badge" id="upd">Updated: --</div>
-        <div class="badge">11 indicators • Z-score inputs • 60/30/10 structure</div>
-        <div class="badge">Equal-weight within buckets (Arrigoni–Bobasu–Venditti 2022 inspired)</div>
+        <div class="badge">11 indicators • Z-score inputs • 60 / 30 / 10 weighting</div>
+        <div class="badge">Equal-weight within buckets (Arrigoni–Bobasu–Venditti-style simplicity)</div>
       </div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn" id="refreshBtn">🔄 Recompute</button>
+      <button class="btn" id="refreshBtn">🔄 Refresh now</button>
       <button class="btn" id="exportBtn">📥 Export snapshot JSON</button>
     </div>
   </div>
 
   <div class="status-pill" id="regime">
-    <span style="width:12px;height:12px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)"></span>
-    <span>ESI Z-Score: -- | Normal (uncalibrated demo)</span>
+    <span style="width:12px;height:12px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber)"></span>
+    <span>ESI Z-Score: -- | Not computed (no or bad data)</span>
   </div>
 
   <div class="alert" id="alert" style="display:none"></div>
@@ -362,11 +368,11 @@ h1{
         <h2 style="margin:0 0 4px;font-size:18px">Economic Stress Index — Core Read</h2>
         <div class="small" id="esiSummary">
           Composite of stress-aligned z-scores:
-          60% leading cycle indicators, 30% financial conditions, 10% coincident/confirmatory.
+          60% leading indicators, 30% financial conditions, 10% coincident/confirmatory.
         </div>
 
         <div style="margin-top:10px;padding:9px;background:rgba(255,255,255,.03);border-radius:8px">
-          <div class="small" style="margin-bottom:6px">Current composite (demo inputs):</div>
+          <div class="small" style="margin-bottom:6px">Current composite:</div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
             <div>
               <div class="small">ESI Z-Score</div>
@@ -382,39 +388,40 @@ h1{
             </div>
           </div>
           <div class="small" style="margin-top:4px">
-            *Percentile assumes ESI has been standardized vs its own 1985+ history.
-            In this demo, treat as illustrative only.
+            *Percentile assumes ESI_z is calibrated vs its own 1985+ history.
+            Until you run that calibration, treat this as indicative only.
           </div>
         </div>
 
         <div style="margin-top:10px">
-          <div class="small">Regime guide (applied to calibrated ESI Z):</div>
+          <div class="small">Regime guide (once calibrated):</div>
           <div style="margin-top:4px;font-size:10px;line-height:1.7">
-            <div>&lt; 0.5σ — <span style="color:var(--green);font-weight:700">Normal</span> (no broad stress)</div>
-            <div>0.5–1.0σ — <span style="color:var(--amber);font-weight:700">Elevated</span> (tightening, raised vigilance)</div>
-            <div>1.0–2.0σ — <span style="color:var(--red);font-weight:700">High</span> (clustered warnings, act on risk)</div>
-            <div>&gt;= 2.0σ — <span style="color:var(--red);font-weight:700">Critical</span> (historically rare, crisis/recession odds high)</div>
+            <div>&lt; 0.5σ — <span style="color:var(--green);font-weight:700">Normal</span></div>
+            <div>0.5–1.0σ — <span style="color:var(--amber);font-weight:700">Elevated</span></div>
+            <div>1.0–2.0σ — <span style="color:var(--red);font-weight:700">High</span></div>
+            <div>&gt;= 2.0σ — <span style="color:var(--red);font-weight:700">Critical</span></div>
           </div>
         </div>
       </div>
     </div>
 
     <div class="insight-card" id="insightCard" style="display:none">
-      <h4>💡 ESI Read (demo)</h4>
+      <h4>💡 ESI Read</h4>
       <div id="insightText"></div>
     </div>
 
     <div class="methodology">
-      <h4>Methodology Snapshot (what this code actually does)</h4>
+      <h4>What this implementation actually does</h4>
       <ul>
-        <li>Inputs are <strong>stress-aligned z-scores</strong>: each series standardized on its own history so that higher = more stress.
-        </li>
-        <li>Within each bucket (Leading / Financial / Nowcast), indicators are <strong>equally weighted</strong>.</li>
-        <li>Bucket means are combined as: <strong>ESI_raw = 0.6·Z_leading + 0.3·Z_financial + 0.1·Z_nowcast</strong>.</li>
-        <li>ESI is then <strong>standardized</strong>: ESI_z = (ESI_raw − μ_ESI) / σ_ESI using historical ESI distribution. 
-            In this file μ_ESI and σ_ESI are placeholders — calibrate from data before using operationally.</li>
-        <li>Indicator set & orientation based on Fed/IMF/academic literature (yield curve, NFCI, HY spreads, permits, ISM, claims, hours, sentiment, IP, Sahm), 
-            but thresholds here are <strong>documented heuristics</strong>, not claimed as official “Fed rules”.</li>
+        <li>Pulls history for each indicator from FRED (where available) using your API key. [oai_citation:0‡FRED](https://fred.stlouisfed.org/docs/api/fred/?utm_source=chatgpt.com)</li>
+        <li>Computes <strong>stress-aligned z-scores</strong>:
+          each series standardized on its own history since 1985 (configurable), oriented so higher = more stress.</li>
+        <li>Within each bucket (Leading / Financial / Nowcast), indicators are <strong>equal-weighted</strong>.</li>
+        <li>Composite raw index:
+          <strong>ESI_raw = 0.6·Z_leading + 0.3·Z_financial + 0.1·Z_nowcast</strong>.</li>
+        <li>ESI_z = (ESI_raw − μ_ESI) / σ_ESI, where μ_ESI and σ_ESI must be estimated from historical ESI_raw.
+          In this file they default to 0/1 until you run a real calibration.</li>
+        <li>No “Fed-approved” marketing. Thresholds and mappings are documented and auditable.</li>
       </ul>
     </div>
   </div>
@@ -422,18 +429,18 @@ h1{
   <div class="tabs">
     <button class="tab active" data-t="overview">Indicator Dashboard</button>
     <button class="tab" data-t="audit">Data Integrity & Weights</button>
-    <button class="tab" data-t="methodology">Sources & Notes</button>
+    <button class="tab" data-t="methodology">Sources & Caveats</button>
   </div>
 
   <div id="view-overview" class="view active">
     <div class="card">
-      <div class="category-header">🚀 Leading Indicators (target 60% weight) • 3–18m ahead</div>
+      <div class="category-header">🚀 Leading Indicators (60%) • 3–18m</div>
       <div class="kpi-grid" id="leadingGrid"></div>
 
-      <div class="category-header">💰 Financial Conditions (target 30% weight) • 0–24m</div>
+      <div class="category-header">💰 Financial Conditions (30%) • 0–24m</div>
       <div class="kpi-grid" id="financialGrid"></div>
 
-      <div class="category-header">📉 Confirmatory / Nowcast (target 10% weight)</div>
+      <div class="category-header">📉 Confirmatory / Nowcast (10%)</div>
       <div class="kpi-grid" id="nowcastGrid"></div>
     </div>
   </div>
@@ -441,29 +448,29 @@ h1{
   <div id="view-audit" class="view">
     <div class="card">
       <h3 style="margin-bottom:6px;font-size:15px">Data Integrity & Composite Audit</h3>
-      <div class="small" id="auditSummary">--</div>
+      <div class="small" id="auditSummary">Loading…</div>
       <div class="audit-list" id="auditDetails"></div>
     </div>
   </div>
 
   <div id="view-methodology" class="view">
     <div class="card">
-      <h3 style="margin-bottom:6px;font-size:15px">Methodology, Sources & Caveats</h3>
+      <h3 style="margin-bottom:6px;font-size:15px">Methodology, Series & Caveats</h3>
       <div class="small">
-        Key references (non-exhaustive, you are expected to read them):
+        Key references (you can verify yourself):
       </div>
       <ul class="small" style="margin-left:16px;margin-top:4px;line-height:1.6">
-        <li>Yield curve as predictor: Bauer &amp; Mertens (2018), SF Fed; Near-term forward spread, FEDS 2018-055. [oai_citation:0‡Federal Reserve Bank of San Francisco](https://www.frbsf.org/research-and-insights/publications/economic-letter/2018/08/information-in-yield-curve-about-future-recessions?utm_source=chatgpt.com)</li>
-        <li>Equal-weight FCIs: Arrigoni, Bobasu &amp; Venditti (2022), <em>IMF Economic Review</em>. [oai_citation:1‡SpringerLink](https://link.springer.com/article/10.1057/s41308-022-00170-y?utm_source=chatgpt.com)</li>
-        <li>NFCI construction: Chicago Fed NFCI documentation. [oai_citation:2‡chicagofed.org](https://www.chicagofed.org/-/media/publications/nfci/nfci-faqs-pdf.pdf?utm_source=chatgpt.com)</li>
-        <li>Sahm Rule: Claudia Sahm (2019), Brookings; FRED SAHMREALTIME. [oai_citation:3‡FRED](https://fred.stlouisfed.org/series/SAHMREALTIME?utm_source=chatgpt.com)</li>
+        <li>Yield curve as predictor: Bauer &amp; Mertens (2018), SF Fed; near-term forward spread. [oai_citation:1‡FRED](https://fred.stlouisfed.org/docs/api/fred/?utm_source=chatgpt.com)</li>
+        <li>Equal-weight FCIs robustness: Arrigoni, Bobasu &amp; Venditti (2022), IMF Economic Review.</li>
+        <li>NFCI documentation: Chicago Fed NFCI. </li>
+        <li>Sahm Rule: Claudia Sahm (2019), Brookings; SAHMREALTIME in FRED.</li>
       </ul>
       <div class="small" style="margin-top:6px">
-        This implementation:
+        This code:
         <ul style="margin-left:16px;margin-top:2px">
-          <li>Does <strong>not</strong> claim official “Fed-validated thresholds”. Where a threshold is inspired by research, say so explicitly.</li>
-          <li>Requires you to calibrate μ_ESI and σ_ESI from full-sample history of ESI_raw before treating regimes as quantitative.</li>
-          <li>Exposes, rather than hides, missing data and effective weights.</li>
+          <li>Does not claim any series or cutoff is “official”. It exposes the math so you (or a CIO) can rip it apart.</li>
+          <li>Relies on client-side z-score estimation from FRED history; for production, you should move this to a backend or cached job.</li>
+          <li>Requires you to run a historical backtest vs NBER dates before you trust specific σ cutoffs with serious capital.</li>
         </ul>
       </div>
     </div>
@@ -474,216 +481,187 @@ h1{
 'use strict';
 
 /**
- * CONFIG:
- * - We assume each indicator's `z` is a stress-aligned z-score:
- *   >0 = more stress than its own historical mean, in σ units.
- * - DEMO block below is placeholder. Wire FRED/primary data in production.
+ * IMPORTANT:
+ * - Set your API key securely. For local/dev, you can define:
+ *     <script>window.FRED_API_KEY = 'your_key_here';</script>
+ *   BEFORE this script.
+ * - Do NOT commit your real key into a public repo.
  */
-
-const CONFIG = {
-  buckets: {
-    LEADING:  { label: 'Leading',    weight: 0.6, gridId: 'leadingGrid' },
-    FINANCIAL:{ label: 'Financial',  weight: 0.3, gridId: 'financialGrid' },
-    NOWCAST:  { label: 'Nowcast',    weight: 0.1, gridId: 'nowcastGrid' }
-  },
-  // TODO: set these from historical ESI_raw distribution over your chosen sample.
-  ESI_MEAN: 0.0,
-  ESI_STD:  1.0,
-  staleDays: {
-    weekly: 14,
-    monthly: 45
-  }
-};
+const FRED_API_KEY = (window.FRED_API_KEY || 'YOUR_FRED_API_KEY_HERE').trim();
 
 /**
- * DEMO DATA:
- * - z = stress-aligned (positive = bad).
- * - lastUpdated is illustrative.
- * - Replace with live fetch and real z-transform in production.
+ * Indicator configuration
+ * Each indicator:
+ *  - bucket: LEADING / FINANCIAL / NOWCAST
+ *  - series_id: FRED series (check & adjust to your preference)
+ *  - orientation:
+ *      'direct'   => higher value = more stress
+ *      'inverted' => lower value = more stress (z is computed on -value)
+ *  - since: observation_start for z calibration
+ *
+ * NOTE:
+ * - Series IDs used are standard/common, but you MUST verify each against FRED.
+ * - If a specific choice is wrong for your spec, change it here explicitly.
  */
-const DEMO_DATA = {
-  LEADING: {
-    T10Y3M: {
-      label:'Yield Curve (10y-3m)',
-      value:-0.20,
-      unit:'pp',
-      z:1.4,
-      freq:'daily',
-      lastUpdated:'2025-11-06',
-      note:'Stress when near/ below 0; Bauer & Mertens (2018).',
-      source:'SF Fed / FRED'
-    },
-    BUILDING_PERMITS: {
-      label:'Building Permits (6m % chg)',
-      value:-8.0,
-      unit:'%',
-      z:0.8,
-      freq:'monthly',
-      lastUpdated:'2025-10-30',
-      note:'Housing slowdown as classic early warning.',
-      source:'Census / FRED'
-    },
-    INITIAL_CLAIMS: {
-      label:'Initial Claims (4w avg)',
-      value:230000,
-      unit:'',
-      z:0.2,
-      freq:'weekly',
-      lastUpdated:'2025-11-02',
-      note:'Z based on deviation from cycle lows, not naive level.',
-      source:'DOL / FRED'
-    },
-    ISM_NEW_ORDERS: {
-      label:'ISM New Orders',
-      value:48.5,
-      unit:'',
-      z:0.6,
-      freq:'monthly',
-      lastUpdated:'2025-10-31',
-      note:'Below 50 = contraction risk.',
-      source:'ISM'
-    },
-    CONSUMER_SENTIMENT: {
-      label:'Consumer Sentiment (U-Mich)',
-      value:72.0,
-      unit:'',
-      z:0.5,
-      freq:'monthly',
-      lastUpdated:'2025-10-28',
-      note:'Low sentiment tends to coincide with/precede recessions.',
-      source:'UMich / FRED'
-    },
-    AVG_HOURS: {
-      label:'Avg Weekly Hours (3m Δ)',
-      value:-0.4,
-      unit:'pp',
-      z:0.7,
-      freq:'monthly',
-      lastUpdated:'2025-10-31',
-      note:'Hours cut before layoffs; leading labor signal.',
-      source:'BLS / FRED'
-    }
-  },
-  FINANCIAL: {
-    CREDIT_SPREAD: {
-      label:'HY OAS',
-      value:4.2,
-      unit:'%',
-      z:0.4,
-      freq:'daily',
-      lastUpdated:'2025-11-06',
-      note:'Credit stress when spreads spike vs history.',
-      source:'ICE / FRED'
-    },
-    NFCI: {
-      label:'NFCI',
-      value:0.05,
-      unit:'',
-      z:0.3,
-      freq:'weekly',
-      lastUpdated:'2025-10-31',
-      note:'>0 = tighter than avg; Chicago Fed NFCI. Not a binary trigger.',
-      source:'Chicago Fed'
-    },
-    VIX: {
-      label:'VIX',
-      value:22,
-      unit:'',
-      z:0.3,
-      freq:'daily',
-      lastUpdated:'2025-11-06',
-      note:'Short vol spike proxy; oriented so higher = more stress.',
-      source:'CBOE'
-    }
-  },
-  NOWCAST: {
-    SAHM_RULE: {
-      label:'Sahm Rule',
-      value:0.15,
-      unit:'pp',
-      z:0.1,
-      freq:'monthly',
-      lastUpdated:'2025-10-31',
-      note:'0.5pp trigger is coincident; here low, so mild stress.',
-      source:'Sahm / FRED'
-    },
-    INDPRO: {
-      label:'Industrial Production (6m % chg)',
-      value:0.8,
-      unit:'%',
-      z:0.2,
-      freq:'monthly',
-      lastUpdated:'2025-10-31',
-      note:'Soft but not recessionary; oriented so weaker = more stress.',
-      source:'Fed / FRED'
-    }
-  }
+const INDICATORS = [
+  { key:'T10Y3M',       bucket:'LEADING',  label:'Yield Curve (10y-3m, T10Y3M)',     series_id:'T10Y3M',       orientation:'inverted', since:'1985-01-01', freq:'daily'  },
+  { key:'PERMIT',       bucket:'LEADING',  label:'Building Permits (PERMIT)',        series_id:'PERMIT',       orientation:'inverted', since:'1985-01-01', freq:'monthly'},
+  { key:'ICSA',         bucket:'LEADING',  label:'Initial Claims (ICSA)',            series_id:'ICSA',         orientation:'direct',   since:'1985-01-01', freq:'weekly' },
+  { key:'NAPMNOI',      bucket:'LEADING',  label:'ISM New Orders (NAPMNOI)',         series_id:'NAPMNOI',      orientation:'inverted', since:'1985-01-01', freq:'monthly'},
+  { key:'UMCSENT',      bucket:'LEADING',  label:'Consumer Sentiment (UMCSENT)',     series_id:'UMCSENT',      orientation:'inverted', since:'1985-01-01', freq:'monthly'},
+  { key:'AWHMAN',       bucket:'LEADING',  label:'Avg Weekly Hours Mfg (AWHMAN)',    series_id:'AWHMAN',       orientation:'inverted', since:'1985-01-01', freq:'monthly'},
+
+  { key:'BAMLH0A0HYM2', bucket:'FINANCIAL',label:'HY OAS (BAMLH0A0HYM2)',            series_id:'BAMLH0A0HYM2', orientation:'direct',   since:'1997-01-01', freq:'daily'  },
+  { key:'NFCI',         bucket:'FINANCIAL',label:'NFCI',                             series_id:'NFCI',         orientation:'direct',   since:'1985-01-01', freq:'weekly' },
+  { key:'VIXCLS',       bucket:'FINANCIAL',label:'VIX (VIXCLS)',                     series_id:'VIXCLS',       orientation:'direct',   since:'1990-01-01', freq:'daily'  },
+
+  { key:'SAHMREALTIME', bucket:'NOWCAST',  label:'Sahm Rule (SAHMREALTIME)',         series_id:'SAHMREALTIME', orientation:'direct',   since:'1976-01-01', freq:'monthly'},
+  { key:'INDPRO',       bucket:'NOWCAST',  label:'Industrial Production (INDPRO)',   series_id:'INDPRO',       orientation:'inverted', since:'1985-01-01', freq:'monthly'}
+];
+
+// Bucket weights
+const BUCKETS = {
+  LEADING:   { label:'Leading',   weight:0.6, gridId:'leadingGrid' },
+  FINANCIAL: { label:'Financial', weight:0.3, gridId:'financialGrid' },
+  NOWCAST:   { label:'Nowcast',   weight:0.1, gridId:'nowcastGrid' }
 };
 
-function isStale(ind){
-  if (!ind.lastUpdated) return true;
-  const last = new Date(ind.lastUpdated);
-  if (isNaN(last)) return true;
-  const now = new Date();
-  const days = (now - last)/(1000*60*60*24);
-  let max = 60;
-  if (ind.freq === 'weekly') max = CONFIG.staleDays.weekly;
-  if (ind.freq === 'monthly') max = CONFIG.staleDays.monthly;
-  return days > max;
+// Staleness thresholds (days)
+const STALE = {
+  daily:   7,
+  weekly:  21,
+  monthly: 75
+};
+
+// ESI historical calibration placeholders
+// For production: compute from full historical ESI_raw series and hard-code / serve.
+const ESI_CAL = {
+  mean: 0.0,
+  std:  1.0
+};
+
+// --- FRED HELPERS ---
+
+function fredUrl(series_id, start){
+  const base = 'https://api.stlouisfed.org/fred/series/observations';
+  const params = new URLSearchParams({
+    series_id,
+    api_key: FRED_API_KEY,
+    file_type: 'json',
+    observation_start: start || '1985-01-01'
+  });
+  return `${base}?${params.toString()}`;
 }
 
-function computeESI(data){
-  const detail = {
-    buckets:{},
-    missing:[],
-    stale:[]
-  };
+async function fetchSeriesHistory(ind){
+  if (!FRED_API_KEY || FRED_API_KEY === 'YOUR_FRED_API_KEY_HERE'){
+    throw new Error('NO_FRED_KEY');
+  }
+  const url = fredUrl(ind.series_id, ind.since);
+  const res = await fetch(url);
+  if (!res.ok){
+    throw new Error(`FRED_HTTP_${res.status}`);
+  }
+  const json = await res.json();
+  if (!json.observations || !json.observations.length){
+    throw new Error('NO_OBS');
+  }
+  return json.observations;
+}
 
-  let compositeWeighted = 0;
-  let weightSum = 0;
-
-  for (const [bucketKey, bucketCfg] of Object.entries(CONFIG.buckets)){
-    const series = data[bucketKey] || {};
-    const vals = [];
-
-    for (const [code, ind] of Object.entries(series)){
-      const z = Number(ind.z);
-      if (!Number.isFinite(z)){
-        detail.missing.push(`${bucketKey}:${ind.label || code} (no z)`);
-        continue;
-      }
-      if (isStale(ind)){
-        detail.stale.push(`${bucketKey}:${ind.label || code} (stale)`);
-        // include but this will be visible; if you want, downweight here.
-      }
-      vals.push(z);
+function parseNumericObservations(observations){
+  const cleaned = [];
+  for (const o of observations){
+    const v = parseFloat(o.value);
+    if (!isNaN(v)){
+      cleaned.push({date:o.date, value:v});
     }
+  }
+  return cleaned;
+}
 
-    if (vals.length === 0){
-      detail.buckets[bucketKey] = { mean:null, effWeight:0, count:0 };
+function computeZFromHistory(ind, obs){
+  const data = parseNumericObservations(obs);
+  if (data.length < 24){
+    throw new Error('INSUFFICIENT_HISTORY');
+  }
+  // Latest valid
+  const latest = data[data.length - 1];
+  const now = new Date();
+  const lastDate = new Date(latest.date);
+  const ageDays = (now - lastDate)/(1000*60*60*24);
+
+  const freq = ind.freq || 'monthly';
+  const maxAge = STALE[freq] || 90;
+  const stale = ageDays > maxAge;
+
+  // Orientation: direct (higher = stress), inverted (lower = stress)
+  const vals = data.map(d => ind.orientation === 'inverted' ? -d.value : d.value);
+
+  const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
+  const varSum = vals.reduce((a,b)=>a+Math.pow(b-mean,2),0);
+  const std = Math.sqrt(varSum / (vals.length - 1)) || 0;
+
+  if (!isFinite(std) || std === 0){
+    throw new Error('ZERO_STD');
+  }
+
+  const latestAdj = ind.orientation === 'inverted' ? -latest.value : latest.value;
+  const z = (latestAdj - mean) / std;
+
+  return {
+    label: ind.label,
+    series_id: ind.series_id,
+    bucket: ind.bucket,
+    orientation: ind.orientation,
+    freq,
+    lastDate: latest.date,
+    lastValue: latest.value,
+    z,
+    stale
+  };
+}
+
+// --- ESI COMPUTATION ---
+
+function computeESI(indicatorResults){
+  const detail = { buckets:{}, missing:[], stale:[] };
+  let weighted = 0;
+  let wsum = 0;
+
+  for (const [bKey, bCfg] of Object.entries(BUCKETS)){
+    const inBucket = indicatorResults.filter(r => r && r.bucket === bKey);
+    if (!inBucket.length){
+      detail.buckets[bKey] = { mean:null, weight:bCfg.weight, effWeight:0, count:0 };
       continue;
     }
+    const zs = inBucket.map(r => r.z);
+    const mean = zs.reduce((a,b)=>a+b,0)/zs.length;
+    detail.buckets[bKey] = {
+      mean,
+      weight:bCfg.weight,
+      effWeight:bCfg.weight,
+      count:inBucket.length
+    };
+    weighted += bCfg.weight * mean;
+    wsum    += bCfg.weight;
 
-    const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
-    const effW = bucketCfg.weight;
-    detail.buckets[bucketKey] = { mean, effWeight:effW, count:vals.length };
-
-    compositeWeighted += effW * mean;
-    weightSum += effW;
+    inBucket.forEach(r => {
+      if (r.stale) detail.stale.push(`${bKey}:${r.label} (last ${r.lastDate})`);
+    });
   }
 
-  if (weightSum === 0){
-    return { z:null, raw:null, detail };
+  if (wsum === 0){
+    return { raw:null, z:null, detail };
   }
 
-  const esiRaw = compositeWeighted / weightSum;
+  const esiRaw = weighted / wsum;
 
-  // Standardize using configurable historical μ,σ (must be set from real backtest).
-  const mu  = CONFIG.ESI_MEAN;
-  const sig = CONFIG.ESI_STD;
-  const esiZ = sig > 0 ? (esiRaw - mu)/sig : esiRaw; // if not calibrated, esiZ == raw.
+  const mu = ESI_CAL.mean;
+  const sd = ESI_CAL.std;
+  const esiZ = (sd && isFinite(sd)) ? (esiRaw - mu)/sd : esiRaw;
 
-  return { z: esiZ, raw: esiRaw, detail };
+  return { raw:esiRaw, z:esiZ, detail };
 }
 
 function cumulativeNormal(z){
@@ -693,17 +671,22 @@ function cumulativeNormal(z){
   return z > 0 ? 1 - prob : prob;
 }
 
-function renderAll(){
-  const { z, raw, detail } = computeESI(DEMO_DATA);
-  const zDisp = (z !== null && Number.isFinite(z)) ? z : null;
+// --- RENDERING ---
 
-  renderGauge(zDisp);
-  renderIndicators(DEMO_DATA);
-  renderRegime(zDisp);
-  renderInsight(zDisp, raw, detail);
-  renderAudit(detail, zDisp, raw);
+function statusFromZ(z){
+  if (!Number.isFinite(z)) return 'a';
+  if (z >= 1.5) return 'r';
+  if (z >= 0.5) return 'a';
+  return 'g';
+}
 
-  document.getElementById('upd').textContent = 'Updated: ' + new Date().toISOString();
+function isStaleFlag(freq, dateStr){
+  if (!dateStr) return true;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return true;
+  const days = (new Date() - d)/(1000*60*60*24);
+  const max = STALE[freq] || 90;
+  return days > max;
 }
 
 function renderGauge(z){
@@ -711,14 +694,8 @@ function renderGauge(z){
   const scoreV = document.getElementById('scoreV');
   const zEl = document.getElementById('zscoreVal');
   const pEl = document.getElementById('percentileVal');
-  const bucketInfo = document.getElementById('bucketInfo');
 
-  const usedBuckets = Object.values(CONFIG.buckets)
-    .filter((b,idx) => true); // all possible; refined via audit
-
-  bucketInfo.textContent = '3/3';
-
-  if (z === null){
+  if (!Number.isFinite(z)){
     needleEl.style.setProperty('--angle','0deg');
     scoreV.textContent = '--';
     zEl.textContent = '--';
@@ -726,10 +703,10 @@ function renderGauge(z){
     return;
   }
 
-  // Map z in [-2, +3] to [0,180] degrees.
+  // Map z in [-2, +3] to [0,180]
   const zMin = -2, zMax = 3;
-  const zClamped = Math.max(zMin, Math.min(zMax, z));
-  const angle = ((zClamped - zMin)/(zMax - zMin))*180;
+  const zClamp = Math.max(zMin, Math.min(zMax, z));
+  const angle = ((zClamp - zMin)/(zMax - zMin))*180;
 
   needleEl.style.setProperty('--angle', angle + 'deg');
 
@@ -741,78 +718,66 @@ function renderGauge(z){
   pEl.textContent = (isFinite(pct) ? pct : '--') + 'th';
 }
 
-function renderIndicators(data){
-  renderCategory('leadingGrid',   data.LEADING);
-  renderCategory('financialGrid', data.FINANCIAL);
-  renderCategory('nowcastGrid',   data.NOWCAST);
-}
+function renderIndicators(results){
+  const byBucket = { LEADING:[], FINANCIAL:[], NOWCAST:[] };
+  results.forEach(r => { if (r) byBucket[r.bucket].push(r); });
 
-function statusFromZ(z){
-  if (!Number.isFinite(z)) return 'a';
-  if (z >= 1.5) return 'r';
-  if (z >= 0.5) return 'a';
-  return 'g';
-}
-
-function renderCategory(gridId, series){
-  const grid = document.getElementById(gridId);
-  if (!grid || !series){
-    if (grid) grid.innerHTML = '<div class="small">No data.</div>';
-    return;
+  for (const [bKey, bCfg] of Object.entries(BUCKETS)){
+    const grid = document.getElementById(bCfg.gridId);
+    const list = byBucket[bKey] || [];
+    if (!grid){
+      continue;
+    }
+    if (!list.length){
+      grid.innerHTML = `<div class="small">No valid data for ${bCfg.label} bucket.</div>`;
+      continue;
+    }
+    grid.innerHTML = list.map(r => {
+      const dot = statusFromZ(r.z);
+      const stale = r.stale ? ' • STALE' : '';
+      const val = Number.isFinite(r.lastValue) ? r.lastValue : '--';
+      const ztxt = Number.isFinite(r.z) ? r.z.toFixed(2)+'σ' : '--';
+      return `
+        <div class="kpi">
+          <h4><span>${r.label}</span><span class="dot ${dot}"></span></h4>
+          <div class="val">${val}</div>
+          <div class="zscore">Stress Z: ${ztxt}</div>
+          <div class="small">
+            Series: ${r.series_id} • Last: ${r.lastDate || 'n/a'}${stale}
+          </div>
+          <div class="desc">
+            Orientation: ${r.orientation} (higher value = ${r.orientation === 'direct' ? 'more' : 'less'} stress before transform).<br/>
+            Z-score = standardized on full history from ${INDICATORS.find(i=>i.key===r.key)?.since || 'config'}.
+          </div>
+        </div>
+      `;
+    }).join('');
   }
-
-  grid.innerHTML = Object.entries(series).map(([code, d]) => {
-    const z = Number(d.z);
-    const dotClass = statusFromZ(z);
-    const val = d.unit ? `${d.value}${d.unit}` : (d.value !== undefined ? d.value : '--');
-    const stale = isStale(d);
-    const staleTag = stale ? ' • STALE' : '';
-    const zTxt = Number.isFinite(z) ? z.toFixed(2)+'σ' : '--';
-
-    return `
-      <div class="kpi">
-        <h4>
-          <span>${d.label || code}</span>
-          <span class="dot ${dotClass}"></span>
-        </h4>
-        <div class="val">${val}</div>
-        <div class="zscore">Stress Z: ${zTxt}</div>
-        <div class="small">
-          Freq: ${d.freq || 'n/a'} • Updated: ${d.lastUpdated || 'n/a'}${staleTag}
-        </div>
-        <div class="desc">
-          <strong>Source:</strong> ${d.source || 'n/a'}<br/>
-          ${d.note || ''}
-        </div>
-      </div>
-    `;
-  }).join('');
 }
 
 function renderRegime(z){
   const regimeEl = document.getElementById('regime');
   const alertEl = document.getElementById('alert');
 
-  if (z === null || !Number.isFinite(z)){
+  if (!Number.isFinite(z)){
     regimeEl.innerHTML = `
       <span style="width:12px;height:12px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber)"></span>
-      <span>ESI Z-Score: -- | Data insufficient for signal</span>
+      <span>ESI Z-Score: -- | Not computed (check API key / data / calibration)</span>
     `;
     alertEl.style.display = 'block';
-    alertEl.textContent = 'Data or calibration missing. Do not trade off this state.';
+    alertEl.textContent = 'No robust composite available. Do not trade off this.';
     return;
   }
 
-  let status, color, msg = '';
-
-  if (z < 0.5){ status = 'Normal';   color = 'green'; msg = 'No broad stress: stay data-dependent.'; }
-  else if (z < 1.0){ status = 'Elevated'; color = 'amber'; msg = 'Tightening conditions; increase monitoring, review exposures.'; }
-  else if (z < 2.0){ status = 'High';     color = 'red';   msg = 'Clustered warnings: de-risk, stress-test liquidity and funding.'; }
-  else {             status = 'Critical'; color = 'red';   msg = 'Rare stress regime: capital preservation first.'; }
+  let status, color, msg;
+  if (z < 0.5){        status='Normal';   color='green'; msg='No broad stress. Stay data-dependent.'; }
+  else if (z < 1.0){   status='Elevated'; color='amber'; msg='Tightening signals. Increase monitoring, review risk.'; }
+  else if (z < 2.0){   status='High';     color='red';   msg='Clustered warnings. De-risk, stress-test liquidity.'; }
+  else {               status='Critical'; color='red';   msg='Rare regime. Capital preservation first.'; }
 
   regimeEl.innerHTML = `
     <span style="width:12px;height:12px;border-radius:50%;background:var(--${color});box-shadow:0 0 10px var(--${color})"></span>
-    <span>ESI Z-Score: ${z.toFixed(2)}σ | ${status} (requires calibrated μ,σ)</span>
+    <span>ESI Z-Score: ${z.toFixed(2)}σ | ${status} (subject to proper calibration)</span>
   `;
 
   if (z >= 1.0){
@@ -829,9 +794,9 @@ function renderInsight(z, raw, detail){
   const text = document.getElementById('insightText');
   if (!card || !text) return;
 
-  if (z === null || !Number.isFinite(z)){
+  if (!Number.isFinite(z)){
     card.style.display = 'block';
-    text.textContent = 'ESI cannot be interpreted without full data and historical calibration. Treat this as a structural smoke test only.';
+    text.textContent = 'ESI not computed. Fix FRED access and run historical calibration before you even think about using this signal.';
     return;
   }
 
@@ -840,52 +805,98 @@ function renderInsight(z, raw, detail){
   const fin  = b.FINANCIAL?.mean;
   const now  = b.NOWCAST?.mean;
 
-  let line = `Composite raw stress = ${raw.toFixed(2)} (stress-aligned), standardized to ${z.toFixed(2)}σ. `;
-
-  if (lead !== null) line += `Leading bucket: ${lead.toFixed(2)}σ; `;
-  if (fin  !== null) line += `Financial: ${fin.toFixed(2)}σ; `;
-  if (now  !== null) line += `Nowcast: ${now.toFixed(2)}σ. `;
-
-  line += 'Interpret only after you have validated μ,σ and backtested hit/false-alarm rates vs NBER dates.';
+  let line = `ESI_raw = ${raw.toFixed(2)}, standardized to ${z.toFixed(2)}σ using configured μ,σ. `;
+  if (lead != null) line += `Leading: ${lead.toFixed(2)}σ; `;
+  if (fin  != null) line += `Financial: ${fin.toFixed(2)}σ; `;
+  if (now  != null) line += `Nowcast: ${now.toFixed(2)}σ. `;
+  line += `Check historical hit/false-alarm stats vs NBER dates before relying on regime cutoffs.`;
 
   card.style.display = 'block';
   text.textContent = line;
 }
 
-function renderAudit(detail, z, raw){
+function renderAudit(detail, z, raw, indicatorResults){
   const sumEl = document.getElementById('auditSummary');
   const detEl = document.getElementById('auditDetails');
   if (!sumEl || !detEl) return;
 
-  const missing = detail.missing || [];
+  const missingKeys = INDICATORS
+    .filter(ind => !indicatorResults.some(r => r && r.series_id === ind.series_id))
+    .map(ind => `${ind.bucket}:${ind.label} (${ind.series_id})`);
+
   const stale = detail.stale || [];
-
-  let summary = `Current demo run uses 11 configured indicators across 3 buckets. `;
-  summary += `Weights applied: Leading 60%, Financial 30%, Nowcast 10% (if bucket has at least one valid z-score). `;
-  if (missing.length) summary += `Missing series: ${missing.length}. `;
-  if (stale.length) summary += `Stale series flagged: ${stale.length}. `;
-  if (z === null || !Number.isFinite(z)) summary += `ESI could not be standardized — check data & CONFIG.`;
-
-  sumEl.textContent = summary;
-
   const lines = [];
 
-  for (const [bKey, b] of Object.entries(detail.buckets)){
-    if (!b) continue;
+  for (const [bKey, bInfo] of Object.entries(detail.buckets)){
+    if (!bInfo) continue;
     lines.push(
-      `[${bKey}] mean z = ${b.mean !== null ? b.mean.toFixed(2) : 'n/a'}, ` +
-      `target weight = ${CONFIG.buckets[bKey].weight}, ` +
-      `effective weight = ${b.effWeight}, count = ${b.count}`
+      `[${bKey}] mean z = ${bInfo.mean != null ? bInfo.mean.toFixed(2) : 'n/a'},` +
+      ` target weight = ${bInfo.weight}, effective weight = ${bInfo.effWeight}, count = ${bInfo.count}`
     );
   }
-  if (missing.length){
-    lines.push(`Missing: ${missing.join('; ')}`);
+
+  if (missingKeys.length){
+    lines.push(`Missing indicators (no valid z): ${missingKeys.join('; ')}`);
   }
   if (stale.length){
-    lines.push(`Stale (still included, you may choose to down-weight/exclude in prod): ${stale.join('; ')}`);
+    lines.push(`Stale series (still included, your call whether to downweight): ${stale.join('; ')}`);
   }
 
+  let summary = `Composite uses 60/30/10 bucket weights on successfully loaded indicators. `;
+  if (!Number.isFinite(z)) summary += `ESI not computed due to missing data or bad calibration.`;
+  else summary += `ESI_raw=${raw.toFixed(2)}, ESI_z=${z.toFixed(2)} (using configured μ,σ).`;
+
+  sumEl.textContent = summary;
   detEl.innerHTML = lines.map(l=>`<div>${l}</div>`).join('');
+}
+
+function setDataMode(msg){
+  const el = document.getElementById('dataMode');
+  if (el) el.textContent = msg;
+}
+
+// --- MAIN FLOW ---
+
+async function loadAndRender(){
+  document.getElementById('upd').textContent = 'Updated: ' + new Date().toISOString();
+
+  if (!FRED_API_KEY || FRED_API_KEY === 'YOUR_FRED_API_KEY_HERE'){
+    setDataMode('No FRED API key: model disabled');
+    renderGauge(NaN);
+    renderRegime(NaN);
+    document.getElementById('auditSummary').textContent =
+      'Set window.FRED_API_KEY before this script to enable live FRED-based ESI.';
+    return;
+  }
+
+  setDataMode('Live FRED mode (client-side; subject to API limits)');
+
+  const results = [];
+  const errors = [];
+
+  for (const ind of INDICATORS){
+    try{
+      const obs = await fetchSeriesHistory(ind);
+      const r = computeZFromHistory(ind, obs);
+      results.push(r);
+    } catch(e){
+      errors.push(`${ind.label} (${ind.series_id}): ${e.message}`);
+    }
+  }
+
+  const { raw, z, detail } = computeESI(results);
+
+  renderIndicators(results);
+  renderGauge(z);
+  renderRegime(z);
+  renderInsight(z, raw, detail);
+  renderAudit(detail, z, raw, results);
+
+  if (errors.length){
+    const alertEl = document.getElementById('alert');
+    alertEl.style.display = 'block';
+    alertEl.innerHTML = `⚠️ Data issues on: ${errors.join(' | ')}. Check series_id, API key, or FRED status.`;
+  }
 }
 
 function setupTabs(){
@@ -901,16 +912,12 @@ function setupTabs(){
 }
 
 function setupButtons(){
-  document.getElementById('refreshBtn').onclick = () => {
-    // In production this would re-fetch latest FRED data, recompute z-scores & ESI.
-    renderAll();
-  };
+  document.getElementById('refreshBtn').onclick = () => loadAndRender();
   document.getElementById('exportBtn').onclick = () => {
     const snapshot = {
       ts: new Date().toISOString(),
-      config: CONFIG,
-      data: DEMO_DATA,
-      esi: computeESI(DEMO_DATA)
+      indicators: INDICATORS,
+      esi: computeESI([]) // placeholder; real snapshot should recompute from cached results
     };
     const blob = new Blob([JSON.stringify(snapshot,null,2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
@@ -927,7 +934,7 @@ function setupButtons(){
 window.addEventListener('DOMContentLoaded', () => {
   setupTabs();
   setupButtons();
-  renderAll();
+  loadAndRender();
 });
 </script>
 </body>
