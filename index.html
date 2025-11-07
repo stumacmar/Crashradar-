@@ -1,10 +1,9 @@
 <!doctype html>
-
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Economic Stress Index (ESI) - Institutional Grade</title>
+<title>Economic Stress Index (ESI) - CrashRadar Institutional Core</title>
 <style>
 :root{
   --bg:#0a0e1a; --panel:#12182b; --panel-hover:#151d33; --text:#e8eeff; --muted:#8b96b0;
@@ -12,64 +11,311 @@
   --purple:#a78bfa; --cyan:#22d3ee;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
 .wrap{max-width:1600px;margin:0 auto;padding:24px 16px 80px}
-h1{font-size:clamp(32px,5vw,48px);line-height:1.1;font-weight:800;margin-bottom:8px;background:linear-gradient(135deg,var(--text),var(--accent-bright));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.02em}
-.subtitle{color:var(--muted);font-weight:600;font-size:14px}
-.header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
-.badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:10px;font-weight:700;font-size:13px}
-.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer;transition:all 0.2s ease;font-size:14px}
+h1{
+  font-size:clamp(32px,5vw,48px);
+  line-height:1.1;
+  font-weight:800;
+  margin-bottom:6px;
+  background:linear-gradient(135deg,var(--text),var(--accent-bright));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  letter-spacing:-.02em
+}
+.subtitle{
+  color:var(--muted);
+  font-weight:500;
+  font-size:13px;
+  max-width:640px;
+}
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+  flex-wrap:wrap;
+  margin-bottom:18px
+}
+.badges{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:10px
+}
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 11px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);
+  border-radius:9px;
+  font-weight:600;
+  font-size:11px;
+  color:var(--muted)
+}
+.live-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--amber);
+  box-shadow:0 0 8px var(--amber)
+}
+.btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:9px 14px;
+  border:none;
+  border-radius:10px;
+  background:var(--accent);
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
+  transition:all 0.2s ease;
+  font-size:13px
+}
 .btn:hover{background:var(--accent-bright);transform:translateY(-1px)}
-.card{background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:24px;margin:18px 0;box-shadow:0 4px 24px rgba(0,0,0,.3);transition:all 0.3s ease}
+.card{
+  background:var(--panel);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:16px;
+  padding:20px;
+  margin:16px 0;
+  box-shadow:0 4px 24px rgba(0,0,0,.3);
+  transition:all 0.3s ease
+}
 .card:hover{box-shadow:0 8px 32px rgba(0,0,0,.4)}
-.status-pill{display:inline-flex;align-items:center;gap:10px;padding:12px 18px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.04);font-weight:700;font-size:16px}
-.alert{border-radius:16px;padding:18px;margin-top:14px;background:linear-gradient(135deg,rgba(255,96,112,.12),rgba(255,194,71,.12));border:1px solid rgba(255,96,112,.25)}
-.tabs{display:flex;gap:8px;border-bottom:2px solid rgba(255,255,255,.06);margin-top:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.tab{background:transparent;border:none;color:var(--muted);padding:12px 18px;font-weight:800;cursor:pointer;border-radius:8px 8px 0 0;transition:all 0.2s ease;white-space:nowrap;font-size:14px}
-.tab.active{color:var(--accent-bright);background:rgba(255,255,255,.03)}
-.tab:hover:not(.active){color:var(--text);background:rgba(255,255,255,.02)}
-.view{display:none;animation:fadeIn 0.5s ease}.view.active{display:block}
+.status-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 16px;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;
+  background:rgba(255,255,255,.04);
+  font-weight:700;
+  font-size:14px;
+  margin-top:4px
+}
+.alert{
+  border-radius:14px;
+  padding:14px;
+  margin-top:12px;
+  background:linear-gradient(135deg,rgba(255,96,112,.12),rgba(255,194,71,.12));
+  border:1px solid rgba(255,96,112,.25);
+  font-size:13px
+}
+.tabs{
+  display:flex;
+  gap:8px;
+  border-bottom:2px solid rgba(255,255,255,.06);
+  margin-top:8px;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch
+}
+.tab{
+  background:transparent;
+  border:none;
+  color:var(--muted);
+  padding:10px 14px;
+  font-weight:700;
+  cursor:pointer;
+  border-radius:8px 8px 0 0;
+  transition:all 0.2s ease;
+  white-space:nowrap;
+  font-size:12px
+}
+.tab.active{
+  color:var(--accent-bright);
+  background:rgba(255,255,255,.03)
+}
+.tab:hover:not(.active){
+  color:var(--text);
+  background:rgba(255,255,255,.02)
+}
+.view{display:none;animation:fadeIn 0.3s ease}
+.view.active{display:block}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.gauge{display:flex;gap:36px;align-items:center;flex-wrap:wrap}
-.gauge-wrap{position:relative;width:220px;height:220px;flex-shrink:0}
-.ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--green) 0 90deg,var(--amber) 90deg 180deg,var(--red) 180deg 360deg);opacity:.35}
-.ring:after{content:"";position:absolute;inset:22px;border-radius:50%;background:var(--panel);box-shadow:inset 0 2px 8px rgba(0,0,0,.35)}
-.needle{position:absolute;inset:0}
-.needle:before{content:"";position:absolute;top:50%;left:50%;width:6px;height:48%;transform-origin:bottom center;transform:translate(-50%,-100%) rotate(var(--angle,0deg));background:linear-gradient(180deg,var(--accent-bright),var(--accent));border-radius:6px 6px 0 0;box-shadow:0 0 10px var(--accent);transition:transform 1s ease}
-.needle:after{content:"";position:absolute;top:50%;left:50%;width:18px;height:18px;border-radius:50%;background:var(--accent-bright);transform:translate(-50%,-50%)}
-.score{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;font-weight:800;z-index:1}
-.score .v{font-size:52px;background:linear-gradient(135deg,var(--text),var(--accent-bright));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.score .l{font-size:11px;color:var(--muted);letter-spacing:1px;margin-top:4px;text-align:center}
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
-.kpi{border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:18px;background:rgba(255,255,255,.03);transition:all 0.2s ease}
-.kpi:hover{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.05);transform:translateY(-2px)}
-.kpi h4{display:flex;align-items:center;justify-content:space-between;font-size:14px;margin-bottom:8px}
-.dot{width:10px;height:10px;border-radius:50%}
+.gauge{
+  display:flex;
+  gap:24px;
+  align-items:center;
+  flex-wrap:wrap
+}
+.gauge-wrap{
+  position:relative;
+  width:220px;
+  height:220px;
+  flex-shrink:0
+}
+.ring{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:conic-gradient(var(--green) 0 70deg,var(--amber) 70deg 130deg,var(--red) 130deg 180deg);
+  opacity:.35;
+  transform:rotate(-90deg);
+}
+.ring:after{
+  content:"";
+  position:absolute;
+  inset:22px;
+  border-radius:50%;
+  background:var(--panel);
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.35)
+}
+.needle{
+  position:absolute;
+  inset:0;
+}
+.needle:before{
+  content:"";
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:5px;
+  height:46%;
+  transform-origin:bottom center;
+  transform:translate(-50%,-100%) rotate(var(--angle,0deg));
+  background:linear-gradient(180deg,var(--accent-bright),var(--accent));
+  border-radius:5px 5px 0 0;
+  box-shadow:0 0 10px var(--accent);
+  transition:transform 0.8s ease;
+}
+.needle:after{
+  content:"";
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:16px;
+  height:16px;
+  border-radius:50%;
+  background:var(--accent-bright);
+  transform:translate(-50%,-50%);
+}
+.score{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  font-weight:800;
+  z-index:1
+}
+.score .v{
+  font-size:46px;
+  background:linear-gradient(135deg,var(--text),var(--accent-bright));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent
+}
+.score .l{
+  font-size:10px;
+  color:var(--muted);
+  letter-spacing:1px;
+  margin-top:4px;
+  text-align:center
+}
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:10px;
+  margin-top:8px
+}
+.kpi{
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:10px;
+  padding:10px 10px 9px;
+  background:rgba(255,255,255,.02);
+  transition:all 0.2s ease
+}
+.kpi:hover{
+  border-color:rgba(255,255,255,.12);
+  background:rgba(255,255,255,.04);
+  transform:translateY(-1px)
+}
+.kpi h4{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  font-size:12px;
+  margin-bottom:4px
+}
+.dot{
+  width:9px;height:9px;border-radius:50%;
+}
 .dot.g{background:var(--green);box-shadow:0 0 8px var(--green)}
 .dot.a{background:var(--amber);box-shadow:0 0 8px var(--amber)}
 .dot.r{background:var(--red);box-shadow:0 0 8px var(--red)}
-.small{font-size:12px;color:var(--muted)}
-.kpi .val{font-size:26px;font-weight:800;margin:10px 0 8px}
-.kpi .zscore{font-size:14px;font-weight:700;color:var(--accent-bright);margin-bottom:6px}
-.desc{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5;display:none}
-.kpi:hover .desc{display:block}
-.category-header{background:linear-gradient(135deg,rgba(107,158,255,.15),rgba(139,187,255,.08));border:1px solid rgba(107,158,255,.25);border-radius:10px;padding:14px 18px;margin:20px 0 12px;font-weight:800;font-size:15px;color:var(--accent-bright)}
-.insight-card{background:linear-gradient(135deg, rgba(107,158,255,.1), rgba(139,187,255,.05));border:1px solid rgba(107,158,255,.2);border-radius:12px;padding:18px;margin-top:16px}
-.insight-card h4{display:flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--accent-bright);font-size:16px}
-.methodology{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:18px;margin-top:16px}
-.methodology h4{font-size:15px;margin-bottom:10px;color:var(--accent-bright)}
-.methodology ul{margin-left:20px;margin-top:8px}
-.methodology li{margin:6px 0;font-size:13px;color:var(--muted)}
+.small{font-size:10px;color:var(--muted)}
+.kpi .val{font-size:18px;font-weight:700;margin:4px 0 2px}
+.kpi .zscore{font-size:11px;font-weight:600;color:var(--accent-bright);margin-bottom:2px}
+.desc{
+  font-size:10px;
+  color:var(--muted);
+  margin-top:4px;
+  line-height:1.5;
+}
+.category-header{
+  background:linear-gradient(135deg,rgba(107,158,255,.16),rgba(139,187,255,.06));
+  border:1px solid rgba(107,158,255,.25);
+  border-radius:9px;
+  padding:8px 10px;
+  margin:10px 0 6px;
+  font-weight:700;
+  font-size:12px;
+  color:var(--accent-bright)
+}
+.insight-card{
+  background:linear-gradient(135deg,rgba(107,158,255,.08),rgba(139,187,255,.03));
+  border:1px solid rgba(107,158,255,.18);
+  border-radius:10px;
+  padding:10px;
+  margin-top:10px;
+  font-size:11px;
+}
+.insight-card h4{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:4px;
+  color:var(--accent-bright);
+  font-size:12px;
+}
+.methodology{
+  background:rgba(255,255,255,.02);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:12px;
+  padding:12px;
+  margin-top:10px;
+  font-size:10px;
+  color:var(--muted);
+}
+.methodology h4{
+  font-size:11px;
+  margin-bottom:4px;
+  color:var(--accent-bright)
+}
+.methodology ul{margin-left:16px;margin-top:4px}
+.methodology li{margin:4px 0}
+.audit-list{
+  font-size:10px;
+  color:var(--muted);
+  margin-top:4px;
+}
+.audit-list div{margin-bottom:2px}
 @media (max-width:768px){
   .gauge{flex-direction:column;align-items:center}
-  .wrap{padding:16px 12px 60px}
-  h1{font-size:28px}
+  .wrap{padding:16px 10px 40px}
+  h1{font-size:26px}
   .header{flex-direction:column;align-items:stretch}
   .kpi-grid{grid-template-columns:1fr}
-  .gauge-wrap{width:200px;height:200px}
-  .score .v{font-size:46px}
+  .gauge-wrap{width:190px;height:190px}
+  .score .v{font-size:38px}
 }
 </style>
 </head>
@@ -78,24 +324,26 @@ h1{font-size:clamp(32px,5vw,48px);line-height:1.1;font-weight:800;margin-bottom:
   <div class="header">
     <div>
       <h1>📊 Economic Stress Index (ESI)</h1>
-      <div class="subtitle">Institutional-Grade Recession Prediction Model • Fed-Validated Thresholds</div>
+      <div class="subtitle">
+        Composite U.S. recession & financial-stress monitor built on transparent, auditable rules.
+        No official Fed/IMF endorsement. Calibrate before using with real size.
+      </div>
+      <div class="badges">
+        <div class="badge"><span class="live-dot"></span> Demo data & production-ready wiring hooks</div>
+        <div class="badge" id="upd">Updated: --</div>
+        <div class="badge">11 indicators • Z-score inputs • 60/30/10 structure</div>
+        <div class="badge">Equal-weight within buckets (Arrigoni–Bobasu–Venditti 2022 inspired)</div>
+      </div>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn" id="refreshBtn">🔄 Refresh Data</button>
-      <button class="btn" id="exportBtn">📥 Export Report</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" id="refreshBtn">🔄 Recompute</button>
+      <button class="btn" id="exportBtn">📥 Export snapshot JSON</button>
     </div>
-  </div>
-
-  <div class="badges">
-    <div class="badge"><span class="live-dot"></span> Live FRED Data</div>
-    <div class="badge" id="upd">Updated: --</div>
-    <div class="badge">11 Indicators • Z-Score Method</div>
-    <div class="badge">IMF 2022 Methodology</div>
   </div>
 
   <div class="status-pill" id="regime">
-    <span style="width:14px;height:14px;border-radius:50%;background:var(--green)"></span>
-    <strong>Z-Score: --</strong> <span style="color:var(--muted)">| Normal Conditions</span>
+    <span style="width:12px;height:12px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)"></span>
+    <span>ESI Z-Score: -- | Normal (uncalibrated demo)</span>
   </div>
 
   <div class="alert" id="alert" style="display:none"></div>
@@ -107,310 +355,580 @@ h1{font-size:clamp(32px,5vw,48px);line-height:1.1;font-weight:800;margin-bottom:
         <div class="needle" id="needle"></div>
         <div class="score">
           <div class="v" id="scoreV">--</div>
-          <div class="l">Z-SCORE (σ)</div>
+          <div class="l">ESI STANDARDIZED SCORE (σ)</div>
         </div>
       </div>
-      <div style="flex:1;min-width:300px">
-        <h2 style="margin:0 0 8px">Economic Stress Index</h2>
-        <div class="small">Equal-weighted composite of 11 Fed-validated indicators</div>
-
-```
-    <div style="margin-top:16px;padding:12px;background:rgba(255,255,255,.04);border-radius:8px">
-      <div class="small" style="margin-bottom:8px">Current Stress Level:</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div>
-          <div style="font-size:11px;color:var(--muted)">Z-Score</div>
-          <div style="font-size:24px;font-weight:800" id="zscoreVal">--</div>
+      <div style="flex:1;min-width:260px">
+        <h2 style="margin:0 0 4px;font-size:18px">Economic Stress Index — Core Read</h2>
+        <div class="small" id="esiSummary">
+          Composite of stress-aligned z-scores:
+          60% leading cycle indicators, 30% financial conditions, 10% coincident/confirmatory.
         </div>
-        <div>
-          <div style="font-size:11px;color:var(--muted)">Percentile</div>
-          <div style="font-size:24px;font-weight:800" id="percentileVal">--</div>
+
+        <div style="margin-top:10px;padding:9px;background:rgba(255,255,255,.03);border-radius:8px">
+          <div class="small" style="margin-bottom:6px">Current composite (demo inputs):</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <div>
+              <div class="small">ESI Z-Score</div>
+              <div style="font-size:20px;font-weight:800" id="zscoreVal">--</div>
+            </div>
+            <div>
+              <div class="small">Percentile*</div>
+              <div style="font-size:20px;font-weight:800" id="percentileVal">--</div>
+            </div>
+            <div>
+              <div class="small">Buckets Used</div>
+              <div style="font-size:20px;font-weight:800" id="bucketInfo">--</div>
+            </div>
+          </div>
+          <div class="small" style="margin-top:4px">
+            *Percentile assumes ESI has been standardized vs its own 1985+ history.
+            In this demo, treat as illustrative only.
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <div class="small">Regime guide (applied to calibrated ESI Z):</div>
+          <div style="margin-top:4px;font-size:10px;line-height:1.7">
+            <div>&lt; 0.5σ — <span style="color:var(--green);font-weight:700">Normal</span> (no broad stress)</div>
+            <div>0.5–1.0σ — <span style="color:var(--amber);font-weight:700">Elevated</span> (tightening, raised vigilance)</div>
+            <div>1.0–2.0σ — <span style="color:var(--red);font-weight:700">High</span> (clustered warnings, act on risk)</div>
+            <div>&gt;= 2.0σ — <span style="color:var(--red);font-weight:700">Critical</span> (historically rare, crisis/recession odds high)</div>
+          </div>
         </div>
       </div>
     </div>
 
-    <div style="margin-top:14px">
-      <div class="small">Interpretation Guide:</div>
-      <div style="margin-top:8px;font-size:12px;line-height:1.8">
-        <div>< 0.5σ = <span style="color:var(--green);font-weight:700">Normal</span></div>
-        <div>0.5-1.0σ = <span style="color:var(--amber);font-weight:700">Elevated</span></div>
-        <div>1.0-2.0σ = <span style="color:var(--red);font-weight:700">High Stress</span></div>
-        <div>> 2.0σ = <span style="color:var(--red);font-weight:700">Critical</span></div>
-      </div>
+    <div class="insight-card" id="insightCard" style="display:none">
+      <h4>💡 ESI Read (demo)</h4>
+      <div id="insightText"></div>
     </div>
-  </div>
-</div>
 
-<div class="insight-card" id="insightCard" style="display:none">
-  <h4>💡 Current Assessment</h4>
-  <div id="insightText"></div>
-</div>
-
-<div class="methodology">
-  <h4>🎓 Methodology & Academic Validation</h4>
-  <ul>
-    <li><strong>Equal weighting:</strong> IMF 2022 study found equal weights match/outperform complex methods</li>
-    <li><strong>Z-score normalization:</strong> Institutional standard (Chicago Fed, Goldman Sachs, Bloomberg)</li>
-    <li><strong>Fed-validated thresholds:</strong> Every threshold backed by Federal Reserve or NBER research</li>
-    <li><strong>60% leading indicators:</strong> Focus on 6-18 month prediction horizon</li>
-    <li><strong>10% confirmatory:</strong> Nowcasting to confirm recession onset (not predict)</li>
-  </ul>
-</div>
-```
-
+    <div class="methodology">
+      <h4>Methodology Snapshot (what this code actually does)</h4>
+      <ul>
+        <li>Inputs are <strong>stress-aligned z-scores</strong>: each series standardized on its own history so that higher = more stress.
+        </li>
+        <li>Within each bucket (Leading / Financial / Nowcast), indicators are <strong>equally weighted</strong>.</li>
+        <li>Bucket means are combined as: <strong>ESI_raw = 0.6·Z_leading + 0.3·Z_financial + 0.1·Z_nowcast</strong>.</li>
+        <li>ESI is then <strong>standardized</strong>: ESI_z = (ESI_raw − μ_ESI) / σ_ESI using historical ESI distribution. 
+            In this file μ_ESI and σ_ESI are placeholders — calibrate from data before using operationally.</li>
+        <li>Indicator set & orientation based on Fed/IMF/academic literature (yield curve, NFCI, HY spreads, permits, ISM, claims, hours, sentiment, IP, Sahm), 
+            but thresholds here are <strong>documented heuristics</strong>, not claimed as official “Fed rules”.</li>
+      </ul>
+    </div>
   </div>
 
   <div class="tabs">
     <button class="tab active" data-t="overview">Indicator Dashboard</button>
-    <button class="tab" data-t="changes">Key Changes</button>
-    <button class="tab" data-t="methodology">Methodology</button>
+    <button class="tab" data-t="audit">Data Integrity & Weights</button>
+    <button class="tab" data-t="methodology">Sources & Notes</button>
   </div>
 
   <div id="view-overview" class="view active">
     <div class="card">
-      <div class="category-header">🚀 Leading Indicators (60% weight) • 3-18 month horizon</div>
+      <div class="category-header">🚀 Leading Indicators (target 60% weight) • 3–18m ahead</div>
       <div class="kpi-grid" id="leadingGrid"></div>
 
-```
-  <div class="category-header">💰 Financial Conditions (30% weight) • 0-24 month horizon</div>
-  <div class="kpi-grid" id="financialGrid"></div>
+      <div class="category-header">💰 Financial Conditions (target 30% weight) • 0–24m</div>
+      <div class="kpi-grid" id="financialGrid"></div>
 
-  <div class="category-header">✓ Confirmatory Nowcast (10% weight) • Confirms recession underway</div>
-  <div class="kpi-grid" id="nowcastGrid"></div>
-</div>
-```
-
+      <div class="category-header">📉 Confirmatory / Nowcast (target 10% weight)</div>
+      <div class="kpi-grid" id="nowcastGrid"></div>
+    </div>
   </div>
 
-  <div id="view-changes" class="view">
+  <div id="view-audit" class="view">
     <div class="card">
-      <h3 style="margin-bottom:16px">✅ Major Improvements vs Original Model</h3>
-
-```
-  <div style="background:rgba(30,194,139,.1);border:1px solid rgba(30,194,139,.3);border-radius:10px;padding:16px;margin-bottom:16px">
-    <h4 style="color:var(--green);margin-bottom:10px">Added Indicators (World-Class Predictors)</h4>
-    <ul style="margin-left:20px">
-      <li><strong>Building Permits:</strong> Predicted 8 of last 9 recessions; called "most critical variable" by Moody's</li>
-      <li><strong>Initial Jobless Claims:</strong> Weekly data = most timely labor market indicator</li>
-      <li><strong>ISM New Orders:</strong> More leading than general PMI; Conference Board LEI component</li>
-      <li><strong>Average Weekly Hours:</strong> Employers cut hours before layoffs; strong 3-9 month lead</li>
-      <li><strong>Industrial Production:</strong> NBER Business Cycle Dating Committee official indicator</li>
-    </ul>
-  </div>
-
-  <div style="background:rgba(107,158,255,.1);border:1px solid rgba(107,158,255,.3);border-radius:10px;padding:16px;margin-bottom:16px">
-    <h4 style="color:var(--accent-bright);margin-bottom:10px">Threshold Corrections (Fed Research)</h4>
-    <ul style="margin-left:20px">
-      <li><strong>Yield Curve:</strong> -0.5% → <span style="color:var(--accent-bright)">0%</span> (SF Fed: "threshold very close to zero")</li>
-      <li><strong>NFCI:</strong> +0.50 → <span style="color:var(--accent-bright)">0</span> (Chicago Fed definition: zero = average)</li>
-      <li><strong>Credit Spread:</strong> 5.0% → <span style="color:var(--accent-bright)">6.5%</span> (historical recession entry level)</li>
-      <li><strong>Consumer Sentiment:</strong> 65 → <span style="color:var(--accent-bright)">70</span> (historical recession average ~72)</li>
-    </ul>
-  </div>
-
-  <div style="background:rgba(255,96,112,.1);border:1px solid rgba(255,96,112,.3);border-radius:10px;padding:16px">
-    <h4 style="color:var(--red);margin-bottom:10px">Removed Indicators (Flawed/Redundant)</h4>
-    <ul style="margin-left:20px">
-      <li><strong>Sahm Rule:</strong> Weight reduced 16% → 5% (coincident, not predictive)</li>
-      <li><strong>Market Drawdown:</strong> Removed (lagging indicator)</li>
-      <li><strong>Retail Momentum:</strong> Removed (coincident; replaced with Industrial Production)</li>
-      <li><strong>Unemployment Slope:</strong> Removed (redundant with Sahm Rule)</li>
-      <li><strong>Shiller PE:</strong> Removed (not a recession indicator; predicts 10-20yr returns)</li>
-    </ul>
-  </div>
-
-  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:16px;margin-top:16px">
-    <h4 style="margin-bottom:10px">Methodological Changes</h4>
-    <ul style="margin-left:20px">
-      <li><strong>Normalization:</strong> 0-100 scale → <span style="color:var(--accent-bright)">Z-scores (σ)</span> - institutional standard</li>
-      <li><strong>Weighting:</strong> Arbitrary % → <span style="color:var(--accent-bright)">Equal weights within categories</span> - IMF 2022 validation</li>
-      <li><strong>Structure:</strong> 60% Leading / 30% Financial / 10% Confirmatory</li>
-    </ul>
-  </div>
-</div>
-```
-
+      <h3 style="margin-bottom:6px;font-size:15px">Data Integrity & Composite Audit</h3>
+      <div class="small" id="auditSummary">--</div>
+      <div class="audit-list" id="auditDetails"></div>
+    </div>
   </div>
 
   <div id="view-methodology" class="view">
     <div class="card">
-      <h3 style="margin-bottom:16px">📚 Academic Methodology & Validation</h3>
-
-```
-  <div style="margin-bottom:24px">
-    <h4 style="margin-bottom:10px;color:var(--accent-bright)">1. Equal Weighting Justification</h4>
-    <p style="margin-bottom:8px">Research basis: <strong>Arrigoni, Bobasu & Venditti (2022) - IMF Economic Review</strong></p>
-    <ul style="margin-left:20px;margin-top:8px">
-      <li>Tested equal weights vs complex methods across 18 countries</li>
-      <li>Finding: Equal weights "performed as well or better than complex methods"</li>
-      <li>Outperformed Chicago Fed NFCI for predictive tasks</li>
-      <li>Reason: Complex methods suffer from overfitting; simple averaging avoids estimation error</li>
-    </ul>
-  </div>
-
-  <div style="margin-bottom:24px">
-    <h4 style="margin-bottom:10px;color:var(--accent-bright)">2. Z-Score Normalization</h4>
-    <ul style="margin-left:20px">
-      <li>Standard approach: Chicago Fed NFCI, St. Louis FSI, Bloomberg FCI, Goldman Sachs FCI</li>
-      <li>Interpretation: Measures standard deviations from historical mean</li>
-      <li>Example: +1.5σ = "1.5 standard deviations tighter than average"</li>
-      <li>Advantage: Automatically adjusts for changing volatility regimes</li>
-    </ul>
-  </div>
-
-  <div style="margin-bottom:24px">
-    <h4 style="margin-bottom:10px;color:var(--accent-bright)">3. Threshold Validation Sources</h4>
-    <ul style="margin-left:20px">
-      <li><strong>Yield Curve 0%:</strong> SF Fed Bauer & Mertens (2018), Cleveland Fed recession probability model</li>
-      <li><strong>Sahm Rule 0.50:</strong> Claudia Sahm (2019) Brookings paper, FRED official adoption</li>
-      <li><strong>NFCI 0:</strong> Chicago Fed official documentation</li>
-      <li><strong>Building Permits -15%:</strong> Conference Board LEI historical analysis</li>
-      <li><strong>Initial Claims 323k:</strong> FRED historical recession entry level</li>
-    </ul>
-  </div>
-
-  <div>
-    <h4 style="margin-bottom:10px;color:var(--accent-bright)">4. Indicator Performance Metrics (AUROC)</h4>
-    <p style="margin-bottom:8px;font-size:13px">Area Under ROC Curve at 12-month horizon (from Fed research):</p>
-    <ul style="margin-left:20px;font-size:13px">
-      <li><strong>Yield Curve:</strong> 0.87-0.91 (strongest single predictor)</li>
-      <li><strong>NFCI:</strong> 0.84-0.89 at 12-24 months</li>
-      <li><strong>Credit Spreads:</strong> 0.75-0.85 (complements yield curve)</li>
-      <li><strong>Consumer Sentiment:</strong> 0.92 at 3-6 months</li>
-    </ul>
-  </div>
-</div>
-```
-
+      <h3 style="margin-bottom:6px;font-size:15px">Methodology, Sources & Caveats</h3>
+      <div class="small">
+        Key references (non-exhaustive, you are expected to read them):
+      </div>
+      <ul class="small" style="margin-left:16px;margin-top:4px;line-height:1.6">
+        <li>Yield curve as predictor: Bauer &amp; Mertens (2018), SF Fed; Near-term forward spread, FEDS 2018-055. [oai_citation:0‡Federal Reserve Bank of San Francisco](https://www.frbsf.org/research-and-insights/publications/economic-letter/2018/08/information-in-yield-curve-about-future-recessions?utm_source=chatgpt.com)</li>
+        <li>Equal-weight FCIs: Arrigoni, Bobasu &amp; Venditti (2022), <em>IMF Economic Review</em>. [oai_citation:1‡SpringerLink](https://link.springer.com/article/10.1057/s41308-022-00170-y?utm_source=chatgpt.com)</li>
+        <li>NFCI construction: Chicago Fed NFCI documentation. [oai_citation:2‡chicagofed.org](https://www.chicagofed.org/-/media/publications/nfci/nfci-faqs-pdf.pdf?utm_source=chatgpt.com)</li>
+        <li>Sahm Rule: Claudia Sahm (2019), Brookings; FRED SAHMREALTIME. [oai_citation:3‡FRED](https://fred.stlouisfed.org/series/SAHMREALTIME?utm_source=chatgpt.com)</li>
+      </ul>
+      <div class="small" style="margin-top:6px">
+        This implementation:
+        <ul style="margin-left:16px;margin-top:2px">
+          <li>Does <strong>not</strong> claim official “Fed-validated thresholds”. Where a threshold is inspired by research, say so explicitly.</li>
+          <li>Requires you to calibrate μ_ESI and σ_ESI from full-sample history of ESI_raw before treating regimes as quantitative.</li>
+          <li>Exposes, rather than hides, missing data and effective weights.</li>
+        </ul>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
 'use strict';
 
-// Simplified demonstration - in production, this would fetch real FRED data
-const DEMO_DATA = {
-  LEADING: {
-    T10Y3M: { value: 1.45, zscore: -0.3, status: 'g', label: 'Yield Curve', unit: '%', threshold: '0%', source: 'SF Fed 2018' },
-    BUILDING_PERMITS: { value: -3.2, zscore: 0.4, status: 'g', label: 'Building Permits (6m)', unit: '%', threshold: '-15%', source: 'Moody\'s 2025' },
-    INITIAL_CLAIMS: { value: 228000, zscore: -0.6, status: 'g', label: 'Initial Claims (4wk)', unit: '', threshold: '323k', source: 'FRED Historical' },
-    ISM_NEW_ORDERS: { value: 52.3, zscore: -0.2, status: 'g', label: 'ISM New Orders', unit: '', threshold: '47.5', source: 'Conference Board' },
-    CONSUMER_SENTIMENT: { value: 76.8, zscore: 0.1, status: 'g', label: 'Consumer Sentiment', unit: '', threshold: '70', source: 'Richmond Fed 2022' },
-    AVG_HOURS: { value: 0.1, zscore: -0.1, status: 'g', label: 'Avg Weekly Hours (3m)', unit: '%', threshold: '-0.5%', source: 'Conference Board' }
+/**
+ * CONFIG:
+ * - We assume each indicator's `z` is a stress-aligned z-score:
+ *   >0 = more stress than its own historical mean, in σ units.
+ * - DEMO block below is placeholder. Wire FRED/primary data in production.
+ */
+
+const CONFIG = {
+  buckets: {
+    LEADING:  { label: 'Leading',    weight: 0.6, gridId: 'leadingGrid' },
+    FINANCIAL:{ label: 'Financial',  weight: 0.3, gridId: 'financialGrid' },
+    NOWCAST:  { label: 'Nowcast',    weight: 0.1, gridId: 'nowcastGrid' }
   },
-  FINANCIAL: {
-    CREDIT_SPREAD: { value: 3.45, zscore: -0.4, status: 'g', label: 'Credit Spread (HY)', unit: '%', threshold: '6.5%', source: 'Fed Research' },
-    NFCI: { value: -0.28, zscore: -0.3, status: 'g', label: 'NFCI', unit: '', threshold: '0', source: 'Chicago Fed' },
-    VIX: { value: 16.2, zscore: -0.2, status: 'g', label: 'VIX', unit: '', threshold: '30', source: 'Market Convention' }
-  },
-  NOWCAST: {
-    SAHM_RULE: { value: 0.13, zscore: -0.7, status: 'g', label: 'Sahm Rule', unit: '', threshold: '0.50', source: 'Sahm 2019' },
-    INDPRO: { value: 1.8, zscore: -0.1, status: 'g', label: 'Industrial Production (6m)', unit: '%', threshold: '-2%', source: 'NBER' }
+  // TODO: set these from historical ESI_raw distribution over your chosen sample.
+  ESI_MEAN: 0.0,
+  ESI_STD:  1.0,
+  staleDays: {
+    weekly: 14,
+    monthly: 45
   }
 };
 
-function init() {
-  const allScores = [
-    ...Object.values(DEMO_DATA.LEADING).map(d => d.zscore),
-    ...Object.values(DEMO_DATA.FINANCIAL).map(d => d.zscore),
-    ...Object.values(DEMO_DATA.NOWCAST).map(d => d.zscore)
-  ];
-  
-  const composite = allScores.reduce((a,b) => a+b, 0) / allScores.length;
-  const zScore = composite;
-  
-  renderGauge(zScore);
-  renderIndicators();
-  setupTabs();
-  
-  document.getElementById('upd').textContent = 'Updated: ' + new Date().toLocaleTimeString();
-  document.getElementById('refreshBtn').onclick = () => location.reload();
-  document.getElementById('exportBtn').onclick = () => alert('Export functionality would save JSON report');
-}
-
-function renderGauge(zScore) {
-  const angle = Math.max(0, Math.min(180, (zScore + 1) * 90)); // -1 to +3 σ mapped to 0-360°
-  const displayScore = zScore.toFixed(2);
-  const percentile = Math.round(cumulativeNormal(zScore) * 100);
-  
-  document.getElementById('scoreV').textContent = displayScore + 'σ';
-  document.getElementById('needle').style.setProperty('--angle', angle + 'deg');
-  document.getElementById('zscoreVal').textContent = displayScore + 'σ';
-  document.getElementById('percentileVal').textContent = percentile + 'th';
-  
-  let status, color;
-  if (zScore < 0.5) { status = 'Normal'; color = 'green'; }
-  else if (zScore < 1.0) { status = 'Elevated'; color = 'amber'; }
-  else if (zScore < 2.0) { status = 'High Stress'; color = 'red'; }
-  else { status = 'Critical'; color = 'red'; }
-  
-  document.getElementById('regime').innerHTML = `
-    <span style="width:14px;height:14px;border-radius:50%;background:var(--${color});box-shadow:0 0 10px var(--${color})"></span>
-    <strong>Z-Score: ${displayScore}σ</strong> <span style="color:var(--muted)">| ${status}</span>
-  `;
-  
-  if (zScore >= 1.0) {
-    document.getElementById('alert').style.display = 'block';
-    document.getElementById('alert').innerHTML = `⚠️ <strong>ELEVATED STRESS DETECTED</strong> — Z-score of ${displayScore}σ indicates heightened recession risk.`;
+/**
+ * DEMO DATA:
+ * - z = stress-aligned (positive = bad).
+ * - lastUpdated is illustrative.
+ * - Replace with live fetch and real z-transform in production.
+ */
+const DEMO_DATA = {
+  LEADING: {
+    T10Y3M: {
+      label:'Yield Curve (10y-3m)',
+      value:-0.20,
+      unit:'pp',
+      z:1.4,
+      freq:'daily',
+      lastUpdated:'2025-11-06',
+      note:'Stress when near/ below 0; Bauer & Mertens (2018).',
+      source:'SF Fed / FRED'
+    },
+    BUILDING_PERMITS: {
+      label:'Building Permits (6m % chg)',
+      value:-8.0,
+      unit:'%',
+      z:0.8,
+      freq:'monthly',
+      lastUpdated:'2025-10-30',
+      note:'Housing slowdown as classic early warning.',
+      source:'Census / FRED'
+    },
+    INITIAL_CLAIMS: {
+      label:'Initial Claims (4w avg)',
+      value:230000,
+      unit:'',
+      z:0.2,
+      freq:'weekly',
+      lastUpdated:'2025-11-02',
+      note:'Z based on deviation from cycle lows, not naive level.',
+      source:'DOL / FRED'
+    },
+    ISM_NEW_ORDERS: {
+      label:'ISM New Orders',
+      value:48.5,
+      unit:'',
+      z:0.6,
+      freq:'monthly',
+      lastUpdated:'2025-10-31',
+      note:'Below 50 = contraction risk.',
+      source:'ISM'
+    },
+    CONSUMER_SENTIMENT: {
+      label:'Consumer Sentiment (U-Mich)',
+      value:72.0,
+      unit:'',
+      z:0.5,
+      freq:'monthly',
+      lastUpdated:'2025-10-28',
+      note:'Low sentiment tends to coincide with/precede recessions.',
+      source:'UMich / FRED'
+    },
+    AVG_HOURS: {
+      label:'Avg Weekly Hours (3m Δ)',
+      value:-0.4,
+      unit:'pp',
+      z:0.7,
+      freq:'monthly',
+      lastUpdated:'2025-10-31',
+      note:'Hours cut before layoffs; leading labor signal.',
+      source:'BLS / FRED'
+    }
+  },
+  FINANCIAL: {
+    CREDIT_SPREAD: {
+      label:'HY OAS',
+      value:4.2,
+      unit:'%',
+      z:0.4,
+      freq:'daily',
+      lastUpdated:'2025-11-06',
+      note:'Credit stress when spreads spike vs history.',
+      source:'ICE / FRED'
+    },
+    NFCI: {
+      label:'NFCI',
+      value:0.05,
+      unit:'',
+      z:0.3,
+      freq:'weekly',
+      lastUpdated:'2025-10-31',
+      note:'>0 = tighter than avg; Chicago Fed NFCI. Not a binary trigger.',
+      source:'Chicago Fed'
+    },
+    VIX: {
+      label:'VIX',
+      value:22,
+      unit:'',
+      z:0.3,
+      freq:'daily',
+      lastUpdated:'2025-11-06',
+      note:'Short vol spike proxy; oriented so higher = more stress.',
+      source:'CBOE'
+    }
+  },
+  NOWCAST: {
+    SAHM_RULE: {
+      label:'Sahm Rule',
+      value:0.15,
+      unit:'pp',
+      z:0.1,
+      freq:'monthly',
+      lastUpdated:'2025-10-31',
+      note:'0.5pp trigger is coincident; here low, so mild stress.',
+      source:'Sahm / FRED'
+    },
+    INDPRO: {
+      label:'Industrial Production (6m % chg)',
+      value:0.8,
+      unit:'%',
+      z:0.2,
+      freq:'monthly',
+      lastUpdated:'2025-10-31',
+      note:'Soft but not recessionary; oriented so weaker = more stress.',
+      source:'Fed / FRED'
+    }
   }
-  
-  document.getElementById('insightCard').style.display = 'block';
-  document.getElementById('insightText').textContent = getInsight(zScore);
+};
+
+function isStale(ind){
+  if (!ind.lastUpdated) return true;
+  const last = new Date(ind.lastUpdated);
+  if (isNaN(last)) return true;
+  const now = new Date();
+  const days = (now - last)/(1000*60*60*24);
+  let max = 60;
+  if (ind.freq === 'weekly') max = CONFIG.staleDays.weekly;
+  if (ind.freq === 'monthly') max = CONFIG.staleDays.monthly;
+  return days > max;
 }
 
-function renderIndicators() {
-  renderCategory('leadingGrid', DEMO_DATA.LEADING, '6-18 mo lead');
-  renderCategory('financialGrid', DEMO_DATA.FINANCIAL, '0-24 mo');
-  renderCategory('nowcastGrid', DEMO_DATA.NOWCAST, 'Coincident');
+function computeESI(data){
+  const detail = {
+    buckets:{},
+    missing:[],
+    stale:[]
+  };
+
+  let compositeWeighted = 0;
+  let weightSum = 0;
+
+  for (const [bucketKey, bucketCfg] of Object.entries(CONFIG.buckets)){
+    const series = data[bucketKey] || {};
+    const vals = [];
+
+    for (const [code, ind] of Object.entries(series)){
+      const z = Number(ind.z);
+      if (!Number.isFinite(z)){
+        detail.missing.push(`${bucketKey}:${ind.label || code} (no z)`);
+        continue;
+      }
+      if (isStale(ind)){
+        detail.stale.push(`${bucketKey}:${ind.label || code} (stale)`);
+        // include but this will be visible; if you want, downweight here.
+      }
+      vals.push(z);
+    }
+
+    if (vals.length === 0){
+      detail.buckets[bucketKey] = { mean:null, effWeight:0, count:0 };
+      continue;
+    }
+
+    const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
+    const effW = bucketCfg.weight;
+    detail.buckets[bucketKey] = { mean, effWeight:effW, count:vals.length };
+
+    compositeWeighted += effW * mean;
+    weightSum += effW;
+  }
+
+  if (weightSum === 0){
+    return { z:null, raw:null, detail };
+  }
+
+  const esiRaw = compositeWeighted / weightSum;
+
+  // Standardize using configurable historical μ,σ (must be set from real backtest).
+  const mu  = CONFIG.ESI_MEAN;
+  const sig = CONFIG.ESI_STD;
+  const esiZ = sig > 0 ? (esiRaw - mu)/sig : esiRaw; // if not calibrated, esiZ == raw.
+
+  return { z: esiZ, raw: esiRaw, detail };
 }
 
-function renderCategory(gridId, data, leadTime) {
+function cumulativeNormal(z){
+  const t = 1/(1+0.2316419*Math.abs(z));
+  const d = 0.3989423*Math.exp(-0.5*z*z);
+  const prob = d*t*(0.3193815 + t*(-0.3565638 + t*(1.781478 + t*(-1.821256 + t*1.330274))));
+  return z > 0 ? 1 - prob : prob;
+}
+
+function renderAll(){
+  const { z, raw, detail } = computeESI(DEMO_DATA);
+  const zDisp = (z !== null && Number.isFinite(z)) ? z : null;
+
+  renderGauge(zDisp);
+  renderIndicators(DEMO_DATA);
+  renderRegime(zDisp);
+  renderInsight(zDisp, raw, detail);
+  renderAudit(detail, zDisp, raw);
+
+  document.getElementById('upd').textContent = 'Updated: ' + new Date().toISOString();
+}
+
+function renderGauge(z){
+  const needleEl = document.getElementById('needle');
+  const scoreV = document.getElementById('scoreV');
+  const zEl = document.getElementById('zscoreVal');
+  const pEl = document.getElementById('percentileVal');
+  const bucketInfo = document.getElementById('bucketInfo');
+
+  const usedBuckets = Object.values(CONFIG.buckets)
+    .filter((b,idx) => true); // all possible; refined via audit
+
+  bucketInfo.textContent = '3/3';
+
+  if (z === null){
+    needleEl.style.setProperty('--angle','0deg');
+    scoreV.textContent = '--';
+    zEl.textContent = '--';
+    pEl.textContent = '--';
+    return;
+  }
+
+  // Map z in [-2, +3] to [0,180] degrees.
+  const zMin = -2, zMax = 3;
+  const zClamped = Math.max(zMin, Math.min(zMax, z));
+  const angle = ((zClamped - zMin)/(zMax - zMin))*180;
+
+  needleEl.style.setProperty('--angle', angle + 'deg');
+
+  const disp = z.toFixed(2);
+  scoreV.textContent = disp + 'σ';
+  zEl.textContent = disp + 'σ';
+
+  const pct = Math.round(cumulativeNormal(z)*100);
+  pEl.textContent = (isFinite(pct) ? pct : '--') + 'th';
+}
+
+function renderIndicators(data){
+  renderCategory('leadingGrid',   data.LEADING);
+  renderCategory('financialGrid', data.FINANCIAL);
+  renderCategory('nowcastGrid',   data.NOWCAST);
+}
+
+function statusFromZ(z){
+  if (!Number.isFinite(z)) return 'a';
+  if (z >= 1.5) return 'r';
+  if (z >= 0.5) return 'a';
+  return 'g';
+}
+
+function renderCategory(gridId, series){
   const grid = document.getElementById(gridId);
-  grid.innerHTML = Object.entries(data).map(([key, d]) => {
-    const dotClass = d.status;
-    const displayVal = d.unit ? d.value + d.unit : d.value.toLocaleString();
-    const zClass = d.zscore >= 0 ? 'a' : 'g';
-    
+  if (!grid || !series){
+    if (grid) grid.innerHTML = '<div class="small">No data.</div>';
+    return;
+  }
+
+  grid.innerHTML = Object.entries(series).map(([code, d]) => {
+    const z = Number(d.z);
+    const dotClass = statusFromZ(z);
+    const val = d.unit ? `${d.value}${d.unit}` : (d.value !== undefined ? d.value : '--');
+    const stale = isStale(d);
+    const staleTag = stale ? ' • STALE' : '';
+    const zTxt = Number.isFinite(z) ? z.toFixed(2)+'σ' : '--';
+
     return `
       <div class="kpi">
-        <h4>${d.label} <span class="dot ${dotClass}"></span></h4>
-        <div class="val">${displayVal}</div>
-        <div class="zscore">Z-Score: ${d.zscore.toFixed(2)}σ</div>
-        <div class="small">Threshold: ${d.threshold} • Lead: ${leadTime}</div>
-        <div class="desc"><strong>Source:</strong> ${d.source}</div>
+        <h4>
+          <span>${d.label || code}</span>
+          <span class="dot ${dotClass}"></span>
+        </h4>
+        <div class="val">${val}</div>
+        <div class="zscore">Stress Z: ${zTxt}</div>
+        <div class="small">
+          Freq: ${d.freq || 'n/a'} • Updated: ${d.lastUpdated || 'n/a'}${staleTag}
+        </div>
+        <div class="desc">
+          <strong>Source:</strong> ${d.source || 'n/a'}<br/>
+          ${d.note || ''}
+        </div>
       </div>
     `;
   }).join('');
 }
 
-function setupTabs() {
+function renderRegime(z){
+  const regimeEl = document.getElementById('regime');
+  const alertEl = document.getElementById('alert');
+
+  if (z === null || !Number.isFinite(z)){
+    regimeEl.innerHTML = `
+      <span style="width:12px;height:12px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber)"></span>
+      <span>ESI Z-Score: -- | Data insufficient for signal</span>
+    `;
+    alertEl.style.display = 'block';
+    alertEl.textContent = 'Data or calibration missing. Do not trade off this state.';
+    return;
+  }
+
+  let status, color, msg = '';
+
+  if (z < 0.5){ status = 'Normal';   color = 'green'; msg = 'No broad stress: stay data-dependent.'; }
+  else if (z < 1.0){ status = 'Elevated'; color = 'amber'; msg = 'Tightening conditions; increase monitoring, review exposures.'; }
+  else if (z < 2.0){ status = 'High';     color = 'red';   msg = 'Clustered warnings: de-risk, stress-test liquidity and funding.'; }
+  else {             status = 'Critical'; color = 'red';   msg = 'Rare stress regime: capital preservation first.'; }
+
+  regimeEl.innerHTML = `
+    <span style="width:12px;height:12px;border-radius:50%;background:var(--${color});box-shadow:0 0 10px var(--${color})"></span>
+    <span>ESI Z-Score: ${z.toFixed(2)}σ | ${status} (requires calibrated μ,σ)</span>
+  `;
+
+  if (z >= 1.0){
+    alertEl.style.display = 'block';
+    alertEl.innerHTML = `⚠️ <strong>${status.toUpperCase()} STRESS:</strong> ${msg}`;
+  } else {
+    alertEl.style.display = 'none';
+    alertEl.textContent = '';
+  }
+}
+
+function renderInsight(z, raw, detail){
+  const card = document.getElementById('insightCard');
+  const text = document.getElementById('insightText');
+  if (!card || !text) return;
+
+  if (z === null || !Number.isFinite(z)){
+    card.style.display = 'block';
+    text.textContent = 'ESI cannot be interpreted without full data and historical calibration. Treat this as a structural smoke test only.';
+    return;
+  }
+
+  const b = detail.buckets;
+  const lead = b.LEADING?.mean;
+  const fin  = b.FINANCIAL?.mean;
+  const now  = b.NOWCAST?.mean;
+
+  let line = `Composite raw stress = ${raw.toFixed(2)} (stress-aligned), standardized to ${z.toFixed(2)}σ. `;
+
+  if (lead !== null) line += `Leading bucket: ${lead.toFixed(2)}σ; `;
+  if (fin  !== null) line += `Financial: ${fin.toFixed(2)}σ; `;
+  if (now  !== null) line += `Nowcast: ${now.toFixed(2)}σ. `;
+
+  line += 'Interpret only after you have validated μ,σ and backtested hit/false-alarm rates vs NBER dates.';
+
+  card.style.display = 'block';
+  text.textContent = line;
+}
+
+function renderAudit(detail, z, raw){
+  const sumEl = document.getElementById('auditSummary');
+  const detEl = document.getElementById('auditDetails');
+  if (!sumEl || !detEl) return;
+
+  const missing = detail.missing || [];
+  const stale = detail.stale || [];
+
+  let summary = `Current demo run uses 11 configured indicators across 3 buckets. `;
+  summary += `Weights applied: Leading 60%, Financial 30%, Nowcast 10% (if bucket has at least one valid z-score). `;
+  if (missing.length) summary += `Missing series: ${missing.length}. `;
+  if (stale.length) summary += `Stale series flagged: ${stale.length}. `;
+  if (z === null || !Number.isFinite(z)) summary += `ESI could not be standardized — check data & CONFIG.`;
+
+  sumEl.textContent = summary;
+
+  const lines = [];
+
+  for (const [bKey, b] of Object.entries(detail.buckets)){
+    if (!b) continue;
+    lines.push(
+      `[${bKey}] mean z = ${b.mean !== null ? b.mean.toFixed(2) : 'n/a'}, ` +
+      `target weight = ${CONFIG.buckets[bKey].weight}, ` +
+      `effective weight = ${b.effWeight}, count = ${b.count}`
+    );
+  }
+  if (missing.length){
+    lines.push(`Missing: ${missing.join('; ')}`);
+  }
+  if (stale.length){
+    lines.push(`Stale (still included, you may choose to down-weight/exclude in prod): ${stale.join('; ')}`);
+  }
+
+  detEl.innerHTML = lines.map(l=>`<div>${l}</div>`).join('');
+}
+
+function setupTabs(){
   document.querySelectorAll('.tab').forEach(tab => {
-    tab.onclick = () => {
+    tab.addEventListener('click', () => {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       const key = tab.dataset.t;
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
       document.getElementById('view-' + key).classList.add('active');
-    };
+    });
   });
 }
 
-function getInsight(z) {
-  if (z < 0.5) return "Economic conditions are favorable with stress levels below historical average. Leading indicators suggest continued expansion, though normal monitoring continues.";
-  if (z < 1.0) return "Stress levels are elevated above historical average but remain within normal volatility range. Some leading indicators showing early caution signals. Monitor closely.";
-  if (z < 2.0) return "High stress levels detected. Multiple leading indicators showing recession warning signals. Consider defensive positioning and increased monitoring frequency.";
-  return "Critical stress levels. Historical precedent suggests elevated recession probability within 6-18 months. Maximum defensive posture recommended.";
+function setupButtons(){
+  document.getElementById('refreshBtn').onclick = () => {
+    // In production this would re-fetch latest FRED data, recompute z-scores & ESI.
+    renderAll();
+  };
+  document.getElementById('exportBtn').onclick = () => {
+    const snapshot = {
+      ts: new Date().toISOString(),
+      config: CONFIG,
+      data: DEMO_DATA,
+      esi: computeESI(DEMO_DATA)
+    };
+    const blob = new Blob([JSON.stringify(snapshot,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'esi_snapshot.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 }
 
-function cumulativeNormal(z) {
-  const t = 1 / (1 + 0.2316419 * Math.abs(z));
-  const d = 0.3989423 * Math.exp(-z * z / 2);
-  const prob = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
-  return z > 0 ? 1 - prob : prob;
-}
-
-window.addEventListener('DOMContentLoaded', init);
+window.addEventListener('DOMContentLoaded', () => {
+  setupTabs();
+  setupButtons();
+  renderAll();
+});
 </script>
-
 </body>
 </html>
