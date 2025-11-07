@@ -8,7 +8,6 @@
 :root{
   --bg:#0a0e1a; --panel:#12182b; --panel-hover:#151d33; --text:#e8eeff; --muted:#8b96b0;
   --accent:#6b9eff; --accent-bright:#8fb4ff; --green:#1ec28b; --amber:#ffc247; --red:#ff6070;
-  --purple:#a78bfa; --cyan:#22d3ee;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{
@@ -409,11 +408,11 @@ h1{
       <h4>What this code actually does</h4>
       <ul>
         <li>Reads <code>data/fred_cache.json</code> generated server-side by GitHub Actions using your FRED key.</li>
-        <li>For each series, builds stress-aligned z-scores from its own history (higher z = more stress).</li>
-        <li>Within each bucket (Leading / Financial / Nowcast) takes the mean of available z-scores.</li>
-        <li>Composite: <strong>ESI_raw = 0.6·Z_leading + 0.3·Z_financial + 0.1·Z_nowcast</strong>.</li>
-        <li>ESI_z = (ESI_raw − μ_ESI)/σ_ESI (defaults μ=0,σ=1 here; you must calibrate from historical ESI_raw).</li>
-        <li>Surfaces missing/stale series explicitly; it does not fabricate values.</li>
+        <li>For each configured series, computes a stress-aligned z-score from its own history (higher z = more stress).</li>
+        <li>Within each bucket: equal-weight the available indicators.</li>
+        <li>Composite: <strong>ESI_raw = 0.6·Z_leading + 0.3·Z_financial + 0.1·Z_nowcast</strong> (buckets without any indicators drop out and weights are renormalized).</li>
+        <li>ESI_z = (ESI_raw − μ_ESI)/σ_ESI. Here μ_ESI=0, σ_ESI=1 as placeholders until you calibrate on historical ESI_raw.</li>
+        <li>Flags missing/stale required series; optional ones (like Building Permits, if not wired) are skipped silently.</li>
       </ul>
     </div>
   </div>
@@ -449,21 +448,8 @@ h1{
     <div class="card">
       <h3 style="margin-bottom:6px;font-size:15px">Methodology, Series & Caveats</h3>
       <div class="small">
-        No “Fed-approved” fairy tales. You can trace every step from cache → z-score → bucket → composite.
-      </div>
-      <ul class="small" style="margin-left:16px;margin-top:4px;line-height:1.6">
-        <li>Yield curve: Bauer &amp; Mertens (2018), SF Fed (near-term spread). </li>
-        <li>Equal-weight robustness: Arrigoni, Bobasu &amp; Venditti (2022), IMF Economic Review.</li>
-        <li>NFCI: Chicago Fed documentation.</li>
-        <li>Sahm Rule: Claudia Sahm (2019), Brookings.</li>
-      </ul>
-      <div class="small" style="margin-top:6px">
-        You still need to:
-        <ul style="margin-left:16px;margin-top:2px">
-          <li>Confirm <code>fred_cache.json</code> structure matches what this script expects.</li>
-          <li>Estimate μ_ESI and σ_ESI from historical ESI_raw and plug them into the config.</li>
-          <li>Run a backtest vs NBER dates before trusting σ cutoffs with real money.</li>
-        </ul>
+        This front-end does what it says. If a series or bucket is missing, you see it.
+        You still owe yourself proper backtests vs NBER dates before betting size.
       </div>
     </div>
   </div>
@@ -472,24 +458,123 @@ h1{
 <script>
 'use strict';
 
-// Path to your server-side cache
 const CACHE_URL = 'data/fred_cache.json';
 
-// Indicator definitions (must match what fetch_fred.js writes into the cache)
+// Indicator config:
+// - cacheKeys: possible keys in fred_cache.json
+// - fred_id: actual FRED ID (for documentation)
+// - optional: if true, missing in cache is NOT an error
 const INDICATORS = [
-  { key:'T10Y3M',       bucket:'LEADING',  label:'Yield Curve (10y-3m)',        series_id:'T10Y3M',       orientation:'inverted', freq:'daily'   },
-  { key:'PERMIT',       bucket:'LEADING',  label:'Building Permits',            series_id:'PERMIT',       orientation:'inverted', freq:'monthly' },
-  { key:'ICSA',         bucket:'LEADING',  label:'Initial Claims',              series_id:'ICSA',         orientation:'direct',   freq:'weekly'  },
-  { key:'NAPMNOI',      bucket:'LEADING',  label:'ISM New Orders',              series_id:'NAPMNOI',      orientation:'inverted', freq:'monthly' },
-  { key:'UMCSENT',      bucket:'LEADING',  label:'Consumer Sentiment',          series_id:'UMCSENT',      orientation:'inverted', freq:'monthly' },
-  { key:'AWHMAN',       bucket:'LEADING',  label:'Avg Weekly Hours, Mfg',       series_id:'AWHMAN',       orientation:'inverted', freq:'monthly' },
-
-  { key:'BAMLH0A0HYM2', bucket:'FINANCIAL',label:'HY OAS',                      series_id:'BAMLH0A0HYM2', orientation:'direct',   freq:'daily'   },
-  { key:'NFCI',         bucket:'FINANCIAL',label:'NFCI',                         series_id:'NFCI',         orientation:'direct',   freq:'weekly'  },
-  { key:'VIXCLS',       bucket:'FINANCIAL',label:'VIX',                          series_id:'VIXCLS',       orientation:'direct',   freq:'daily'   },
-
-  { key:'SAHMREALTIME', bucket:'NOWCAST',  label:'Sahm Rule',                   series_id:'SAHMREALTIME', orientation:'direct',   freq:'monthly' },
-  { key:'INDPRO',       bucket:'NOWCAST',  label:'Industrial Production',       series_id:'INDPRO',       orientation:'inverted', freq:'monthly' }
+  {
+    key:'T10Y3M',
+    bucket:'LEADING',
+    label:'Yield Curve (10y-3m)',
+    cacheKeys:['T10Y3M'],
+    fred_id:'T10Y3M',
+    orientation:'inverted',
+    freq:'daily',
+    optional:false
+  },
+  {
+    key:'BUILDING_PERMITS',
+    bucket:'LEADING',
+    label:'Building Permits',
+    cacheKeys:['BUILDING_PERMITS','PERMIT'],
+    fred_id:'PERMIT',
+    orientation:'inverted',
+    freq:'monthly',
+    optional:true // you said you haven’t wired this yet
+  },
+  {
+    key:'INITIAL_CLAIMS',
+    bucket:'LEADING',
+    label:'Initial Claims',
+    cacheKeys:['INITIAL_CLAIMS','ICSA'],
+    fred_id:'ICSA',
+    orientation:'direct',
+    freq:'weekly',
+    optional:false
+  },
+  {
+    key:'ISM_NEW_ORDERS',
+    bucket:'LEADING',
+    label:'ISM New Orders',
+    cacheKeys:['ISM_NEW_ORDERS','NAPMNOI'],
+    fred_id:'NAPMNOI',
+    orientation:'inverted',
+    freq:'monthly',
+    optional:false
+  },
+  {
+    key:'CONSUMER_SENTIMENT',
+    bucket:'LEADING',
+    label:'Consumer Sentiment',
+    cacheKeys:['CONSUMER_SENTIMENT','UMCSENT'],
+    fred_id:'UMCSENT',
+    orientation:'inverted',
+    freq:'monthly',
+    optional:false
+  },
+  {
+    key:'AVG_HOURS',
+    bucket:'LEADING',
+    label:'Avg Weekly Hours, Mfg',
+    cacheKeys:['AVG_HOURS','AWHMAN'],
+    fred_id:'AWHMAN',
+    orientation:'inverted',
+    freq:'monthly',
+    optional:false
+  },
+  {
+    key:'HY_OAS',
+    bucket:'FINANCIAL',
+    label:'HY OAS',
+    cacheKeys:['HY_OAS','BAMLH0A0HYM2'],
+    fred_id:'BAMLH0A0HYM2',
+    orientation:'direct',
+    freq:'daily',
+    optional:false
+  },
+  {
+    key:'NFCI',
+    bucket:'FINANCIAL',
+    label:'NFCI',
+    cacheKeys:['NFCI'],
+    fred_id:'NFCI',
+    orientation:'direct',
+    freq:'weekly',
+    optional:false
+  },
+  {
+    key:'VIX',
+    bucket:'FINANCIAL',
+    label:'VIX',
+    cacheKeys:['VIX','VIXCLS'],
+    fred_id:'VIXCLS',
+    orientation:'direct',
+    freq:'daily',
+    optional:false
+  },
+  {
+    key:'SAHM',
+    bucket:'NOWCAST',
+    label:'Sahm Rule',
+    cacheKeys:['SAHM','SAHM_RULE','SAHMREALTIME'],
+    fred_id:'SAHMREALTIME',
+    orientation:'direct',
+    freq:'monthly',
+    optional:false
+  },
+  {
+    key:'INDPRO',
+    bucket:'NOWCAST',
+    label:'Industrial Production',
+    cacheKeys:['INDPRO'],
+    fred_id:'INDPRO',
+    orientation:'inverted',
+    freq:'monthly',
+    optional:false
+  }
 ];
 
 const BUCKETS = {
@@ -500,10 +585,8 @@ const BUCKETS = {
 
 const STALE = { daily:7, weekly:21, monthly:75 };
 
-// Placeholders: set these from historical ESI_raw distribution once you’ve run it.
+// TODO: replace with historical calibration of ESI_raw.
 const ESI_CAL = { mean:0.0, std:1.0 };
-
-// ---- Cache loading ----
 
 async function loadCache(){
   const res = await fetch(CACHE_URL, { cache:'no-store' });
@@ -511,43 +594,62 @@ async function loadCache(){
   return res.json();
 }
 
-// Tries a few obvious shapes: history / series / values / observations.
 function extractHistory(entry){
   if (!entry) return [];
   if (Array.isArray(entry.history)) return entry.history;
-  if (Array.isArray(entry.series)) return entry.series;
-  if (Array.isArray(entry.values)) return entry.values;
   if (Array.isArray(entry.observations)) return entry.observations;
+  if (Array.isArray(entry.values)) return entry.values;
   return [];
 }
 
 function computeZFromCache(ind, cache){
-  const c = cache[ind.series_id] || cache[ind.key];
-  if (!c) throw new Error('MISSING_IN_CACHE');
+  const candidates = [
+    ...(ind.cacheKeys || []),
+    ind.fred_id,
+    ind.key
+  ].filter(Boolean);
 
-  const hist = extractHistory(c);
-  if (!hist.length) throw new Error('NO_HISTORY');
+  let entry = null;
+  for (const name of candidates){
+    if (cache && Object.prototype.hasOwnProperty.call(cache, name)){
+      entry = cache[name];
+      break;
+    }
+  }
+
+  if (!entry){
+    if (ind.optional) throw new Error('SKIP_OPTIONAL');
+    throw new Error('MISSING_IN_CACHE');
+  }
+
+  const hist = extractHistory(entry);
+  if (!hist.length){
+    if (ind.optional) throw new Error('SKIP_OPTIONAL');
+    throw new Error('NO_HISTORY');
+  }
 
   const series = hist
     .map(d => ({
       date: d.date,
-      value: typeof d.value === 'number' ? d.value : parseFloat(d.value)
+      value: (typeof d.value === 'number') ? d.value : parseFloat(d.value)
     }))
-    .filter(d => !isNaN(d.value));
+    .filter(d => Number.isFinite(d.value));
 
-  if (series.length < 24) throw new Error('SHORT_HISTORY');
+  if (series.length < 24){
+    if (ind.optional) throw new Error('SKIP_OPTIONAL');
+    throw new Error('SHORT_HISTORY');
+  }
 
-  const latest = (c.last_date && c.last != null)
-    ? { date:c.last_date, value:c.last }
+  const latest = (entry.last_date != null && entry.last != null)
+    ? { date: entry.last_date, value: entry.last }
     : series[series.length - 1];
 
-  const now = new Date();
   const lastDate = new Date(latest.date);
-  const ageDays = isNaN(lastDate) ? Infinity : (now - lastDate)/(1000*60*60*24);
+  const ageDays = isNaN(lastDate) ? Infinity :
+    (new Date() - lastDate)/(1000*60*60*24);
   const maxAge = STALE[ind.freq] || 90;
   const stale = ageDays > maxAge;
 
-  // orientation
   const vals = series.map(d =>
     ind.orientation === 'inverted' ? -d.value : d.value
   );
@@ -555,26 +657,27 @@ function computeZFromCache(ind, cache){
   const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
   const varSum = vals.reduce((a,b)=>a+Math.pow(b-mean,2),0);
   const std = Math.sqrt(varSum/(vals.length-1)) || 0;
-  if (!isFinite(std) || std === 0) throw new Error('ZERO_STD');
+  if (!isFinite(std) || std === 0){
+    if (ind.optional) throw new Error('SKIP_OPTIONAL');
+    throw new Error('ZERO_STD');
+  }
 
   const latestAdj = ind.orientation === 'inverted' ? -latest.value : latest.value;
   const z = (latestAdj - mean) / std;
 
   return {
-    key:ind.key,
-    bucket:ind.bucket,
-    label:ind.label,
-    series_id:ind.series_id,
-    orientation:ind.orientation,
-    freq:ind.freq,
-    lastDate:latest.date,
-    lastValue:latest.value,
+    key: ind.key,
+    bucket: ind.bucket,
+    label: ind.label,
+    series_id: candidates[0],
+    orientation: ind.orientation,
+    freq: ind.freq,
+    lastDate: latest.date,
+    lastValue: latest.value,
     z,
     stale
   };
 }
-
-// ---- ESI computation ----
 
 function computeESI(results){
   const detail = { buckets:{}, stale:[] };
@@ -584,19 +687,24 @@ function computeESI(results){
   for (const [bKey, bCfg] of Object.entries(BUCKETS)){
     const inB = results.filter(r => r.bucket === bKey);
     if (!inB.length){
-      detail.buckets[bKey] = { mean:null, weight:bCfg.weight, effWeight:0, count:0 };
+      detail.buckets[bKey] = {
+        mean:null, weight:bCfg.weight, effWeight:0, count:0
+      };
       continue;
     }
     const zs = inB.map(r => r.z);
     const mean = zs.reduce((a,b)=>a+b,0)/zs.length;
+
     detail.buckets[bKey] = {
       mean,
       weight:bCfg.weight,
       effWeight:bCfg.weight,
       count:inB.length
     };
+
     wVal += bCfg.weight * mean;
     wSum += bCfg.weight;
+
     inB.forEach(r => { if (r.stale) detail.stale.push(`${bKey}:${r.label} (${r.lastDate})`); });
   }
 
@@ -616,8 +724,6 @@ function cumulativeNormal(z){
   const prob = d*t*(0.3193815 + t*(-0.3565638 + t*(1.781478 + t*(-1.821256 + t*1.330274))));
   return z > 0 ? 1 - prob : prob;
 }
-
-// ---- Rendering ----
 
 function statusFromZ(z){
   if (!Number.isFinite(z)) return 'a';
@@ -660,11 +766,13 @@ function renderIndicators(results){
   for (const [bKey,bCfg] of Object.entries(BUCKETS)){
     const grid = document.getElementById(bCfg.gridId);
     if (!grid) continue;
+
     const list = buckets[bKey];
     if (!list || !list.length){
       grid.innerHTML = `<div class="small">No valid data for ${bCfg.label} bucket.</div>`;
       continue;
     }
+
     grid.innerHTML = list.map(r => {
       const dot = statusFromZ(r.z);
       const stale = r.stale ? ' • STALE' : '';
@@ -677,8 +785,7 @@ function renderIndicators(results){
           <div class="zscore">Stress Z: ${ztxt}</div>
           <div class="small">Series: ${r.series_id} • Last: ${r.lastDate || 'n/a'}${stale}</div>
           <div class="desc">
-            Orientation: ${r.orientation}.
-            Z-score based on full available history from cache; higher Z = more stress.
+            Orientation: ${r.orientation}. Z from full cached history; higher Z = more stress.
           </div>
         </div>`;
     }).join('');
@@ -737,7 +844,7 @@ function renderInsight(z, raw, detail){
   if (lead!=null) line += `Leading=${lead.toFixed(2)}σ; `;
   if (fin!=null)  line += `Financial=${fin.toFixed(2)}σ; `;
   if (now!=null)  line += `Nowcast=${now.toFixed(2)}σ. `;
-  line += 'Check backtest vs NBER dates before treating these bands as gospel.';
+  line += 'Backtest vs NBER dates before treating these bands as binding risk triggers.';
 
   card.style.display = 'block';
   text.textContent = line;
@@ -753,7 +860,8 @@ function renderAudit(detail, z, raw, results, errors){
   for (const [bKey,b] of Object.entries(detail.buckets)){
     if (!b) continue;
     lines.push(
-      `[${bKey}] mean z=${b.mean!=null?b.mean.toFixed(2):'n/a'}, target weight=${b.weight}, effective weight=${b.effWeight}, count=${b.count}`
+      `[${bKey}] mean z=${b.mean!=null?b.mean.toFixed(2):'n/a'}, `
+      + `target weight=${b.weight}, effective weight=${b.effWeight}, count=${b.count}`
     );
   }
 
@@ -761,21 +869,23 @@ function renderAudit(detail, z, raw, results, errors){
     lines.push(`Stale series: ${detail.stale.join('; ')}`);
   }
 
-  const missing = INDICATORS.filter(ind =>
-    !results.some(r => r.series_id === ind.series_id)
+  const presentSeriesIds = new Set(results.map(r => r.series_id));
+  const missingRequired = INDICATORS.filter(ind =>
+    !ind.optional &&
+    !Array.from(presentSeriesIds).some(id =>
+      (ind.cacheKeys || []).includes(id) || id === ind.fred_id || id === ind.key
+    )
   );
-  if (missing.length){
-    lines.push(
-      'Missing indicators: ' +
-      missing.map(m => `${m.bucket}:${m.label} (${m.series_id})`).join('; ')
-    );
+  if (missingRequired.length){
+    lines.push('Missing required indicators: ' +
+      missingRequired.map(m => `${m.bucket}:${m.label}`).join('; '));
   }
 
   if (errors && errors.length){
     lines.push('Errors: ' + errors.join(' | '));
   }
 
-  let summary = `Composite uses 60/30/10 weights on available indicators. `;
+  let summary = `Composite uses 60/30/10 bucket weights on buckets with data (weights renormalized if a bucket is empty). `;
   if (Number.isFinite(z)){
     summary += `ESI_raw=${raw.toFixed(2)}, ESI_z=${z.toFixed(2)} (using current μ,σ).`;
   } else {
@@ -791,8 +901,6 @@ function setDataMode(msg){
   if (el) el.textContent = msg;
 }
 
-// ---- Main ----
-
 async function loadAndRender(){
   document.getElementById('upd').textContent = 'Updated: ' + new Date().toISOString();
   const errors = [];
@@ -801,15 +909,20 @@ async function loadAndRender(){
   try{
     const cache = await loadCache();
     setDataMode('Using server-side FRED cache');
+
     for (const ind of INDICATORS){
       try{
         const r = computeZFromCache(ind, cache);
-        results.push(r);
+        if (r) results.push(r);
       } catch(e){
-        errors.push(`${ind.label}: ${e.message}`);
+        if (e.message === 'SKIP_OPTIONAL') {
+          // ignore optional missing series
+        } else {
+          errors.push(`${ind.label}: ${e.message}`);
+        }
       }
     }
-  }catch(e){
+  } catch(e){
     setDataMode('Cache load failed');
     const alertEl = document.getElementById('alert');
     alertEl.style.display = 'block';
@@ -821,6 +934,7 @@ async function loadAndRender(){
   }
 
   const { raw, z, detail } = computeESI(results);
+
   renderIndicators(results);
   renderGauge(z);
   renderRegime(z);
@@ -830,7 +944,7 @@ async function loadAndRender(){
   if (errors.length){
     const alertEl = document.getElementById('alert');
     alertEl.style.display = 'block';
-    alertEl.innerHTML = `⚠️ Issues for some series: ${errors.join(' | ')}`;
+    alertEl.innerHTML = `⚠️ Issues for some required series: ${errors.join(' | ')}`;
   }
 }
 
@@ -850,8 +964,8 @@ function setupButtons(){
   document.getElementById('refreshBtn').onclick = loadAndRender;
   document.getElementById('exportBtn').onclick = () => {
     const snapshot = {
-      ts:new Date().toISOString(),
-      note:'Snapshot exports current ESI inputs & outputs. Backfill your own history for real work.'
+      ts: new Date().toISOString(),
+      note: 'ESI snapshot from cached data. Historical calibration/backtest not included.'
     };
     const blob = new Blob([JSON.stringify(snapshot,null,2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
