@@ -1,56 +1,51 @@
 // scripts/fetch_fred.js
-// Server-side FRED fetcher for CrashRadar ESI.
-// Uses FRED_API_KEY (GitHub repo secret) and writes data/fred_cache.json.
-// Output shape matches index.html expectations.
+// CrashRadar ESI FRED fetcher
+// Uses FRED_API_KEY (GitHub repo secret)
+// Writes data/fred_cache.json in a shape that index.html expects.
 
 const fs = require("fs/promises");
 
 (async () => {
   try {
-    console.log("Node:", process.version);
-
     const API_KEY = process.env.FRED_API_KEY;
     if (!API_KEY) {
       throw new Error("Missing env FRED_API_KEY (set repo secret FRED_API_KEY).");
     }
 
-    // Use global fetch if available; otherwise polyfill with node-fetch
     let _fetch = global.fetch;
     if (typeof _fetch !== "function") {
-      console.log("Global fetch not found; loading node-fetch polyfill…");
       _fetch = (await import("node-fetch")).default;
     }
 
     const BASE = "https://api.stlouisfed.org/fred/series/observations";
 
-    // outKey = key in fred_cache.json (front-end reads these)
-    // fred_id = FRED series_id
-    // optional = if true, failure doesn’t poison the run
+    // Each entry: FRED series_id + canonical cache key used by the UI.
     const SERIES = [
-      // Leading
-      { outKey: "T10Y3M",            fred_id: "T10Y3M",        start: "1985-01-01" },
-      { outKey: "INITIAL_CLAIMS",    fred_id: "ICSA",          start: "1985-01-01" },
-      { outKey: "ISM_NEW_ORDERS",    fred_id: "NAPMNOI",       start: "1985-01-01" },
-      { outKey: "CONSUMER_SENTIMENT",fred_id: "UMCSENT",       start: "1985-01-01" },
-      { outKey: "AVG_HOURS",         fred_id: "AWHMAN",        start: "1985-01-01" },
-      { outKey: "BUILDING_PERMITS",  fred_id: "PERMIT",        start: "1985-01-01", optional: true },
+      // Leading (core)
+      { fred_id: "T10Y3M",       key: "T10Y3M",            start: "1985-01-01" },
+      { fred_id: "ICSA",         key: "INITIAL_CLAIMS",    start: "1985-01-01" },
+      { fred_id: "NAPMNOI",      key: "ISM_NEW_ORDERS",    start: "1985-01-01" },
+      { fred_id: "UMCSENT",      key: "CONSUMER_SENTIMENT",start: "1985-01-01" },
+      { fred_id: "AWHMAN",       key: "AVG_HOURS",         start: "1985-01-01" },
+      // Leading (optional, you hadn’t wired it originally)
+      { fred_id: "PERMIT",       key: "BUILDING_PERMITS",  start: "1985-01-01", optional: true },
 
       // Financial
-      { outKey: "HY_OAS",            fred_id: "BAMLH0A0HYM2",  start: "1997-01-01" },
-      { outKey: "NFCI",              fred_id: "NFCI",          start: "1985-01-01" },
-      { outKey: "VIX",               fred_id: "VIXCLS",        start: "1990-01-01" },
+      { fred_id: "BAMLH0A0HYM2", key: "HY_OAS",            start: "1997-01-01" },
+      { fred_id: "NFCI",         key: "NFCI",              start: "1985-01-01" },
+      { fred_id: "VIXCLS",       key: "VIX",               start: "1990-01-01" },
 
       // Nowcast / confirmatory
-      { outKey: "SAHM",              fred_id: "SAHMREALTIME",  start: "1976-01-01" },
-      { outKey: "INDPRO",            fred_id: "INDPRO",        start: "1985-01-01" }
+      { fred_id: "SAHMREALTIME", key: "SAHM",              start: "1976-01-01" },
+      { fred_id: "INDPRO",       key: "INDPRO",            start: "1985-01-01" }
     ];
 
-    async function fetchSeries(s) {
+    async function fetchSeries({ fred_id, start }) {
       const url = new URL(BASE);
-      url.searchParams.set("series_id", s.fred_id);
+      url.searchParams.set("series_id", fred_id);
       url.searchParams.set("api_key", API_KEY);
       url.searchParams.set("file_type", "json");
-      url.searchParams.set("observation_start", s.start);
+      url.searchParams.set("observation_start", start);
 
       const res = await _fetch(url.toString());
       if (!res.ok) {
@@ -59,7 +54,7 @@ const fs = require("fs/promises");
       }
 
       const json = await res.json();
-      const observations = (json.observations || [])
+      const obs = (json.observations || [])
         .filter(o => o.value !== ".")
         .map(o => ({
           date: o.date.slice(0,10),
@@ -67,17 +62,15 @@ const fs = require("fs/promises");
         }))
         .filter(d => Number.isFinite(d.value));
 
-      if (!observations.length) {
-        throw new Error("NO_OBS");
-      }
+      if (!obs.length) throw new Error("NO_OBS");
 
-      const last = observations[observations.length - 1];
+      const last = obs[obs.length - 1];
 
       return {
-        fred_id: s.fred_id,
+        fred_id,
         last: last.value,
         last_date: last.date,
-        history: observations,
+        history: obs,
         fetchedAt: new Date().toISOString()
       };
     }
@@ -87,14 +80,15 @@ const fs = require("fs/promises");
 
     for (const s of SERIES) {
       try {
-        console.log(`Fetching ${s.outKey} (${s.fred_id})`);
+        console.log(`Fetching ${s.key} (${s.fred_id})`);
         const data = await fetchSeries(s);
-        // Store under both human key and fred_id
-        out[s.outKey] = data;
+        // Store under canonical key (what UI reads)
+        out[s.key] = data;
+        // Also under raw FRED id as a convenience alias
         out[s.fred_id] = data;
-        console.log(`OK ${s.outKey}: last=${data.last} @ ${data.last_date}`);
+        console.log(`OK ${s.key}: last=${data.last} @ ${data.last_date}`);
       } catch (err) {
-        const msg = `FAIL ${s.outKey} (${s.fred_id}): ${err.message}`;
+        const msg = `FAIL ${s.key} (${s.fred_id}): ${err.message}`;
         if (s.optional) {
           console.warn(msg, " [optional]");
         } else {
@@ -106,12 +100,13 @@ const fs = require("fs/promises");
 
     await fs.mkdir("data", { recursive: true });
     await fs.writeFile("data/fred_cache.json", JSON.stringify(out, null, 2));
+
     console.log("Wrote data/fred_cache.json with keys:", Object.keys(out).join(", "));
 
+    // Don’t hard-fail if some required series miss; UI will display missing explicitly.
     if (failures.length) {
       console.error("Completed with failures for required series:");
       console.error(failures.join("\n"));
-      // Do NOT exit(1): front-end will show exactly what’s missing.
     }
 
   } catch (err) {
