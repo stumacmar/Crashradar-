@@ -1,116 +1,106 @@
 // scripts/fetch_fred.js
-// CrashRadar ESI FRED fetcher
-// Uses FRED_API_KEY (GitHub repo secret)
-// Writes data/fred_cache.json in a shape that index.html expects.
+// Robust FRED cache builder for Economic Stress Index
 
 const fs = require("fs/promises");
 
 (async () => {
   try {
-    const API_KEY = process.env.FRED_API_KEY;
-    if (!API_KEY) {
+    console.log("Node version:", process.version);
+
+    if (!process.env.FRED_API_KEY) {
       throw new Error("Missing env FRED_API_KEY (set repo secret FRED_API_KEY).");
     }
 
+    // Use built-in fetch if available; otherwise polyfill
     let _fetch = global.fetch;
     if (typeof _fetch !== "function") {
+      console.log("global.fetch not found; loading node-fetch polyfill…");
       _fetch = (await import("node-fetch")).default;
     }
 
-    const BASE = "https://api.stlouisfed.org/fred/series/observations";
+    const FRED_BASE = "https://api.stlouisfed.org/fred";
+    const KEY = process.env.FRED_API_KEY;
 
-    // Each entry: FRED series_id + canonical cache key used by the UI.
+    // Series required by ESI & related components
     const SERIES = [
-      // Leading (core)
-      { fred_id: "T10Y3M",       key: "T10Y3M",            start: "1985-01-01" },
-      { fred_id: "ICSA",         key: "INITIAL_CLAIMS",    start: "1985-01-01" },
-      { fred_id: "NAPMNOI",      key: "ISM_NEW_ORDERS",    start: "1985-01-01" },
-      { fred_id: "UMCSENT",      key: "CONSUMER_SENTIMENT",start: "1985-01-01" },
-      { fred_id: "AWHMAN",       key: "AVG_HOURS",         start: "1985-01-01" },
-      // Leading (optional, you hadn’t wired it originally)
-      { fred_id: "PERMIT",       key: "BUILDING_PERMITS",  start: "1985-01-01", optional: true },
+      // Labour / cycle
+      "ICSA",          // Initial Claims
+      "UNRATE",        // Unemployment Rate
+      "SAHMREALTIME",  // Sahm Rule
+      "AWHAEMAN",      // Avg Weekly Hours, Manufacturing
 
-      // Financial
-      { fred_id: "BAMLH0A0HYM2", key: "HY_OAS",            start: "1997-01-01" },
-      { fred_id: "NFCI",         key: "NFCI",              start: "1985-01-01" },
-      { fred_id: "VIXCLS",       key: "VIX",               start: "1990-01-01" },
+      // Manufacturing / activity
+      "NAPMNO",        // ISM New Orders
+      "INDPRO",        // Industrial Production Index
 
-      // Nowcast / confirmatory
-      { fred_id: "SAHMREALTIME", key: "SAHM",              start: "1976-01-01" },
-      { fred_id: "INDPRO",       key: "INDPRO",            start: "1985-01-01" }
+      // Credit & financial conditions
+      "BAMLH0A0HYM2",  // HY OAS
+      "NFCI",          // Chicago Fed NFCI
+      "VIXCLS",        // VIX (proxy risk)
+      
+      // Term structure / leading indicators used elsewhere
+      "T10Y3M",
+      "T10Y2Y",
+      "USSLIND",
+      "RSAFS"          // Retail & Food Services
+      // Add any extra IDs your index.html explicitly references.
     ];
 
-    async function fetchSeries({ fred_id, start }) {
-      const url = new URL(BASE);
-      url.searchParams.set("series_id", fred_id);
-      url.searchParams.set("api_key", API_KEY);
-      url.searchParams.set("file_type", "json");
-      url.searchParams.set("observation_start", start);
+    async function fetchLatestObservation(id) {
+      const url =
+        `${FRED_BASE}/series/observations` +
+        `?series_id=${id}` +
+        `&api_key=${KEY}` +
+        `&file_type=json` +
+        `&observation_start=2000-01-01`;
 
-      const res = await _fetch(url.toString());
-      if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        throw new Error(`HTTP_${res.status} ${res.statusText} ${txt.slice(0,160)}`);
-      }
+      const res = await _fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${id}`);
 
       const json = await res.json();
-      const obs = (json.observations || [])
-        .filter(o => o.value !== ".")
-        .map(o => ({
-          date: o.date.slice(0,10),
-          value: Number(o.value)
-        }))
-        .filter(d => Number.isFinite(d.value));
+      if (!json.observations || !json.observations.length) {
+        throw new Error(`No observations for ${id}`);
+      }
 
-      if (!obs.length) throw new Error("NO_OBS");
+      // Take most recent valid numeric value
+      const obs = [...json.observations]
+        .reverse()
+        .find(o => o.value !== "." && o.value !== "");
 
-      const last = obs[obs.length - 1];
+      if (!obs) throw new Error(`No valid values for ${id}`);
+
+      const valueNum = Number(obs.value);
+      if (Number.isNaN(valueNum)) {
+        throw new Error(`Non-numeric value for ${id}: ${obs.value}`);
+      }
 
       return {
-        fred_id,
-        last: last.value,
-        last_date: last.date,
-        history: obs,
-        fetchedAt: new Date().toISOString()
+        id,
+        last_updated: obs.date,
+        value: valueNum
       };
     }
 
-    const out = {};
-    const failures = [];
+    const cache = {
+      generated_at: new Date().toISOString(),
+      series: {}
+    };
 
-    for (const s of SERIES) {
+    for (const id of SERIES) {
       try {
-        console.log(`Fetching ${s.key} (${s.fred_id})`);
-        const data = await fetchSeries(s);
-        // Store under canonical key (what UI reads)
-        out[s.key] = data;
-        // Also under raw FRED id as a convenience alias
-        out[s.fred_id] = data;
-        console.log(`OK ${s.key}: last=${data.last} @ ${data.last_date}`);
+        console.log(`Fetching ${id}…`);
+        cache.series[id] = await fetchLatestObservation(id);
       } catch (err) {
-        const msg = `FAIL ${s.key} (${s.fred_id}): ${err.message}`;
-        if (s.optional) {
-          console.warn(msg, " [optional]");
-        } else {
-          console.error(msg);
-          failures.push(msg);
-        }
+        console.error(`ERROR for ${id}: ${err.message}`);
+        // Leave it out; frontend will flag MISSING_IN_CACHE explicitly
       }
     }
 
     await fs.mkdir("data", { recursive: true });
-    await fs.writeFile("data/fred_cache.json", JSON.stringify(out, null, 2));
-
-    console.log("Wrote data/fred_cache.json with keys:", Object.keys(out).join(", "));
-
-    // Don’t hard-fail if some required series miss; UI will display missing explicitly.
-    if (failures.length) {
-      console.error("Completed with failures for required series:");
-      console.error(failures.join("\n"));
-    }
-
+    await fs.writeFile("data/fred_cache.json", JSON.stringify(cache, null, 2));
+    console.log("Wrote data/fred_cache.json successfully.");
   } catch (err) {
-    console.error("FRED refresh failed:", err.stack || err.message);
+    console.error("FATAL in fetch_fred.js:", err.message || err);
     process.exit(1);
   }
 })();
