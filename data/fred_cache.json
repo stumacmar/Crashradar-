@@ -1,65 +1,62 @@
-{
-  "generated_at": "2025-11-08T06:01:03.667Z",
-  "series": {
-    "ICSA": {
-      "id": "ICSA",
-      "last_updated": "2025-09-20",
-      "value": 218000
-    },
-    "UNRATE": {
-      "id": "UNRATE",
-      "last_updated": "2025-08-01",
-      "value": 4.3
-    },
-    "SAHMREALTIME": {
-      "id": "SAHMREALTIME",
-      "last_updated": "2025-08-01",
-      "value": 0.13
-    },
-    "AWHAEMAN": {
-      "id": "AWHAEMAN",
-      "last_updated": "2025-08-01",
-      "value": 40
-    },
-    "INDPRO": {
-      "id": "INDPRO",
-      "last_updated": "2025-08-01",
-      "value": 103.9203
-    },
-    "BAMLH0A0HYM2": {
-      "id": "BAMLH0A0HYM2",
-      "last_updated": "2025-11-06",
-      "value": 3.13
-    },
-    "NFCI": {
-      "id": "NFCI",
-      "last_updated": "2025-10-31",
-      "value": -0.51456
-    },
-    "VIXCLS": {
-      "id": "VIXCLS",
-      "last_updated": "2025-11-06",
-      "value": 19.5
-    },
-    "T10Y3M": {
-      "id": "T10Y3M",
-      "last_updated": "2025-11-07",
-      "value": 0.19
-    },
-    "T10Y2Y": {
-      "id": "T10Y2Y",
-      "last_updated": "2025-11-07",
-      "value": 0.56
-    },
-    "USSLIND": {
-      "id": "USSLIND",
-      "last_updated": "2020-02-01",
-      "value": 1.72
-    },
-    "RSAFS": {
-      "id": "RSAFS",
-      "last_updated": "2025-08-01",
-      "value": 732010
+// scripts/fetch_fred.js
+// Builds fred_cache.json with full history arrays for ESI engine
+
+const fs = require("fs/promises");
+
+(async () => {
+  try {
+    if (!process.env.FRED_API_KEY) {
+      throw new Error("Missing env FRED_API_KEY.");
     }
+
+    let _fetch = global.fetch;
+    if (typeof _fetch !== "function") {
+      _fetch = (await import("node-fetch")).default;
+    }
+
+    const FRED = "https://api.stlouisfed.org/fred";
+    const KEY  = process.env.FRED_API_KEY;
+
+    // --- all series used in the dashboard ---
+    const SERIES = [
+      "T10Y3M","T10Y2Y","BAMLH0A0HYM2","NFCI","VIXCLS","RSAFS",
+      "ICSA","UNRATE","SAHMREALTIME","AWHMAN","INDPRO","USSLIND",
+      "PERMIT","HOUST","UMCSENT","TEDRATE","TDSP"
+    ];
+
+    async function getSeries(id){
+      const url = `${FRED}/series/observations?series_id=${id}&api_key=${KEY}&file_type=json&observation_start=1990-01-01`;
+      const r = await _fetch(url);
+      if (!r.ok) throw new Error(`${id} HTTP ${r.status}`);
+      const j = await r.json();
+
+      const history = j.observations
+        .filter(o => o.value !== "." && o.value !== "")
+        .map(o => ({ date:o.date, value:Number(o.value) }))
+        .filter(o => Number.isFinite(o.value));
+
+      if (!history.length) throw new Error(`No numeric data for ${id}`);
+
+      const last = history[history.length-1];
+      return { history, last: last.value, last_date: last.date };
+    }
+
+    const cache = { generated_at:new Date().toISOString() };
+
+    for(const id of SERIES){
+      try{
+        console.log("Fetching",id);
+        cache[id] = await getSeries(id);
+      }catch(e){
+        console.error("ERROR",id,e.message);
+      }
+    }
+
+    await fs.mkdir("data",{recursive:true});
+    await fs.writeFile("data/fred_cache.json",JSON.stringify(cache,null,2));
+    console.log("✅ data/fred_cache.json written.");
+  } catch(err){
+    console.error("FATAL",err);
+    process.exit(1);
   }
-}
+})();
