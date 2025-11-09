@@ -8,14 +8,13 @@
 :root{
   --bg:#0a0e1a; --panel:#12182b; --panel-hover:#151d33; --text:#e8eeff; --muted:#8b96b0;
   --accent:#6b9eff; --accent-bright:#8fb4ff; --green:#1ec28b; --amber:#ffc247; --red:#ff6070;
-  --purple:#a78bfa; --cyan:#22d3ee;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1600px;margin:0 auto;padding:24px 16px 80px}
 h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom:8px;
-  background:linear-gradient(135deg,var(--text),var(--accent-bright));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.02em}
+    background:linear-gradient(135deg,var(--text),var(--accent-bright));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.02em}
 .subtitle{color:var(--muted);font-weight:600}
 .header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
 .badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
@@ -23,26 +22,25 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
   background:rgba(255,255,255,.04);border-radius:10px;font-weight:700;font-size:13px}
 .live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:none;border-radius:10px;
-  background:var(--accent);color:#fff;font-weight:700;cursor:pointer;transition:all .2s ease;font-size:14px}
+  background:var(--accent);color:#fff;font-weight:700;cursor:pointer;transition:all 0.2s ease;font-size:14px}
 .btn:hover{background:var(--accent-bright);transform:translateY(-1px)}
-.card{background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:24px;margin:18px 0;
-  box-shadow:0 4px 24px rgba(0,0,0,.3);transition:all .3s ease}
+.card{background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:16px;
+  padding:24px;margin:18px 0;box-shadow:0 4px 24px rgba(0,0,0,.3);transition:all 0.3s ease}
 .card:hover{box-shadow:0 8px 32px rgba(0,0,0,.4);transform:translateY(-2px)}
 .status-pill{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border:1px solid rgba(255,255,255,.1);
-  border-radius:12px;background:rgba(255,255,255,.04);font-weight:700;margin-top:14px}
+  border-radius:12px;background:rgba(255,255,255,.04);font-weight:700}
 .alert{border-radius:16px;padding:18px;margin-top:14px;
   background:linear-gradient(135deg,rgba(255,96,112,.12),rgba(255,194,71,.12));
   border:1px solid rgba(255,96,112,.25);display:none}
-.tabs{display:flex;gap:8px;border-bottom:2px solid rgba(255,255,255,.06);margin-top:8px;overflow-x:auto;
-  -webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
+.tabs{display:flex;gap:8px;border-bottom:2px solid rgba(255,255,255,.06);margin-top:8px;
+  overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
 .tabs::-webkit-scrollbar{height:4px}
-.tabs::-webkit-scrollbar-track{background:transparent}
 .tabs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:2px}
 .tab{background:transparent;border:none;color:var(--muted);padding:12px 18px;font-weight:800;cursor:pointer;
-  border-radius:8px 8px 0 0;transition:all .2s ease;white-space:nowrap;flex-shrink:0}
+  border-radius:8px 8px 0 0;transition:all 0.2s ease;white-space:nowrap;flex-shrink:0}
 .tab.active{color:var(--accent-bright);background:rgba(255,255,255,.03)}
 .tab:hover:not(.active){color:var(--text);background:rgba(255,255,255,.02)}
-.view{display:none;animation:fadeIn .5s ease}
+.view{display:none;animation:fadeIn 0.5s ease}
 .view.active{display:block}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .gauge{display:flex;gap:36px;align-items:center;flex-wrap:wrap}
@@ -52,21 +50,20 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
 .ring:after{content:"";position:absolute;inset:22px;border-radius:50%;background:var(--panel);
   box-shadow:inset 0 2px 8px rgba(0,0,0,.35)}
 .needle{position:absolute;inset:0}
-.needle:before{content:"";position:absolute;top:50%;left:50%;width:6px;height:48%;transform-origin:bottom center;
-  transform:translate(-50%,-100%) rotate(var(--angle,0deg));
+.needle:before{content:"";position:absolute;top:50%;left:50%;width:6px;height:48%;
+  transform-origin:bottom center;transform:translate(-50%,-100%) rotate(var(--angle,0deg));
   background:linear-gradient(180deg,var(--accent-bright),var(--accent));
   border-radius:6px 6px 0 0;box-shadow:0 0 10px var(--accent);transition:transform 1s ease}
 .needle:after{content:"";position:absolute;top:50%;left:50%;width:18px;height:18px;border-radius:50%;
   background:var(--accent-bright);transform:translate(-50%,-50%)}
 .score{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
   font-weight:800;z-index:1}
-.score .v{font-size:56px;
-  background:linear-gradient(135deg,var(--text),var(--accent-bright));
+.score .v{font-size:56px;background:linear-gradient(135deg,var(--text),var(--accent-bright));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .score .l{font-size:11px;color:var(--muted);letter-spacing:1px;margin-top:4px;text-align:center}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
 .kpi{border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px;background:rgba(255,255,255,.03);
-  transition:all .2s ease;cursor:pointer}
+  transition:all 0.2s ease}
 .kpi:hover{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.05)}
 .kpi h4{display:flex;align-items:center;justify-content:space-between;font-size:14px;margin-bottom:6px}
 .dot{width:10px;height:10px;border-radius:50%}
@@ -79,34 +76,34 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
   font-size:10px;padding:3px 8px;border-radius:6px}
 .b-stale{color:var(--amber);border:1px solid rgba(255,194,71,.5);background:rgba(255,194,71,.15);
   font-size:10px;padding:3px 8px;border-radius:6px}
-.toggle-desc{cursor:pointer;font-size:11px;color:var(--accent-bright);margin-top:4px}
-.desc{display:none;font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5}
-.kpi.show .desc{display:block}
+.toggle-desc{cursor:pointer;font-size:12px;color:var(--accent-bright);margin-top:6px}
+.desc{display:none;font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
+.show .desc{display:block}
 .btns{display:flex;gap:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
   padding:4px;border-radius:10px;flex-wrap:wrap}
 .btns button{background:transparent;border:none;color:var(--muted);padding:6px 10px;border-radius:8px;
-  font-weight:700;cursor:pointer;transition:all .2s ease;font-size:13px}
+  font-weight:700;cursor:pointer;transition:all 0.2s ease;font-size:13px}
 .btns button.active{background:var(--accent);color:#fff}
 .btns button:hover:not(.active){background:rgba(255,255,255,.05);color:var(--text)}
 .chart{position:relative;height:360px;margin-top:12px}
 .heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
 .cell{border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;background:rgba(255,255,255,.03);
-  transition:all .2s ease}
+  transition:all 0.2s ease}
 .cell:hover{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.05)}
 .bar{height:8px;border-radius:6px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:8px}
-.bar>span{display:block;height:100%;transition:width .5s ease}
+.bar>span{display:block;height:100%;transition:width 0.5s ease}
 .radar-chart{height:320px;margin-top:20px}
 .risk-meter{display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap}
 .risk-level{width:100%;min-width:200px;height:8px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden}
-.risk-level>div{height:100%;transition:width .5s ease}
-.risk-labels{display:flex;justify-content:space-between;margin-top:4px;flex-wrap:wrap;gap:4px}
+.risk-level>div{height:100%;transition:width 0.5s ease}
+.risk-labels{display:flex;justify-content:space-between;margin-top:4px;gap:4px;flex-wrap:wrap}
 .risk-labels span{font-size:10px;color:var(--muted)}
-.insight-card{background:linear-gradient(135deg,rgba(107,158,255,.1),rgba(139,187,255,.05));
+.insight-card{background:linear-gradient(135deg, rgba(107,158,255,.1), rgba(139,187,255,.05));
   border:1px solid rgba(107,158,255,.2);border-radius:12px;padding:16px;margin-top:16px;display:none}
 .insight-card h4{display:flex;align-items:center;gap:8px;margin-bottom:8px;color:var(--accent-bright)}
 .loading{display:flex;justify-content:center;align-items:center;height:200px;font-size:16px;color:var(--muted)}
-.news-item{display:flex;align-items:flex-start;gap:12px;padding:12px;margin-bottom:8px;border-radius:8px;
-  background:rgba(255,255,255,.02)}
+.news-item{display:flex;align-items:flex-start;gap:12px;padding:12px;margin-bottom:8px;
+  border-radius:8px;background:rgba(255,255,255,.02)}
 .news-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0}
 .news-content{flex:1;min-width:0}
 .news-title{font-weight:700;margin-bottom:4px;word-wrap:break-word}
@@ -117,8 +114,6 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
   .header{flex-direction:column;align-items:stretch}
   .kpi-grid{grid-template-columns:1fr}
   .heat{grid-template-columns:1fr}
-  #scenarios{grid-template-columns:1fr !important}
-  #crises{grid-template-columns:1fr !important}
   .chart{height:280px}
   .tabs{gap:4px}
   .tab{padding:10px 12px;font-size:13px}
@@ -185,26 +180,25 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
           <div class="kpi">
             <div class="small">1-Month Risk</div>
             <div class="val" id="r1m">--</div>
-            <div class="small" id="m1dir">→ Pending</div>
+            <div class="small" id="m1dir">→ Momentum</div>
           </div>
           <div class="kpi">
             <div class="small">3-Month Risk</div>
             <div class="val" id="r3m">--</div>
-            <div class="small" id="m3dir">→ Pending</div>
+            <div class="small" id="m3dir">→ Moderate</div>
           </div>
           <div class="kpi">
             <div class="small">6-Month Risk</div>
             <div class="val" id="r6m">--</div>
-            <div class="small" id="m6dir">→ Pending</div>
+            <div class="small" id="m6dir">↗ Elevated</div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-
-  <div class="insight-card" id="insightCard">
-    <h4>💡 Market Insight</h4>
-    <div id="insightText"></div>
+    <div class="insight-card" id="insightCard">
+      <h4>💡 Market Insight</h4>
+      <div id="insightText"></div>
+    </div>
   </div>
 
   <div class="tabs">
@@ -215,7 +209,6 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
     <button class="tab" data-t="news">News & Events</button>
   </div>
 
-  <!-- OVERVIEW -->
   <div id="view-overview" class="view active">
     <div class="card">
       <h3 style="margin-bottom:12px">📊 Live Indicator Dashboard</h3>
@@ -237,38 +230,32 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
     </div>
   </div>
 
-  <!-- INDICATORS -->
   <div id="view-ind" class="view">
     <div class="card">
       <h3 style="margin-bottom:10px">Risk Contribution Breakdown</h3>
       <div class="chart"><canvas id="decomp"></canvas></div>
     </div>
-
     <div class="card">
       <h3 style="margin-bottom:10px">Indicator Radar</h3>
       <div class="radar-chart"><canvas id="radarChart"></canvas></div>
     </div>
-
     <div class="card">
       <h3 style="margin-bottom:10px">Indicator Heat Map</h3>
       <div class="heat" id="heat"></div>
     </div>
   </div>
 
-  <!-- HISTORICAL -->
   <div id="view-hist" class="view">
     <div class="card">
       <h3 style="margin-bottom:10px">📈 Historical Crisis Comparisons</h3>
       <div id="crises" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px"></div>
     </div>
-
     <div class="card">
       <h3 style="margin-bottom:10px">Crisis Timeline</h3>
       <div class="chart"><canvas id="crisisTimeline"></canvas></div>
     </div>
   </div>
 
-  <!-- SCENARIOS -->
   <div id="view-scn" class="view">
     <div class="card">
       <h3 style="margin-bottom:10px">🎯 Forward-Looking Scenarios</h3>
@@ -280,13 +267,11 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
     </div>
   </div>
 
-  <!-- NEWS -->
   <div id="view-news" class="view">
     <div class="card">
       <h3 style="margin-bottom:10px">📰 Market News & Events</h3>
       <div id="newsFeed" class="loading">Loading market news...</div>
     </div>
-
     <div class="card">
       <h3 style="margin-bottom:10px">🗓️ Upcoming Economic Events</h3>
       <div id="economicCalendar" class="loading">Loading economic calendar...</div>
@@ -298,66 +283,42 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
 <script>
 'use strict';
 
-/* ================= CONFIG ================= */
-
 const CONFIG = {
   FRED_CACHE_PATH: 'data/fred_cache.json',
   INDICATORS: {
-    T10Y3M:{
-      label:'Yield Curve (10y-3m)', short:'Yield', weight:0.15,
-      format:v=>v.toFixed(2)+'%', crisis:0.0, dir:'below',
-      desc:'10y–3m Treasury spread. Inversion around/below 0% has strong 12–18m recession signal.'
-    },
-    CREDIT:{
-      label:'HY Credit Spread', short:'Credit', weight:0.14,
-      format:v=>v.toFixed(2)+'%', crisis:6.5, dir:'above',
-      desc:'US HY OAS. >6.5% typical around recession onset.'
-    },
-    NFCI:{
-      label:'Financial Conditions (NFCI)', short:'NFCI', weight:0.13,
-      format:v=>v.toFixed(3), crisis:0.0, dir:'above',
-      desc:'Chicago Fed NFCI. >0 = tighter-than-average conditions.'
-    },
-    VIX_PROXY:{
-      label:'Equity Volatility (VIX)', short:'VIX', weight:0.04,
-      format:v=>v.toFixed(1), crisis:30, dir:'above',
-      desc:'VIX level. High but mainly coincident; low weight.'
-    },
-    SENTIMENT:{
-      label:'Consumer Sentiment', short:'Sent', weight:0.09,
-      format:v=>v.toFixed(0), crisis:70, dir:'below',
-      desc:'UMich sentiment. <70 associated with elevated recession risk.'
-    },
-    BUILDING_PERMITS:{
-      label:'Building Permits 6m Δ%', short:'Permits', weight:0.12,
-      format:v=>v.toFixed(1)+'%', crisis:-15, dir:'below',
-      desc:'6m % change in permits. Deep drops lead cycles.'
-    },
-    INITIAL_CLAIMS:{
-      label:'Initial Claims (4w MA)', short:'Claims', weight:0.10,
-      format:v=>Math.round(v/1000)+'k', crisis:323000, dir:'above',
-      desc:'Weekly jobless claims. Rising above ~323k flags labour softening.'
-    },
-    SAHM_RULE:{
-      label:'Sahm Rule', short:'Sahm', weight:0.05,
-      format:v=>v.toFixed(2), crisis:0.50, dir:'above',
-      desc:'Unemployment 3m avg minus 12m low. ≥0.5 reliably confirms recession (coincident).'
-    },
-    ISM_NEW_ORDERS:{
-      label:'ISM New Orders', short:'NewOrd', weight:0.09,
-      format:v=>v.toFixed(1), crisis:47.5, dir:'below',
-      desc:'Manufacturing new orders. <50 contraction; <47.5 persistent stress.'
-    },
-    INDPRO:{
-      label:'Industrial Production 6m Δ%', short:'IndPro', weight:0.05,
-      format:v=>v.toFixed(1)+'%', crisis:-2.0, dir:'below',
-      desc:'6m % change. Substantial falls confirm recessionary conditions.'
-    },
-    AVG_HOURS:{
-      label:'Avg Weekly Hours 3m Δ%', short:'Hours', weight:0.04,
-      format:v=>v.toFixed(2)+'%', crisis:-0.5, dir:'below',
-      desc:'Hours worked. Cutbacks are an early labour-market warning.'
-    }
+    T10Y3M:{label:'Yield Curve (10y-3m)',short:'Yield',weight:0.15,
+      format:v=>v.toFixed(2)+'%',crisis:0.0,dir:'below',
+      desc:'10y–3m Treasury spread. Inversion near/below 0% is the classic 12–18m warning.'},
+    CREDIT:{label:'HY Credit Spread',short:'Credit',weight:0.14,
+      format:v=>v.toFixed(2)+'%',crisis:6.5,dir:'above',
+      desc:'US HY OAS. >6.5% typical around recession onset.'},
+    NFCI:{label:'Financial Conditions (NFCI)',short:'NFCI',weight:0.13,
+      format:v=>v.toFixed(3),crisis:0.0,dir:'above',
+      desc:'Chicago Fed NFCI. >0 = tighter-than-average; sustained positives are concerning.'},
+    VIX_PROXY:{label:'Equity Volatility (VIX)',short:'VIX',weight:0.04,
+      format:v=>v.toFixed(1),crisis:30,dir:'above',
+      desc:'VIX level. Mostly coincident; low weight.'},
+    SENTIMENT:{label:'Consumer Sentiment',short:'Sent',weight:0.09,
+      format:v=>v.toFixed(0),crisis:70,dir:'below',
+      desc:'UMich Sentiment. Prolonged readings <70 align with weak growth / elevated risk.'},
+    BUILDING_PERMITS:{label:'Building Permits 6m Δ%',short:'Permits',weight:0.12,
+      format:v=>v.toFixed(1)+'%',crisis:-15,dir:'below',
+      desc:'6m % change. Large falls reliably lead recessions.'},
+    INITIAL_CLAIMS:{label:'Initial Claims (4w MA)',short:'Claims',weight:0.10,
+      format:v=>Math.round(v/1000)+'k',crisis:323000,dir:'above',
+      desc:'Weekly jobless claims. Sustained >~323k flashes labour stress.'},
+    SAHM_RULE:{label:'Sahm Rule (coincident)',short:'Sahm',weight:0.05,
+      format:v=>v.toFixed(2),crisis:0.5,dir:'above',
+      desc:'Unemployment 3m avg minus 12m low. ≥0.5 confirms recessions; not predictive.'},
+    ISM_NEW_ORDERS:{label:'ISM New Orders',short:'NewOrd',weight:0.09,
+      format:v=>v.toFixed(1),crisis:47.5,dir:'below',
+      desc:'Forward-looking manufacturing orders. Persistent <47.5 is dangerous.'},
+    INDPRO:{label:'Industrial Production 6m Δ%',short:'IndPro',weight:0.05,
+      format:v=>v.toFixed(1)+'%',crisis:-2.0,dir:'below',
+      desc:'6m % change. Confirms broad production weakness.'},
+    AVG_HOURS:{label:'Avg Weekly Hours 3m Δ%',short:'Hours',weight:0.04,
+      format:v=>v.toFixed(2)+'%',crisis:-0.5,dir:'below',
+      desc:'Hours cut before layoffs. Early labour signal.'}
   },
   ALIAS:{
     T10Y3M:['T10Y3M'],
@@ -370,80 +331,73 @@ const CONFIG = {
     ICSA:['ICSA'],
     NEWORDER:['NEWORDER','NAPMNOI'],
     INDPRO_BASE:['INDPRO'],
-    AWHI:['AWHAEMAN','AWHMAN'],
-    SPX:['SP500','SP500FIN']
+    AWHI:['AWHMAN'],
+    SPX:['SP500']
   },
   CRISES:[
     {name:'2000 Dot-com',score:78,date:'2001-03-12',phase:'Tech Bubble',duration:'30m',drawdown:'-49%'},
-    {name:'2008 GFC',score:92,date:'2008-10-15',phase:'Credit Crisis',duration:'18m',drawdown:'-57%'},
+    {name:'2008 GFC',score:92,date:'2008-10-15',phase:'Credit Crash',duration:'18m',drawdown:'-57%'},
     {name:'2020 COVID',score:88,date:'2020-03-23',phase:'Pandemic Shock',duration:'2m',drawdown:'-34%'},
     {name:'2022 Inflation',score:65,date:'2022-06-13',phase:'Rate Shock',duration:'9m',drawdown:'-25%'}
   ],
   INSIGHTS:[
-    {min:0,max:30,text:"Low composite stress. Historically supportive backdrop for risk assets, but keep monitoring for turns."},
-    {min:31,max:50,text:"Moderate stress. Early warnings in parts of the system — sensible to check allocations and liquidity."},
-    {min:51,max:70,text:"Elevated stress. Several indicators flashing. Consider tightening risk and adding shock absorbers."},
-    {min:71,max:85,text:"High stress. Historically associated with major drawdowns and recession risk — defence first."},
-    {min:86,max:100,text:"Critical stress. System under severe pressure. Treat as crash/forced-liquidation regime."}
+    {min:0,max:30,text:"Low composite stress. Historically benign regime, but keep tracking turns."},
+    {min:31,max:50,text:"Moderate stress. Some leading indicators flashing; time to review risk."},
+    {min:51,max:70,text:"Elevated stress. Multiple warnings; consider defensive tilts and hedges."},
+    {min:71,max:85,text:"High stress. Historically associated with recessions and large drawdowns."},
+    {min:86,max:100,text:"Critical stress. Treat conditions as crash-prone and prioritize liquidity."}
   ]
 };
 
-/* SCALING: 0–100 stress for each indicator */
-
 const SCALE = {
-  T10Y3M:v=>clamp(((1.5 - v)/2.5)*100),          // +1.5=0, -1.0=100
-  CREDIT:v=>clamp(((v - 3.0)/6.0)*100),         // 3=0, 9=100
-  NFCI:v=>clamp(((v + 0.8)/1.8)*100),           // -0.8=0, 1.0=100
-  VIX_PROXY:v=>clamp(((v - 12)/38)*100),        // 12=0, 50=100
-  SENTIMENT:v=>clamp(((95 - v)/40)*100),        // 95=0, 55=100
-  BUILDING_PERMITS:v=>clamp(((5 - v)/20)*100),  // +5=0, -15=100
-  INITIAL_CLAIMS:v=>clamp(((v - 200000)/200000)*100), // 200k=0, 400k=100
-  SAHM_RULE:v=>clamp((v/0.6)*100),              // 0=0, 0.6=100
-  ISM_NEW_ORDERS:v=>clamp(((55 - v)/15)*100),   // 55=0, 40=100
-  INDPRO:v=>clamp(((3 - v)/8)*100),             // +3=0, -5=100
-  AVG_HOURS:v=>clamp(((0.5 - v)/1.5)*100)       // +0.5=0, -1=100
+  T10Y3M:v=>clamp(((1.5 - v)/2.5)*100),
+  CREDIT:v=>clamp(((v - 3.0)/6.0)*100),
+  NFCI:v=>clamp(((v + 0.8)/1.8)*100),
+  VIX_PROXY:v=>clamp(((v - 12)/38)*100),
+  SENTIMENT:v=>clamp(((95 - v)/40)*100),
+  BUILDING_PERMITS:v=>clamp(((5 - v)/20)*100),
+  INITIAL_CLAIMS:v=>clamp(((v - 200000)/200000)*100),
+  SAHM_RULE:v=>clamp((v/0.6)*100),
+  ISM_NEW_ORDERS:v=>clamp(((55 - v)/15)*100),
+  INDPRO:v=>clamp(((3 - v)/8)*100),
+  AVG_HOURS:v=>clamp(((0.5 - v)/1.5)*100)
 };
 
 function clamp(x){return Math.max(0,Math.min(100,x));}
 
-/* ================ APP STATE ================ */
-
 let app={boundPeriods:false,boundTabs:false};
 let charts={};
 
-window.addEventListener('DOMContentLoaded',init);
-
-/* ================ INIT ===================== */
+window.addEventListener('DOMContentLoaded', init);
 
 async function init(){
-  showLoadingState(true);
+  showLoading(true);
   try{
     const cache = await fetch(`${CONFIG.FRED_CACHE_PATH}?t=${Date.now()}`,{cache:'no-store'}).then(r=>r.json());
+    const now = new Date();
+    byId('upd').textContent = 'Last Update: ' + now.toLocaleTimeString();
 
-    const now=new Date();
-    byId('upd').textContent='Last Update: '+now.toLocaleTimeString();
-
-    const s = key => resolveSeries(cache, CONFIG.ALIAS[key]);
+    const s = k => resolveSeries(cache, CONFIG.ALIAS[k]);
 
     const ser = {
-      T10Y3M: s('T10Y3M'),
-      CREDIT: s('CREDIT'),
-      NFCI: s('NFCI'),
-      VIX: s('VIX_PROXY'),
-      UMCSENT: s('SENTIMENT'),
-      UNRATE: s('UNRATE'),
-      PERMITS: s('PERMITS'),
-      ICSA: s('ICSA'),
-      NEWORDER: s('NEWORDER'),
+      T10Y3M:      s('T10Y3M'),
+      CREDIT:      s('CREDIT'),
+      NFCI:        s('NFCI'),
+      VIX:         s('VIX_PROXY'),
+      UMCSENT:     s('SENTIMENT'),
+      UNRATE:      s('UNRATE'),
+      PERMITS:     s('PERMITS'),
+      ICSA:        s('ICSA'),
+      NEWORDER:    s('NEWORDER'),
       INDPRO_BASE: s('INDPRO_BASE'),
-      AWHI: s('AWHI'),
-      SPX: s('SPX')
+      AWHI:        s('AWHI'),
+      SPX:         s('SPX')
     };
 
-    const deriv = buildDerived(ser);
-    const kpis = computeLatestKPIs(ser, deriv);
-    const anchorDates = pickAnchorDates(ser);
-    const history = buildCompositeHistory(anchorDates, ser, deriv);
+    const deriv   = buildDerived(ser);
+    const kpis    = computeLatestKPIs(ser, deriv);
+    const anchors = pickAnchorDates(ser);
+    const history = buildCompositeHistory(anchors, ser, deriv);
 
     renderTop(kpis, history);
     renderPills(kpis);
@@ -452,151 +406,153 @@ async function init(){
     renderRadar(kpis);
     renderCrises(history);
     renderScenarios(history);
-    renderNewsFeed();
+    renderNews();
     setupTabs();
     setupPeriodButtons(history);
 
-    byId('refreshBtn').onclick=()=>init();
-    byId('exportBtn').onclick=()=>exportReport(kpis,history);
+    byId('refreshBtn').onclick = init;
+    byId('exportBtn').onclick  = () => exportReport(kpis, history);
 
-    showLoadingState(false);
+    showLoading(false);
   }catch(err){
-    console.error('Data load failed',err);
-    showErrorState();
+    console.error(err);
+    showError();
   }
 }
 
-/* ================ HELPERS ================== */
+/* ---------- helpers ---------- */
 
 function byId(id){return document.getElementById(id);}
 
-function resolveSeries(cache, keys){
-  if(!cache || !keys) return null;
+function resolveSeries(cache, aliases){
+  if(!cache) return null;
   const root = cache.series || cache;
-  for(const k of keys){
-    if(root && root[k]) return root[k];
+  if(!root) return null;
+  for(const k of (aliases||[])){
+    if(root[k]) return root[k];
   }
   return null;
 }
 
 function lastValidObs(series){
-  if(!series?.observations?.length) return null;
-  for(let i=series.observations.length-1;i>=0;i--){
-    const v=parseFloat(series.observations[i].value);
-    if(isFinite(v)) return {date:series.observations[i].date,value:v};
+  const arr = series?.observations;
+  if(!arr || !arr.length) return null;
+  for(let i=arr.length-1;i>=0;i--){
+    const v = Number(arr[i].value);
+    if(Number.isFinite(v)) return {date:arr[i].date, value:v};
   }
   return null;
 }
 
-function parseDate(d){return new Date(d);}
-function daysSince(d){return Math.floor((Date.now()-parseDate(d))/86400000);}
-
 function obsMap(observations){
   const m={};
-  for(const o of observations){
-    const v=parseFloat(o.value);
-    if(!isFinite(v)) continue;
-    const ym=o.date.slice(0,7);
+  for(const o of observations||[]){
+    const v = Number(o.value);
+    if(!Number.isFinite(v)) continue;
+    const ym = o.date.slice(0,7);
     m[ym]=v;
   }
   return m;
 }
 
 function monthOffset(ym,off){
-  const [y,m]=ym.split('-').map(Number);
-  const d=new Date(y,m-1,1);
+  const [y,m] = ym.split('-').map(Number);
+  const d = new Date(y,m-1,1);
   d.setMonth(d.getMonth()+off);
   return d.toISOString().slice(0,7);
 }
 
-/* ============ DERIVED SERIES ============== */
+function parseDate(d){return new Date(d);}
+function daysSince(d){return Math.floor((Date.now()-parseDate(d))/86400000);}
+
+/* ---------- derived ---------- */
 
 function buildDerived(ser){
   const out={};
 
-  // Sahm Rule
+  // Sahm from UNRATE
   if(ser.UNRATE?.observations){
-    const map=obsMap(ser.UNRATE.observations);
-    const keys=Object.keys(map).sort();
-    const sahm=[];
+    const map = obsMap(ser.UNRATE.observations);
+    const keys = Object.keys(map).sort();
+    const arr=[];
     for(const ym of keys){
-      const cur=map[ym];
-      const p1=map[monthOffset(ym,-1)];
-      const p2=map[monthOffset(ym,-2)];
+      const cur = map[ym];
+      const p1 = map[monthOffset(ym,-1)];
+      const p2 = map[monthOffset(ym,-2)];
       if(cur!=null && p1!=null && p2!=null){
         const avg3=(cur+p1+p2)/3;
         let low12=Infinity;
         for(let i=0;i<12;i++){
-          const k=monthOffset(ym,-i);
+          const k = monthOffset(ym,-i);
           if(map[k]!=null) low12=Math.min(low12,map[k]);
         }
         if(low12<Infinity){
-          sahm.push({date:ym+'-01',value:+(avg3-low12).toFixed(2)});
+          arr.push({date:ym+'-01', value:+(avg3-low12).toFixed(2)});
         }
       }
     }
-    if(sahm.length) out.SAHM_RULE={observations:sahm};
+    if(arr.length) out.SAHM_RULE={observations:arr};
   }
 
-  // Building Permits 6m % change
+  // Permits 6m % change
   if(ser.PERMITS?.observations){
-    const map=obsMap(ser.PERMITS.observations);
-    const keys=Object.keys(map).sort();
+    const map = obsMap(ser.PERMITS.observations);
+    const keys = Object.keys(map).sort();
     const arr=[];
     for(const ym of keys){
-      const back=monthOffset(ym,-6);
-      if(map[back]!=null && map[back]!==0){
-        const pct=((map[ym]/map[back])-1)*100;
-        arr.push({date:ym+'-01',value:+pct.toFixed(2)});
+      const b = monthOffset(ym,-6);
+      if(map[b]!=null && map[b]!==0){
+        const pct=((map[ym]/map[b])-1)*100;
+        arr.push({date:ym+'-01', value:+pct.toFixed(2)});
       }
     }
     if(arr.length) out.BUILDING_PERMITS={observations:arr};
   }
 
-  // Initial Claims (pass-through)
+  // Initial claims pass-through
   if(ser.ICSA?.observations) out.INITIAL_CLAIMS=ser.ICSA;
 
-  // ISM New Orders (pass-through)
+  // ISM New Orders pass-through
   if(ser.NEWORDER?.observations) out.ISM_NEW_ORDERS=ser.NEWORDER;
 
   // INDPRO 6m % change
   if(ser.INDPRO_BASE?.observations){
-    const map=obsMap(ser.INDPRO_BASE.observations);
-    const keys=Object.keys(map).sort();
+    const map = obsMap(ser.INDPRO_BASE.observations);
+    const keys = Object.keys(map).sort();
     const arr=[];
     for(const ym of keys){
-      const back=monthOffset(ym,-6);
-      if(map[back]!=null && map[back]!==0){
-        const pct=((map[ym]/map[back])-1)*100;
-        arr.push({date:ym+'-01',value:+pct.toFixed(2)});
+      const b = monthOffset(ym,-6);
+      if(map[b]!=null && map[b]!==0){
+        const pct=((map[ym]/map[b])-1)*100;
+        arr.push({date:ym+'-01', value:+pct.toFixed(2)});
       }
     }
     if(arr.length) out.INDPRO={observations:arr};
   }
 
-  // Avg Weekly Hours 3m % change
+  // Avg weekly hours 3m % change
   if(ser.AWHI?.observations){
-    const map=obsMap(ser.AWHI.observations);
-    const keys=Object.keys(map).sort();
+    const map = obsMap(ser.AWHI.observations);
+    const keys = Object.keys(map).sort();
     const arr=[];
     for(const ym of keys){
-      const back=monthOffset(ym,-3);
-      if(map[back]!=null && map[back]!==0){
-        const pct=((map[ym]/map[back])-1)*100;
-        arr.push({date:ym+'-01',value:+pct.toFixed(2)});
+      const b = monthOffset(ym,-3);
+      if(map[b]!=null && map[b]!==0){
+        const pct=((map[ym]/map[b])-1)*100;
+        arr.push({date:ym+'-01', value:+pct.toFixed(2)});
       }
     }
     if(arr.length) out.AVG_HOURS={observations:arr};
   }
 
-  // VIX + Sentiment pass-through
+  // VIX & sentiment pass-through
   if(ser.VIX?.observations) out.VIX_PROXY=ser.VIX;
   if(ser.UMCSENT?.observations) out.SENTIMENT=ser.UMCSENT;
 
   return out;
 }
 
-/* ============ KPIs & HISTORY ============== */
+/* ---------- KPIs ---------- */
 
 function computeLatestKPIs(ser,deriv){
   const out=[];
@@ -609,20 +565,11 @@ function computeLatestKPIs(ser,deriv){
     if(!lv || SCALE[key]===undefined) return;
     const raw=lv.value;
     const scaled=SCALE[key](raw);
-    const rag=scaled<30?'g':(scaled<60?'a':'r');
+    const rag= scaled<30?'g':(scaled<60?'a':'r');
     const crisis = def.dir==='below' ? raw<=def.crisis : raw>=def.crisis;
     out.push({
-      key,
-      label:def.label,
-      short:def.short,
-      desc:def.desc,
-      weight:def.weight,
-      date:lv.date,
-      raw,
-      scaled,
-      disp:def.format(raw),
-      rag,
-      crisis
+      key,label:def.label,short:def.short,desc:def.desc,weight:def.weight,
+      date:lv.date,raw,scaled,disp:def.format(raw),rag,crisis
     });
   }
 
@@ -641,11 +588,13 @@ function computeLatestKPIs(ser,deriv){
   return out;
 }
 
+/* ---------- history & composite ---------- */
+
 function pickAnchorDates(ser){
   const base = ser.SPX || ser.T10Y3M || ser.CREDIT || ser.NFCI;
   if(!base?.observations) return [];
   return base.observations
-    .filter(o=>isFinite(parseFloat(o.value)))
+    .filter(o=>Number.isFinite(Number(o.value)))
     .map(o=>o.date);
 }
 
@@ -655,37 +604,31 @@ function valueOnOrBefore(arr,date){
   while(lo<=hi){
     const mid=(lo+hi)>>1;
     const d=arr[mid].date;
-    if(d<=date){ans=arr[mid];lo=mid+1;}else hi=mid-1;
+    if(d<=date){ans=arr[mid];lo=mid+1;} else hi=mid-1;
   }
-  return ans?parseFloat(ans.value):null;
+  return ans ? Number(ans.value) : null;
 }
 
 function buildCompositeHistory(anchorDates,ser,deriv){
-  const keys=Object.keys(CONFIG.INDICATORS);
+  const keys = Object.keys(CONFIG.INDICATORS);
   const obs={};
 
-  function srcFor(key){
-    switch(key){
-      case 'T10Y3M': return ser.T10Y3M;
-      case 'CREDIT': return ser.CREDIT;
-      case 'NFCI': return ser.NFCI;
-      case 'VIX_PROXY': return deriv.VIX_PROXY;
-      case 'SENTIMENT': return deriv.SENTIMENT;
-      case 'BUILDING_PERMITS': return deriv.BUILDING_PERMITS;
-      case 'INITIAL_CLAIMS': return deriv.INITIAL_CLAIMS;
-      case 'SAHM_RULE': return deriv.SAHM_RULE;
-      case 'ISM_NEW_ORDERS': return deriv.ISM_NEW_ORDERS;
-      case 'INDPRO': return deriv.INDPRO;
-      case 'AVG_HOURS': return deriv.AVG_HOURS;
-      default: return null;
-    }
-  }
-
   keys.forEach(k=>{
-    const s=srcFor(k);
-    if(s?.observations){
-      obs[k]=[...s.observations]
-        .filter(o=>isFinite(parseFloat(o.value)))
+    let src=null;
+    if(k==='T10Y3M') src=ser.T10Y3M;
+    else if(k==='CREDIT') src=ser.CREDIT;
+    else if(k==='NFCI') src=ser.NFCI;
+    else if(k==='VIX_PROXY') src=deriv.VIX_PROXY;
+    else if(k==='SENTIMENT') src=deriv.SENTIMENT;
+    else if(k==='BUILDING_PERMITS') src=deriv.BUILDING_PERMITS;
+    else if(k==='INITIAL_CLAIMS') src=deriv.INITIAL_CLAIMS;
+    else if(k==='SAHM_RULE') src=deriv.SAHM_RULE;
+    else if(k==='ISM_NEW_ORDERS') src=deriv.ISM_NEW_ORDERS;
+    else if(k==='INDPRO') src=deriv.INDPRO;
+    else if(k==='AVG_HOURS') src=deriv.AVG_HOURS;
+    if(src?.observations){
+      obs[k]=src.observations
+        .filter(o=>Number.isFinite(Number(o.value)))
         .sort((a,b)=>a.date.localeCompare(b.date));
     }
   });
@@ -694,17 +637,16 @@ function buildCompositeHistory(anchorDates,ser,deriv){
   for(const d of anchorDates){
     let sum=0,wsum=0;
     const parts={};
-    keys.forEach(k=>{
+    for(const k of keys){
       const arr=obs[k];
-      if(!arr) return;
+      if(!arr) continue;
       const v=valueOnOrBefore(arr,d);
-      if(v==null || SCALE[k]===undefined) return;
+      if(v==null || SCALE[k]===undefined) continue;
       const scaled=SCALE[k](v);
       const w=CONFIG.INDICATORS[k].weight;
-      sum+=scaled*w;
-      wsum+=w;
+      sum+=scaled*w;wsum+=w;
       parts[k]={raw:v,scaled,w};
-    });
+    }
     if(wsum>0){
       hist.push({date:d,composite:+(sum/wsum).toFixed(2),parts});
     }
@@ -712,62 +654,59 @@ function buildCompositeHistory(anchorDates,ser,deriv){
   return hist;
 }
 
-/* ============ RENDER: TOP ================= */
+/* ---------- render top ---------- */
 
 function renderTop(kpis,history){
   const latest = history.length ? history[history.length-1].composite : 50;
-  const composite = isFinite(latest) ? latest : 50;
+  const composite = Number.isFinite(latest) ? latest : 50;
 
-  byId('scoreV').textContent=Math.round(composite);
+  byId('scoreV').textContent = Math.round(composite);
   byId('needle').style.setProperty('--angle', `${composite*3.6}deg`);
-  byId('partsNote').textContent=`Composite derived from ${kpis.length} indicators`;
-  byId('indicatorsCount').textContent=`Indicators: ${kpis.length}/${Object.keys(CONFIG.INDICATORS).length}`;
+  byId('partsNote').textContent = `Composite derived from ${kpis.length} indicators`;
+  byId('indicatorsCount').textContent =
+    `Indicators: ${kpis.length}/${Object.keys(CONFIG.INDICATORS).length}`;
 
-  byId('riskFill').style.width=`${composite}%`;
+  byId('riskFill').style.width = `${composite}%`;
 
-  // Data quality: missing + stale penalties, floor 20 if we have anything
   const missing = Object.keys(CONFIG.INDICATORS).length - kpis.length;
-  let stale=0;
-  kpis.forEach(k=>{ if(daysSince(k.date)>7) stale++; });
+  let stale=0; kpis.forEach(k=>{ if(daysSince(k.date)>7) stale++; });
   let quality = 100 - (missing*8 + stale*4);
-  if(!kpis.length) quality = 40;
-  quality = clamp(quality);
-  byId('qfill').style.width=quality+'%';
-  byId('qtxt').textContent=quality+'%';
-  byId('qual').textContent='Quality: '+quality+'%';
+  quality = kpis.length ? clamp(quality) : 40;
+  byId('qfill').style.width = quality + '%';
+  byId('qtxt').textContent = quality + '%';
+  byId('qual').textContent = 'Quality: ' + quality + '%';
 
   const zone = composite<=30?'green':(composite<=60?'amber':'red');
-  const status = zone==='green'?'Normal':(zone==='amber'?'Elevated':'Critical');
+  const status = zone==='green'?'Elevated Market Regime' : (zone==='amber'?'Elevated Market Regime':'Critical Market Regime');
   byId('regime').innerHTML =
     `<span style="width:12px;height:12px;border-radius:50%;background:var(--${zone});box-shadow:0 0 10px var(--${zone})"></span>
-     <strong style="font-size:18px">${Math.round(composite)}</strong> | ${status} Market Regime`;
+     <strong style="font-size:18px">${Math.round(composite)}</strong> | ${status}`;
 
-  const alerts = kpis.filter(p=>p.crisis);
+  const alerts = kpis.filter(k=>k.crisis);
   const alertBox = byId('alert');
   if(composite>=80){
     alertBox.style.display='block';
-    alertBox.innerHTML=`🚨 <strong>CRITICAL</strong> — Stress ${Math.round(composite)}. ${alerts.length} indicator(s) at crisis levels.`;
-  }else if(alerts.length>0){
+    alertBox.innerHTML = `🚨 <strong>CRITICAL</strong> — Stress ${Math.round(composite)}. ${alerts.length} indicator(s) at danger levels.`;
+  }else if(alerts.length){
     alertBox.style.display='block';
-    alertBox.innerHTML=`⚠️ ${alerts.length} key indicator(s) at or beyond historical danger thresholds.`;
+    alertBox.innerHTML = `⚠️ <strong>${alerts.length}</strong> key indicator(s) at or beyond historical danger thresholds.`;
   }else{
     alertBox.style.display='none';
   }
 
-  // Horizon risk (simple monotonic function of composite)
-  const r1m = Math.round(15 + composite*0.5);
-  const r3m = Math.round(25 + composite*0.6);
-  const r6m = Math.round(35 + composite*0.7);
-  byId('r1m').textContent=r1m+'%';
-  byId('r3m').textContent=r3m+'%';
-  byId('r6m').textContent=r6m+'%';
-  byId('m1dir').textContent = trendLabel(r1m);
-  byId('m3dir').textContent = trendLabel(r3m);
-  byId('m6dir').textContent = trendLabel(r6m);
+  const r1 = Math.round(15 + composite*0.5);
+  const r3 = Math.round(25 + composite*0.6);
+  const r6 = Math.round(35 + composite*0.7);
+  byId('r1m').textContent = r1 + '%';
+  byId('r3m').textContent = r3 + '%';
+  byId('r6m').textContent = r6 + '%';
+  byId('m1dir').textContent = horizonLabel(r1);
+  byId('m3dir').textContent = horizonLabel(r3);
+  byId('m6dir').textContent = horizonLabel(r6);
 
   const insight = CONFIG.INSIGHTS.find(i=>composite>=i.min && composite<=i.max);
   if(insight){
-    byId('insightText').textContent=insight.text;
+    byId('insightText').textContent = insight.text;
     byId('insightCard').style.display='block';
   }else{
     byId('insightCard').style.display='none';
@@ -776,27 +715,26 @@ function renderTop(kpis,history){
   drawTrend(history,'30d');
 }
 
-function trendLabel(v){
+function horizonLabel(v){
   if(v<30) return '↓ Low';
   if(v<50) return '→ Moderate';
   if(v<70) return '↗ Elevated';
   return '↑ High';
 }
 
-/* ============ RENDER: PILLS / HEAT ========= */
+/* ---------- render details ---------- */
 
 function renderPills(kpis){
-  const grid=byId('pillGrid');
+  const grid = byId('pillGrid');
   if(!kpis.length){
-    grid.innerHTML='<div class="small">No indicators available from cache. Check FRED fetch / cache.</div>';
+    grid.innerHTML='<div class="small">No indicators available. Check data source.</div>';
     return;
   }
   grid.innerHTML = kpis.map(k=>{
     const fresh = daysSince(k.date)<=7;
     const badge = `<span class="${fresh?'b-fresh':'b-stale'}">${fresh?'FRESH':'STALE'}</span>`;
-    const rag = k.rag;
     return `<div class="kpi show" id="pill-${k.key}">
-      <h4>${k.label}<span class="dot ${rag}"></span></h4>
+      <h4>${k.label}<span class="dot ${k.rag}"></span></h4>
       <div class="val">${k.disp}</div>
       <div class="small">Last: ${k.date} &nbsp; ${badge}</div>
       <div class="toggle-desc">About this KPI</div>
@@ -804,18 +742,17 @@ function renderPills(kpis){
     </div>`;
   }).join('');
   kpis.forEach(k=>{
-    const el=byId('pill-'+k.key);
-    if(el){
-      el.querySelector('.toggle-desc').onclick=()=>el.classList.toggle('show');
-    }
+    const el = byId('pill-'+k.key);
+    if(!el) return;
+    el.querySelector('.toggle-desc').onclick=()=>el.classList.toggle('show');
   });
 }
 
 function renderHeat(kpis){
-  const heat=byId('heat');
+  const heat = byId('heat');
   heat.innerHTML = kpis.map(k=>{
-    const pct=Math.round(k.scaled);
-    const col=pct<30?'var(--green)':(pct<60?'var(--amber)':'var(--red)');
+    const pct = Math.round(k.scaled);
+    const col = pct<30?'var(--green)':(pct<60?'var(--amber)':'var(--red)');
     return `<div class="cell">
       <div class="small" style="text-transform:uppercase;font-weight:800">${k.short}</div>
       <div style="font-weight:800;font-size:26px;margin:6px 0">${k.disp}</div>
@@ -824,16 +761,14 @@ function renderHeat(kpis){
   }).join('');
 }
 
-/* ============ RENDER: CHARTS ============== */
-
 function renderDecomp(kpis){
-  const ctx=byId('decomp').getContext('2d');
+  const ctx = byId('decomp').getContext('2d');
   if(charts.decomp) charts.decomp.destroy();
   if(!kpis.length) return;
-  const labels=kpis.map(k=>k.short);
-  const data=kpis.map(k=>+(k.scaled*k.weight).toFixed(2));
-  const colors=kpis.map(k=>k.rag==='g'?'#1ec28b':(k.rag==='a'?'#ffc247':'#ff6070'));
-  charts.decomp=new Chart(ctx,{
+  const labels = kpis.map(k=>k.short);
+  const data   = kpis.map(k=>+(k.scaled*k.weight).toFixed(2));
+  const colors = kpis.map(k=>k.rag==='g'?'#1ec28b':(k.rag==='a'?'#ffc247':'#ff6070'));
+  charts.decomp = new Chart(ctx,{
     type:'bar',
     data:{labels,datasets:[{data,backgroundColor:colors}]},
     options:{
@@ -841,214 +776,89 @@ function renderDecomp(kpis){
       plugins:{legend:{display:false}},
       scales:{
         x:{ticks:{color:'#8b96b0'}},
-        y:{ticks:{color:'#8b96b0',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.06)'}}
+        y:{ticks:{color:'#8b96b0',callback:v=>v+'%'},
+           grid:{color:'rgba(255,255,255,.06)'}}
       }
     }
   });
 }
 
 function renderRadar(kpis){
-  const ctx=byId('radarChart').getContext('2d');
+  const ctx = byId('radarChart').getContext('2d');
   if(charts.radar) charts.radar.destroy();
   if(!kpis.length) return;
-  charts.radar=new Chart(ctx,{
+  const labels = kpis.map(k=>k.short);
+  const data   = kpis.map(k=>k.scaled);
+  const colors = kpis.map(k=>k.rag==='g'?'#1ec28b':(k.rag==='a'?'#ffc247':'#ff6070'));
+  charts.radar = new Chart(ctx,{
     type:'radar',
-    data:{
-      labels:kpis.map(k=>k.short),
-      datasets:[{
-        data:kpis.map(k=>k.scaled),
-        backgroundColor:'rgba(107,158,255,0.2)',
-        borderColor:'#6b9eff',
-        pointBackgroundColor:kpis.map(k=>k.rag==='g'?'#1ec28b':(k.rag==='a'?'#ffc247':'#ff6070')),
-        pointBorderColor:'#fff'
-      }]
-    },
+    data:{labels,datasets:[{
+      data,
+      backgroundColor:'rgba(107,158,255,.2)',
+      borderColor:'#6b9eff',
+      pointBackgroundColor:colors,
+      pointBorderColor:'#fff',
+      pointRadius:3
+    }]},
     options:{
+      responsive:true,maintainAspectRatio:true,
       plugins:{legend:{display:false}},
-      scales:{
-        r:{
-          min:0,max:100,
-          angleLines:{color:'rgba(255,255,255,0.1)'},
-          grid:{color:'rgba(255,255,255,0.1)'},
-          pointLabels:{color:'#8b96b0',font:{size:11}},
-          ticks:{color:'#8b96b0',backdropColor:'transparent',callback:v=>v+'%'}
-        }
-      }
+      scales:{r:{
+        min:0,max:100,
+        grid:{color:'rgba(255,255,255,.1)'},
+        angleLines:{color:'rgba(255,255,255,.1)'},
+        pointLabels:{color:'#8b96b0',font:{size:11}},
+        ticks:{display:true,backdropColor:'transparent',color:'#8b96b0',
+               callback:v=>v+'%'}
+      }}
     }
   });
 }
+
+/* ---------- trend & crises ---------- */
 
 function drawTrend(history,period){
-  const ctx=byId('mainChart').getContext('2d');
+  const ctx = byId('mainChart').getContext('2d');
   if(charts.main) charts.main.destroy();
   if(!history.length) return;
-  const sliced=sliceHistory(history,period);
-  const labels=sliced.map(x=>formatLabel(x.date));
-  const data=sliced.map(x=>x.composite);
-  charts.main=new Chart(ctx,{
+
+  const sliced = sliceHistory(history,period);
+  if(!sliced.length) return;
+
+  const labels = sliced.map(x=>formatLabel(x.date));
+  const data   = sliced.map(x=>x.composite);
+  const single = data.length===1;
+
+  charts.main = new Chart(ctx,{
     type:'line',
     data:{labels,datasets:[{
-      data,fill:true,tension:0.35,borderWidth:2,
-      borderColor:'#6b9eff',backgroundColor:'rgba(107,158,255,.12)',pointRadius:0
+      data,
+      tension: single?0:0.35,
+      fill: !single,
+      borderWidth:2,
+      borderColor:'#6b9eff',
+      backgroundColor: single?'transparent':'rgba(107,158,255,.12)',
+      pointRadius: single?5:0,
+      pointHoverRadius: single?6:4
     }]},
     options:{
       responsive:true,maintainAspectRatio:true,
       plugins:{legend:{display:false}},
       scales:{
-        y:{min:0,max:100,ticks:{color:'#8b96b0',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.06)'}},
-        x:{ticks:{color:'#8b96b0'},grid:{color:'rgba(255,255,255,.06)'}}
+        y:{min:0,max:100,
+           ticks:{color:'#8b96b0',callback:v=>v+'%'},
+           grid:{color:'rgba(255,255,255,.06)'}},
+        x:{ticks:{color:'#8b96b0'},
+           grid:{color:'rgba(255,255,255,.06)'}}
       }
     }
   });
 }
-
-function drawCrisisTimeline(history){
-  const ctx=byId('crisisTimeline').getContext('2d');
-  if(charts.crisisTimeline) charts.crisisTimeline.destroy();
-  if(!history.length) return;
-  const sliced=sliceHistory(history,'5y');
-  const labels=sliced.map(x=>{
-    const d=new Date(x.date);
-    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-  });
-  const data=sliced.map(x=>x.composite);
-  charts.crisisTimeline=new Chart(ctx,{
-    type:'line',
-    data:{labels,datasets:[{
-      data,fill:true,tension:0.4,borderWidth:2,
-      borderColor:'#6b9eff',backgroundColor:'rgba(107,158,255,.12)',pointRadius:0
-    }]},
-    options:{
-      responsive:true,maintainAspectRatio:true,
-      plugins:{legend:{display:false}},
-      scales:{
-        y:{min:0,max:100,ticks:{color:'#8b96b0',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.06)'}},
-        x:{ticks:{color:'#8b96b0',maxTicksLimit:10},grid:{color:'rgba(255,255,255,.06)'}}
-      }
-    }
-  });
-}
-
-function drawTrajectory(cur){
-  const ctx=byId('traj').getContext('2d');
-  if(charts.traj) charts.traj.destroy();
-  const weeks=26;
-  const labels=[],path=[],upper=[],lower=[];
-  let v=isFinite(cur)?cur:50;
-  for(let i=0;i<weeks;i++){
-    v = 0.85*v + 0.15*50; // mean reversion to 50
-    const band = 6*Math.sqrt((i+1)/weeks);
-    labels.push('W+'+(i+1));
-    path.push(+v.toFixed(1));
-    upper.push(Math.min(100,+(v+band).toFixed(1)));
-    lower.push(Math.max(0,+(v-band).toFixed(1)));
-  }
-  charts.traj=new Chart(ctx,{
-    type:'line',
-    data:{
-      labels,
-      datasets:[
-        {label:'Projected',data:path,borderColor:'#ffc247',borderWidth:2,tension:0.35,fill:false},
-        {label:'Upper',data:upper,borderColor:'#ff6070',borderWidth:1,borderDash:[4,4],fill:false},
-        {label:'Lower',data:lower,borderColor:'#1ec28b',borderWidth:1,borderDash:[4,4],fill:false}
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:true,
-      plugins:{legend:{labels:{color:'#8b96b0'}}},
-      scales:{
-        y:{min:0,max:100,ticks:{color:'#8b96b0',callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.06)'}},
-        x:{ticks:{color:'#8b96b0'},grid:{color:'rgba(255,255,255,.06)'}}
-      }
-    }
-  });
-}
-
-/* ============ RENDER: OTHER =============== */
-
-function renderCrises(history){
-  const cur = history.length ? history[history.length-1].composite : 50;
-  const wrap=byId('crises');
-  wrap.innerHTML = CONFIG.CRISES.map(c=>{
-    const sim = 100 - Math.min(40, Math.abs(cur - c.score));
-    const col = sim>70?'var(--red)':'var(--amber)';
-    return `<div class="cell">
-      <div style="font-weight:800;margin-bottom:6px">${c.name}</div>
-      <div class="badge">${c.phase}</div>
-      <div class="small" style="margin-top:6px">Peak Stress</div>
-      <div style="font-weight:800">${c.score}</div>
-      <div class="small" style="margin-top:6px">Pattern Similarity</div>
-      <div style="font-weight:800;color:${col}">${Math.round(sim)}%</div>
-      <div class="small" style="margin-top:6px">Max Drawdown ${c.drawdown}</div>
-      <div class="small">${c.date} • ${c.duration}</div>
-    </div>`;
-  }).join('');
-  drawCrisisTimeline(history);
-}
-
-function renderScenarios(history){
-  const cur = history.length ? history[history.length-1].composite : 50;
-  const base = clamp(60 - cur*0.2);
-  const down = clamp(20 + cur*0.4);
-  const up = clamp(100 - base - down);
-  const box=byId('scenarios');
-  box.innerHTML = `
-    <div class="cell">
-      <div style="font-weight:800;margin-bottom:6px">Base Case</div>
-      <div style="font-size:28px;font-weight:800;background:linear-gradient(135deg,var(--accent-bright),#4a7fe8);
-        -webkit-background-clip:text;-webkit-text-fill-color:transparent">${Math.round(base)}%</div>
-      <div class="small" style="margin-top:6px">Choppy but contained; no systemic break.</div>
-    </div>
-    <div class="cell">
-      <div style="font-weight:800;margin-bottom:6px">Downside</div>
-      <div style="font-size:28px;font-weight:800;color:var(--red)">${Math.round(down)}%</div>
-      <div class="small" style="margin-top:6px">Tighter conditions; drawdown / recession risk.</div>
-    </div>
-    <div class="cell">
-      <div style="font-weight:800;margin-bottom:6px">Upside</div>
-      <div style="font-size:28px;font-weight:800;color:var(--green)">${Math.round(up)}%</div>
-      <div class="small" style="margin-top:6px">Soft-landing narrative, easing stress.</div>
-    </div>`;
-  drawTrajectory(cur);
-}
-
-function renderNewsFeed(){
-  // Static placeholders (safe / non-breaking)
-  const news = [
-    {title:"Fed policy statement watched for shift in tone",source:"FT",time:"Today",impact:"medium"},
-    {title:"Credit spreads edge wider with risk-off flows",source:"Reuters",time:"Today",impact:"high"},
-    {title:"Housing permits and starts confirm cycle direction",source:"WSJ",time:"This week",impact:"medium"}
-  ];
-  const cal = [
-    {event:"CPI Release",date:"Next week",importance:"high"},
-    {event:"FOMC Minutes",date:"Next week",importance:"high"},
-    {event:"Payrolls",date:"Next release",importance:"high"}
-  ];
-  byId('newsFeed').innerHTML = news.map(n=>`
-    <div class="news-item">
-      <div class="news-dot" style="background:${n.impact==='high'?'var(--red)':'var(--amber)'}"></div>
-      <div class="news-content">
-        <div class="news-title">${n.title}</div>
-        <div class="small">${n.source} • ${n.time}</div>
-      </div>
-    </div>`).join('');
-  byId('economicCalendar').innerHTML = cal.map(c=>`
-    <div class="cell" style="display:flex;justify-content:space-between;align-items:center;padding:12px;margin-bottom:8px;gap:8px">
-      <div>
-        <div style="font-weight:700;margin-bottom:4px">${c.event}</div>
-        <div class="small">${c.date}</div>
-      </div>
-      <span class="${c.importance==='high'?'b-stale':'b-fresh'}">${c.importance.toUpperCase()}</span>
-    </div>`).join('');
-}
-
-/* ============ UI WIRES ==================== */
 
 function sliceHistory(history,period){
-  if(!history.length) return [];
-  if(period==='all') return history;
-  const end=parseDate(history[history.length-1].date);
-  const start=new Date(end);
+  if(!history.length || period==='all') return history;
+  const end = parseDate(history[history.length-1].date);
+  const start = new Date(end);
   if(period==='30d') start.setDate(start.getDate()-30);
   else if(period==='90d') start.setDate(start.getDate()-90);
   else if(period==='6m') start.setMonth(start.getMonth()-6);
@@ -1058,13 +868,163 @@ function sliceHistory(history,period){
 }
 
 function formatLabel(d){
-  const dt=new Date(d);
+  const dt = new Date(d);
   return dt.toLocaleDateString('en-GB',{month:'short',day:'numeric'});
 }
 
+function renderCrises(history){
+  const cur = history.length?history[history.length-1].composite:50;
+  const box = byId('crises');
+  box.innerHTML = CONFIG.CRISES.map(c=>{
+    const sim = Math.max(50,100-Math.abs(cur-c.score));
+    const col = sim>70?'var(--red)':'var(--amber)';
+    return `<div class="cell">
+      <div style="font-weight:800;margin-bottom:6px">${c.name}</div>
+      <div class="badge">${c.phase}</div>
+      <div class="small" style="margin-top:6px">Peak Stress Score</div>
+      <div style="font-weight:800">${c.score}</div>
+      <div class="small" style="margin-top:6px">Pattern Similarity</div>
+      <div style="font-weight:800;color:${col}">${Math.round(sim)}%</div>
+      <div class="small" style="margin-top:6px">Max Drawdown ${c.drawdown}</div>
+      <div class="small">Date ${c.date} • Duration ${c.duration}</div>
+    </div>`;
+  }).join('');
+  drawCrisisTimeline(history);
+}
+
+function drawCrisisTimeline(history){
+  const ctx = byId('crisisTimeline').getContext('2d');
+  if(charts.crisisTimeline) charts.crisisTimeline.destroy();
+  if(!history.length) return;
+  const sliced = sliceHistory(history,'5y');
+  const labels = sliced.map(x=>{
+    const d=new Date(x.date);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  });
+  const data = sliced.map(x=>x.composite);
+  charts.crisisTimeline = new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[{
+      data,
+      fill:true,
+      tension:0.35,
+      borderWidth:2,
+      borderColor:'#6b9eff',
+      backgroundColor:'rgba(107,158,255,.12)',
+      pointRadius:0
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{min:0,max:100,
+           ticks:{color:'#8b96b0',callback:v=>v+'%'},
+           grid:{color:'rgba(255,255,255,.06)'}},
+        x:{ticks:{color:'#8b96b0',maxTicksLimit:10},
+           grid:{color:'rgba(255,255,255,.06)'}}
+      }
+    }
+  });
+}
+
+/* ---------- scenarios & traj ---------- */
+
+function renderScenarios(history){
+  const cur = history.length?history[history.length-1].composite:50;
+  const base = clamp(Math.round(60 - cur*0.2));
+  const down = clamp(Math.round(20 + cur*0.4));
+  const up   = clamp(100 - base - down);
+  const box = byId('scenarios');
+  box.innerHTML = `
+    <div class="cell">
+      <div style="font-weight:800;margin-bottom:6px">Base Case</div>
+      <div style="font-size:28px;font-weight:800;background:linear-gradient(135deg,var(--accent-bright),#4a7fe8);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${base}%</div>
+      <div class="small" style="margin-top:6px">Sideways / soft-landing bias.</div>
+    </div>
+    <div class="cell">
+      <div style="font-weight:800;margin-bottom:6px">Downside Risk</div>
+      <div style="font-size:28px;font-weight:800;color:var(--red)">${down}%</div>
+      <div class="small" style="margin-top:6px">Recession / disorderly tightening scenario.</div>
+    </div>
+    <div class="cell">
+      <div style="font-weight:800;margin-bottom:6px">Upside Relief</div>
+      <div style="font-size:28px;font-weight:800;color:var(--green)">${up}%</div>
+      <div class="small" style="margin-top:6px">Disinflation + easing conditions.</div>
+    </div>`;
+  drawTrajectory(cur);
+}
+
+function drawTrajectory(cur){
+  const ctx = byId('traj').getContext('2d');
+  if(charts.traj) charts.traj.destroy();
+  const weeks=26;
+  const labels=[],path=[],upper=[],lower=[];
+  let v=cur;
+  for(let i=0;i<weeks;i++){
+    v = 0.85*v + 0.15*50;
+    const band = 6*Math.sqrt((i+1)/weeks);
+    labels.push('W+'+(i+1));
+    path.push(+v.toFixed(1));
+    upper.push(Math.min(100,+(v+band).toFixed(1)));
+    lower.push(Math.max(0,+(v-band).toFixed(1)));
+  }
+  charts.traj = new Chart(ctx,{
+    type:'line',
+    data:{labels,
+      datasets:[
+        {label:'Projected',data:path,borderColor:'#ffc247',borderWidth:2,tension:.35,fill:false},
+        {label:'Upper',data:upper,borderColor:'#ff6070',borderDash:[4,4],borderWidth:1,fill:false},
+        {label:'Lower',data:lower,borderColor:'#1ec28b',borderDash:[4,4],borderWidth:1,fill:false}
+      ]},
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{labels:{color:'#8b96b0'}}},
+      scales:{
+        y:{min:0,max:100,ticks:{color:'#8b96b0',callback:v=>v+'%'},
+           grid:{color:'rgba(255,255,255,.06)'}},
+        x:{ticks:{color:'#8b96b0'},
+           grid:{color:'rgba(255,255,255,.06)'}}
+      }
+    }
+  });
+}
+
+/* ---------- news placeholders ---------- */
+
+function renderNews(){
+  const news = [
+    {title:"Fed holds rates; data-dependent language maintained.",source:"Reuters",time:"Today",impact:"medium"},
+    {title:"Credit spreads widen modestly vs prior month.",source:"Bloomberg",time:"Today",impact:"high"},
+    {title:"Housing permits show mixed signals across regions.",source:"WSJ",time:"This week",impact:"medium"}
+  ];
+  const cal = [
+    {event:"CPI Release",date:"Next week",importance:"high"},
+    {event:"FOMC Meeting",date:"Next month",importance:"high"},
+    {event:"ISM Manufacturing",date:"Soon",importance:"medium"}
+  ];
+  byId('newsFeed').innerHTML = news.map(n=>`
+    <div class="news-item">
+      <div class="news-dot" style="background:${n.impact==='high'?'var(--red)':n.impact==='medium'?'var(--amber)':'var(--green)'}"></div>
+      <div class="news-content">
+        <div class="news-title">${n.title}</div>
+        <div class="small">${n.source} • ${n.time}</div>
+      </div>
+    </div>`).join('');
+  byId('economicCalendar').innerHTML = cal.map(c=>`
+    <div class="cell" style="display:flex;justify-content:space-between;align-items:center;padding:12px;margin-bottom:8px;gap:8px">
+      <div>
+        <div style="font-weight:700">${c.event}</div>
+        <div class="small">${c.date}</div>
+      </div>
+      <span class="${c.importance==='high'?'b-stale':'b-fresh'}">${c.importance.toUpperCase()}</span>
+    </div>`).join('');
+}
+
+/* ---------- ui wiring ---------- */
+
 function setupPeriodButtons(history){
   if(app.boundPeriods) return;
-  app.boundPeriods=true;
+  app.boundPeriods = true;
   document.querySelectorAll('.btns button').forEach(b=>{
     b.addEventListener('click',()=>{
       document.querySelectorAll('.btns button').forEach(x=>x.classList.remove('active'));
@@ -1076,25 +1036,24 @@ function setupPeriodButtons(history){
 
 function setupTabs(){
   if(app.boundTabs) return;
-  app.boundTabs=true;
+  app.boundTabs = true;
   document.querySelectorAll('.tab').forEach(t=>{
     t.addEventListener('click',()=>{
       document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
       t.classList.add('active');
-      const key=t.dataset.t;
+      const key = t.dataset.t;
       document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
       byId('view-'+key).classList.add('active');
     });
   });
 }
 
-/* ============ REPORT / STATES ============ */
+/* ---------- export / loading / error ---------- */
 
 function exportReport(kpis,history){
   const report={
-    generated:new Date().toISOString(),
+    generated_at:new Date().toISOString(),
     composite:history.length?history[history.length-1].composite:null,
-    quality:byId('qtxt').textContent,
     indicators:kpis
   };
   const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});
@@ -1102,22 +1061,20 @@ function exportReport(kpis,history){
   const a=document.createElement('a');
   a.href=url;
   a.download=`crash-radar-report-${Date.now()}.json`;
-  document.body.appendChild(a);
   a.click();
-  a.remove();
   URL.revokeObjectURL(url);
 }
 
-function showLoadingState(show){
-  document.body.style.opacity = show?'0.7':'1';
-  document.body.style.pointerEvents = show?'none':'auto';
+function showLoading(on){
+  document.body.style.opacity = on?'0.7':'1';
+  document.body.style.pointerEvents = on?'none':'auto';
 }
 
-function showErrorState(){
+function showError(){
   document.body.innerHTML = `
     <div class="wrap" style="text-align:center;padding-top:100px">
       <h1 style="color:var(--red)">⚠️ Data Loading Error</h1>
-      <p class="small">Unable to load economic data from cache. Check FRED API / fred_cache.json.</p>
+      <p style="color:var(--muted);margin:20px 0">Unable to load economic data. Check data/fred_cache.json path & format.</p>
       <button class="btn" onclick="location.reload()">🔄 Retry</button>
     </div>`;
 }
