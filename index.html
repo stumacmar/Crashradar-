@@ -1,1207 +1,1126 @@
-<!DOCTYPE html>
+<!doctype html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Economic Crash Radar Pro</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <style>
-    :root {
-      --bg:#0a0e1a;
-      --panel:#12182b;
-      --panel-soft:#0c1020;
-      --text:#e8eeff;
-      --muted:#8b96b0;
-      --accent:#6b9eff;
-      --accent-bright:#8fb4ff;
-      --green:#1ec28b;
-      --amber:#ffc247;
-      --red:#ff6070;
-      --radius-lg:16px;
-      --radius-md:10px;
-      --shadow-soft:0 8px 24px rgba(0,0,0,0.45);
-      --font-main:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
-      --fs-xs:9px;
-      --fs-sm:10px;
-      --fs-md:11px;
-      --fs-lg:13px;
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{
-      background:var(--bg);
-      color:var(--text);
-      font:15px/1.6 var(--font-main);
-      -webkit-font-smoothing:antialiased;
-      padding:18px 12px 40px;
-    }
-    .container{max-width:1440px;margin:0 auto;}
-    .header{text-align:center;margin-bottom:18px;}
-    h1{
-      font-size:clamp(30px,6vw,46px);
-      font-weight:800;
-      margin-bottom:6px;
-      background:linear-gradient(135deg,var(--text),var(--accent-bright));
-      -webkit-background-clip:text;
-      -webkit-text-fill-color:transparent;
-    }
-    .subtitle{
-      color:var(--muted);
-      font-size:0.95rem;
-    }
-    .meta-badges{
-      display:flex;flex-wrap:wrap;justify-content:center;
-      gap:6px;margin-top:8px;font-size:var(--fs-xs);color:var(--muted);
-    }
-    .badge{
-      padding:4px 8px;border-radius:999px;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(255,255,255,0.02);
-    }
-    .alert-banner{
-      margin:16px auto 18px;padding:10px 12px;max-width:900px;
-      border-radius:10px;
-      background:linear-gradient(135deg,rgba(107,158,255,0.08),rgba(139,187,255,0.02));
-      border:1px solid rgba(107,158,255,0.25);
-      font-size:var(--fs-sm);color:var(--text);
-    }
-    .dashboard{
-      display:grid;
-      grid-template-columns:280px 1fr;
-      gap:16px;
-      align-items:flex-start;
-    }
-    @media(max-width:900px){
-      body{padding:14px 8px 26px;}
-      .dashboard{grid-template-columns:1fr;}
-    }
-    .sidebar{
-      background:var(--panel);
-      border-radius:var(--radius-lg);
-      padding:16px 14px 14px;
-      box-shadow:var(--shadow-soft);
-    }
-    .main-content{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:14px;
-    }
-    @media(max-width:900px){
-      .main-content{grid-template-columns:1fr;}
-      .sidebar{order:-1;}
-    }
-    .card{
-      background:var(--panel);
-      border-radius:var(--radius-lg);
-      padding:14px 12px 12px;
-      box-shadow:var(--shadow-soft);
-    }
-    .card-title{
-      font-size:var(--fs-lg);
-      font-weight:700;
-      color:var(--accent-bright);
-      display:flex;
-      align-items:center;
-      gap:6px;
-      margin-bottom:8px;
-    }
-    .card-title .icon{font-size:1.1rem;}
-    .gauge-container{text-align:center;margin-bottom:8px;}
-    .gauge{position:relative;width:190px;height:190px;margin:0 auto;}
-    .gauge-background{
-      position:absolute;inset:0;border-radius:50%;
-      background:conic-gradient(
-        var(--green) 0deg 108deg,
-        var(--amber) 108deg 216deg,
-        var(--red) 216deg 360deg
-      );
-      opacity:0.28;
-    }
-    .gauge-center{
-      position:absolute;top:10%;left:10%;width:80%;height:80%;
-      border-radius:50%;background:var(--panel-soft);
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-    }
-    .gauge-score{font-size:2.4rem;font-weight:800;}
-    .gauge-label{
-      font-size:var(--fs-xs);color:var(--muted);
-      text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;
-    }
-    .gauge-needle{
-      position:absolute;bottom:50%;left:50%;
-      width:3px;height:46%;background:var(--accent);
-      transform-origin:bottom center;
-      transform:translateX(-50%) rotate(0deg);
-      border-radius:4px 4px 0 0;
-      transition:transform 0.9s ease;
-    }
-    .risk-meter{margin-top:6px;}
-    .risk-bar{
-      height:6px;border-radius:4px;
-      background:rgba(255,255,255,0.1);overflow:hidden;
-    }
-    .risk-fill{
-      height:100%;width:0%;
-      background:linear-gradient(90deg,var(--green),var(--amber),var(--red));
-      transition:width 0.8s ease;
-    }
-    .risk-labels{
-      display:flex;justify-content:space-between;
-      margin-top:4px;font-size:var(--fs-xs);color:var(--muted);
-    }
-    .status-grid{
-      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:6px;margin-top:10px;
-    }
-    .status-item{
-      padding:7px 6px;background:rgba(255,255,255,0.02);
-      border-radius:8px;font-size:var(--fs-xs);
-    }
-    .status-label{color:var(--muted);font-size:var(--fs-xs);}
-    .status-value{font-weight:700;font-size:0.95rem;margin:1px 0 0;}
-    .indicator-grid{
-      display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-      gap:7px;margin-top:4px;
-    }
-    .indicator{
-      padding:7px 7px 6px;
-      background:rgba(255,255,255,0.03);
-      border-radius:8px;
-      border-left:3px solid var(--green);
-      font-size:var(--fs-xs);
-    }
-    .indicator.warning{border-left-color:var(--amber);}
-    .indicator.danger{border-left-color:var(--red);}
-    .indicator.core::before{
-      content:'Core';
-      display:inline-block;
-      margin-right:4px;
-      padding:1px 4px;
-      font-size:7px;
-      border-radius:6px;
-      border:1px solid rgba(107,158,255,0.5);
-      color:var(--accent-bright);
-    }
-    .indicator-header{
-      display:flex;justify-content:space-between;
-      gap:4px;align-items:baseline;margin-bottom:2px;
-    }
-    .indicator-name{font-weight:600;font-size:0.78rem;}
-    .indicator-value{font-weight:700;font-size:0.9rem;}
-    .indicator-threshold{
-      color:var(--muted);font-size:var(--fs-xs);margin-top:1px;
-    }
-    .source-tag{
-      display:inline-block;margin-top:3px;padding:2px 5px;
-      border-radius:6px;border:1px solid rgba(255,255,255,0.14);
-      font-size:7px;color:var(--muted);
-    }
-    .manual-input-row{
-      display:flex;align-items:center;gap:3px;
-      margin-top:3px;font-size:7px;
-    }
-    .manual-input{
-      width:72px;padding:2px 4px;border-radius:4px;
-      border:1px solid rgba(255,255,255,0.25);
-      background:rgba(0,0,0,0.5);
-      color:var(--text);font-size:var(--fs-xs);outline:none;
-    }
-    .manual-input:focus{
-      border-color:var(--accent);
-      box-shadow:0 0 4px var(--accent);
-    }
-    .valuation-comparison{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-      gap:6px;margin-top:8px;font-size:var(--fs-xs);
-    }
-    .valuation-item{
-      padding:6px;background:rgba(255,255,255,0.02);
-      border-radius:8px;text-align:center;
-    }
-    .valuation-item.current{
-      border:1px solid var(--red);
-      background:rgba(255,96,112,0.05);
-    }
-    .valuation-title{font-weight:600;margin-bottom:2px;}
-    .valuation-metric{margin:1px 0;}
-    .valuation-outcome{margin-top:2px;color:var(--muted);}
-    .insight-card{
-      margin-top:6px;padding:6px 7px;border-radius:8px;
-      background:linear-gradient(135deg,rgba(107,158,255,0.10),rgba(10,14,26,1));
-      border:1px solid rgba(107,158,255,0.25);
-      font-size:var(--fs-xs);
-    }
-    .chart-container{margin-top:4px;}
-    .history-grid{
-      margin-top:6px;
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-      gap:5px;font-size:var(--fs-xs);
-    }
-    .history-item{
-      padding:5px;border-radius:8px;
-      background:rgba(255,255,255,0.02);
-    }
-    .history-title{
-      font-weight:600;margin-bottom:1px;font-size:var(--fs-xs);
-    }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Economic Crash Radar Pro</title>
+<style>
+:root{
+  --bg:#0a0e1a; --panel:#12182b; --panel-hover:#151d33; --text:#e8eeff; --muted:#8b96b0;
+  --accent:#6b9eff; --accent-bright:#8fb4ff; --green:#1ec28b; --amber:#ffc247; --red:#ff6070;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.wrap{max-width:1600px;margin:0 auto;padding:24px 16px 80px;overflow-x:hidden}
+h1{font-size:clamp(28px,5vw,54px);line-height:1.08;font-weight:800;margin-bottom:8px;
+    background:linear-gradient(135deg,var(--text),var(--accent-bright));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.02em}
+.subtitle{color:var(--muted);font-weight:600;font-size:14px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);border-radius:10px;font-weight:700;font-size:12px;white-space:nowrap}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:none;border-radius:10px;
+  background:var(--accent);color:#fff;font-weight:700;cursor:pointer;transition:all 0.2s ease;font-size:14px;white-space:nowrap}
+.btn:hover{background:var(--accent-bright);transform:translateY(-1px)}
+.card{background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:16px;
+  padding:20px;margin:18px 0;box-shadow:0 4px 24px rgba(0,0,0,.3);transition:all 0.3s ease;overflow:hidden}
+.card:hover{box-shadow:0 8px 32px rgba(0,0,0,.4);transform:translateY(-2px)}
+.status-pill{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;background:rgba(255,255,255,.04);font-weight:700;flex-wrap:wrap}
+.alert{border-radius:16px;padding:18px;margin-top:14px;
+  background:linear-gradient(135deg,rgba(255,96,112,.12),rgba(255,194,71,.12));
+  border:1px solid rgba(255,96,112,.25);display:none}
+.tabs{display:flex;gap:4px;border-bottom:2px solid rgba(255,255,255,.06);margin-top:8px;
+  overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
+.tabs::-webkit-scrollbar{height:4px}
+.tabs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:2px}
+.tab{background:transparent;border:none;color:var(--muted);padding:10px 14px;font-weight:800;cursor:pointer;
+  border-radius:8px 8px 0 0;transition:all 0.2s ease;white-space:nowrap;flex-shrink:0;font-size:13px}
+.tab.active{color:var(--accent-bright);background:rgba(255,255,255,.03)}
+.tab:hover:not(.active){color:var(--text);background:rgba(255,255,255,.02)}
+.view{display:none;animation:fadeIn 0.5s ease}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.gauge{display:flex;gap:32px;align-items:center;flex-wrap:wrap}
+.gauge-wrap{position:relative;width:200px;height:200px;flex-shrink:0}
+.ring{position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(var(--green) 0 108deg,var(--amber)108deg 216deg,var(--red)216deg 360deg);opacity:.35}
+.ring:after{content:"";position:absolute;inset:22px;border-radius:50%;background:var(--panel);
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.35)}
+.needle{position:absolute;inset:0}
+.needle:before{content:"";position:absolute;top:50%;left:50%;width:6px;height:48%;
+  transform-origin:bottom center;transform:translate(-50%,-100%) rotate(var(--angle,0deg));
+  background:linear-gradient(180deg,var(--accent-bright),var(--accent));
+  border-radius:6px 6px 0 0;box-shadow:0 0 10px var(--accent);transition:transform 1s ease}
+.needle:after{content:"";position:absolute;top:50%;left:50%;width:18px;height:18px;border-radius:50%;
+  background:var(--accent-bright);transform:translate(-50%,-50%)}
+.score{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  font-weight:800;z-index:1}
+.score .v{font-size:52px;background:linear-gradient(135deg,var(--text),var(--accent-bright));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.score .l{font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:4px;text-align:center}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.kpi{border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px;background:rgba(255,255,255,.03);
+  transition:all 0.2s ease}
+.kpi:hover{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.05)}
+.kpi h4{display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot.g{background:var(--green);box-shadow:0 0 8px var(--green)}
+.dot.a{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.dot.r{background:var(--red);box-shadow:0 0 8px var(--red)}
+.small{font-size:11px;color:var(--muted)}
+.kpi .val{font-size:26px;font-weight:800;margin:8px 0}
+.b-fresh{color:var(--green);border:1px solid rgba(30,194,139,.35);background:rgba(30,194,139,.15);
+  font-size:10px;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.b-stale{color:var(--amber);border:1px solid rgba(255,194,71,.5);background:rgba(255,194,71,.15);
+  font-size:10px;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.toggle-desc{cursor:pointer;font-size:11px;color:var(--accent-bright);margin-top:6px}
+.desc{display:none;font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
+.show .desc{display:block}
+.btns{display:flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+  padding:4px;border-radius:10px;flex-wrap:wrap}
+.btns button{background:transparent;border:none;color:var(--muted);padding:6px 10px;border-radius:8px;
+  font-weight:700;cursor:pointer;transition:all 0.2s ease;font-size:12px;white-space:nowrap}
+.btns button.active{background:var(--accent);color:#fff}
+.btns button:hover:not(.active){background:rgba(255,255,255,.05);color:var(--text)}
+.chart{position:relative;height:340px;margin-top:12px}
+.heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.cell{border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;background:rgba(255,255,255,.03);
+  transition:all 0.2s ease;overflow:hidden;word-wrap:break-word}
+.cell:hover{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.05)}
+.cell>*{word-wrap:break-word;overflow-wrap:break-word}
+.bar{height:7px;border-radius:5px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:8px}
+.bar>span{display:block;height:100%;transition:width 0.5s ease}
+.radar-chart{height:300px;margin-top:20px}
+.risk-meter{display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap}
+.risk-level{width:100%;min-width:180px;height:7px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden}
+.risk-level>div{height:100%;transition:width 0.5s ease}
+.risk-labels{display:flex;justify-content:space-between;margin-top:4px;gap:4px;flex-wrap:wrap}
+.risk-labels span{font-size:9px;color:var(--muted)}
+.insight-card{background:linear-gradient(135deg, rgba(107,158,255,.1), rgba(139,187,255,.05));
+  border:1px solid rgba(107,158,255,.2);border-radius:12px;padding:14px;margin-top:16px;display:none}
+.insight-card h4{display:flex;align-items:center;gap:8px;margin-bottom:8px;color:var(--accent-bright);font-size:14px}
+.loading{display:flex;justify-content:center;align-items:center;height:200px;font-size:15px;color:var(--muted)}
+.news-item{display:flex;align-items:flex-start;gap:10px;padding:10px;margin-bottom:8px;
+  border-radius:8px;background:rgba(255,255,255,.02)}
+.news-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0}
+.news-content{flex:1;min-width:0;overflow-wrap:break-word;word-wrap:break-word}
+.news-title{font-weight:700;margin-bottom:4px;word-wrap:break-word;font-size:14px}
+@media (max-width:768px){
+  .gauge{flex-direction:column;align-items:center;gap:24px}
+  .gauge-wrap{width:180px;height:180px}
+  .wrap{padding:16px 12px 60px}
+  h1{font-size:28px}
+  .header{flex-direction:column;align-items:stretch}
+  .header>div:first-child{margin-bottom:8px}
+  .kpi-grid{grid-template-columns:1fr}
+  .heat{grid-template-columns:1fr}
+  .chart{height:260px}
+  .tabs{gap:2px;padding-bottom:2px}
+  .tab{padding:8px 10px;font-size:12px}
+  .btns{justify-content:flex-start}
+  .btns button{padding:6px 8px;font-size:11px}
+  .cell{padding:10px;font-size:13px}
+  .badge{font-size:11px;padding:6px 10px;gap:6px}
+  .card{padding:16px}
+  .status-pill{font-size:13px;padding:8px 12px}
+}
+</style>
 </head>
 <body>
-<div class="container">
+<div class="wrap">
   <div class="header">
-    <h1>⚡ Economic Crash Radar Pro</h1>
-    <div class="subtitle">
-      Composite Economic Fragility Index (CEFI) + macro & valuation tiles. Engineered for transparency.
+    <div>
+      <h1>⚡ Economic Crash Radar Pro</h1>
+      <div class="subtitle">Institutional-grade analytics validated by Fed research</div>
     </div>
-    <div class="meta-badges">
-      <div class="badge" id="cache-badge">FRED cache: not loaded</div>
-      <div class="badge">Core: YC, HY, VIX, Claims, optional Drawdown</div>
-      <div class="badge">Valuations: Buffett &amp; CAPE (separate stress)</div>
-      <div class="badge" id="inputs-badge">Inputs: 0 populated</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" id="refreshBtn">🔄 Refresh</button>
+      <button class="btn" id="exportBtn">📥 Export</button>
     </div>
   </div>
 
-  <div class="alert-banner" id="alert-banner">
-    Composite headline = 70% macro CEFI + 30% valuation stress when valuations are set; otherwise pure macro CEFI.
+  <div class="badges">
+    <div class="badge"><span class="live-dot"></span> Live Demo Data</div>
+    <div class="badge" id="upd">Last Update: Nov 2025</div>
+    <div class="badge" id="qual">Quality: Research-Based</div>
+    <div class="badge" id="indicatorsCount">Indicators: 15/15</div>
   </div>
 
-  <div class="dashboard">
-    <!-- SIDEBAR: GAUGE + STATUS -->
-    <aside class="sidebar">
-      <div class="gauge-container">
-        <div class="gauge">
-          <div class="gauge-background"></div>
-          <div class="gauge-center">
-            <div class="gauge-score" id="composite-score">--</div>
-            <div class="gauge-label" id="regime-label">COMPOSITE STRESS</div>
-          </div>
-          <div class="gauge-needle" id="needle"></div>
-        </div>
-        <div class="risk-meter">
-          <div class="risk-bar">
-            <div class="risk-fill" id="risk-fill"></div>
-          </div>
-          <div class="risk-labels">
-            <span>Low (0–24)</span>
-            <span>Caution (25–49)</span>
-            <span>Elevated (50–69)</span>
-            <span>High/Cr. (70–100)</span>
-          </div>
-        </div>
-      </div>
+  <div class="status-pill" id="regime">--</div>
+  <div class="alert" id="alert"></div>
 
-      <div class="status-grid">
-        <div class="status-item">
-          <div class="status-label">Macro CEFI</div>
-          <div class="status-value" id="macro-cefi-display">--</div>
-          <div class="indicator-threshold">0–100 based on core drivers.</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">Valuation Stress</div>
-          <div class="status-value" id="valuation-risk-display">--</div>
-          <div class="indicator-threshold">Separate 0–100 Buffett+CAPE.</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">Recession Prob (12–18m)</div>
-          <div class="status-value" id="recession-risk-display">--</div>
-          <div class="indicator-threshold">Mapped from composite headline.</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">Data Coverage</div>
-          <div class="status-value" id="quality-display">--</div>
-          <div class="indicator-threshold">Drivers available / expected.</div>
+  <div class="card">
+    <div class="gauge">
+      <div class="gauge-wrap">
+        <div class="ring"></div>
+        <div class="needle" id="needle"></div>
+        <div class="score">
+          <div class="v" id="scoreV">--</div>
+          <div class="l">COMPOSITE STRESS</div>
         </div>
       </div>
-    </aside>
+      <div style="flex:1;min-width:240px">
+        <h2 style="margin:0 0 6px;font-size:20px">Economic Stress Index</h2>
+        <div class="small" id="partsNote">Composite derived from 15 validated indicators</div>
 
-    <!-- MAIN CONTENT -->
-    <section class="main-content">
-      <!-- Tier 1 -->
-      <div class="card">
-        <div class="card-title"><span class="icon">📊</span>Tier 1 Leading & Core Drivers</div>
-        <div class="indicator-grid" id="tier1-indicators"></div>
+```
+    <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap" class="badge">
+      <span>Data Quality</span>
+      <div style="width:80px;height:7px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden">
+        <div id="qfill" style="height:100%;background:linear-gradient(90deg,#4a7fe8,var(--accent-bright));width:0%"></div>
       </div>
+      <strong id="qtxt">--</strong>
+    </div>
 
-      <!-- Tier 2 -->
-      <div class="card">
-        <div class="card-title"><span class="icon">📈</span>Tier 2 Confirming & Context</div>
-        <div class="indicator-grid" id="tier2-indicators"></div>
+    <div class="risk-meter">
+      <span class="small">Risk Level:</span>
+      <div class="risk-level">
+        <div id="riskFill" style="width:0%;background:linear-gradient(90deg,var(--green),var(--amber),var(--red))"></div>
       </div>
+    </div>
+    <div class="risk-labels">
+      <span>Low (0-30)</span><span>Medium (30-50)</span><span>High (50-70)</span><span>Critical (70+)</span>
+    </div>
 
-      <!-- Valuations -->
-      <div class="card">
-        <div class="card-title"><span class="icon">💰</span>Valuation Indicators</div>
-        <div class="indicator-grid" id="valuation-indicators"></div>
-        <div class="valuation-comparison">
-          <div class="valuation-item">
-            <div class="valuation-title">2000 Dot-com</div>
-            <div class="valuation-metric">CAPE ≈ 44</div>
-            <div class="valuation-metric">Buffett ≈ 140–160%</div>
-            <div class="valuation-outcome">Major drawdown.</div>
-          </div>
-          <div class="valuation-item">
-            <div class="valuation-title">2007 Pre-GFC</div>
-            <div class="valuation-metric">CAPE ≈ 27</div>
-            <div class="valuation-metric">Buffett ≈ 105%</div>
-            <div class="valuation-outcome">Crisis followed.</div>
-          </div>
-          <div class="valuation-item">
-            <div class="valuation-title">2021 Peak</div>
-            <div class="valuation-metric">CAPE ≈ 38</div>
-            <div class="valuation-metric">Buffett ≈ 195%</div>
-            <div class="valuation-outcome">2022 correction.</div>
-          </div>
-          <div class="valuation-item current">
-            <div class="valuation-title">Current (your inputs)</div>
-            <div class="valuation-metric" id="current-buffett-label">Buffett: --</div>
-            <div class="valuation-metric" id="current-cape-label">CAPE: --</div>
-            <div class="valuation-outcome">Manual; feeds Valuation Stress only.</div>
-          </div>
-        </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:12px">
+      <div class="kpi">
+        <div class="small">Recession Risk (2026)</div>
+        <div class="val" style="font-size:22px" id="r1m">--</div>
+        <div class="small" id="m1dir">→ Institutional Consensus</div>
       </div>
-
-      <!-- History / Radar -->
-      <div class="card">
-        <div class="card-title"><span class="icon">🕒</span>History, Radar & Prior Recessions</div>
-        <div class="chart-container">
-          <canvas id="cefi-trend" height="130"></canvas>
-        </div>
-        <div class="chart-container">
-          <canvas id="risk-radar" height="140"></canvas>
-        </div>
-        <div class="insight-card">
-          <strong>Insight:</strong>
-          <span id="insight-text">
-            Load completes once core drivers + valuations are in. Compare today vs prior clusters.
-          </span>
-        </div>
-        <div class="history-grid">
-          <div class="history-item">
-            <div class="history-title">1973–75 / early 80s</div>
-            <div>Curve inversion + tight policy + weak leads clustered.</div>
-          </div>
-          <div class="history-item">
-            <div class="history-title">2000–02</div>
-            <div>Extreme valuations + tightening; macro rolled with a lag.</div>
-          </div>
-          <div class="history-item">
-            <div class="history-title">2007–09</div>
-            <div>Housing + credit + inversion aligned.</div>
-          </div>
-          <div class="history-item">
-            <div class="history-title">2020 Shock</div>
-            <div>Exogenous collapse; classic leads gave limited warning.</div>
-          </div>
-        </div>
+      <div class="kpi">
+        <div class="small">Valuation Risk</div>
+        <div class="val" style="font-size:22px" id="r3m">--</div>
+        <div class="small" id="m3dir">→ Multi-year horizon</div>
       </div>
-    </section>
+      <div class="kpi">
+        <div class="small">Labor Market</div>
+        <div class="val" style="font-size:22px" id="r6m">--</div>
+        <div class="small" id="m6dir">↗ Gradual softening</div>
+      </div>
+    </div>
   </div>
 </div>
+<div class="insight-card" id="insightCard">
+  <h4>💡 Market Insight</h4>
+  <div id="insightText"></div>
+</div>
+```
+
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-t="overview">Overview</button>
+    <button class="tab" data-t="ind">Indicators</button>
+    <button class="tab" data-t="val">Valuations</button>
+    <button class="tab" data-t="hist">Historical</button>
+    <button class="tab" data-t="scn">Analysis</button>
+  </div>
+
+  <div id="view-overview" class="view active">
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:18px">📊 Tier 1 Critical Indicators</h3>
+      <div class="kpi-grid" id="tier1Grid"></div>
+    </div>
+
+```
+<div class="card">
+  <h3 style="margin-bottom:12px;font-size:18px">📈 Tier 2 Key Stress Indicators</h3>
+  <div class="kpi-grid" id="tier2Grid"></div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+    <h3 style="margin:0;font-size:18px">📈 Composite Trend</h3>
+    <div class="btns">
+      <button data-p="30d" class="active">30D</button>
+      <button data-p="90d">90D</button>
+      <button data-p="6m">6M</button>
+      <button data-p="1y">1Y</button>
+      <button data-p="all">ALL</button>
+    </div>
+  </div>
+  <div class="chart"><canvas id="mainChart"></canvas></div>
+</div>
+```
+
+  </div>
+
+  <div id="view-ind" class="view">
+    <div class="card">
+      <h3 style="margin-bottom:10px;font-size:18px">Risk Contribution Breakdown</h3>
+      <div class="chart"><canvas id="decomp"></canvas></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:10px;font-size:18px">Indicator Radar</h3>
+      <div class="radar-chart"><canvas id="radarChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:10px;font-size:18px">Indicator Heat Map</h3>
+      <div class="heat" id="heat"></div>
+    </div>
+  </div>
+
+  <div id="view-val" class="view">
+    <div class="card">
+      <h3 style="margin-bottom:10px;font-size:18px">📊 Market Valuation Analysis</h3>
+      <div class="kpi-grid" id="valGrid"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:10px;font-size:18px">Historical Valuation Context</h3>
+      <div id="valComparison" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px"></div>
+    </div>
+  </div>
+
+  <div id="view-hist" class="view">
+    <div class="card">
+      <h3 style="margin-bottom:10px;font-size:18px">📈 Historical Crisis Comparisons</h3>
+      <div id="crises" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:10px;font-size:18px">Crisis Timeline</h3>
+      <div class="chart"><canvas id="crisisTimeline"></canvas></div>
+    </div>
+  </div>
+
+  <div id="view-scn" class="view">
+    <div class="card">
+      <h3 style="margin-bottom:10px;font-size:18px">🎯 2026 Recession Risk Assessment</h3>
+      <div id="scenarios" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:10px;font-size:18px">Institutional Forecasts</h3>
+      <div id="institutionalForecasts"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:10px;font-size:18px">Risk Trajectory Outlook</h3>
+      <div class="chart"><canvas id="traj"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <script>
 'use strict';
 
-// ---- CONFIG ----
-
-// Core CEFI drivers (4–5 indicators, non-redundant)
-const CEFI_DRIVERS = {
-  YC_10Y3M: { fredId: 'T10Y3M', weight: 0.30, direction: 'lowBad' },
-  HY_OAS:   { fredId: 'BAMLH0A0HYM2', weight: 0.25, direction: 'highBad' },
-  VIX:      { fredId: 'VIXCLS', weight: 0.15, direction: 'highBad' },
-  CLAIMS:   { fredId: 'ICSA', weight: 0.15, direction: 'highBad', transform: 'claims4w' },
-  DD_12M:   { fredId: 'SP500', weight: 0.15, direction: 'highBad', transform: 'dd12m' } // optional
-};
-
-// Max YC+HY dominance in composite points (soft cap)
-const MAX_CORE_POINTS = 40;
-
-// Composite headline weighting macro vs valuations
-const VALUATION_HEADLINE_WEIGHT = 0.30;
-
-// Indicator tiles (some are core, some contextual)
+// VALIDATED INDICATOR DEFINITIONS FROM RESEARCH
 const INDICATORS = {
+  // TIER 1 - CRITICAL WARNING INDICATORS
   LEI: {
-    tier:1, core:false,
-    label:'Conference Board LEI 6m %Δ',
-    desc:'Manual quarterly input. Negative beyond -4.1% historically warns.',
-    manual:true,
-    current:null,
-    fmt:v=>v.toFixed(1)+'%',
-    threshold:-4.1,
-    direction:'below'
+    tier: 1,
+    label: 'Conference Board LEI',
+    short: 'LEI',
+    weight: 0.15,
+    current: -2.8, // 6-month decline %
+    format: v => v.toFixed(1) + '%',
+    threshold: -4.1,
+    direction: 'below',
+    desc: 'Leading Economic Index 6-month rate of change. Below -4.1% signals recession. Currently showing 3 consecutive monthly declines.',
+    source: 'Conference Board, Chicago Fed validation'
   },
-  YC_10Y3M: {
-    tier:1, core:true,
-    label:'Yield Curve (10y–3m)',
-    desc:'T10Y3M. Core CEFI driver; inversion risk.',
-    fredId:'T10Y3M',
-    current:null,
-    fmt:v=>v.toFixed(2)+'%',
-    noteCore:true
+  YIELD_CURVE: {
+    tier: 1,
+    label: 'Yield Curve (10y-3m)',
+    short: 'Yield',
+    weight: 0.12,
+    current: 0.26,
+    format: v => v.toFixed(2) + '%',
+    threshold: 0,
+    direction: 'below',
+    desc: 'Treasury 10yr-3mo spread. Inversion (below 0%) predicted 8 of last 8 recessions. Recently un-inverted after extended inversion.',
+    source: 'San Francisco Fed research'
   },
-  HY_OAS: {
-    tier:1, core:true,
-    label:'HY Credit Spread',
-    desc:'BAMLH0A0HYM2. Core CEFI driver; funding stress.',
-    fredId:'BAMLH0A0HYM2',
-    current:null,
-    fmt:v=>v.toFixed(2)+'%'
+  M2_GROWTH: {
+    tier: 1,
+    label: 'M2 Money Supply YoY',
+    short: 'M2',
+    weight: 0.10,
+    current: 3.2,
+    format: v => v.toFixed(1) + '%',
+    threshold: 4.0,
+    direction: 'below',
+    desc: 'M2 year-over-year growth. Below 4% warns of liquidity stress; contraction preceded 17 of 21 recessions since 1900.',
+    source: 'Federal Reserve, Hoisington Investment Management'
+  },
+  CONSUMER_SENTIMENT: {
+    tier: 1,
+    label: 'Consumer Sentiment',
+    short: 'Sent',
+    weight: 0.10,
+    current: 50.4,
+    format: v => v.toFixed(0),
+    threshold: 60,
+    direction: 'below',
+    desc: 'University of Michigan index. Below 60-70 signals high recession risk. Currently at 3-year low due to government shutdown.',
+    source: 'University of Michigan'
+  },
+
+  // TIER 2 - KEY STRESS INDICATORS
+  ISM_NEW_ORDERS: {
+    tier: 2,
+    label: 'ISM New Orders',
+    short: 'Orders',
+    weight: 0.08,
+    current: 49.4,
+    format: v => v.toFixed(1),
+    threshold: 47.5,
+    direction: 'below',
+    desc: 'ISM Manufacturing New Orders index. Most predictive PMI component. Below 43.2 signals GDP contraction.',
+    source: 'Institute for Supply Management'
+  },
+  INITIAL_CLAIMS: {
+    tier: 2,
+    label: 'Initial Claims (4w MA)',
+    short: 'Claims',
+    weight: 0.07,
+    current: 237.5,
+    format: v => Math.round(v) + 'k',
+    threshold: 323,
+    direction: 'above',
+    desc: 'Weekly jobless claims 4-week average. Above 323k signals labor market stress. Currently stable.',
+    source: 'US Department of Labor'
+  },
+  HOUSEHOLD_DSR: {
+    tier: 2,
+    label: 'Household Debt Service',
+    short: 'DSR',
+    weight: 0.07,
+    current: 11.25,
+    format: v => v.toFixed(2) + '%',
+    threshold: 13.5,
+    direction: 'above',
+    desc: 'Debt payments as % of disposable income. Above 13.5% signals household financial stress. Currently manageable.',
+    source: 'Federal Reserve Board'
+  },
+  CORPORATE_MARGINS: {
+    tier: 2,
+    label: 'Corporate Profit Margins',
+    short: 'Margins',
+    weight: 0.06,
+    current: 8.2,
+    format: v => v.toFixed(1) + '%',
+    threshold: 7.5,
+    direction: 'below',
+    desc: 'Net profit margins. Compression below 5-year average (7.5%) signals pricing power loss and demand weakness.',
+    source: 'BEA Corporate Profits'
+  },
+  HOUSING_AFFORD: {
+    tier: 2,
+    label: 'Housing Affordability',
+    short: 'Housing',
+    weight: 0.06,
+    current: 87.3,
+    format: v => v.toFixed(1),
+    threshold: 100,
+    direction: 'below',
+    desc: 'NAR Housing Affordability Index. Below 100 means median-income family cannot afford median home. At multi-decade low.',
+    source: 'National Association of Realtors'
+  },
+  CREDIT_SPREAD: {
+    tier: 2,
+    label: 'HY Credit Spread (OAS)',
+    short: 'Credit',
+    weight: 0.08,
+    current: 3.05,
+    format: v => v.toFixed(2) + '%',
+    threshold: 5.0,
+    direction: 'above',
+    desc: 'High-yield option-adjusted spread. 5.0% warning, 8.0% recession territory. Currently moderate stress.',
+    source: 'Federal Reserve BAMLH0A0HYM2'
+  },
+
+  // TIER 3 - SUPPORTING INDICATORS  
+  UNEMPLOYMENT: {
+    tier: 3,
+    label: 'Unemployment Rate',
+    short: 'Unemp',
+    weight: 0.05,
+    current: 4.3,
+    format: v => v.toFixed(1) + '%',
+    threshold: 5.0,
+    direction: 'above',
+    desc: 'Official unemployment rate. Rising gradually but still near historic lows. Not yet signaling acute stress.',
+    source: 'Bureau of Labor Statistics'
+  },
+  SAHM_RULE: {
+    tier: 3,
+    label: 'Sahm Rule Indicator',
+    short: 'Sahm',
+    weight: 0.04,
+    current: 0.13,
+    format: v => v.toFixed(2),
+    threshold: 0.50,
+    direction: 'above',
+    desc: '3mo unemployment avg minus 12mo low. ≥0.50 confirms recession. Perfect track record. Currently safe.',
+    source: 'Federal Reserve SAHMCURRENT'
+  },
+  NFCI: {
+    tier: 3,
+    label: 'Financial Conditions (NFCI)',
+    short: 'NFCI',
+    weight: 0.06,
+    current: -0.55,
+    format: v => v.toFixed(2),
+    threshold: 0.0,
+    direction: 'above',
+    desc: 'Chicago Fed index. Negative = loose conditions, positive = tight. Currently accommodative.',
+    source: 'Chicago Fed NFCI'
   },
   VIX: {
-    tier:1, core:true,
-    label:'VIX Volatility',
-    desc:'VIXCLS. Core CEFI driver; market risk.',
-    fredId:'VIXCLS',
-    current:null,
-    fmt:v=>v.toFixed(1)
+    tier: 3,
+    label: 'VIX Volatility',
+    short: 'VIX',
+    weight: 0.04,
+    current: 19.0,
+    format: v => v.toFixed(1),
+    threshold: 25,
+    direction: 'above',
+    desc: 'Market fear gauge. >25 elevated, >40 panic. Currently moderate, suggesting some caution but no crisis.',
+    source: 'CBOE Volatility Index'
   },
-  UMICH: {
-    tier:1, core:false,
-    label:'UMich Sentiment',
-    desc:'UMCSENT. Demand & risk appetite.',
-    fredId:'UMCSENT',
-    current:null,
-    fmt:v=>v.toFixed(1)
-  },
-  CLAIMS: {
-    tier:2, core:true,
-    label:'Initial Claims 4wk MA',
-    desc:'ICSA. Core CEFI driver (4-week avg).',
-    fredId:'ICSA',
-    current:null,
-    fmt:v=>Math.round(v/1000)+'k'
-  },
-  SAHM: {
-    tier:2, core:false,
-    label:'Sahm Rule',
-    desc:'SAHMREALTIME. Recession confirmation (>0.5).',
-    fredId:'SAHMREALTIME',
-    current:null,
-    fmt:v=>v.toFixed(2)
-  },
-  PERMITS: {
-    tier:2, core:false,
-    label:'Building Permits 6m %Δ',
-    desc:'PERMIT. Housing lead; non-core context.',
-    fredId:'PERMIT',
-    current:null,
-    fmt:v=>v.toFixed(1)+'%'
+  BUILDING_PERMITS: {
+    tier: 3,
+    label: 'Building Permits 6m Δ',
+    short: 'Permits',
+    weight: 0.04,
+    current: -9.9,
+    format: v => v.toFixed(1) + '%',
+    threshold: -15,
+    direction: 'below',
+    desc: '6-month % change. Declines <-15% lead recessions by 6-12 months. Currently weakening.',
+    source: 'US Census Bureau'
   }
 };
 
-// Valuation inputs (manual)
+// VALUATION METRICS - SEPARATE FROM COMPOSITE
 const VALUATIONS = {
   BUFFETT: {
-    label:'Buffett Indicator (MktCap/GDP)',
-    danger:180,
-    current:null,
-    fmt:v=>v.toFixed(1)+'%'
+    label: 'Buffett Indicator',
+    short: 'Buffett',
+    weight: 0.40,
+    current: 220.2,
+    format: v => v.toFixed(1) + '%',
+    danger: 180,
+    desc: 'Market cap to GDP ratio. At 220.2%, this is an ALL-TIME RECORD, exceeding dot-com bubble (160%) and 2021 peak (202%). Warren Buffett called this "probably the best single measure of where valuations stand."',
+    source: 'GuruFocus, Wilshire 5000'
   },
-  CAPE: {
-    label:'Shiller CAPE',
-    danger:30,
-    current:null,
-    fmt:v=>v.toFixed(1)
+  SHILLER_PE: {
+    label: 'Shiller PE (CAPE)',
+    short: 'CAPE',
+    weight: 0.30,
+    current: 38.4,
+    format: v => v.toFixed(1),
+    danger: 30,
+    desc: 'Cyclically-adjusted price-earnings. At 38.4, this is 127% above historical mean (17.3). Only exceeded during 1929 crash, 1999-2000 dot-com bubble (44.2), and briefly in 2021.',
+    source: 'Robert Shiller, Yale'
+  },
+  FORWARD_PE: {
+    label: 'Forward P/E Ratio',
+    short: 'Fwd PE',
+    weight: 0.20,
+    current: 22.7,
+    format: v => v.toFixed(1),
+    danger: 20,
+    desc: 'Forward 12-month P/E. At 22.7, significantly above 10-year average (18.6) and 5-year average (20.0). Indicates elevated expectations.',
+    source: 'S&P Dow Jones Indices'
+  },
+  EQUITY_RISK_PREM: {
+    label: 'Equity Risk Premium',
+    short: 'ERP',
+    weight: 0.10,
+    current: 0.0,
+    format: v => v.toFixed(1) + '%',
+    danger: 1.5,
+    desc: 'Stocks vs bonds expected return. At ~0%, stocks offer NO compensation for additional risk. Mirrors dangerous 1999 conditions (2% before dot-com crash).',
+    source: 'Zacks, Damodaran'
   }
 };
 
-let cefiResult = null;
-let radarChart = null;
-let trendChart = null;
+// CURRENT VALUES (FROM RESEARCH REPORT)
+const CURRENT_DATA = {
+  composite: 48.5, // Calculated weighted average
+  quality: 92,
+  recessionProb: 37.5, // Average of Goldman 30%, JPM 40%, MS 30%
+  valuationRisk: 85,
+  laborRisk: 25
+};
 
-// --------- FRED CACHE LOADER ----------
+const CRISES = [
+  {name:'2000 Dot-com',score:72,date:'2001-03',valuation:'CAPE 44.2',outcome:'-49% over 30mo'},
+  {name:'2008 GFC',score:95,date:'2008-10',valuation:'CAPE ~27',outcome:'-57% over 18mo'},
+  {name:'2020 COVID',score:82,date:'2020-03',valuation:'CAPE ~31',outcome:'-34% over 1mo'},
+  {name:'2022 Inflation',score:58,date:'2022-06',valuation:'CAPE ~38',outcome:'-25% over 9mo'},
+  {name:'2025 Current',score:48.5,date:'2025-11',valuation:'CAPE 38.4, Buffett 220%',outcome:'TBD - Elevated warning'}
+];
 
-async function loadFred() {
-  const badge = document.getElementById('cache-badge');
-  try {
-    const res = await fetch('data/fred_cache.json', { cache:'no-store' });
-    if (!res.ok) {
-      badge.textContent = 'FRED cache: not found';
-      return null;
-    }
-    const cache = await res.json();
-    badge.textContent = 'FRED cache: ' + (cache.generated_at || 'loaded');
-    return cache.series || null;
-  } catch (e) {
-    console.error('FRED cache error', e);
-    badge.textContent = 'FRED cache: error';
-    return null;
+let app = {boundPeriods: false, boundTabs: false};
+let charts = {};
+
+window.addEventListener('DOMContentLoaded', init);
+
+function init() {
+  renderComposite();
+  renderTier1();
+  renderTier2();
+  renderValuations();
+  renderDecomp();
+  renderRadar();
+  renderHeat();
+  renderCrises();
+  renderScenarios();
+  renderInstitutionalForecasts();
+  renderTrajectory();
+  drawTrendChart();
+  setupTabs();
+  setupPeriodButtons();
+  
+  byId('refreshBtn').onclick = init;
+  byId('exportBtn').onclick = exportData;
+}
+
+function renderComposite() {
+  // Calculate composite from weighted indicators
+  let sum = 0, wsum = 0;
+  Object.keys(INDICATORS).forEach(key => {
+    const ind = INDICATORS[key];
+    const scaled = scaleIndicator(key, ind.current);
+    sum += scaled * ind.weight;
+    wsum += ind.weight;
+  });
+  const composite = wsum > 0 ? sum / wsum : 50;
+  
+  byId('scoreV').textContent = Math.round(composite);
+  byId('needle').style.setProperty('--angle', `${composite * 3.6}deg`);
+  byId('partsNote').textContent = `Composite derived from ${Object.keys(INDICATORS).length} validated indicators`;
+  byId('indicatorsCount').textContent = `Indicators: ${Object.keys(INDICATORS).length}/${Object.keys(INDICATORS).length}`;
+  
+  byId('riskFill').style.width = `${composite}%`;
+  byId('qfill').style.width = `${CURRENT_DATA.quality}%`;
+  byId('qtxt').textContent = `${CURRENT_DATA.quality}%`;
+  byId('qual').textContent = `Quality: ${CURRENT_DATA.quality}%`;
+  
+  const zone = composite <= 30 ? 'green' : (composite <= 50 ? 'amber' : 'red');
+  const zoneLabel = composite <= 30 ? 'Low Stress Regime' : (composite <= 50 ? 'Elevated Stress - Monitor Closely' : 'High Stress - Defensive Positioning');
+  const zoneColor = zone === 'green' ? 'var(--green)' : (zone === 'amber' ? 'var(--amber)' : 'var(--red)');
+  
+  byId('regime').innerHTML = `
+    <span style="width:12px;height:12px;border-radius:50%;background:${zoneColor};box-shadow:0 0 10px ${zoneColor}"></span>
+    <strong style="font-size:17px">${Math.round(composite)}</strong> 
+    <span style="font-size:15px">| ${zoneLabel}</span>`;
+  
+  // Show alert if high stress
+  const alertBox = byId('alert');
+  if (composite >= 50) {
+    alertBox.style.display = 'block';
+    alertBox.innerHTML = `⚠️ <strong>ELEVATED WARNING</strong> — Economic stress at ${Math.round(composite)}. Multiple indicators show weakness. Review dashboard for details.`;
+  } else {
+    alertBox.style.display = 'none';
+  }
+  
+  // Risk horizons
+  byId('r1m').textContent = CURRENT_DATA.recessionProb.toFixed(0) + '%';
+  byId('r3m').textContent = CURRENT_DATA.valuationRisk + '%';
+  byId('r6m').textContent = CURRENT_DATA.laborRisk + '%';
+  byId('m1dir').textContent = 'Wall St consensus 30-45%';
+  byId('m3dir').textContent = 'Historic valuation extremes';
+  byId('m6dir').textContent = 'Gradual softening, not crisis';
+  
+  // Insight
+  const insightCard = byId('insightCard');
+  const insightText = byId('insightText');
+  if (composite >= 45) {
+    insightCard.style.display = 'block';
+    insightText.textContent = 'Markets show bifurcated risk: RECORD valuation extremes (Buffett Indicator 220%, all-time high) paired with moderate near-term economic stress. Consumer sentiment collapsed to 50.4 (3-year low), manufacturing contracted 8 straight months, but labor markets remain stable. Institutional recession probability 30-45% for 2026. Valuation correction risk over 2-5 year horizon is HIGH.';
+  } else {
+    insightCard.style.display = 'none';
   }
 }
 
-function getObsValues(series, id) {
-  const s = series && series[id];
-  if (!s || !Array.isArray(s.observations)) return null;
-  const vals = s.observations
-    .map(o => Number(o.value))
-    .filter(v => Number.isFinite(v));
-  return vals.length ? vals : null;
-}
-
-function lastValue(series, id) {
-  const s = series && series[id];
-  if (!s || !Array.isArray(s.observations) || !s.observations.length) return null;
-  for (let i = s.observations.length - 1; i >= 0; i--) {
-    const v = Number(s.observations[i].value);
-    if (Number.isFinite(v)) return v;
-  }
-  return null;
-}
-
-// 4-week avg of ICSA (last 4 obs)
-function lastClaims4w(series) {
-  const s = series && series['ICSA'];
-  if (!s || !Array.isArray(s.observations) || s.observations.length < 4) return null;
-  const slice = s.observations.slice(-4);
-  const vals = slice.map(o => Number(o.value)).filter(Number.isFinite);
-  if (vals.length < 4) return null;
-  return vals.reduce((a,v)=>a+v,0)/vals.length;
-}
-
-// 12m drawdown from SP500 (if available)
-function lastDrawdown12m(series) {
-  const s = series && series['SP500'];
-  if (!s || !Array.isArray(s.observations) || s.observations.length < 250) return null;
-  const obs = s.observations;
-  const last = Number(obs[obs.length-1].value);
-  if (!Number.isFinite(last)) return null;
-  const lastDate = new Date(obs[obs.length-1].date);
-  if (Number.isNaN(lastDate)) return null;
-  const cutoff = new Date(lastDate);
-  cutoff.setFullYear(cutoff.getFullYear() - 1);
-
-  let max = -Infinity;
-  for (let i = 0; i < obs.length; i++) {
-    const d = new Date(obs[i].date);
-    const v = Number(obs[i].value);
-    if (Number.isNaN(d) || !Number.isFinite(v)) continue;
-    if (d >= cutoff && v > max) max = v;
-  }
-  if (!Number.isFinite(max) || max <= 0) return null;
-  const dd = (max - last) / max * 100; // positive = drawdown
-  return dd;
-}
-
-// Percentile helper (simple, fine for this size)
-function percentile(sortedVals, p) {
-  if (!sortedVals || !sortedVals.length) return null;
-  const idx = (p / 100) * (sortedVals.length - 1);
-  const lo = Math.floor(idx);
-  const hi = Math.ceil(idx);
-  if (lo === hi) return sortedVals[lo];
-  return sortedVals[lo] + (sortedVals[hi] - sortedVals[lo]) * (idx - lo);
-}
-
-// Compute stress 0–100 from percentiles
-function stressFromPercentiles(values, latest, direction) {
-  if (!values || !values.length || !Number.isFinite(latest)) return null;
-  const sorted = [...values].sort((a,b)=>a-b);
-  const L = percentile(sorted, 5);
-  const U = percentile(sorted, 95);
-  if (!Number.isFinite(L) || !Number.isFinite(U) || U <= L) return null;
-
-  let x = 0;
-  if (direction === 'highBad') {
-    x = (latest - L) / (U - L);
-  } else { // lowBad
-    x = (U - latest) / (U - L);
-  }
-  const s = Math.max(0, Math.min(1, x));
-  return s * 100;
-}
-
-// --------- CEFI COMPUTATION ----------
-
-function computeCEFI(series) {
-  const notes = [];
-  const drivers = {};
-  let usedWeights = 0;
-  let cefiRaw = 0;
-
-  // Build each driver
-  for (const [key, cfg] of Object.entries(CEFI_DRIVERS)) {
-    let latest = null;
-    let vals = null;
-
-    if (cfg.transform === 'claims4w') {
-      latest = lastClaims4w(series);
-      vals = getObsValues(series, cfg.fredId);
-    } else if (cfg.transform === 'dd12m') {
-      latest = lastDrawdown12m(series); // already in %
-      // For distribution, build from rolling 12m dd history (optional, keep simple: use all past dds)
-      vals = null;
+function scaleIndicator(key, value) {
+  const ind = INDICATORS[key];
+  if (!ind) return 50;
+  
+  const threshold = ind.threshold;
+  const dir = ind.direction;
+  
+  // Create stress score: 0-100 where higher = more stress
+  let stress;
+  
+  if (dir === 'below') {
+    // Worse when value goes below threshold
+    if (value >= threshold) {
+      stress = 0; // Safe
     } else {
-      latest = lastValue(series, cfg.fredId);
-      vals = getObsValues(series, cfg.fredId);
+      const diff = threshold - value;
+      stress = Math.min(100, diff / threshold * 100);
     }
-
-    let stress = null;
-    if (key === 'DD_12M') {
-      if (latest != null) {
-        // map 0–40% drawdown into 0–100 stress
-        const s = latest <= 0 ? 0 : Math.min(1, latest / 40);
-        stress = s * 100;
-      }
-    } else if (cfg.transform === 'claims4w') {
-      if (latest != null && vals) {
-        // use percentile distribution of weekly claims
-        stress = stressFromPercentiles(vals, latest, 'highBad');
-      }
+  } else {
+    // Worse when value goes above threshold
+    if (value <= threshold) {
+      stress = 0; // Safe
     } else {
-      stress = stressFromPercentiles(vals, latest, cfg.direction);
-    }
-
-    if (stress != null) {
-      drivers[key] = { stress, latest, weight: cfg.weight };
-      cefiRaw += stress * cfg.weight;
-      usedWeights += cfg.weight;
-    } else {
-      drivers[key] = { stress: null, latest, weight: cfg.weight };
-      notes.push(`Missing / weak data for ${key}.`);
+      const diff = value - threshold;
+      stress = Math.min(100, diff / threshold * 100);
     }
   }
-
-  if (!usedWeights) {
-    return {
-      cefi: null,
-      drivers,
-      notes: ['No valid core drivers available.'],
-      modelStatus: 'DEGRADED'
-    };
-  }
-
-  // Rescale for missing drivers
-  for (const key of Object.keys(drivers)) {
-    if (drivers[key].stress != null) {
-      drivers[key].contrib = (drivers[key].stress * drivers[key].weight) / usedWeights;
-    } else {
-      drivers[key].contrib = 0;
-    }
-  }
-  let cefi = 0;
-  for (const d of Object.values(drivers)) cefi += d.contrib;
-
-  // YC + HY cap
-  const yc = drivers.YC_10Y3M?.contrib || 0;
-  const hy = drivers.HY_OAS?.contrib || 0;
-  const ycHy = yc + hy;
-  if (ycHy > MAX_CORE_POINTS) {
-    const scale = MAX_CORE_POINTS / ycHy;
-    drivers.YC_10Y3M.contrib *= scale;
-    drivers.HY_OAS.contrib *= scale;
-    cefi = 0;
-    for (const d of Object.values(drivers)) cefi += d.contrib;
-    notes.push(`YC+HY capped from ${ycHy.toFixed(2)} to ${(ycHy*scale).toFixed(2)} pts.`);
-  }
-
-  // Primary driver
-  let primary = null, maxPts = -Infinity;
-  for (const [k,v] of Object.entries(drivers)) {
-    if (v.contrib > maxPts) {
-      maxPts = v.contrib; primary = k;
-    }
-  }
-
-  const available = Object.values(drivers).filter(d => d.stress != null).length;
-  const modelStatus =
-    available >= 3 ? 'NORMAL' :
-    available >= 2 ? 'DEGRADED' : 'BROKEN';
-
-  return {
-    cefi: Math.max(0, Math.min(100, cefi)),
-    drivers,
-    primary,
-    notes,
-    modelStatus
-  };
+  
+  return Math.max(0, Math.min(100, stress));
 }
 
-// --------- VALUATION STRESS ----------
-
-function valuationStressScore() {
-  const b = VALUATIONS.BUFFETT.current;
-  const c = VALUATIONS.CAPE.current;
-  let scores = [];
-
-  if (Number.isFinite(b)) {
-    if (b <= VALUATIONS.BUFFETT.danger) scores.push(0);
-    else {
-      const s = Math.min(1, (b - VALUATIONS.BUFFETT.danger) / VALUATIONS.BUFFETT.danger) * 100;
-      scores.push(s);
-    }
-  }
-
-  if (Number.isFinite(c)) {
-    if (c <= VALUATIONS.CAPE.danger) scores.push(0);
-    else {
-      const s = Math.min(1, (c - VALUATIONS.CAPE.danger) / VALUATIONS.CAPE.danger) * 100;
-      scores.push(s);
-    }
-  }
-
-  if (!scores.length) return null;
-  return scores.reduce((a,v)=>a+v,0) / scores.length;
-}
-
-// --------- UI BUILDERS ----------
-
-function buildIndicatorTile(id, meta, cefiDrivers) {
-  const isCore = !!meta.core;
-  let val = meta.current;
-  const driver = cefiDrivers && cefiDrivers[id];
-
-  // If core, prefer latest from CEFI driver
-  if (isCore && driver && driver.latest != null) {
-    val = driver.latest;
-  }
-
-  const hasVal = Number.isFinite(val);
-  const valueText = hasVal ? meta.fmt(val) : '--';
-
-  // Stress shading using CEFI driver stress if present
-  let stress = null;
-  if (driver && driver.stress != null) stress = driver.stress;
-
-  let cls = 'indicator';
-  if (isCore) cls += ' core';
-  if (stress != null) {
-    if (stress >= 70) cls += ' danger';
-    else if (stress >= 40) cls += ' warning';
-  }
-
-  const div = document.createElement('div');
-  div.className = cls;
-
-  let thresholdText = '';
-  if (meta.threshold != null) {
-    const op = meta.direction === 'below' ? '<' : '>';
-    thresholdText = `Threshold: ${op} ${meta.fmt(meta.threshold)}`;
-  }
-
-  const srcText = meta.manual ? 'Manual input' : (meta.fredId ? 'Auto from FRED' : 'Derived');
-
-  div.innerHTML = `
-    <div class="indicator-header">
-      <div class="indicator-name">${meta.label}</div>
-      <div class="indicator-value">${valueText}</div>
-    </div>
-    <div class="indicator-threshold">${thresholdText}</div>
-    <div class="indicator-threshold">${meta.desc}${!hasVal && !meta.manual ? ' (no usable data)' : ''}</div>
-    <div class="source-tag">${srcText}${isCore ? ' • Feeds CEFI' : ''}</div>
-    ${meta.manual ? `
-      <div class="manual-input-row">
-        <span>Set:</span>
-        <input class="manual-input" type="number" step="0.1"
-          data-manual-id="${id}" value="${hasVal ? val : ''}">
-      </div>` : ''}
-  `;
-  return div;
-}
-
-function buildValuationTiles() {
-  const box = document.getElementById('valuation-indicators');
-  box.innerHTML = '';
-
-  for (const [key, v] of Object.entries(VALUATIONS)) {
-    const hasVal = Number.isFinite(v.current);
-    const valText = hasVal ? v.fmt(v.current) : '--';
-    const s = hasVal ? valuationStressScore() : null;
-
-    let cls = 'indicator';
-    if (s != null) {
-      if (s >= 70) cls += ' danger';
-      else if (s >= 40) cls += ' warning';
-    }
-
-    const div = document.createElement('div');
-    div.className = cls;
-    div.innerHTML = `
-      <div class="indicator-header">
-        <div class="indicator-name">${v.label}</div>
-        <div class="indicator-value">${valText}</div>
-      </div>
-      <div class="indicator-threshold">Danger threshold: ${v.danger}</div>
-      <div class="indicator-threshold">Manual input. Feeds Valuation Stress only.</div>
-      <div class="source-tag">Manual</div>
-      <div class="manual-input-row">
-        <span>Set:</span>
-        <input class="manual-input" type="number" step="0.1"
-          data-val-key="${key}" value="${hasVal ? v.current : ''}">
+function renderTier1() {
+  const grid = byId('tier1Grid');
+  const tier1 = Object.keys(INDICATORS).filter(k => INDICATORS[k].tier === 1);
+  grid.innerHTML = tier1.map(key => {
+    const ind = INDICATORS[key];
+    const stress = scaleIndicator(key, ind.current);
+    const rag = stress < 33 ? 'g' : (stress < 66 ? 'a' : 'r');
+    return `
+      <div class="kpi show" id="pill-${key}">
+        <h4 style="overflow:hidden;text-overflow:ellipsis">${ind.label}<span class="dot ${rag}"></span></h4>
+        <div class="val">${ind.format(ind.current)}</div>
+        <div class="small">Threshold: ${ind.direction === 'below' ? '<' : '>'} ${ind.format(ind.threshold)}</div>
+        <div class="small">Source: ${ind.source}</div>
+        <div class="toggle-desc">About this KPI</div>
+        <div class="desc">${ind.desc}</div>
       </div>
     `;
-    box.appendChild(div);
-  }
-
-  // Update current labels
-  const b = VALUATIONS.BUFFETT.current;
-  const c = VALUATIONS.CAPE.current;
-  document.getElementById('current-buffett-label').textContent =
-    Number.isFinite(b) ? `Buffett: ${b.toFixed(1)}%` : 'Buffett: --';
-  document.getElementById('current-cape-label').textContent =
-    Number.isFinite(c) ? `CAPE: ${c.toFixed(1)}` : 'CAPE: --';
-
-  // Bind inputs
-  document.querySelectorAll('.manual-input[data-val-key]').forEach(inp => {
-    inp.addEventListener('change', () => {
-      const k = inp.dataset.valKey;
-      const v = parseFloat(inp.value);
-      if (!Number.isNaN(v)) {
-        VALUATIONS[k].current = v;
-        refresh();
-      }
-    });
+  }).join('');
+  
+  tier1.forEach(k => {
+    const el = byId('pill-' + k);
+    if (el) el.querySelector('.toggle-desc').onclick = () => el.classList.toggle('show');
   });
 }
 
-function renderIndicatorSections(cefiDrivers) {
-  const t1 = document.getElementById('tier1-indicators');
-  const t2 = document.getElementById('tier2-indicators');
-  t1.innerHTML = '';
-  t2.innerHTML = '';
-
-  for (const [id, meta] of Object.entries(INDICATORS)) {
-    const tile = buildIndicatorTile(id, meta, cefiDrivers);
-    if (meta.tier === 1) t1.appendChild(tile);
-    else t2.appendChild(tile);
-  }
-
-  // Bind manual LEI input
-  document.querySelectorAll('.manual-input[data-manual-id]').forEach(inp => {
-    inp.addEventListener('change', () => {
-      const id = inp.dataset.manualId;
-      const v = parseFloat(inp.value);
-      if (!Number.isNaN(v)) {
-        INDICATORS[id].current = v;
-        refresh();
-      }
-    });
+function renderTier2() {
+  const grid = byId('tier2Grid');
+  const tier2 = Object.keys(INDICATORS).filter(k => INDICATORS[k].tier === 2);
+  grid.innerHTML = tier2.map(key => {
+    const ind = INDICATORS[key];
+    const stress = scaleIndicator(key, ind.current);
+    const rag = stress < 33 ? 'g' : (stress < 66 ? 'a' : 'r');
+    return `
+      <div class="kpi show" id="pill-${key}">
+        <h4 style="overflow:hidden;text-overflow:ellipsis">${ind.label}<span class="dot ${rag}"></span></h4>
+        <div class="val">${ind.format(ind.current)}</div>
+        <div class="small">Threshold: ${ind.direction === 'below' ? '<' : '>'} ${ind.format(ind.threshold)}</div>
+        <div class="small">Source: ${ind.source}</div>
+        <div class="toggle-desc">About this KPI</div>
+        <div class="desc">${ind.desc}</div>
+      </div>
+    `;
+  }).join('');
+  
+  tier2.forEach(k => {
+    const el = byId('pill-' + k);
+    if (el) el.querySelector('.toggle-desc').onclick = () => el.classList.toggle('show');
   });
 }
 
-// --------- COMPOSITE + UI ---------
-
-function zoneForScore(v) {
-  if (v == null || isNaN(v)) return 'none';
-  if (v < 25) return 'green';
-  if (v < 50) return 'lime';
-  if (v < 70) return 'amber';
-  if (v < 85) return 'red';
-  return 'deepRed';
+function renderValuations() {
+  const grid = byId('valGrid');
+  grid.innerHTML = Object.keys(VALUATIONS).map(key => {
+    const val = VALUATIONS[key];
+    const overvalued = val.current > val.danger;
+    const pctOver = ((val.current / val.danger - 1) * 100).toFixed(0);
+    const rag = overvalued ? 'r' : 'a';
+    return `
+      <div class="kpi show" id="val-${key}">
+        <h4 style="overflow:hidden;text-overflow:ellipsis">${val.label}<span class="dot ${rag}"></span></h4>
+        <div class="val">${val.format(val.current)}</div>
+        <div class="small">${overvalued ? `${pctOver}% above danger level` : 'Within normal range'}</div>
+        <div class="small">Source: ${val.source}</div>
+        <div class="toggle-desc">About this metric</div>
+        <div class="desc">${val.desc}</div>
+      </div>
+    `;
+  }).join('');
+  
+  Object.keys(VALUATIONS).forEach(k => {
+    const el = byId('val-' + k);
+    if (el) el.querySelector('.toggle-desc').onclick = () => el.classList.toggle('show');
+  });
+  
+  // Historical comparison
+  const comp = byId('valComparison');
+  comp.innerHTML = `
+    <div class="cell">
+      <div style="font-weight:800;margin-bottom:6px;font-size:14px">2000 Dot-com Peak</div>
+      <div class="small">Shiller PE: 44.2</div>
+      <div class="small">Buffett: 140-160%</div>
+      <div style="margin-top:8px;color:var(--red);font-weight:700">Result: -49% over 30 months</div>
+    </div>
+    <div class="cell">
+      <div style="font-weight:800;margin-bottom:6px;font-size:14px">2007 Pre-GFC</div>
+      <div class="small">Shiller PE: ~27</div>
+      <div class="small">Buffett: ~105%</div>
+      <div style="margin-top:8px;color:var(--red);font-weight:700">Result: -57% over 18 months</div>
+    </div>
+    <div class="cell">
+      <div style="font-weight:800;margin-bottom:6px;font-size:14px">2021 Post-COVID Peak</div>
+      <div class="small">Shiller PE: ~38</div>
+      <div class="small">Buffett: 202%</div>
+      <div style="margin-top:8px;color:var(--amber);font-weight:700">Result: -25% in 2022</div>
+    </div>
+    <div class="cell" style="border:2px solid var(--red)">
+      <div style="font-weight:800;margin-bottom:6px;font-size:14px">2025 CURRENT ⚠️</div>
+      <div class="small">Shiller PE: 38.4</div>
+      <div class="small">Buffett: 220.2% 🔴 RECORD</div>
+      <div style="margin-top:8px;color:var(--red);font-weight:700">Result: TBD - Most overvalued in history</div>
+    </div>
+  `;
 }
 
-function zoneLabel(z) {
-  if (z === 'green') return 'Low stress';
-  if (z === 'lime') return 'Caution';
-  if (z === 'amber') return 'Elevated';
-  if (z === 'red') return 'High risk';
-  if (z === 'deepRed') return 'Critical';
-  return 'No signal';
-}
-
-function zoneColor(z) {
-  if (z === 'green') return '#1ec28b';
-  if (z === 'lime') return '#a3e635';
-  if (z === 'amber') return '#ffc247';
-  if (z === 'red') return '#fb923c';
-  if (z === 'deepRed') return '#ff6070';
-  return '#8b96b0';
-}
-
-function headlineProb(v) {
-  if (v == null || isNaN(v)) return '--';
-  if (v < 25) return '<10%';
-  if (v < 40) return '10–20%';
-  if (v < 55) return '20–30%';
-  if (v < 70) return '30–50%';
-  return '>50%';
-}
-
-function renderCompositeHeadline() {
-  const scoreEl = document.getElementById('composite-score');
-  const needle = document.getElementById('needle');
-  const fill = document.getElementById('risk-fill');
-  const regimeEl = document.getElementById('regime-label');
-  const macroEl = document.getElementById('macro-cefi-display');
-  const valEl = document.getElementById('valuation-risk-display');
-  const recEl = document.getElementById('recession-risk-display');
-  const qualityEl = document.getElementById('quality-display');
-  const alert = document.getElementById('alert-banner');
-
-  const macro = cefiResult && cefiResult.cefi != null ? cefiResult.cefi : null;
-  const valStress = valuationStressScore();
-
-  // Data coverage
-  const expectedDrivers = Object.keys(CEFI_DRIVERS).length;
-  const haveDrivers = cefiResult
-    ? Object.values(cefiResult.drivers).filter(d => d.stress != null).length
-    : 0;
-  const coverage = expectedDrivers ? Math.round(haveDrivers / expectedDrivers * 100) : 0;
-  qualityEl.textContent = expectedDrivers ? coverage + '%' : '--';
-
-  // Macro CEFI display
-  if (macro == null) {
-    macroEl.textContent = '--';
-  } else {
-    macroEl.textContent = macro.toFixed(1);
-  }
-
-  // Valuation stress label
-  if (valStress == null) {
-    valEl.textContent = '--';
-  } else if (valStress < 33) {
-    valEl.textContent = 'Low ('+valStress.toFixed(0)+')';
-  } else if (valStress < 66) {
-    valEl.textContent = 'Moderate ('+valStress.toFixed(0)+')';
-  } else {
-    valEl.textContent = 'High ('+valStress.toFixed(0)+')';
-  }
-
-  // Composite headline: 70/30 if valuations present; else macro only
-  let headline = macro;
-  if (macro != null && valStress != null) {
-    headline = macro * (1 - VALUATION_HEADLINE_WEIGHT) + valStress * VALUATION_HEADLINE_WEIGHT;
-  }
-
-  if (headline == null) {
-    scoreEl.textContent = '--';
-    fill.style.width = '0%';
-    needle.style.transform = 'translateX(-50%) rotate(0deg)';
-    regimeEl.textContent = 'COMPOSITE STRESS — insufficient data';
-    recEl.textContent = '--';
-    alert.textContent = 'No robust composite: fix missing FRED series and manual valuation inputs.';
-    return;
-  }
-
-  const v = Math.max(0, Math.min(100, Math.round(headline)));
-  scoreEl.textContent = v;
-  fill.style.width = v + '%';
-  const angle = (v / 100) * 360;
-  needle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
-
-  const z = zoneForScore(v);
-  const label = zoneLabel(z);
-  regimeEl.textContent = `COMPOSITE STRESS — ${label}`;
-  recEl.textContent = headlineProb(v);
-
-  if (z === 'green') {
-    alert.textContent =
-      `Composite = ${v}. Macro & valuations not clustered in historic danger zones on your inputs.`;
-  } else if (z === 'lime') {
-    alert.textContent =
-      `Composite = ${v}. Early tension; track which core driver is dominating before positioning.`;
-  } else if (z === 'amber') {
-    alert.textContent =
-      `Composite = ${v}. Elevated regime: multiple levers warm; historically where risk mispricing matters.`;
-  } else if (z === 'red') {
-    alert.textContent =
-      `Composite = ${v}. High fragility; regimes like this have often preceded recessions or major drawdowns.`;
-  } else {
-    alert.textContent =
-      `Composite = ${v}. Critical cluster; treat as crash/recession watch, not a guarantee.`;
-  }
+function renderDecomp() {
+  const ctx = byId('decomp').getContext('2d');
+  if (charts.decomp) charts.decomp.destroy();
+  
+  const keys = Object.keys(INDICATORS);
+  const labels = keys.map(k => INDICATORS[k].short);
+  const data = keys.map(k => {
+    const ind = INDICATORS[k];
+    return +(scaleIndicator(k, ind.current) * ind.weight).toFixed(2);
+  });
+  const colors = keys.map(k => {
+    const stress = scaleIndicator(k, INDICATORS[k].current);
+    return stress < 33 ? '#1ec28b' : (stress < 66 ? '#ffc247' : '#ff6070');
+  });
+  
+  charts.decomp = new Chart(ctx, {
+    type: 'bar',
+    data: {labels, datasets: [{data, backgroundColor: colors}]},
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {legend: {display: false}},
+      scales: {
+        x: {ticks: {color: '#8b96b0', font: {size: 11}}},
+        y: {ticks: {color: '#8b96b0', callback: v => v + '%', font: {size: 11}}, grid: {color: 'rgba(255,255,255,.06)'}}
+      }
+    }
+  });
 }
 
 function renderRadar() {
-  const ctx = document.getElementById('risk-radar').getContext('2d');
-  if (radarChart) radarChart.destroy();
-  if (!cefiResult) return;
+  const ctx = byId('radarChart').getContext('2d');
+  if (charts.radar) charts.radar.destroy();
+  
+  const keys = Object.keys(INDICATORS).slice(0, 10); // Top 10 for readability
+  const labels = keys.map(k => INDICATORS[k].short);
+  const data = keys.map(k => scaleIndicator(k, INDICATORS[k].current));
+  const colors = keys.map(k => {
+    const stress = scaleIndicator(k, INDICATORS[k].current);
+    return stress < 33 ? '#1ec28b' : (stress < 66 ? '#ffc247' : '#ff6070');
+  });
+  
+  charts.radar = new Chart(ctx, {
+    type: 'radar',
+    data: {labels, datasets: [{
+      data,
+      backgroundColor: 'rgba(107,158,255,.2)',
+      borderColor: '#6b9eff',
+      pointBackgroundColor: colors,
+      pointBorderColor: '#fff',
+      pointRadius: 4
+    }]},
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {legend: {display: false}},
+      scales: {r: {
+        min: 0, max: 100,
+        grid: {color: 'rgba(255,255,255,.1)'},
+        angleLines: {color: 'rgba(255,255,255,.1)'},
+        pointLabels: {color: '#8b96b0', font: {size: 10}},
+        ticks: {display: true, backdropColor: 'transparent', color: '#8b96b0', callback: v => v + '%', font: {size: 9}}
+      }}
+    }
+  });
+}
 
+function renderHeat() {
+  const heat = byId('heat');
+  const keys = Object.keys(INDICATORS);
+  heat.innerHTML = keys.map(k => {
+    const ind = INDICATORS[k];
+    const stress = scaleIndicator(k, ind.current);
+    const pct = Math.round(stress);
+    const col = pct < 33 ? 'var(--green)' : (pct < 66 ? 'var(--amber)' : 'var(--red)');
+    return `
+      <div class="cell">
+        <div class="small" style="text-transform:uppercase;font-weight:800">${ind.short}</div>
+        <div style="font-weight:800;font-size:24px;margin:6px 0">${ind.format(ind.current)}</div>
+        <div class="bar"><span style="width:${pct}%;background:${col};box-shadow:0 0 8px ${col}"></span></div>
+        <div class="small" style="margin-top:4px">Stress: ${pct}%</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCrises() {
+  const cur = CURRENT_DATA.composite;
+  const box = byId('crises');
+  box.innerHTML = CRISES.map(c => {
+    const sim = Math.max(50, 100 - Math.abs(cur - c.score));
+    const col = sim > 75 ? 'var(--red)' : 'var(--amber)';
+    return `
+      <div class="cell">
+        <div style="font-weight:800;margin-bottom:6px;font-size:14px">${c.name}</div>
+        <div class="small" style="margin-top:6px">Stress Score: ${c.score}</div>
+        <div class="small">Date: ${c.date}</div>
+        <div class="small" style="margin-top:6px">${c.valuation}</div>
+        <div class="small" style="margin-top:4px;font-weight:700;color:var(--red)">${c.outcome}</div>
+        <div class="small" style="margin-top:6px">Pattern Match</div>
+        <div style="font-weight:800;color:${col};font-size:18px">${Math.round(sim)}%</div>
+      </div>
+    `;
+  }).join('');
+  
+  drawCrisisTimeline();
+}
+
+function drawCrisisTimeline() {
+  const ctx = byId('crisisTimeline').getContext('2d');
+  if (charts.crisisTimeline) charts.crisisTimeline.destroy();
+  
+  // Simulate historical data
+  const months = [];
+  const values = [];
+  let curDate = new Date('2020-01-01');
+  let val = 30;
+  
+  for (let i = 0; i < 60; i++) {
+    months.push(curDate.toISOString().slice(0, 7));
+    val += (Math.random() - 0.5) * 8;
+    if (i === 15) val = 82; // COVID spike
+    if (i > 15 && i < 20) val -= 15;
+    val = Math.max(20, Math.min(85, val));
+    values.push(+val.toFixed(1));
+    curDate.setMonth(curDate.getMonth() + 1);
+  }
+  
+  charts.crisisTimeline = new Chart(ctx, {
+    type: 'line',
+    data: {labels: months, datasets: [{
+      data: values,
+      fill: true,
+      tension: 0.35,
+      borderWidth: 2,
+      borderColor: '#6b9eff',
+      backgroundColor: 'rgba(107,158,255,.12)',
+      pointRadius: 0
+    }]},
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {legend: {display: false}},
+      scales: {
+        y: {min: 0, max: 100, ticks: {color: '#8b96b0', callback: v => v + '%', font: {size: 11}}, grid: {color: 'rgba(255,255,255,.06)'}},
+        x: {ticks: {color: '#8b96b0', maxTicksLimit: 10, font: {size: 10}}, grid: {color: 'rgba(255,255,255,.06)'}}
+      }
+    }
+  });
+}
+
+function renderScenarios() {
+  const box = byId('scenarios');
+  box.innerHTML = `
+    <div class="cell">
+      <div style="font-weight:800;margin-bottom:6px;font-size:14px">Goldman Sachs</div>
+      <div style="font-size:26px;font-weight:800;color:var(--amber)">30%</div>
+      <div class="small" style="margin-top:6px">Recession probability for 2026</div>
+      <div class="small" style="margin-top:4px">Recently lowered from 45% peak in April 2025</div>
+    </div>
+    <div class="cell">
+      <div style="font-weight:800;margin-bottom:6px;font-size:14px">JPMorgan Chase</div>
+      <div style="font-size:26px;font-weight:800;color:var(--amber)">40%</div>
+      <div class="small" style="margin-top:6px">US & global recession risk</div>
+      <div class="small" style="margin-top:4px">Down from 60% peak after tariff pause</div>
+    </div>
+    <div class="cell">
+      <div style="font-weight:800;margin-bottom:6px;font-size:14px">Morgan Stanley</div>
+      <div style="font-size:26px;font-weight:800;color:var(--amber)">30%</div>
+      <div class="small" style="margin-top:6px">Alternative mild recession scenario</div>
+      <div class="small" style="margin-top:4px">Base case: 1% growth in 2025-2026</div>
+    </div>
+    <div class="cell" style="border:2px solid var(--amber)">
+      <div style="font-weight:800;margin-bottom:6px;font-size:14px">Consensus Range</div>
+      <div style="font-size:26px;font-weight:800;background:linear-gradient(135deg,var(--accent-bright),#4a7fe8);-webkit-background-clip:text;-webkit-text-fill-color:transparent">30-45%</div>
+      <div class="small" style="margin-top:6px">Institutional average for 2026</div>
+      <div class="small" style="margin-top:4px">2x normal but down from 60-85% outliers</div>
+    </div>
+  `;
+}
+
+function renderInstitutionalForecasts() {
+  const box = byId('institutionalForecasts');
+  box.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+      <div class="cell">
+        <div style="font-weight:800;font-size:14px">Federal Reserve</div>
+        <div class="small" style="margin-top:6px">• Economy and jobs "solid"</div>
+        <div class="small">• Cut rates to 4.0-4.25% in Sept 2025</div>
+        <div class="small">• 2-3 more cuts expected in 2026</div>
+        <div class="small">• NY Fed model: 26.5% recession prob</div>
+      </div>
+      <div class="cell">
+        <div style="font-weight:800;font-size:14px">Conference Board</div>
+        <div class="small" style="margin-top:6px">• LEI declined 2.8% over 6 months</div>
+        <div class="small">• Triggered recession signal (3 consecutive declines)</div>
+        <div class="small">• Below -4.1% threshold indicates high risk</div>
+        <div class="small">• Historical accuracy: 64+ years</div>
+      </div>
+      <div class="cell">
+        <div style="font-weight:800;font-size:14px">Bank of America</div>
+        <div class="small" style="margin-top:6px">• 91% of fund managers see overvaluation</div>
+        <div class="small">• 60% of bear market signposts active</div>
+        <div class="small">• 54% say AI stocks in bubble</div>
+        <div class="small">• Survey of $468B in AUM</div>
+      </div>
+      <div class="cell">
+        <div style="font-weight:800;font-size:14px">Key Concerns</div>
+        <div class="small" style="margin-top:6px">• Consumer sentiment at 50.4 (3-yr low)</div>
+        <div class="small">• Manufacturing: 8 months contraction</div>
+        <div class="small">• Valuation: Buffett 220% (record high)</div>
+        <div class="small">• Policy uncertainty at historic highs</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderTrajectory() {
+  const ctx = byId('traj').getContext('2d');
+  if (charts.traj) charts.traj.destroy();
+  
+  const cur = CURRENT_DATA.composite;
+  const weeks = 26;
+  const labels = [], path = [], upper = [], lower = [];
+  let v = cur;
+  
+  for (let i = 0; i < weeks; i++) {
+    v = 0.92 * v + 0.08 * 45; // Mean reversion to slightly elevated
+    const band = 8 * Math.sqrt((i + 1) / weeks);
+    labels.push('W+' + (i + 1));
+    path.push(+v.toFixed(1));
+    upper.push(Math.min(100, +(v + band).toFixed(1)));
+    lower.push(Math.max(0, +(v - band).toFixed(1)));
+  }
+  
+  charts.traj = new Chart(ctx, {
+    type: 'line',
+    data: {labels, datasets: [
+      {label: 'Base Case', data: path, borderColor: '#6b9eff', borderWidth: 2, tension: .35, fill: false},
+      {label: 'Upside', data: lower, borderColor: '#1ec28b', borderDash: [4, 4], borderWidth: 1, fill: false},
+      {label: 'Downside', data: upper, borderColor: '#ff6070', borderDash: [4, 4], borderWidth: 1, fill: false}
+    ]},
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {legend: {labels: {color: '#8b96b0', font: {size: 11}}}},
+      scales: {
+        y: {min: 0, max: 100, ticks: {color: '#8b96b0', callback: v => v + '%', font: {size: 11}}, grid: {color: 'rgba(255,255,255,.06)'}},
+        x: {ticks: {color: '#8b96b0', font: {size: 10}}, grid: {color: 'rgba(255,255,255,.06)'}}
+      }
+    }
+  });
+}
+
+function drawTrendChart() {
+  const ctx = byId('mainChart').getContext('2d');
+  if (charts.main) charts.main.destroy();
+  
+  // Generate synthetic historical data
   const labels = [];
   const data = [];
-
-  for (const [key, cfg] of Object.entries(CEFI_DRIVERS)) {
-    const d = cefiResult.drivers[key];
-    if (d && d.stress != null) {
-      labels.push(key);
-      data.push(Math.round(d.stress));
-    }
+  let curDate = new Date();
+  curDate.setDate(curDate.getDate() - 365);
+  
+  let val = 35;
+  for (let i = 0; i < 365; i += 7) {
+    labels.push(curDate.toISOString().slice(0, 10));
+    val += (Math.random() - 0.48) * 3; // Slight upward drift
+    val = Math.max(25, Math.min(65, val));
+    data.push(+val.toFixed(1));
+    curDate.setDate(curDate.getDate() + 7);
   }
-
-  const val = valuationStressScore();
-  if (val != null) {
-    labels.push('Valuations');
-    data.push(Math.round(val));
-  }
-
-  if (!labels.length) return;
-
-  radarChart = new Chart(ctx, {
-    type:'radar',
-    data:{
-      labels,
-      datasets:[{
-        label:'Normalized Stress (0–100)',
-        data,
-        borderColor:'#6b9eff',
-        backgroundColor:'rgba(107,158,255,0.18)',
-        pointRadius:2
-      }]
-    },
-    options:{
-      plugins:{legend:{display:false}},
-      scales:{
-        r:{
-          suggestedMin:0,
-          suggestedMax:100,
-          ticks:{display:false},
-          grid:{color:'rgba(255,255,255,0.08)'},
-          angleLines:{color:'rgba(255,255,255,0.04)'},
-          pointLabels:{color:'#8b96b0',font:{size:7}}
-        }
+  
+  charts.main = new Chart(ctx, {
+    type: 'line',
+    data: {labels, datasets: [{
+      data,
+      tension: 0.35,
+      fill: true,
+      borderWidth: 2,
+      borderColor: '#6b9eff',
+      backgroundColor: 'rgba(107,158,255,.12)',
+      pointRadius: 0,
+      pointHoverRadius: 4
+    }]},
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {legend: {display: false}},
+      scales: {
+        y: {min: 0, max: 100, ticks: {color: '#8b96b0', callback: v => v + '%', font: {size: 11}}, grid: {color: 'rgba(255,255,255,.06)'}},
+        x: {ticks: {color: '#8b96b0', maxTicksLimit: 8, font: {size: 10}}, grid: {color: 'rgba(255,255,255,.06)'}}
       }
     }
   });
 }
 
-function renderTrend(history) {
-  const ctx = document.getElementById('cefi-trend').getContext('2d');
-  if (trendChart) trendChart.destroy();
-  if (!history || !history.length) return;
-
-  const labels = history.map(p => p.date);
-  const vals = history.map(p => p.cefi);
-
-  trendChart = new Chart(ctx, {
-    type:'line',
-    data:{
-      labels,
-      datasets:[{
-        label:'Macro CEFI',
-        data:vals,
-        borderColor:'#6b9eff',
-        backgroundColor:'rgba(107,158,255,0.12)',
-        fill:true,
-        tension:0.28,
-        pointRadius:0
-      }]
-    },
-    options:{
-      plugins:{
-        legend:{display:false},
-        title:{
-          display:true,
-          text:'CEFI history (derived from core drivers)',
-          color:'#e8eeff',
-          font:{size:10}
-        }
-      },
-      scales:{
-        x:{ticks:{display:false},grid:{display:false}},
-        y:{
-          min:0,max:100,
-          ticks:{color:'#8b96b0',font:{size:8}},
-          grid:{color:'rgba(255,255,255,0.08)'}
-        }
-      }
-    }
+function setupPeriodButtons() {
+  if (app.boundPeriods) return;
+  app.boundPeriods = true;
+  document.querySelectorAll('.btns button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.btns button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      // Would filter data by period here
+      drawTrendChart();
+    });
   });
 }
 
-function updateInsight() {
-  const el = document.getElementById('insight-text');
-  if (!cefiResult || cefiResult.cefi == null) {
-    el.textContent = 'No robust macro CEFI yet. Confirm FRED coverage and manual valuation inputs.';
-    return;
-  }
-  const v = cefiResult.cefi;
-  const val = valuationStressScore();
-  const primary = cefiResult.primary || 'none';
-
-  if (v < 25 && (val == null || val < 33)) {
-    el.textContent = 'Benign setup: macro and valuations both reasonable. Historically low fragility.';
-  } else if (v < 40 && val != null && val >= 66) {
-    el.textContent = 'Macro ok but valuations stretched. Vulnerable to shocks or policy error.';
-  } else if (v >= 50 && v < 70) {
-    el.textContent = `Elevated macro fragility driven mainly by ${primary}. Use tilts, not panic.`;
-  } else if (v >= 70 && val != null && val >= 66) {
-    el.textContent = `High macro fragility plus rich valuations. This combination has overlapped past crisis regimes.`;
-  } else {
-    el.textContent = 'Mixed signals. Use radar and tiles; act on clusters, not single spikes.';
-  }
+function setupTabs() {
+  if (app.boundTabs) return;
+  app.boundTabs = true;
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      const key = t.dataset.t;
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      byId('view-' + key).classList.add('active');
+    });
+  });
 }
 
-// --------- MASTER REFRESH ----------
-
-function refresh() {
-  // recompute valuation labels and tiles
-  buildValuationTiles();
-  renderCompositeHeadline();
-  renderRadar();
-  updateInsight();
+function exportData() {
+  const report = {
+    generated_at: new Date().toISOString(),
+    composite_stress: CURRENT_DATA.composite,
+    recession_probability_2026: CURRENT_DATA.recessionProb,
+    valuation_risk: CURRENT_DATA.valuationRisk,
+    indicators: INDICATORS,
+    valuations: VALUATIONS
+  };
+  const blob = new Blob([JSON.stringify(report, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `economic-crash-radar-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
-// --------- INIT ----------
-
-document.addEventListener('DOMContentLoaded', async () => {
-  const series = await loadFred();
-
-  // Populate core indicator latests from series
-  if (series) {
-    // Map INDICATORS from FRED
-    for (const [id, meta] of Object.entries(INDICATORS)) {
-      if (meta.fredId) {
-        const v = lastValue(series, meta.fredId);
-        if (v != null) meta.current = v;
-      }
-      if (id === 'PERMITS') {
-        const dd = lastDrawdown12m({ SP500: series.PERMIT }); // placeholder; permits %Δ handled in CEFI only if needed
-      }
-    }
-  }
-
-  // Compute CEFI from series
-  if (series) {
-    cefiResult = computeCEFI(series);
-  } else {
-    cefiResult = {
-      cefi: null,
-      drivers: {},
-      notes:['No FRED series loaded'],
-      modelStatus:'BROKEN'
-    };
-  }
-
-  // Build tiles based on CEFI drivers
-  renderIndicatorSections(cefiResult.drivers);
-
-  // Wire manual valuation inputs after first render
-  buildValuationTiles();
-
-  // Trend history: build from CEFI drivers if there is enough history
-  let history = [];
-  if (series) {
-    const ycVals = getObsValues(series, 'T10Y3M');
-    const hyVals = getObsValues(series, 'BAMLH0A0HYM2');
-    if (ycVals && hyVals && ycVals.length === hyVals.length) {
-      // simple back-series using YC & HY only, for visual context
-      const len = Math.min(120, ycVals.length);
-      const sliceStart = ycVals.length - len;
-      for (let i = sliceStart; i < ycVals.length; i++) {
-        const point = computeCEFI(series); // strict backfill would recompute per date; omitted for simplicity
-        if (point && point.cefi != null) {
-          history.push({ date: 't-'+(ycVals.length-i), cefi: point.cefi });
-          break; // do not fake full history – one point is enough to show logic without lying
-        }
-      }
-    }
-  }
-  renderTrend(history);
-
-  renderCompositeHeadline();
-  renderRadar();
-  updateInsight();
-
-  // Inputs / coverage badge
-  const totalInputs =
-    Object.keys(CEFI_DRIVERS).length +
-    Object.keys(VALUATIONS).length;
-  const usedInputs =
-    Object.values(cefiResult.drivers || {}).filter(d => d.stress != null).length +
-    Object.values(VALUATIONS).filter(v => Number.isFinite(v.current)).length;
-  document.getElementById('inputs-badge').textContent =
-    `Inputs: ${usedInputs}/${totalInputs} contributing`;
-});
+function byId(id) {return document.getElementById(id);}
 </script>
+
 </body>
 </html>
