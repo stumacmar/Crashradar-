@@ -774,17 +774,31 @@ function renderValuations(){
     box.appendChild(div);
   });
 
-  // Hook valuation inputs
+  // Hook valuation inputs (both input + change to work properly on iPhone)
   document.querySelectorAll('.manual-input[data-val-key]').forEach(inp => {
-    inp.addEventListener('change', () => {
+    const handler = () => {
       const k = inp.dataset.valKey;
       const v = parseFloat(inp.value);
-      if(!Number.isNaN(v) && VALUATIONS[k]){
+      if (!Number.isNaN(v) && VALUATIONS[k]) {
         VALUATIONS[k].current = v;
-        updateAll();
+      } else if (VALUATIONS[k]) {
+        VALUATIONS[k].current = null;
       }
-    });
+      // Recompute everything after each edit
+      updateAll();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
   });
+
+  // Keep "Current (your inputs)" labels in sync with state
+  const b = VALUATIONS.BUFFETT.current;
+  const c = VALUATIONS.SHILLER_PE.current;
+  document.getElementById('current-buffett-label').textContent =
+    Number.isFinite(b) ? `Buffett: ${b.toFixed(1)}%` : 'Buffett: --';
+  document.getElementById('current-cape-label').textContent =
+    Number.isFinite(c) ? `CAPE: ${c.toFixed(1)}` : 'CAPE: --';
+}y
 
   // Ensure RHS labels reflect current state
   const b = VALUATIONS.BUFFETT.current;
