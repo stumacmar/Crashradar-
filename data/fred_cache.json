@@ -1,4 +1,85 @@
 {
-  "generated_at": "2025-01-01T00:00:00.000Z",
-  "series": {}
+  "generated_at": "2025-11-09T06:01:09.441Z",
+  "series": {
+    "T10Y3M": {
+      "id": "T10Y3M",
+      "last_updated": "2025-11-07",
+      "value": 0.19
+    },
+    "BAMLH0A0HYM2": {
+      "id": "BAMLH0A0HYM2",
+      "last_updated": "2025-11-06",
+      "value": 3.13
+    },
+    "UNRATE": {
+      "id": "UNRATE",
+      "last_updated": "2025-08-01",
+      "value": 4.3
+    },
+    "ICSA": {
+      "id": "ICSA",
+      "last_updated": "2025-09-20",
+      "value": 218000
+    },
+    "SAHMREALTIME": {
+      "id": "SAHMREALTIME",
+      "last_updated": "2025-08-01",
+      "value": 0.13
+    },
+    "AWHMAN": {
+      "id": "AWHMAN",
+      "last_updated": "2025-08-01",
+      "value": 40.9
+    },
+    "INDPRO": {
+      "id": "INDPRO",
+      "last_updated": "2025-08-01",
+      "value": 103.9203
+    },
+    "USSLIND": {
+      "id": "USSLIND",
+      "last_updated": "2020-02-01",
+      "value": 1.72
+    },
+    "RSAFS": {
+      "id": "RSAFS",
+      "last_updated": "2025-08-01",
+      "value": 732010
+    },
+    "UMCSENT": {
+      "id": "UMCSENT",
+      "last_updated": "2025-09-01",
+      "value": 55.1
+    },
+    "NFCI": {
+      "id": "NFCI",
+      "last_updated": "2025-10-31",
+      "value": -0.51456
+    },
+    "VIXCLS": {
+      "id": "VIXCLS",
+      "last_updated": "2025-11-06",
+      "value": 19.5
+    },
+    "PERMIT": {
+      "id": "PERMIT",
+      "last_updated": "2025-08-01",
+      "value": 1330
+    },
+    "HOUST": {
+      "id": "HOUST",
+      "last_updated": "2025-08-01",
+      "value": 1307
+    },
+    "TEDRATE": {
+      "id": "TEDRATE",
+      "last_updated": "2022-01-21",
+      "value": 0.09
+    },
+    "TDSP": {
+      "id": "TDSP",
+      "last_updated": "2025-04-01",
+      "value": 11.249194
+    }
+  }
 }
