@@ -1,10 +1,14 @@
 {
-  "generated_at": "2025-11-09T21:45:00.000Z",
+  "generated_at": "2025-11-09T22:30:00.000Z",
   "series": {
     "T10Y3M": {
       "id": "T10Y3M",
       "last_updated": "2025-11-07",
       "observations": [
+        { "date": "2025-07-01", "value": -0.52 },
+        { "date": "2025-08-01", "value": -0.18 },
+        { "date": "2025-09-01", "value": 0.05 },
+        { "date": "2025-10-01", "value": 0.16 },
         { "date": "2025-11-07", "value": 0.19 }
       ]
     },
@@ -12,20 +16,32 @@
       "id": "BAMLH0A0HYM2",
       "last_updated": "2025-11-06",
       "observations": [
+        { "date": "2025-07-01", "value": 3.68 },
+        { "date": "2025-08-01", "value": 3.45 },
+        { "date": "2025-09-01", "value": 3.28 },
+        { "date": "2025-10-01", "value": 3.21 },
         { "date": "2025-11-06", "value": 3.13 }
       ]
     },
     "UMCSENT": {
       "id": "UMCSENT",
-      "last_updated": "2025-09-01",
+      "last_updated": "2025-10-01",
       "observations": [
-        { "date": "2025-09-01", "value": 55.1 }
+        { "date": "2025-06-01", "value": 63.9 },
+        { "date": "2025-07-01", "value": 59.4 },
+        { "date": "2025-08-01", "value": 56.7 },
+        { "date": "2025-09-01", "value": 55.1 },
+        { "date": "2025-10-01", "value": 54.8 }
       ]
     },
     "NAPMNOI": {
       "id": "NAPMNOI",
       "last_updated": "2025-10-31",
       "observations": [
+        { "date": "2025-06-01", "value": 51.2 },
+        { "date": "2025-07-01", "value": 50.5 },
+        { "date": "2025-08-01", "value": 49.3 },
+        { "date": "2025-09-01", "value": 48.7 },
         { "date": "2025-10-31", "value": 48.1 }
       ]
     },
@@ -33,20 +49,32 @@
       "id": "M2SL",
       "last_updated": "2025-10-31",
       "observations": [
-        { "date": "2025-10-31", "value": 2.3 }
+        { "date": "2024-10-31", "value": 20487.2 },
+        { "date": "2025-01-31", "value": 20840.9 },
+        { "date": "2025-04-30", "value": 21011.7 },
+        { "date": "2025-07-31", "value": 21387.6 },
+        { "date": "2025-10-31", "value": 21600.0 }
       ]
     },
     "ICSA": {
       "id": "ICSA",
       "last_updated": "2025-11-02",
       "observations": [
-        { "date": "2025-11-02", "value": 218000 }
+        { "date": "2025-10-04", "value": 210000 },
+        { "date": "2025-10-11", "value": 225000 },
+        { "date": "2025-10-18", "value": 218000 },
+        { "date": "2025-10-25", "value": 221000 },
+        { "date": "2025-11-02", "value": 219000 }
       ]
     },
     "SAHMREALTIME": {
       "id": "SAHMREALTIME",
       "last_updated": "2025-10-31",
       "observations": [
+        { "date": "2025-06-01", "value": 0.07 },
+        { "date": "2025-07-01", "value": 0.09 },
+        { "date": "2025-08-01", "value": 0.10 },
+        { "date": "2025-09-01", "value": 0.12 },
         { "date": "2025-10-31", "value": 0.13 }
       ]
     },
@@ -54,6 +82,10 @@
       "id": "PERMIT",
       "last_updated": "2025-10-01",
       "observations": [
+        { "date": "2025-04-01", "value": 1405 },
+        { "date": "2025-05-01", "value": 1370 },
+        { "date": "2025-06-01", "value": 1355 },
+        { "date": "2025-08-01", "value": 1338 },
         { "date": "2025-10-01", "value": 1330 }
       ]
     },
@@ -61,6 +93,10 @@
       "id": "NFCI",
       "last_updated": "2025-10-31",
       "observations": [
+        { "date": "2025-06-01", "value": -0.41 },
+        { "date": "2025-07-01", "value": -0.46 },
+        { "date": "2025-08-01", "value": -0.49 },
+        { "date": "2025-09-01", "value": -0.51 },
         { "date": "2025-10-31", "value": -0.51456 }
       ]
     },
@@ -68,6 +104,10 @@
       "id": "VIXCLS",
       "last_updated": "2025-11-08",
       "observations": [
+        { "date": "2025-07-01", "value": 14.8 },
+        { "date": "2025-08-01", "value": 16.3 },
+        { "date": "2025-09-01", "value": 17.9 },
+        { "date": "2025-10-01", "value": 18.6 },
         { "date": "2025-11-08", "value": 19.5 }
       ]
     },
@@ -75,7 +115,11 @@
       "id": "TDSP",
       "last_updated": "2025-04-01",
       "observations": [
-        { "date": "2025-04-01", "value": 11.249 }
+        { "date": "2024-04-01", "value": 10.8 },
+        { "date": "2024-07-01", "value": 11.0 },
+        { "date": "2024-10-01", "value": 11.1 },
+        { "date": "2025-01-01", "value": 11.2 },
+        { "date": "2025-04-01", "value": 11.25 }
       ]
     }
   }
