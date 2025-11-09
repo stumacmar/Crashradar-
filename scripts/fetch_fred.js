@@ -9,7 +9,7 @@ const fs = require("fs/promises");
       throw new Error("Missing env FRED_API_KEY");
     }
 
-    // Use Node 18+ fetch if available, else node-fetch
+    // Use global fetch when available (Node 18+), else node-fetch
     let _fetch = global.fetch;
     if (typeof _fetch !== "function") {
       _fetch = (await import("node-fetch")).default;
@@ -18,25 +18,24 @@ const fs = require("fs/promises");
     const FRED = "https://api.stlouisfed.org/fred";
     const KEY = process.env.FRED_API_KEY;
 
-    // Series needed by the current index + safe extras.
-    // Keys must match CONFIG.ALIAS in index.html.
+    // Series aligned with CONFIG.ALIAS in index.html
     const SERIES = {
       T10Y3M:      "1959-01-01", // 10y-3m curve
       BAMLH0A0HYM2:"1997-01-01", // HY OAS
       UNRATE:      "1948-01-01", // Unemployment
-      ICSA:        "1967-01-01", // Initial claims (4w MA)
-      AWHMAN:      "1964-01-01", // Avg weekly hours, manufacturing
+      ICSA:        "1967-01-01", // Initial claims
+      AWHMAN:      "1964-01-01", // Avg weekly hours (mfg)
       INDPRO:      "1919-01-01", // Industrial production
-      UMCSENT:     "1978-01-01", // U. Michigan sentiment
+      UMCSENT:     "1978-01-01", // Consumer sentiment
       NFCI:        "1971-01-01", // Chicago Fed NFCI
       VIXCLS:      "1990-01-01", // VIX
       PERMIT:      "1960-01-01", // Building permits
       HOUST:       "1959-01-01", // Housing starts (fallback)
-      NEWORDER:    "1960-01-01", // ISM new orders (if available)
-      NAPMNOI:     "1960-01-01", // alt ISM new orders (fallback)
-      SP500:       "1950-01-01", // S&P (anchors history if needed)
+      NEWORDER:    "1960-01-01", // ISM new orders (if defined)
+      NAPMNOI:     "1960-01-01", // alt ISM new orders code
+      SP500:       "1950-01-01", // S&P 500 (for anchor dates)
 
-      // Legacy/extra (harmless for front-end if unused)
+      // Extras (safe; FE ignores if not mapped):
       SAHMREALTIME:"2000-01-01",
       USSLIND:     "1960-01-01",
       RSAFS:       "1992-01-01",
@@ -53,9 +52,7 @@ const fs = require("fs/promises");
         `&observation_start=${start}`;
 
       const res = await _fetch(url);
-      if (!res.ok) {
-        throw new Error(`${id} HTTP ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`${id} HTTP ${res.status}`);
 
       const data = await res.json();
       const raw = data.observations || [];
@@ -100,7 +97,6 @@ const fs = require("fs/promises");
       JSON.stringify(cache, null, 2),
       "utf8"
     );
-
     console.log("✅ data/fred_cache.json written.");
   } catch (err) {
     console.error("FATAL", err);
