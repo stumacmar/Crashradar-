@@ -1,9 +1,9 @@
 name: Update FRED Cache
 
 on:
-  workflow_dispatch:      # Manual trigger (you can run it yourself)
+  workflow_dispatch:
   schedule:
-    - cron: "0 6 * * *"   # Optional: runs every day at 06:00 UTC
+    - cron: "0 6 * * *"
 
 jobs:
   build:
@@ -30,5 +30,5 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add data/fred_cache.json
-          git commit -m "Auto-update FRED cache"
+          git commit -m "Auto-update FRED cache" || echo "No changes"
           git push
