@@ -9,7 +9,7 @@ const fs = require("fs/promises");
       throw new Error("Missing env FRED_API_KEY");
     }
 
-    // Use Node 18+ global fetch if present, otherwise node-fetch
+    // Use Node 18+ global fetch if present, otherwise fall back to node-fetch
     let _fetch = global.fetch;
     if (typeof _fetch !== "function") {
       _fetch = (await import("node-fetch")).default;
@@ -18,18 +18,19 @@ const fs = require("fs/promises");
     const FRED = "https://api.stlouisfed.org/fred";
     const KEY = process.env.FRED_API_KEY;
 
-    // Series universe (must cover everything used in index.html)
+    // Series used directly by index.html (plus a few safe extras)
     const SERIES = {
-      T10Y3M:       "1959-01-01", // 10y-3m yield curve
+      // CORE (must exist)
+      T10Y3M:       "1959-01-01", // Yield curve (10y-3m)
       BAMLH0A0HYM2: "1997-01-01", // HY OAS
       UMCSENT:      "1978-01-01", // UMich Sentiment
       NAPMNOI:      "1960-01-01", // ISM New Orders
-      M2SL:         "1959-01-01", // M2 (for YoY)
+      M2SL:         "1959-01-01", // M2 Money Stock (for YoY)
       ICSA:         "1967-01-01", // Initial Claims
       SAHMREALTIME: "2000-01-01", // Sahm Rule
       PERMIT:       "1960-01-01", // Building Permits
 
-      // Extras (safe if unused by the UI)
+      // EXTRAS (not required by UI, but harmless)
       UNRATE:       "1948-01-01",
       AWHMAN:       "1964-01-01",
       INDPRO:       "1919-01-01",
