@@ -1,36 +1,34 @@
-name: CrashRadar Daily Cache Update
+name: Update FRED Cache
 
 on:
+  workflow_dispatch:      # Manual trigger (you can run it yourself)
   schedule:
-    - cron: "0 6 * * *"   # run 06:00 UTC every day (~07:00 UK)
-  workflow_dispatch:       # allow manual trigger
-
-permissions:
-  contents: write          # allow committing the updated JSON
+    - cron: "0 6 * * *"   # Optional: runs every day at 06:00 UTC
 
 jobs:
-  update-cache:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Refresh FRED cache
+      - name: Install node-fetch
+        run: npm install node-fetch
+
+      - name: Fetch FRED data
         run: node scripts/fetch_fred.js
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
-      - name: Commit updated cache
+      - name: Commit and push updated cache
         run: |
-          git config user.name  "FRED Bot"
-          git config user.email "fred-bot@users.noreply.github.com"
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
           git add data/fred_cache.json
-          if git diff --cached --quiet; then
-            echo "No changes in cache."
-          else
-            git commit -m "Auto-update FRED cache $(date -u +%F)"
-            git push
-          fi
+          git commit -m "Auto-update FRED cache"
+          git push
