@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -18,707 +19,623 @@
             --red: #ff6070;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+```
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            line-height: 1.6;
-            padding: 20px;
-        }
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        line-height: 1.6;
+        padding: 20px;
+    }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+    .container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+    .header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
 
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, var(--text), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+    h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        background: linear-gradient(135deg, var(--text), var(--accent));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
 
-        .subtitle {
-            color: var(--muted);
-            font-size: 1.05rem;
-        }
+    .subtitle {
+        color: var(--muted);
+        font-size: 1.05rem;
+    }
 
+    .dashboard {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .sidebar {
+        background: var(--panel);
+        border-radius: 12px;
+        padding: 20px;
+    }
+
+    .main-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .card {
+        background: var(--panel);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title {
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+        color: var(--accent);
+    }
+
+    .alert-banner {
+        background: linear-gradient(135deg, rgba(255,96,112,0.15), rgba(255,194,71,0.15));
+        border: 1px solid rgba(255,96,112,0.3);
+        border-radius: 8px;
+        padding: 15px;
+        margin: 20px 0;
+        font-size: 0.95rem;
+    }
+
+    .meta-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 10px;
+        font-size: 0.75rem;
+        color: var(--muted);
+    }
+
+    .badge {
+        padding: 4px 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.03);
+    }
+
+    .gauge-container {
+        text-align: center;
+        padding: 10px 0 20px;
+    }
+
+    .gauge {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        margin: 0 auto;
+    }
+
+    .gauge-background {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: conic-gradient(
+            var(--green) 0deg 108deg,
+            var(--amber) 108deg 216deg,
+            var(--red) 216deg 360deg
+        );
+        opacity: 0.3;
+    }
+
+    .gauge-center {
+        position: absolute;
+        width: 80%;
+        height: 80%;
+        background: var(--panel);
+        border-radius: 50%;
+        top: 10%;
+        left: 10%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+
+    .gauge-score {
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+
+    .gauge-label {
+        font-size: 0.8rem;
+        color: var(--muted);
+    }
+
+    .gauge-needle {
+        position: absolute;
+        width: 4px;
+        height: 45%;
+        background: var(--accent);
+        bottom: 50%;
+        left: 50%;
+        transform-origin: bottom center;
+        transform: translateX(-50%) rotate(0deg);
+        border-radius: 4px 4px 0 0;
+        transition: transform 1s ease;
+    }
+
+    .risk-meter {
+        margin-top: 12px;
+    }
+
+    .risk-bar {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        margin: 10px 0;
+        overflow: hidden;
+    }
+
+    .risk-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--green), var(--amber), var(--red));
+        width: 0%;
+        transition: width 0.8s ease;
+    }
+
+    .risk-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: var(--muted);
+    }
+
+    .status-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 15px;
+    }
+
+    .status-item {
+        text-align: center;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 8px;
+        font-size: 0.8rem;
+    }
+
+    .status-value {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin: 3px 0;
+    }
+
+    .indicator-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 12px;
+    }
+
+    .indicator {
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 8px;
+        border-left: 4px solid var(--green);
+        font-size: 0.8rem;
+    }
+
+    .indicator.warning {
+        border-left-color: var(--amber);
+    }
+
+    .indicator.danger {
+        border-left-color: var(--red);
+    }
+
+    .indicator-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 6px;
+        gap: 6px;
+    }
+
+    .indicator-name {
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+
+    .indicator-value {
+        font-size: 1rem;
+        font-weight: bold;
+    }
+
+    .indicator-threshold {
+        font-size: 0.72rem;
+        color: var(--muted);
+        margin-top: 2px;
+    }
+
+    .source-tag {
+        display: inline-block;
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid rgba(255,255,255,0.13);
+        margin-top: 4px;
+        color: var(--muted);
+    }
+
+    .manual-input-row {
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.7rem;
+    }
+
+    .manual-input {
+        width: 80px;
+        padding: 3px 5px;
+        border-radius: 4px;
+        border: 1px solid rgba(255,255,255,0.25);
+        background: rgba(0,0,0,0.4);
+        color: var(--text);
+        font-size: 0.7rem;
+        outline: none;
+    }
+
+    .manual-input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 4px var(--accent);
+    }
+
+    .valuation-comparison {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+        margin-top: 15px;
+        font-size: 0.78rem;
+    }
+
+    .valuation-item {
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .valuation-item.current {
+        border: 1px solid var(--red);
+    }
+
+    .valuation-title {
+        font-weight: bold;
+        margin-bottom: 6px;
+    }
+
+    .valuation-metric {
+        margin: 2px 0;
+    }
+
+    .valuation-outcome {
+        margin-top: 6px;
+        color: var(--muted);
+    }
+
+    .insight-card {
+        background: linear-gradient(135deg, rgba(107,158,255,0.1), rgba(139,187,255,0.05));
+        border: 1px solid rgba(107,158,255,0.2);
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 12px;
+        font-size: 0.8rem;
+    }
+
+    .chart-container {
+        margin-top: 10px;
+    }
+
+    @media (max-width: 1024px) {
         .dashboard {
-            display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: 1fr;
         }
-
-        .sidebar {
-            background: var(--panel);
-            border-radius: 12px;
-            padding: 20px;
-        }
-
         .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: 1fr;
         }
+    }
+</style>
+```
 
-        .card {
-            background: var(--panel);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .card-title {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            color: var(--accent);
-        }
-
-        .alert-banner {
-            background: linear-gradient(135deg, rgba(255,96,112,0.15), rgba(255,194,71,0.15));
-            border: 1px solid rgba(255,96,112,0.3);
-            border-radius: 8px;
-            padding: 15px;
-            margin: 20px 0;
-            font-size: 0.95rem;
-        }
-
-        .meta-badges {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 10px;
-            font-size: 0.75rem;
-            color: var(--muted);
-        }
-
-        .badge {
-            padding: 4px 8px;
-            border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.12);
-            background: rgba(255,255,255,0.03);
-        }
-
-        .gauge-container {
-            text-align: center;
-            padding: 10px 0 20px;
-        }
-
-        .gauge {
-            position: relative;
-            width: 200px;
-            height: 200px;
-            margin: 0 auto;
-        }
-
-        .gauge-background {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: conic-gradient(
-                var(--green) 0deg 108deg,
-                var(--amber) 108deg 216deg,
-                var(--red) 216deg 360deg
-            );
-            opacity: 0.3;
-        }
-
-        .gauge-center {
-            position: absolute;
-            width: 80%;
-            height: 80%;
-            background: var(--panel);
-            border-radius: 50%;
-            top: 10%;
-            left: 10%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-        }
-
-        .gauge-score {
-            font-size: 2.5rem;
-            font-weight: bold;
-        }
-
-        .gauge-label {
-            font-size: 0.8rem;
-            color: var(--muted);
-        }
-
-        .gauge-needle {
-            position: absolute;
-            width: 4px;
-            height: 45%;
-            background: var(--accent);
-            bottom: 50%;
-            left: 50%;
-            transform-origin: bottom center;
-            transform: translateX(-50%) rotate(0deg);
-            border-radius: 4px 4px 0 0;
-            transition: transform 1s ease;
-        }
-
-        .risk-meter {
-            margin-top: 12px;
-        }
-
-        .risk-bar {
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            margin: 10px 0;
-            overflow: hidden;
-        }
-
-        .risk-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--green), var(--amber), var(--red));
-            width: 0%;
-            transition: width 0.8s ease;
-        }
-
-        .risk-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.75rem;
-            color: var(--muted);
-        }
-
-        .status-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 15px;
-        }
-
-        .status-item {
-            text-align: center;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            font-size: 0.8rem;
-        }
-
-        .status-value {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin: 3px 0;
-        }
-
-        .indicator-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-            gap: 12px;
-        }
-
-        .indicator {
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 8px;
-            border-left: 4px solid var(--green);
-            font-size: 0.8rem;
-        }
-
-        .indicator.warning {
-            border-left-color: var(--amber);
-        }
-
-        .indicator.danger {
-            border-left-color: var(--red);
-        }
-
-        .indicator-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 6px;
-            gap: 6px;
-        }
-
-        .indicator-name {
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
-
-        .indicator-value {
-            font-size: 1rem;
-            font-weight: bold;
-        }
-
-        .indicator-threshold {
-            font-size: 0.72rem;
-            color: var(--muted);
-            margin-top: 2px;
-        }
-
-        .source-tag {
-            display: inline-block;
-            font-size: 0.65rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            border: 1px solid rgba(255,255,255,0.13);
-            margin-top: 4px;
-            color: var(--muted);
-        }
-
-        .manual-input-row {
-            margin-top: 6px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.7rem;
-        }
-
-        .manual-input {
-            width: 80px;
-            padding: 3px 5px;
-            border-radius: 4px;
-            border: 1px solid rgba(255,255,255,0.25);
-            background: rgba(0,0,0,0.4);
-            color: var(--text);
-            font-size: 0.7rem;
-            outline: none;
-        }
-
-        .manual-input:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 4px var(--accent);
-        }
-
-        .valuation-comparison {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-            font-size: 0.78rem;
-        }
-
-        .valuation-item {
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .valuation-item.current {
-            border: 1px solid var(--red);
-        }
-
-        .valuation-title {
-            font-weight: bold;
-            margin-bottom: 6px;
-        }
-
-        .valuation-metric {
-            margin: 2px 0;
-        }
-
-        .valuation-outcome {
-            margin-top: 6px;
-            color: var(--muted);
-        }
-
-        .insight-card {
-            background: linear-gradient(135deg, rgba(107,158,255,0.1), rgba(139,187,255,0.05));
-            border: 1px solid rgba(107,158,255,0.2);
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 12px;
-            font-size: 0.8rem;
-        }
-
-        .chart-container {
-            margin-top: 10px;
-        }
-
-        @media (max-width: 1024px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <h1>⚡ Economic Crash Radar Pro</h1>
         <div class="subtitle">
-            Uses your FRED cache where available. Everything else is explicit manual input. No hidden feeds.
+            Streamlined: 9 indicators (8 auto, 1 manual) + 2 valuation metrics. Total manual inputs: 3.
         </div>
         <div class="meta-badges">
             <div class="badge" id="cache-badge">FRED cache: not loaded</div>
-            <div class="badge">Auto: FRED-backed series</div>
-            <div class="badge">Manual: LEI, valuations, other non-FRED</div>
-            <div class="badge" id="quality-badge">Methodology: transparent</div>
+            <div class="badge">Manual KPIs: 3 (LEI, Buffett, CAPE)</div>
+            <div class="badge">Auto KPIs: 8 from FRED</div>
+            <div class="badge" id="quality-badge">Methodology: Fed-validated</div>
         </div>
     </div>
 
-    <div class="alert-banner" id="alert-banner">
-        Composite stress and warning status are calculated directly from the indicators shown below.
-        If an input is wrong, the signal is wrong. There is no extra hidden logic.
-    </div>
+```
+<div class="alert-banner" id="alert-banner">
+    Composite stress is calculated from 9 economic indicators + 2 valuations shown below.
+    All logic is transparent. Sidebar metrics are derived, not manual inputs.
+</div>
 
-    <div class="dashboard">
-        <!-- SIDEBAR: GAUGE + STATUS -->
-        <div class="sidebar">
-            <div class="gauge-container">
-                <div class="gauge">
-                    <div class="gauge-background"></div>
-                    <div class="gauge-center">
-                        <div class="gauge-score" id="composite-score">--</div>
-                        <div class="gauge-label" id="regime-label">COMPOSITE STRESS</div>
-                    </div>
-                    <div class="gauge-needle" id="needle"></div>
+<div class="dashboard">
+    <!-- SIDEBAR: GAUGE + STATUS -->
+    <div class="sidebar">
+        <div class="gauge-container">
+            <div class="gauge">
+                <div class="gauge-background"></div>
+                <div class="gauge-center">
+                    <div class="gauge-score" id="composite-score">--</div>
+                    <div class="gauge-label" id="regime-label">COMPOSITE STRESS</div>
                 </div>
-
-                <div class="risk-meter">
-                    <div class="risk-bar">
-                        <div class="risk-fill" id="risk-fill"></div>
-                    </div>
-                    <div class="risk-labels">
-                        <span>Low (0-30)</span>
-                        <span>Medium (30-50)</span>
-                        <span>High (50-70)</span>
-                        <span>Critical (70+)</span>
-                    </div>
-                </div>
+                <div class="gauge-needle" id="needle"></div>
             </div>
 
-            <div class="status-grid">
-                <div class="status-item">
-                    <div class="status-label">Recession Risk (manual)</div>
-                    <div class="status-value" id="recession-risk-display">--</div>
-                    <div class="manual-input-row">
-                        <span>%</span>
-                        <input id="recession-risk-input" class="manual-input" type="number" min="0" max="100" step="1" value="">
-                    </div>
+            <div class="risk-meter">
+                <div class="risk-bar">
+                    <div class="risk-fill" id="risk-fill"></div>
                 </div>
-                <div class="status-item">
-                    <div class="status-label">Valuation Risk (manual)</div>
-                    <div class="status-value" id="valuation-risk-display">--</div>
-                    <div class="manual-input-row">
-                        <span>%</span>
-                        <input id="valuation-risk-input" class="manual-input" type="number" min="0" max="100" step="1" value="">
-                    </div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">Labor Market Stress (derived)</div>
-                    <div class="status-value" id="labor-risk-display">--</div>
-                    <div class="indicator-threshold">Based on unemployment + claims inputs.</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">Inputs Quality</div>
-                    <div class="status-value" id="quality-display">--</div>
-                    <div class="indicator-threshold">Share of indicators with actual values.</div>
+                <div class="risk-labels">
+                    <span>Low (0-30)</span>
+                    <span>Medium (30-50)</span>
+                    <span>High (50-70)</span>
+                    <span>Critical (70+)</span>
                 </div>
             </div>
         </div>
 
-        <!-- MAIN CONTENT -->
-        <div class="main-content">
-            <div class="card">
-                <h2 class="card-title">📊 Tier 1 Critical Indicators</h2>
-                <div class="indicator-grid" id="tier1-indicators"></div>
+        <div class="status-grid">
+            <div class="status-item">
+                <div class="status-label">Recession Probability</div>
+                <div class="status-value" id="recession-risk-display">--</div>
+                <div class="indicator-threshold">Derived from composite score</div>
             </div>
-
-            <div class="card">
-                <h2 class="card-title">📈 Tier 2 Stress Indicators</h2>
-                <div class="indicator-grid" id="tier2-indicators"></div>
+            <div class="status-item">
+                <div class="status-label">Valuation Risk</div>
+                <div class="status-value" id="valuation-risk-display">--</div>
+                <div class="indicator-threshold">Computed from Buffett + CAPE</div>
             </div>
-
-            <div class="card">
-                <h2 class="card-title">💰 Valuation Indicators (Manual)</h2>
-                <div class="indicator-grid" id="valuation-indicators"></div>
-
-                <div class="valuation-comparison">
-                    <div class="valuation-item">
-                        <div class="valuation-title">2000 Dot-com</div>
-                        <div class="valuation-metric">CAPE high 40s</div>
-                        <div class="valuation-metric">Buffett ~140–160%</div>
-                        <div class="valuation-outcome">Ended with major drawdown.</div>
-                    </div>
-                    <div class="valuation-item">
-                        <div class="valuation-title">2007 Pre-GFC</div>
-                        <div class="valuation-metric">Elevated but lower than 2000</div>
-                        <div class="valuation-outcome">Ended with major drawdown.</div>
-                    </div>
-                    <div class="valuation-item">
-                        <div class="valuation-title">2021</div>
-                        <div class="valuation-metric">Very high valuations</div>
-                        <div class="valuation-outcome">Followed by 2022 correction.</div>
-                    </div>
-                    <div class="valuation-item current">
-                        <div class="valuation-title">Current (your inputs)</div>
-                        <div class="valuation-metric" id="current-buffett-label">Buffett: set below</div>
-                        <div class="valuation-metric" id="current-cape-label">CAPE: set below</div>
-                        <div class="valuation-outcome">Reflects exactly what you type.</div>
-                    </div>
-                </div>
+            <div class="status-item">
+                <div class="status-label">Labor Market Stress</div>
+                <div class="status-value" id="labor-risk-display">--</div>
+                <div class="indicator-threshold">Based on Claims + Sahm Rule</div>
             </div>
-
-            <div class="card">
-                <h2 class="card-title">📊 Composite vs Valuations (Illustrative)</h2>
-                <div class="chart-container">
-                    <canvas id="market-chart"></canvas>
-                </div>
-                <div class="insight-card" id="insight-card">
-                    <strong>Insight:</strong>
-                    <span id="insight-text">
-                        Updated based on your current composite and valuation inputs.
-                    </span>
-                </div>
+            <div class="status-item">
+                <div class="status-label">Data Coverage</div>
+                <div class="status-value" id="quality-display">--</div>
+                <div class="indicator-threshold">% of indicators with values</div>
             </div>
         </div>
     </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+        <div class="card">
+            <h2 class="card-title">📊 Tier 1 Leading Indicators</h2>
+            <div class="indicator-grid" id="tier1-indicators"></div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">📈 Tier 2 Confirming Indicators</h2>
+            <div class="indicator-grid" id="tier2-indicators"></div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">💰 Valuation Indicators (Manual)</h2>
+            <div class="indicator-grid" id="valuation-indicators"></div>
+
+            <div class="valuation-comparison">
+                <div class="valuation-item">
+                    <div class="valuation-title">2000 Dot-com</div>
+                    <div class="valuation-metric">CAPE: ~44</div>
+                    <div class="valuation-metric">Buffett: ~140-160%</div>
+                    <div class="valuation-outcome">→ Major drawdown</div>
+                </div>
+                <div class="valuation-item">
+                    <div class="valuation-title">2007 Pre-GFC</div>
+                    <div class="valuation-metric">CAPE: ~27</div>
+                    <div class="valuation-metric">Buffett: ~105%</div>
+                    <div class="valuation-outcome">→ Financial crisis</div>
+                </div>
+                <div class="valuation-item">
+                    <div class="valuation-title">2021 Peak</div>
+                    <div class="valuation-metric">CAPE: ~38</div>
+                    <div class="valuation-metric">Buffett: ~195%</div>
+                    <div class="valuation-outcome">→ 2022 correction</div>
+                </div>
+                <div class="valuation-item current">
+                    <div class="valuation-title">Current (your inputs)</div>
+                    <div class="valuation-metric" id="current-buffett-label">Buffett: --</div>
+                    <div class="valuation-metric" id="current-cape-label">CAPE: --</div>
+                    <div class="valuation-outcome">Real-time assessment</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">📊 Historical Context</h2>
+            <div class="chart-container">
+                <canvas id="market-chart"></canvas>
+            </div>
+            <div class="insight-card" id="insight-card">
+                <strong>Insight:</strong>
+                <span id="insight-text">
+                    Analysis updates based on current composite and valuation inputs.
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+```
+
 </div>
 
 <script>
 'use strict';
 
-// Toggle whether valuations feed into composite or only display
-const USE_VALUATIONS_IN_COMPOSITE = true;
+// STREAMLINED CONFIGURATION
+// 9 economic indicators (8 auto, 1 manual) + 2 valuations (both manual) = 3 total manual inputs
 
-// Indicator definitions
 const INDICATORS = {
-    // Tier 1 - Critical
+    // TIER 1: LEADING INDICATORS (70% weight)
     LEI: {
         tier: 1,
         label: 'Conference Board LEI 6m %Δ',
-        weight: 0.15,
+        weight: 0.20,
         threshold: -4.1,
-        direction: 'below', // worse if below
-        fromFred: false,
-        current: null,
-        format: v => v.toFixed(1) + '%',
-        desc: 'Enter latest LEI 6-month % change (manual).'
-    },
-    YIELD_CURVE: {
-        tier: 1,
-        label: 'Yield Curve (10y-3m, T10Y3M)',
-        weight: 0.12,
-        threshold: 0,
-        direction: 'below', // inversion (below 0) is bad
-        fromFred: true,
-        current: null,
-        format: v => v.toFixed(2) + '%',
-        desc: 'Auto from FRED T10Y3M if in cache.'
-    },
-    M2_GROWTH: {
-        tier: 1,
-        label: 'M2 Growth YoY',
-        weight: 0.10,
-        threshold: 4.0,
         direction: 'below',
         fromFred: false,
         current: null,
         format: v => v.toFixed(1) + '%',
-        desc: 'Manual unless you wire an M2 series.'
+        desc: 'Manual quarterly update. Composite of 10 forward-looking components.'
+    },
+    YIELD_CURVE: {
+        tier: 1,
+        label: 'Yield Curve (10y-3m)',
+        weight: 0.15,
+        threshold: 0,
+        direction: 'below',
+        fromFred: true,
+        fredId: 'T10Y3M',
+        current: null,
+        format: v => v.toFixed(2) + '%',
+        desc: 'Auto from T10Y3M. Gold standard 12-18mo predictor (Fed research).'
+    },
+    CREDIT_SPREAD: {
+        tier: 1,
+        label: 'HY Credit Spread',
+        weight: 0.12,
+        threshold: 5.0,
+        direction: 'above',
+        fromFred: true,
+        fredId: 'BAMLH0A0HYM2',
+        current: null,
+        format: v => v.toFixed(2) + '%',
+        desc: 'Auto from BAMLH0A0HYM2. Financial stress indicator.'
     },
     CONSUMER_SENTIMENT: {
         tier: 1,
-        label: 'UMich Sentiment (UMCSENT)',
+        label: 'UMich Sentiment',
         weight: 0.10,
         threshold: 60,
         direction: 'below',
         fromFred: true,
+        fredId: 'UMCSENT',
         current: null,
         format: v => v.toFixed(1),
-        desc: 'Auto from UMCSENT if in FRED cache.'
+        desc: 'Auto from UMCSENT. Strong 3-6mo leading indicator.'
     },
-    SAHM_RULE: {
-        tier: 1,
-        label: 'Sahm Rule (SAHMREALTIME)',
-        weight: 0.08,
-        threshold: 0.50,
-        direction: 'above',
-        fromFred: true,
-        current: null,
-        format: v => v.toFixed(2),
-        desc: 'Auto from SAHMREALTIME.'
-    },
-
-    // Tier 2 - Stress
     ISM_NEW_ORDERS: {
-        tier: 2,
+        tier: 1,
         label: 'ISM New Orders',
         weight: 0.08,
         threshold: 47.5,
         direction: 'below',
-        fromFred: false,
+        fromFred: true,
+        fredId: 'NAPMNOI',
         current: null,
         format: v => v.toFixed(1),
-        desc: 'Manual input from ISM.'
+        desc: 'Auto from NAPMNOI. Forward-looking manufacturing demand.'
     },
+    M2_GROWTH: {
+        tier: 1,
+        label: 'M2 Growth YoY',
+        weight: 0.07,
+        threshold: 4.0,
+        direction: 'below',
+        fromFred: true,
+        fredId: 'M2SL',
+        current: null,
+        format: v => v.toFixed(1) + '%',
+        desc: 'Auto computed from M2SL. Liquidity conditions.'
+    },
+
+    // TIER 2: CONFIRMING INDICATORS (30% weight)
     INITIAL_CLAIMS: {
         tier: 2,
-        label: 'Initial Claims 4w MA (k, ICSA)',
-        weight: 0.07,
+        label: 'Initial Claims 4wk MA',
+        weight: 0.10,
         threshold: 323,
         direction: 'above',
         fromFred: true,
+        fredId: 'ICSA',
         current: null,
         format: v => Math.round(v) + 'k',
-        desc: 'Auto 4-week avg from ICSA if enough history.'
+        desc: 'Auto 4-week avg from ICSA. Most timely labor signal.'
     },
-    HOUSEHOLD_DSR: {
+    SAHM_RULE: {
         tier: 2,
-        label: 'Household Debt Service (TDSP)',
-        weight: 0.07,
-        threshold: 13.5,
+        label: 'Sahm Rule',
+        weight: 0.10,
+        threshold: 0.50,
         direction: 'above',
         fromFred: true,
+        fredId: 'SAHMREALTIME',
         current: null,
-        format: v => v.toFixed(2) + '%',
-        desc: 'Auto from TDSP if present.'
-    },
-    CORPORATE_MARGINS: {
-        tier: 2,
-        label: 'Corporate Profit Margins',
-        weight: 0.06,
-        threshold: 7.5,
-        direction: 'below',
-        fromFred: false,
-        current: null,
-        format: v => v.toFixed(1) + '%',
-        desc: 'Manual (e.g. from BEA).'
-    },
-    HOUSING_AFFORD: {
-        tier: 2,
-        label: 'Housing Affordability Index',
-        weight: 0.06,
-        threshold: 100,
-        direction: 'below',
-        fromFred: false,
-        current: null,
-        format: v => v.toFixed(1),
-        desc: 'Manual (NAR).'
-    },
-    CREDIT_SPREAD: {
-        tier: 2,
-        label: 'HY Credit Spread (BAMLH0A0HYM2)',
-        weight: 0.08,
-        threshold: 5.0,
-        direction: 'above',
-        fromFred: true,
-        current: null,
-        format: v => v.toFixed(2) + '%',
-        desc: 'Auto from HY OAS.'
-    },
-
-    // Tier 3 - Supporting
-    UNEMPLOYMENT: {
-        tier: 3,
-        label: 'Unemployment Rate (UNRATE)',
-        weight: 0.05,
-        threshold: 5.0,
-        direction: 'above',
-        fromFred: true,
-        current: null,
-        format: v => v.toFixed(1) + '%',
-        desc: 'Auto from UNRATE.'
-    },
-    NFCI: {
-        tier: 3,
-        label: 'Financial Conditions (NFCI)',
-        weight: 0.04,
-        threshold: 0.0,
-        direction: 'above',
-        fromFred: true,
-        current: null,
-        format: v => v.toFixed(3),
-        desc: 'Auto from Chicago Fed NFCI.'
-    },
-    VIX: {
-        tier: 3,
-        label: 'VIX (VIXCLS)',
-        weight: 0.04,
-        threshold: 25,
-        direction: 'above',
-        fromFred: true,
-        current: null,
-        format: v => v.toFixed(1),
-        desc: 'Auto from VIXCLS.'
+        format: v => v.toFixed(2),
+        desc: 'Auto from SAHMREALTIME. Recession confirmation signal.'
     },
     BUILDING_PERMITS: {
-        tier: 3,
-        label: 'Permits 6m %Δ (PERMIT)',
-        weight: 0.04,
+        tier: 2,
+        label: 'Building Permits 6m %Δ',
+        weight: 0.08,
         threshold: -15,
         direction: 'below',
         fromFred: true,
+        fredId: 'PERMIT',
         current: null,
         format: v => v.toFixed(1) + '%',
-        desc: 'Computed from PERMIT series if history exists.'
+        desc: 'Auto computed from PERMIT. Critical housing sector signal.'
     }
 };
 
-// Valuation metrics (manual)
 const VALUATIONS = {
     BUFFETT: {
-        label: 'Buffett Indicator (MktCap/GDP%)',
-        weight: 0.40,
+        label: 'Buffett Indicator (MktCap/GDP)',
+        weight: 0.50,
         danger: 180,
         current: null,
         format: v => v.toFixed(1) + '%',
-        desc: 'Manual from Wilshire/GDP or your model.'
+        desc: 'Manual. Wilshire 5000 / GDP. Updated quarterly.'
     },
     SHILLER_PE: {
         label: 'Shiller CAPE',
-        weight: 0.30,
+        weight: 0.50,
         danger: 30,
         current: null,
         format: v => v.toFixed(1),
-        desc: 'Manual from Shiller data / provider.'
-    },
-    FORWARD_PE: {
-        label: 'Forward P/E',
-        weight: 0.20,
-        danger: 20,
-        current: null,
-        format: v => v.toFixed(1),
-        desc: 'Manual from index provider.'
-    },
-    EQUITY_RISK_PREM: {
-        label: 'Equity Risk Premium',
-        weight: 0.10,
-        danger: 1.5,
-        current: null,
-        format: v => v.toFixed(1) + '%',
-        desc: 'Manual from your ERP calc. Very low ERP = high stress.'
-    },
-    MARKET_CONCENTRATION: {
-        label: 'Market Concentration (Top 7, % of index)',
-        weight: 0.10,
-        danger: 30,
-        current: null,
-        format: v => v.toFixed(1) + '%',
-        desc: 'Manual. Higher concentration = higher fragility.'
+        desc: 'Manual. From multpl.com or Shiller data. Updated monthly.'
     }
 };
 
 let charts = {};
 let compositeScore = null;
 
-// Load from data/fred_cache.json
+// FRED CACHE LOADER
 async function loadFromFredCache() {
     try {
         const res = await fetch('data/fred_cache.json', { cache: 'no-store' });
@@ -729,8 +646,9 @@ async function loadFromFredCache() {
         const cache = await res.json();
         const series = cache.series || {};
         document.getElementById('cache-badge').textContent =
-            'FRED cache loaded: ' + (cache.generated_at || 'timestamp unknown');
+            'FRED cache: ' + (cache.generated_at || 'loaded');
 
+        // Helper functions
         const lastVal = id => {
             const s = series[id];
             if (!s || !Array.isArray(s.observations) || s.observations.length === 0) return null;
@@ -765,63 +683,60 @@ async function loadFromFredCache() {
 
         const pctChange = (nv, ov) => {
             if (!Number.isFinite(nv) || !Number.isFinite(ov) || ov === 0) return null;
-            return (nv - ov) / ov * 100;
+            return ((nv - ov) / ov) * 100;
         };
 
-        // Map concrete FRED series → indicators
-        const yc = lastVal('T10Y3M');
-        if (yc != null && INDICATORS.YIELD_CURVE) INDICATORS.YIELD_CURVE.current = yc;
+        // Map FRED series to indicators
+        Object.keys(INDICATORS).forEach(key => {
+            const ind = INDICATORS[key];
+            if (!ind.fromFred || !ind.fredId) return;
 
-        const hy = lastVal('BAMLH0A0HYM2');
-        if (hy != null && INDICATORS.CREDIT_SPREAD) INDICATORS.CREDIT_SPREAD.current = hy;
-
-        const unrate = lastVal('UNRATE');
-        if (unrate != null && INDICATORS.UNEMPLOYMENT) INDICATORS.UNEMPLOYMENT.current = unrate;
-
-        const sent = lastVal('UMCSENT');
-        if (sent != null && INDICATORS.CONSUMER_SENTIMENT) INDICATORS.CONSUMER_SENTIMENT.current = sent;
-
-        const nfci = lastVal('NFCI');
-        if (nfci != null && INDICATORS.NFCI) INDICATORS.NFCI.current = nfci;
-
-        const vix = lastVal('VIXCLS');
-        if (vix != null && INDICATORS.VIX) INDICATORS.VIX.current = vix;
-
-        const sahm = lastVal('SAHMREALTIME');
-        if (sahm != null && INDICATORS.SAHM_RULE) INDICATORS.SAHM_RULE.current = sahm;
-
-        const tdsp = lastVal('TDSP');
-        if (tdsp != null && INDICATORS.HOUSEHOLD_DSR) INDICATORS.HOUSEHOLD_DSR.current = tdsp;
-
-        const claims4 = rollingAvgLastN('ICSA', 4);
-        if (claims4 != null && INDICATORS.INITIAL_CLAIMS) {
-            INDICATORS.INITIAL_CLAIMS.current = claims4 / 1000;
-        } else {
-            const cLast = lastVal('ICSA');
-            if (cLast != null && INDICATORS.INITIAL_CLAIMS) {
-                INDICATORS.INITIAL_CLAIMS.current = cLast / 1000;
+            if (ind.fredId === 'M2SL') {
+                // Compute YoY growth
+                const m2Last = lastVal('M2SL');
+                const m2Year = obsMonthsBack('M2SL', 12);
+                if (m2Last != null && m2Year) {
+                    const yoy = pctChange(m2Last, m2Year.value);
+                    if (yoy != null) ind.current = yoy;
+                }
+            } else if (ind.fredId === 'ICSA') {
+                // 4-week average
+                const claims4 = rollingAvgLastN('ICSA', 4);
+                if (claims4 != null) {
+                    ind.current = claims4 / 1000; // Convert to thousands
+                } else {
+                    const cLast = lastVal('ICSA');
+                    if (cLast != null) ind.current = cLast / 1000;
+                }
+            } else if (ind.fredId === 'PERMIT') {
+                // 6-month percent change
+                const permLast = lastVal('PERMIT');
+                const perm6m = obsMonthsBack('PERMIT', 6);
+                if (permLast != null && perm6m) {
+                    const d = pctChange(permLast, perm6m.value);
+                    if (d != null) ind.current = d;
+                }
+            } else {
+                // Direct last value
+                const val = lastVal(ind.fredId);
+                if (val != null) ind.current = val;
             }
-        }
+        });
 
-        const permLast = lastVal('PERMIT');
-        const perm6m = obsMonthsBack('PERMIT', 6);
-        if (permLast != null && perm6m && INDICATORS.BUILDING_PERMITS) {
-            const d = pctChange(permLast, perm6m.value);
-            if (d != null) INDICATORS.BUILDING_PERMITS.current = d;
-        }
     } catch (e) {
-        document.getElementById('cache-badge').textContent = 'FRED cache: load error';
-        console.error('FRED cache load error:', e);
+        document.getElementById('cache-badge').textContent = 'FRED cache: error';
+        console.error('FRED cache error:', e);
     }
 }
 
-// Scoring helpers
+// SCORING FUNCTIONS
 function scaleIndicator(key, value) {
     const ind = INDICATORS[key];
     if (!ind || !Number.isFinite(value)) return null;
     const t = ind.threshold;
     const dir = ind.direction;
     let stress;
+    
     if (dir === 'below') {
         if (value >= t) stress = 0;
         else {
@@ -841,24 +756,17 @@ function scaleIndicator(key, value) {
 function valuationStress(key, val) {
     const v = VALUATIONS[key];
     if (!v || !Number.isFinite(val)) return null;
-
-    if (key === 'EQUITY_RISK_PREM') {
-        // Here: lower than danger is worse
-        if (val >= v.danger) return 0;
-        const diff = v.danger - val;
-        return Math.max(0, Math.min(100, (diff / (v.danger || 1)) * 100));
-    } else {
-        // Higher than danger is worse
-        if (val <= v.danger) return 0;
-        const diff = val - v.danger;
-        return Math.max(0, Math.min(100, (diff / v.danger) * 100));
-    }
+    
+    if (val <= v.danger) return 0;
+    const diff = val - v.danger;
+    return Math.max(0, Math.min(100, (diff / v.danger) * 100));
 }
 
 function computeComposite() {
     let sum = 0;
     let wsum = 0;
 
+    // Economic indicators
     Object.keys(INDICATORS).forEach(k => {
         const ind = INDICATORS[k];
         const s = scaleIndicator(k, ind.current);
@@ -868,22 +776,61 @@ function computeComposite() {
         }
     });
 
-    if (USE_VALUATIONS_IN_COMPOSITE) {
-        Object.keys(VALUATIONS).forEach(k => {
-            const v = VALUATIONS[k];
-            const s = valuationStress(k, v.current);
-            if (s != null && v.weight) {
-                sum += s * v.weight;
-                wsum += v.weight;
-            }
-        });
-    }
+    // Valuations (integrated into composite)
+    Object.keys(VALUATIONS).forEach(k => {
+        const v = VALUATIONS[k];
+        const s = valuationStress(k, v.current);
+        if (s != null && v.weight) {
+            sum += s * v.weight * 0.15; // 15% total weight for valuations
+            wsum += v.weight * 0.15;
+        }
+    });
 
     if (!wsum) return null;
     return sum / wsum;
 }
 
-// Render indicator cards
+// DERIVED METRICS
+function derivedRecessionRisk(composite) {
+    if (composite == null) return '--';
+    if (composite < 30) return '<10%';
+    if (composite < 50) return '10-25%';
+    if (composite < 70) return '25-50%';
+    return '>50%';
+}
+
+function derivedValuationRisk() {
+    let sum = 0, wsum = 0;
+    Object.keys(VALUATIONS).forEach(k => {
+        const s = valuationStress(k, VALUATIONS[k].current);
+        if (s != null) {
+            sum += s * VALUATIONS[k].weight;
+            wsum += VALUATIONS[k].weight;
+        }
+    });
+    if (!wsum) return '--';
+    const score = Math.round(sum / wsum);
+    if (score < 30) return 'Low';
+    if (score < 60) return 'Moderate';
+    return 'High';
+}
+
+function derivedLaborStress() {
+    const claims = INDICATORS.INITIAL_CLAIMS.current;
+    const sahm = INDICATORS.SAHM_RULE.current;
+    
+    if (!Number.isFinite(claims) || !Number.isFinite(sahm)) return '--';
+    
+    const cStress = Math.max(0, Math.min(100, (claims - 250) * 0.5));
+    const sStress = Math.max(0, Math.min(100, sahm * 200));
+    const avg = (cStress + sStress) / 2;
+    
+    if (avg < 30) return 'Low';
+    if (avg < 60) return 'Moderate';
+    return 'High';
+}
+
+// RENDER INDICATORS
 function renderIndicators() {
     const t1 = document.getElementById('tier1-indicators');
     const t2 = document.getElementById('tier2-indicators');
@@ -894,7 +841,7 @@ function renderIndicators() {
         const ind = INDICATORS[key];
         const el = buildIndicatorElement(key, ind);
         if (ind.tier === 1) t1.appendChild(el);
-        if (ind.tier === 2 || ind.tier === 3) t2.appendChild(el);
+        else t2.appendChild(el);
     });
 
     // Hook manual inputs
@@ -912,25 +859,23 @@ function renderIndicators() {
 
 function buildIndicatorElement(key, ind) {
     const div = document.createElement('div');
-
     const s = scaleIndicator(key, ind.current);
+    
     let cls = 'indicator';
     if (s != null) {
         if (s >= 66) cls += ' danger';
         else if (s >= 33) cls += ' warning';
     }
-
     div.className = cls;
 
     const valText = (ind.current != null && Number.isFinite(ind.current))
-        ? ind.format(ind.current)
-        : '--';
+        ? ind.format(ind.current) : '--';
 
     const threshText = ind.threshold != null
         ? `Threshold: ${ind.direction === 'below' ? '<' : '>'} ${ind.format(ind.threshold)}`
         : '';
 
-    const sourceLabel = ind.fromFred ? 'From FRED cache' : 'Manual';
+    const sourceLabel = ind.fromFred ? 'Auto from FRED' : 'Manual Input';
 
     const manualInput = !ind.fromFred ? `
         <div class="manual-input-row">
@@ -952,7 +897,7 @@ function buildIndicatorElement(key, ind) {
     return div;
 }
 
-// Render valuations
+// RENDER VALUATIONS
 function renderValuations() {
     const container = document.getElementById('valuation-indicators');
     container.innerHTML = '';
@@ -960,6 +905,7 @@ function renderValuations() {
     Object.keys(VALUATIONS).forEach(key => {
         const v = VALUATIONS[key];
         const s = valuationStress(key, v.current);
+        
         let cls = 'indicator';
         if (s != null) {
             if (s >= 66) cls += ' danger';
@@ -976,12 +922,12 @@ function renderValuations() {
                 <div class="indicator-name">${v.label}</div>
                 <div class="indicator-value">${valText}</div>
             </div>
-            <div class="indicator-threshold">Danger guide: ${v.danger != null ? v.danger : ''}</div>
+            <div class="indicator-threshold">Danger threshold: ${v.danger}</div>
             <div class="indicator-threshold">${v.desc}</div>
-            <div class="source-tag">Manual</div>
+            <div class="source-tag">Manual Input</div>
             <div class="manual-input-row">
                 <span>Set:</span>
-                <input class="manual-input" type="number" step="0.01"
+                <input class="manual-input" type="number" step="0.1"
                     data-val-key="${key}" value="${v.current != null ? v.current : ''}">
             </div>
         `;
@@ -1000,14 +946,16 @@ function renderValuations() {
         });
     });
 
-    // Update "current" panel text links
+    // Update comparison panel
     const b = VALUATIONS.BUFFETT.current;
     const c = VALUATIONS.SHILLER_PE.current;
-    if (b != null) document.getElementById('current-buffett-label').textContent = 'Buffett: ' + b.toFixed(1) + '%';
-    if (c != null) document.getElementById('current-cape-label').textContent = 'CAPE: ' + c.toFixed(1);
+    document.getElementById('current-buffett-label').textContent = 
+        b != null ? 'Buffett: ' + b.toFixed(1) + '%' : 'Buffett: --';
+    document.getElementById('current-cape-label').textContent = 
+        c != null ? 'CAPE: ' + c.toFixed(1) : 'CAPE: --';
 }
 
-// Gauge + status
+// RENDER GAUGE AND STATUS
 function renderGaugeAndStatus() {
     compositeScore = computeComposite();
     const scoreEl = document.getElementById('composite-score');
@@ -1019,6 +967,9 @@ function renderGaugeAndStatus() {
         scoreEl.textContent = '--';
         riskFill.style.width = '0%';
         regimeLabel.textContent = 'COMPOSITE STRESS (insufficient data)';
+        document.getElementById('recession-risk-display').textContent = '--';
+        document.getElementById('valuation-risk-display').textContent = '--';
+        document.getElementById('labor-risk-display').textContent = '--';
         return;
     }
 
@@ -1026,7 +977,6 @@ function renderGaugeAndStatus() {
     scoreEl.textContent = val;
     riskFill.style.width = val + '%';
 
-    // Map 0-100 to 0-360 deg; purely visual dial
     const angle = (val / 100) * 360;
     needle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
 
@@ -1038,68 +988,72 @@ function renderGaugeAndStatus() {
 
     regimeLabel.textContent = `COMPOSITE STRESS — ${text}`;
 
-    // Alert text
+    // Update alert
     const alert = document.getElementById('alert-banner');
     if (val >= 50) {
-        alert.style.display = 'block';
-        alert.innerHTML =
-            `<strong>Warning:</strong> Composite stress = ${val}. This is calculated directly from the indicators and valuations shown.`;
+        alert.innerHTML = `<strong>Warning:</strong> Composite stress = ${val}. Based on ${
+            Object.keys(INDICATORS).filter(k => Number.isFinite(INDICATORS[k].current)).length
+        }/9 indicators plus valuations.`;
     } else {
-        alert.style.display = 'block';
-        alert.innerHTML =
-            `Composite stress = ${val}. Inputs and methodology are fully visible above.`;
+        alert.innerHTML = `Composite stress = ${val}. All calculations visible and transparent.`;
     }
 
-    // Inputs quality: share of indicators with numeric current
-    const keys = Object.keys(INDICATORS);
-    const filled = keys.filter(k => Number.isFinite(INDICATORS[k].current)).length;
-    const quality = keys.length ? Math.round((filled / keys.length) * 100) : 0;
-    document.getElementById('quality-display').textContent = quality + '%';
-    document.getElementById('quality-badge').textContent = 'Inputs coverage: ' + quality + '%';
+    // Update derived metrics
+    document.getElementById('recession-risk-display').textContent = derivedRecessionRisk(val);
+    document.getElementById('valuation-risk-display').textContent = derivedValuationRisk();
+    document.getElementById('labor-risk-display').textContent = derivedLaborStress();
 
-    // Labor risk rough: based on unemployment + claims if present
-    const u = INDICATORS.UNEMPLOYMENT.current;
-    const c = INDICATORS.INITIAL_CLAIMS.current;
-    let labor = '--';
-    if (Number.isFinite(u) && Number.isFinite(c)) {
-        // simple scaled proxy
-        const uStress = Math.max(0, (u - 3.5) * 20); // rough
-        const cStress = Math.max(0, (c - 250) * 0.5);
-        labor = Math.max(0, Math.min(100, Math.round((uStress + cStress) / 2))) + '%';
-    }
-    document.getElementById('labor-risk-display').textContent = labor;
+    // Data coverage
+    const allIndicators = Object.keys(INDICATORS).length + Object.keys(VALUATIONS).length;
+    const filled = Object.keys(INDICATORS).filter(k => Number.isFinite(INDICATORS[k].current)).length +
+                   Object.keys(VALUATIONS).filter(k => Number.isFinite(VALUATIONS[k].current)).length;
+    const coverage = Math.round((filled / allIndicators) * 100);
+    document.getElementById('quality-display').textContent = coverage + '%';
 
-    // Insight text based on composite and valuations
+    // Insight text
     const insight = document.getElementById('insight-text');
-    if (compositeScore != null) {
-        const highVal = Object.values(VALUATIONS).some(v => valuationStress(null, v.current) >= 66);
-        if (val >= 50 && highVal) {
-            insight.textContent =
-                'Signals show elevated macro stress combined with stretched valuations based on your inputs. Re-check each driver; nothing is assumed.';
-        } else if (val >= 50) {
-            insight.textContent =
-                'Macro stress is elevated based on the indicators above. Valuation inputs do not currently dominate the risk score.';
-        } else if (highVal) {
-            insight.textContent =
-                'Macro indicators look moderate, but valuations you entered are rich. This is a classic “valuation risk without immediate trigger” setup.';
-        } else {
-            insight.textContent =
-                'Current composite and valuation inputs you entered indicate a relatively contained risk profile.';
-        }
+    const valRisk = derivedValuationRisk();
+    
+    if (val >= 50 && valRisk === 'High') {
+        insight.textContent = 'Combined elevated macro stress with stretched valuations suggests heightened risk. Review all inputs carefully.';
+    } else if (val >= 50) {
+        insight.textContent = 'Macro stress elevated per economic indicators. Valuations not currently extreme based on your inputs.';
+    } else if (valRisk === 'High') {
+        insight.textContent = 'Macro indicators moderate, but valuations stretched. Classic "valuation without catalyst" setup.';
+    } else {
+        insight.textContent = 'Current composite and valuation metrics indicate relatively contained risk based on available data.';
     }
 }
 
-// Simple chart using composite + valuation risk (illustrative)
+// RENDER CHART
 function renderMarketChart() {
     const ctx = document.getElementById('market-chart').getContext('2d');
     if (charts.market) charts.market.destroy();
 
     const base = compositeScore != null ? compositeScore : 40;
-    const valRisk = parseFloat(document.getElementById('valuation-risk-input').value) || 0;
+    const valStress = Object.keys(VALUATIONS).reduce((sum, k) => {
+        const s = valuationStress(k, VALUATIONS[k].current);
+        return sum + (s != null ? s * VALUATIONS[k].weight : 0);
+    }, 0);
 
     const labels = ['T-10', 'T-8', 'T-6', 'T-4', 'T-2', 'Now'];
-    const stressData = [base * 0.8, base * 0.9, base * 0.95, base, base, base].map(x => Math.max(0, Math.min(100, Math.round(x))));
-    const valData = [valRisk * 0.8, valRisk * 0.85, valRisk * 0.9, valRisk, valRisk, valRisk].map(x => Math.max(0, Math.min(100, Math.round(x))));
+    const stressData = [
+        base * 0.75,
+        base * 0.85,
+        base * 0.92,
+        base * 0.97,
+        base * 0.99,
+        base
+    ].map(x => Math.max(0, Math.min(100, Math.round(x))));
+    
+    const valData = [
+        valStress * 0.80,
+        valStress * 0.88,
+        valStress * 0.93,
+        valStress * 0.96,
+        valStress * 0.98,
+        valStress
+    ].map(x => Math.max(0, Math.min(100, Math.round(x))));
 
     charts.market = new Chart(ctx, {
         type: 'line',
@@ -1107,45 +1061,47 @@ function renderMarketChart() {
             labels,
             datasets: [
                 {
-                    label: 'Composite Stress (relative)',
+                    label: 'Composite Stress',
                     data: stressData,
                     borderColor: '#6b9eff',
                     backgroundColor: 'rgba(107,158,255,0.12)',
                     tension: 0.35,
                     fill: true,
-                    pointRadius: 0
+                    pointRadius: 3
                 },
                 {
-                    label: 'Valuation Risk (manual)',
+                    label: 'Valuation Stress',
                     data: valData,
                     borderColor: '#ff6070',
                     backgroundColor: 'rgba(255,96,112,0.10)',
                     tension: 0.35,
                     fill: true,
-                    pointRadius: 0
+                    pointRadius: 3
                 }
             ]
         },
         options: {
             responsive: true,
             plugins: {
-                legend: { labels: { color: '#e8eeff', font: { size: 10 } } },
+                legend: { 
+                    labels: { color: '#e8eeff', font: { size: 11 } } 
+                },
                 title: {
                     display: true,
-                    text: 'Composite vs Valuation Risk (based on your inputs)',
+                    text: 'Stress Indicators Trend (Illustrative)',
                     color: '#e8eeff',
-                    font: { size: 12 }
+                    font: { size: 13 }
                 }
             },
             scales: {
                 y: {
                     min: 0,
                     max: 100,
-                    ticks: { color: '#8b96b0', font: { size: 9 } },
+                    ticks: { color: '#8b96b0', font: { size: 10 } },
                     grid: { color: 'rgba(255,255,255,0.1)' }
                 },
                 x: {
-                    ticks: { color: '#8b96b0', font: { size: 9 } },
+                    ticks: { color: '#8b96b0', font: { size: 10 } },
                     grid: { color: 'rgba(255,255,255,0.08)' }
                 }
             }
@@ -1153,45 +1109,20 @@ function renderMarketChart() {
     });
 }
 
-// Update sidebar recession/valuation risk from inputs
-function syncSidebarManuals() {
-    const recIn = document.getElementById('recession-risk-input');
-    const valIn = document.getElementById('valuation-risk-input');
-
-    const rec = parseFloat(recIn.value);
-    const val = parseFloat(valIn.value);
-
-    document.getElementById('recession-risk-display').textContent =
-        !isNaN(rec) ? rec + '%' : '--';
-    document.getElementById('valuation-risk-display').textContent =
-        !isNaN(val) ? val + '%' : '--';
-}
-
-// Master update
+// MASTER UPDATE
 function updateAll() {
-    syncSidebarManuals();
     renderIndicators();
     renderValuations();
     renderGaugeAndStatus();
     renderMarketChart();
 }
 
-// Init
+// INITIALIZE
 document.addEventListener('DOMContentLoaded', async () => {
     await loadFromFredCache();
-
-    // Default manual placeholders (you can overwrite in UI)
-    document.getElementById('recession-risk-input').value = '';
-    document.getElementById('valuation-risk-input').value = '';
-
-    document.getElementById('recession-risk-input').addEventListener('change', updateAll);
-    document.getElementById('valuation-risk-input').addEventListener('change', updateAll);
-
-    renderIndicators();
-    renderValuations();
-    renderGaugeAndStatus();
-    renderMarketChart();
+    updateAll();
 });
 </script>
+
 </body>
 </html>
