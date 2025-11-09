@@ -1,4 +1,5 @@
 <!doctype html>
+
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -88,7 +89,7 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
 .chart{position:relative;height:360px;margin-top:12px}
 .heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
 .cell{border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;background:rgba(255,255,255,.03);
-  transition:all 0.2s ease}
+  transition:all 0.2s ease;overflow:hidden}
 .cell:hover{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.05)}
 .bar{height:8px;border-radius:6px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:8px}
 .bar>span{display:block;height:100%;transition:width 0.5s ease}
@@ -105,7 +106,7 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
 .news-item{display:flex;align-items:flex-start;gap:12px;padding:12px;margin-bottom:8px;
   border-radius:8px;background:rgba(255,255,255,.02)}
 .news-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0}
-.news-content{flex:1;min-width:0}
+.news-content{flex:1;min-width:0;overflow-wrap:break-word}
 .news-title{font-weight:700;margin-bottom:4px;word-wrap:break-word}
 @media (max-width:768px){
   .gauge{flex-direction:column;align-items:center}
@@ -118,6 +119,8 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
   .tabs{gap:4px}
   .tab{padding:10px 12px;font-size:13px}
   .btns{justify-content:center}
+  .cell{padding:12px;word-wrap:break-word}
+  .cell>div{overflow-wrap:break-word;word-break:break-word}
 }
 </style>
 </head>
@@ -138,7 +141,7 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
     <div class="badge"><span class="live-dot"></span> Live Data</div>
     <div class="badge" id="upd">Last Update: --</div>
     <div class="badge" id="qual">Quality: --</div>
-    <div class="badge" id="indicatorsCount">Indicators: --/11</div>
+    <div class="badge" id="indicatorsCount">Indicators: --/12</div>
   </div>
 
   <div class="status-pill" id="regime">--</div>
@@ -158,47 +161,50 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
         <h2 style="margin:0 0 6px">Market Stress Index</h2>
         <div class="small" id="partsNote">Composite derived from 0 indicators</div>
 
-        <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap" class="badge">
-          <span>Data Quality</span>
-          <div style="width:90px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden">
-            <div id="qfill" style="height:100%;background:linear-gradient(90deg,#4a7fe8,var(--accent-bright));width:0%"></div>
-          </div>
-          <strong id="qtxt">--</strong>
-        </div>
+```
+    <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap" class="badge">
+      <span>Data Quality</span>
+      <div style="width:90px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden">
+        <div id="qfill" style="height:100%;background:linear-gradient(90deg,#4a7fe8,var(--accent-bright));width:0%"></div>
+      </div>
+      <strong id="qtxt">--</strong>
+    </div>
 
-        <div class="risk-meter">
-          <span class="small">Risk Level:</span>
-          <div class="risk-level">
-            <div id="riskFill" style="width:0%;background:linear-gradient(90deg,var(--green),var(--amber),var(--red))"></div>
-          </div>
-        </div>
-        <div class="risk-labels">
-          <span>Low</span><span>Medium</span><span>High</span><span>Critical</span>
-        </div>
-
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px">
-          <div class="kpi">
-            <div class="small">1-Month Risk</div>
-            <div class="val" id="r1m">--</div>
-            <div class="small" id="m1dir">→ Momentum</div>
-          </div>
-          <div class="kpi">
-            <div class="small">3-Month Risk</div>
-            <div class="val" id="r3m">--</div>
-            <div class="small" id="m3dir">→ Moderate</div>
-          </div>
-          <div class="kpi">
-            <div class="small">6-Month Risk</div>
-            <div class="val" id="r6m">--</div>
-            <div class="small" id="m6dir">↗ Elevated</div>
-          </div>
-        </div>
+    <div class="risk-meter">
+      <span class="small">Risk Level:</span>
+      <div class="risk-level">
+        <div id="riskFill" style="width:0%;background:linear-gradient(90deg,var(--green),var(--amber),var(--red))"></div>
       </div>
     </div>
-    <div class="insight-card" id="insightCard">
-      <h4>💡 Market Insight</h4>
-      <div id="insightText"></div>
+    <div class="risk-labels">
+      <span>Low</span><span>Medium</span><span>High</span><span>Critical</span>
     </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px">
+      <div class="kpi">
+        <div class="small">1-Month Risk</div>
+        <div class="val" id="r1m">--</div>
+        <div class="small" id="m1dir">→ Momentum</div>
+      </div>
+      <div class="kpi">
+        <div class="small">3-Month Risk</div>
+        <div class="val" id="r3m">--</div>
+        <div class="small" id="m3dir">→ Moderate</div>
+      </div>
+      <div class="kpi">
+        <div class="small">6-Month Risk</div>
+        <div class="val" id="r6m">--</div>
+        <div class="small" id="m6dir">↗ Elevated</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="insight-card" id="insightCard">
+  <h4>💡 Market Insight</h4>
+  <div id="insightText"></div>
+</div>
+```
+
   </div>
 
   <div class="tabs">
@@ -215,19 +221,22 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
       <div class="kpi-grid" id="pillGrid"></div>
     </div>
 
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-        <h3 style="margin:0">📈 Composite Trend Analysis</h3>
-        <div class="btns">
-          <button data-p="30d" class="active">30D</button>
-          <button data-p="90d">90D</button>
-          <button data-p="6m">6M</button>
-          <button data-p="1y">1Y</button>
-          <button data-p="all">ALL</button>
-        </div>
-      </div>
-      <div class="chart"><canvas id="mainChart"></canvas></div>
+```
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+    <h3 style="margin:0">📈 Composite Trend Analysis</h3>
+    <div class="btns">
+      <button data-p="30d" class="active">30D</button>
+      <button data-p="90d">90D</button>
+      <button data-p="6m">6M</button>
+      <button data-p="1y">1Y</button>
+      <button data-p="all">ALL</button>
     </div>
+  </div>
+  <div class="chart"><canvas id="mainChart"></canvas></div>
+</div>
+```
+
   </div>
 
   <div id="view-ind" class="view">
@@ -259,7 +268,7 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
   <div id="view-scn" class="view">
     <div class="card">
       <h3 style="margin-bottom:10px">🎯 Forward-Looking Scenarios</h3>
-      <div id="scenarios" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px"></div>
+      <div id="scenarios" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px"></div>
     </div>
     <div class="card">
       <h3 style="margin-bottom:10px">Risk Trajectory Forecast (26 Weeks)</h3>
@@ -280,45 +289,49 @@ h1{font-size:clamp(34px,6vw,54px);line-height:1.08;font-weight:800;margin-bottom
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
 <script>
 'use strict';
 
 const CONFIG = {
   FRED_CACHE_PATH: 'data/fred_cache.json',
   INDICATORS: {
-    T10Y3M:{label:'Yield Curve (10y-3m)',short:'Yield',weight:0.15,
-      format:v=>v.toFixed(2)+'%',crisis:0.0,dir:'below',
-      desc:'10y–3m Treasury spread. Inversion near/below 0% is the classic 12–18m warning.'},
+    T10Y3M:{label:'Yield Curve (10y-3m)',short:'Yield',weight:0.14,
+      format:v=>v.toFixed(2)+'%',crisis:-0.2,dir:'below',
+      desc:'10y–3m Treasury spread. Inversion below -0.2% is a reliable 12–18m recession warning.'},
     CREDIT:{label:'HY Credit Spread',short:'Credit',weight:0.14,
-      format:v=>v.toFixed(2)+'%',crisis:6.5,dir:'above',
-      desc:'US HY OAS. >6.5% typical around recession onset.'},
+      format:v=>v.toFixed(2)+'%',crisis:5.5,dir:'above',
+      desc:'US HY OAS. >5.5% signals credit stress; >6.5% typical at recession onset.'},
     NFCI:{label:'Financial Conditions (NFCI)',short:'NFCI',weight:0.13,
       format:v=>v.toFixed(3),crisis:0.0,dir:'above',
-      desc:'Chicago Fed NFCI. >0 = tighter-than-average; sustained positives are concerning.'},
+      desc:'Chicago Fed NFCI. >0 = tighter-than-average; sustained >0.5 very concerning.'},
     VIX_PROXY:{label:'Equity Volatility (VIX)',short:'VIX',weight:0.04,
-      format:v=>v.toFixed(1),crisis:30,dir:'above',
-      desc:'VIX level. Mostly coincident; low weight.'},
+      format:v=>v.toFixed(1),crisis:25,dir:'above',
+      desc:'VIX level. >25 = elevated fear; >40 = panic. Mostly coincident, low weight.'},
     SENTIMENT:{label:'Consumer Sentiment',short:'Sent',weight:0.09,
       format:v=>v.toFixed(0),crisis:70,dir:'below',
-      desc:'UMich Sentiment. Prolonged readings <70 align with weak growth / elevated risk.'},
+      desc:'UMich Sentiment. Prolonged readings <70 signal weak growth / recession risk.'},
     BUILDING_PERMITS:{label:'Building Permits 6m Δ%',short:'Permits',weight:0.12,
       format:v=>v.toFixed(1)+'%',crisis:-15,dir:'below',
-      desc:'6m % change. Large falls reliably lead recessions.'},
+      desc:'6m % change. Large declines (<-15%) reliably lead recessions by 6-12m.'},
     INITIAL_CLAIMS:{label:'Initial Claims (4w MA)',short:'Claims',weight:0.10,
       format:v=>Math.round(v/1000)+'k',crisis:323000,dir:'above',
-      desc:'Weekly jobless claims. Sustained >~323k flashes labour stress.'},
-    SAHM_RULE:{label:'Sahm Rule (coincident)',short:'Sahm',weight:0.05,
+      desc:'Weekly jobless claims. Sustained >323k signals labour market stress.'},
+    SAHM_RULE:{label:'Sahm Rule (coincident)',short:'Sahm',weight:0.04,
       format:v=>v.toFixed(2),crisis:0.5,dir:'above',
       desc:'Unemployment 3m avg minus 12m low. ≥0.5 confirms recessions; not predictive.'},
     ISM_NEW_ORDERS:{label:'ISM New Orders',short:'NewOrd',weight:0.09,
       format:v=>v.toFixed(1),crisis:47.5,dir:'below',
-      desc:'Forward-looking manufacturing orders. Persistent <47.5 is dangerous.'},
+      desc:'Forward-looking manufacturing orders. Persistent <47.5 is a recession flag.'},
     INDPRO:{label:'Industrial Production 6m Δ%',short:'IndPro',weight:0.05,
       format:v=>v.toFixed(1)+'%',crisis:-2.0,dir:'below',
-      desc:'6m % change. Confirms broad production weakness.'},
+      desc:'6m % change. Confirms broad production weakness; <-2% very weak.'},
     AVG_HOURS:{label:'Avg Weekly Hours 3m Δ%',short:'Hours',weight:0.04,
       format:v=>v.toFixed(2)+'%',crisis:-0.5,dir:'below',
-      desc:'Hours cut before layoffs. Early labour signal.'}
+      desc:'Hours cut before layoffs. Early labour signal; <-0.5% concerning.'},
+    SHILLER_PE:{label:'Shiller CAPE Ratio',short:'CAPE',weight:0.06,
+      format:v=>v.toFixed(1),crisis:30,dir:'above',
+      desc:'Cyclically-adjusted P/E. >30 = historically expensive; >40 = bubble territory.'}
   },
   ALIAS:{
     T10Y3M:['T10Y3M'],
@@ -332,7 +345,8 @@ const CONFIG = {
     NEWORDER:['NEWORDER','NAPMNOI'],
     INDPRO_BASE:['INDPRO'],
     AWHI:['AWHMAN'],
-    SPX:['SP500']
+    SPX:['SP500'],
+    CAPE:['MULTPL/SHILLER_PE_RATIO_MONTH']
   },
   CRISES:[
     {name:'2000 Dot-com',score:78,date:'2001-03-12',phase:'Tech Bubble',duration:'30m',drawdown:'-49%'},
@@ -341,26 +355,51 @@ const CONFIG = {
     {name:'2022 Inflation',score:65,date:'2022-06-13',phase:'Rate Shock',duration:'9m',drawdown:'-25%'}
   ],
   INSIGHTS:[
-    {min:0,max:30,text:"Low composite stress. Historically benign regime, but keep tracking turns."},
-    {min:31,max:50,text:"Moderate stress. Some leading indicators flashing; time to review risk."},
-    {min:51,max:70,text:"Elevated stress. Multiple warnings; consider defensive tilts and hedges."},
-    {min:71,max:85,text:"High stress. Historically associated with recessions and large drawdowns."},
-    {min:86,max:100,text:"Critical stress. Treat conditions as crash-prone and prioritize liquidity."}
+    {min:0,max:25,text:"Low composite stress. Historically benign regime, but monitor for early warning signs."},
+    {min:26,max:45,text:"Moderate stress. Some leading indicators showing caution; time to review exposures."},
+    {min:46,max:65,text:"Elevated stress. Multiple warnings present; consider defensive positioning."},
+    {min:66,max:80,text:"High stress. Strong recession signals; prioritize risk management and hedges."},
+    {min:81,max:100,text:"Critical stress. Crash-prone conditions; maximize liquidity and defensive positioning."}
   ]
 };
 
+// CORRECTED SCALING FUNCTIONS - aligned with actual crisis thresholds
 const SCALE = {
-  T10Y3M:v=>clamp(((1.5 - v)/2.5)*100),
-  CREDIT:v=>clamp(((v - 3.0)/6.0)*100),
-  NFCI:v=>clamp(((v + 0.8)/1.8)*100),
-  VIX_PROXY:v=>clamp(((v - 12)/38)*100),
-  SENTIMENT:v=>clamp(((95 - v)/40)*100),
+  // Yield curve: -0.2 is crisis, +1.5 is healthy → invert scale
+  T10Y3M:v=>clamp(((1.0 - v)/1.8)*100),
+  
+  // Credit spread: 5.5 is crisis, 3.0 is normal
+  CREDIT:v=>clamp(((v - 3.0)/4.0)*100),
+  
+  // NFCI: 0 is crisis threshold, -0.5 is loose conditions
+  NFCI:v=>clamp(((v + 0.5)/1.2)*100),
+  
+  // VIX: 25 is crisis, 12 is calm
+  VIX_PROXY:v=>clamp(((v - 12)/28)*100),
+  
+  // Sentiment: 70 is crisis (low), 95 is healthy
+  SENTIMENT:v=>clamp(((95 - v)/30)*100),
+  
+  // Permits: -15% is crisis, +10% is healthy
   BUILDING_PERMITS:v=>clamp(((5 - v)/20)*100),
-  INITIAL_CLAIMS:v=>clamp(((v - 200000)/200000)*100),
-  SAHM_RULE:v=>clamp((v/0.6)*100),
-  ISM_NEW_ORDERS:v=>clamp(((55 - v)/15)*100),
-  INDPRO:v=>clamp(((3 - v)/8)*100),
-  AVG_HOURS:v=>clamp(((0.5 - v)/1.5)*100)
+  
+  // Claims: 323k is crisis, 200k is healthy
+  INITIAL_CLAIMS:v=>clamp(((v - 200000)/180000)*100),
+  
+  // Sahm: 0.5 is crisis (coincident), 0 is normal
+  SAHM_RULE:v=>clamp((v/0.7)*100),
+  
+  // ISM orders: 47.5 is crisis, 55+ is healthy
+  ISM_NEW_ORDERS:v=>clamp(((55 - v)/12)*100),
+  
+  // IndPro: -2% is crisis, +3% is healthy
+  INDPRO:v=>clamp(((3 - v)/6)*100),
+  
+  // Hours: -0.5% is crisis, +0.5% is healthy
+  AVG_HOURS:v=>clamp(((0.5 - v)/1.2)*100),
+  
+  // CAPE: 30 is stretched, 15 is attractive
+  SHILLER_PE:v=>clamp(((v - 15)/25)*100)
 };
 
 function clamp(x){return Math.max(0,Math.min(100,x));}
@@ -391,7 +430,8 @@ async function init(){
       NEWORDER:    s('NEWORDER'),
       INDPRO_BASE: s('INDPRO_BASE'),
       AWHI:        s('AWHI'),
-      SPX:         s('SPX')
+      SPX:         s('SPX'),
+      CAPE:        s('CAPE')
     };
 
     const deriv   = buildDerived(ser);
@@ -549,6 +589,9 @@ function buildDerived(ser){
   if(ser.VIX?.observations) out.VIX_PROXY=ser.VIX;
   if(ser.UMCSENT?.observations) out.SENTIMENT=ser.UMCSENT;
 
+  // CAPE pass-through
+  if(ser.CAPE?.observations) out.SHILLER_PE=ser.CAPE;
+
   return out;
 }
 
@@ -565,7 +608,7 @@ function computeLatestKPIs(ser,deriv){
     if(!lv || SCALE[key]===undefined) return;
     const raw=lv.value;
     const scaled=SCALE[key](raw);
-    const rag= scaled<30?'g':(scaled<60?'a':'r');
+    const rag= scaled<33?'g':(scaled<66?'a':'r');
     const crisis = def.dir==='below' ? raw<=def.crisis : raw>=def.crisis;
     out.push({
       key,label:def.label,short:def.short,desc:def.desc,weight:def.weight,
@@ -584,6 +627,7 @@ function computeLatestKPIs(ser,deriv){
   add('ISM_NEW_ORDERS', deriv.ISM_NEW_ORDERS);
   add('INDPRO', deriv.INDPRO);
   add('AVG_HOURS', deriv.AVG_HOURS);
+  add('SHILLER_PE', deriv.SHILLER_PE);
 
   return out;
 }
@@ -626,6 +670,7 @@ function buildCompositeHistory(anchorDates,ser,deriv){
     else if(k==='ISM_NEW_ORDERS') src=deriv.ISM_NEW_ORDERS;
     else if(k==='INDPRO') src=deriv.INDPRO;
     else if(k==='AVG_HOURS') src=deriv.AVG_HOURS;
+    else if(k==='SHILLER_PE') src=deriv.SHILLER_PE;
     if(src?.observations){
       obs[k]=src.observations
         .filter(o=>Number.isFinite(Number(o.value)))
@@ -676,8 +721,8 @@ function renderTop(kpis,history){
   byId('qtxt').textContent = quality + '%';
   byId('qual').textContent = 'Quality: ' + quality + '%';
 
-  const zone = composite<=30?'green':(composite<=60?'amber':'red');
-  const status = zone==='green'?'Elevated Market Regime' : (zone==='amber'?'Elevated Market Regime':'Critical Market Regime');
+  const zone = composite<=33?'green':(composite<=66?'amber':'red');
+  const status = zone==='green'?'Benign Market Regime' : (zone==='amber'?'Elevated Market Regime':'Critical Market Regime');
   byId('regime').innerHTML =
     `<span style="width:12px;height:12px;border-radius:50%;background:var(--${zone});box-shadow:0 0 10px var(--${zone})"></span>
      <strong style="font-size:18px">${Math.round(composite)}</strong> | ${status}`;
@@ -694,9 +739,9 @@ function renderTop(kpis,history){
     alertBox.style.display='none';
   }
 
-  const r1 = Math.round(15 + composite*0.5);
-  const r3 = Math.round(25 + composite*0.6);
-  const r6 = Math.round(35 + composite*0.7);
+  const r1 = Math.round(10 + composite*0.4);
+  const r3 = Math.round(15 + composite*0.5);
+  const r6 = Math.round(20 + composite*0.6);
   byId('r1m').textContent = r1 + '%';
   byId('r3m').textContent = r3 + '%';
   byId('r6m').textContent = r6 + '%';
@@ -716,9 +761,9 @@ function renderTop(kpis,history){
 }
 
 function horizonLabel(v){
-  if(v<30) return '↓ Low';
-  if(v<50) return '→ Moderate';
-  if(v<70) return '↗ Elevated';
+  if(v<25) return '↓ Low';
+  if(v<45) return '→ Moderate';
+  if(v<65) return '↗ Elevated';
   return '↑ High';
 }
 
@@ -752,7 +797,7 @@ function renderHeat(kpis){
   const heat = byId('heat');
   heat.innerHTML = kpis.map(k=>{
     const pct = Math.round(k.scaled);
-    const col = pct<30?'var(--green)':(pct<60?'var(--amber)':'var(--red)');
+    const col = pct<33?'var(--green)':(pct<66?'var(--amber)':'var(--red)');
     return `<div class="cell">
       <div class="small" style="text-transform:uppercase;font-weight:800">${k.short}</div>
       <div style="font-weight:800;font-size:26px;margin:6px 0">${k.disp}</div>
@@ -931,25 +976,25 @@ function drawCrisisTimeline(history){
 
 function renderScenarios(history){
   const cur = history.length?history[history.length-1].composite:50;
-  const base = clamp(Math.round(60 - cur*0.2));
-  const down = clamp(Math.round(20 + cur*0.4));
+  const base = clamp(Math.round(60 - cur*0.3));
+  const down = clamp(Math.round(15 + cur*0.5));
   const up   = clamp(100 - base - down);
   const box = byId('scenarios');
   box.innerHTML = `
     <div class="cell">
-      <div style="font-weight:800;margin-bottom:6px">Base Case</div>
+      <div style="font-weight:800;margin-bottom:6px;word-wrap:break-word">Base Case</div>
       <div style="font-size:28px;font-weight:800;background:linear-gradient(135deg,var(--accent-bright),#4a7fe8);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${base}%</div>
-      <div class="small" style="margin-top:6px">Sideways / soft-landing bias.</div>
+      <div class="small" style="margin-top:6px;word-wrap:break-word">Sideways / soft-landing bias</div>
     </div>
     <div class="cell">
-      <div style="font-weight:800;margin-bottom:6px">Downside Risk</div>
+      <div style="font-weight:800;margin-bottom:6px;word-wrap:break-word">Downside Risk</div>
       <div style="font-size:28px;font-weight:800;color:var(--red)">${down}%</div>
-      <div class="small" style="margin-top:6px">Recession / disorderly tightening scenario.</div>
+      <div class="small" style="margin-top:6px;word-wrap:break-word">Recession / disorderly tightening</div>
     </div>
     <div class="cell">
-      <div style="font-weight:800;margin-bottom:6px">Upside Relief</div>
+      <div style="font-weight:800;margin-bottom:6px;word-wrap:break-word">Upside Relief</div>
       <div style="font-size:28px;font-weight:800;color:var(--green)">${up}%</div>
-      <div class="small" style="margin-top:6px">Disinflation + easing conditions.</div>
+      <div class="small" style="margin-top:6px;word-wrap:break-word">Disinflation + easing conditions</div>
     </div>`;
   drawTrajectory(cur);
 }
@@ -993,9 +1038,9 @@ function drawTrajectory(cur){
 
 function renderNews(){
   const news = [
-    {title:"Fed holds rates; data-dependent language maintained.",source:"Reuters",time:"Today",impact:"medium"},
-    {title:"Credit spreads widen modestly vs prior month.",source:"Bloomberg",time:"Today",impact:"high"},
-    {title:"Housing permits show mixed signals across regions.",source:"WSJ",time:"This week",impact:"medium"}
+    {title:"Fed holds rates; data-dependent language maintained",source:"Reuters",time:"Today",impact:"medium"},
+    {title:"Credit spreads widen modestly vs prior month",source:"Bloomberg",time:"Today",impact:"high"},
+    {title:"Housing permits show mixed signals across regions",source:"WSJ",time:"This week",impact:"medium"}
   ];
   const cal = [
     {event:"CPI Release",date:"Next week",importance:"high"},
@@ -1011,12 +1056,12 @@ function renderNews(){
       </div>
     </div>`).join('');
   byId('economicCalendar').innerHTML = cal.map(c=>`
-    <div class="cell" style="display:flex;justify-content:space-between;align-items:center;padding:12px;margin-bottom:8px;gap:8px">
-      <div>
+    <div class="cell" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:12px;margin-bottom:8px;gap:8px">
+      <div style="flex:1;min-width:140px">
         <div style="font-weight:700">${c.event}</div>
         <div class="small">${c.date}</div>
       </div>
-      <span class="${c.importance==='high'?'b-stale':'b-fresh'}">${c.importance.toUpperCase()}</span>
+      <span class="${c.importance==='high'?'b-stale':'b-fresh'}" style="flex-shrink:0">${c.importance.toUpperCase()}</span>
     </div>`).join('');
 }
 
@@ -1079,5 +1124,6 @@ function showError(){
     </div>`;
 }
 </script>
+
 </body>
 </html>
