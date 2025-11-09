@@ -1,5 +1,5 @@
 // scripts/fetch_fred.js
-// Builds data/fred_cache.json for CrashRadar from live FRED data
+// Build data/fred_cache.json with full history for Economic Crash Radar Pro
 
 const fs = require("fs/promises");
 
@@ -9,7 +9,7 @@ const fs = require("fs/promises");
       throw new Error("Missing env FRED_API_KEY");
     }
 
-    // Use built-in fetch if available (Node 18+), else node-fetch
+    // Use Node >=18 fetch if present, else node-fetch
     let _fetch = global.fetch;
     if (typeof _fetch !== "function") {
       _fetch = (await import("node-fetch")).default;
@@ -18,54 +18,62 @@ const fs = require("fs/promises");
     const FRED = "https://api.stlouisfed.org/fred";
     const KEY = process.env.FRED_API_KEY;
 
-    // Series required by the current CrashRadar index
-    const SERIES = [
-      "T10Y3M",        // 3m10y curve
-      "BAMLH0A0HYM2",  // HY OAS
-      "UNRATE",        // Unemployment rate
-      "ICSA",          // Jobless claims
-      "SAHMREALTIME",  // Sahm rule
-      "AWHMAN",        // Avg weekly hours, manufacturing
-      "INDPRO",        // Industrial production
-      "USSLIND",       // Leading index
-      "RSAFS",         // Retail sales
-      "UMCSENT",       // U. Michigan sentiment
-      "NFCI",          // Chicago Fed NFCI
-      "VIXCLS",        // VIX close
-      "PERMIT",        // Building permits
-      "HOUST",         // Housing starts
-      "TEDRATE",       // TED spread
-      "TDSP"           // Debt service ratio
-    ];
+    // Series needed by the current index + reasonable starts
+    // (Extra series harmless; front-end will only use what it knows.)
+    const SERIES = {
+      T10Y3M:      "1959-01-01", // 10y-3m curve
+      BAMLH0A0HYM2:"1997-01-01", // HY OAS
+      UNRATE:      "1948-01-01", // Unemployment
+      ICSA:        "1967-01-01", // Initial claims
+      AWHMAN:      "1964-01-01", // Avg weekly hours, mfg
+      INDPRO:      "1919-01-01", // Industrial production
+      UMCSENT:     "1978-01-01", // Consumer sentiment
+      NFCI:        "1971-01-01", // Chicago Fed NFCI
+      VIXCLS:      "1990-01-01", // VIX
+      PERMIT:      "1960-01-01", // Building permits
+      HOUST:       "1959-01-01", // Housing starts (fallback)
+      NEWORDER:    "1960-01-01", // ISM new orders (if available)
+      NAPMNOI:     "1960-01-01", // alt ISM new orders ID (fallback)
+      SAHMREALTIME:"2000-01-01", // Not required by front-end but kept
+      USSLIND:     "1960-01-01", // Leading index (legacy)
+      RSAFS:       "1992-01-01", // Retail sales (legacy/momentum)
+      TEDRATE:     "1986-01-01", // TED spread (legacy)
+      TDSP:        "1980-01-01", // Debt service ratio (legacy)
+      SP500:       "1950-01-01"  // For anchor dates if needed
+    };
 
-    async function getLatestObservation(id) {
+    async function getSeries(id, start) {
       const url =
         `${FRED}/series/observations` +
         `?series_id=${id}` +
         `&api_key=${KEY}` +
         `&file_type=json` +
-        `&sort_order=desc` +
-        `&limit=10`; // small buffer to skip "." values
+        `&observation_start=${start}`;
 
       const res = await _fetch(url);
-      if (!res.ok) throw new Error(`${id} HTTP ${res.status}`);
+      if (!res.ok) {
+        throw new Error(`${id} HTTP ${res.status}`);
+      }
 
       const data = await res.json();
+      const raw = data.observations || [];
+      const observations = raw
+        .map(o => ({
+          date: o.date,
+          value: Number(o.value)
+        }))
+        .filter(o => Number.isFinite(o.value));
 
-      const obs = (data.observations || [])
-        .find(o => o.value !== "." && o.value !== "");
-
-      if (!obs) throw new Error(`No numeric data for ${id}`);
-
-      const value = Number(obs.value);
-      if (!Number.isFinite(value)) {
-        throw new Error(`Non-numeric value for ${id}: ${obs.value}`);
+      if (!observations.length) {
+        throw new Error(`No numeric observations for ${id}`);
       }
+
+      const last = observations[observations.length - 1];
 
       return {
         id,
-        last_updated: obs.date,
-        value
+        last_updated: last.date,
+        observations
       };
     }
 
@@ -74,17 +82,22 @@ const fs = require("fs/promises");
       series: {}
     };
 
-    for (const id of SERIES) {
+    for (const [id, start] of Object.entries(SERIES)) {
       try {
         console.log("Fetching", id);
-        cache.series[id] = await getLatestObservation(id);
+        cache.series[id] = await getSeries(id, start);
       } catch (err) {
-        console.error("ERROR", id, err.message);
+        console.error("ERROR", id, "-", err.message);
       }
     }
 
     await fs.mkdir("data", { recursive: true });
-    await fs.writeFile("data/fred_cache.json", JSON.stringify(cache, null, 2));
+    await fs.writeFile(
+      "data/fred_cache.json",
+      JSON.stringify(cache, null, 2),
+      "utf8"
+    );
+
     console.log("✅ data/fred_cache.json written.");
   } catch (err) {
     console.error("FATAL", err);
