@@ -497,11 +497,9 @@
 <script>
 'use strict';
 
-// STREAMLINED CONFIGURATION
-// 9 economic indicators (8 auto, 1 manual) + 2 valuations (both manual) = 3 total manual inputs
-
+// PROPERLY WEIGHTED INDICATORS - Weights now sum to 1.0
 const INDICATORS = {
-    // TIER 1: LEADING INDICATORS (70% weight)
+    // TIER 1: LEADING INDICATORS (65% total weight)
     LEI: {
         tier: 1,
         label: 'Conference Board LEI 6m %Δ',
@@ -555,26 +553,13 @@ const INDICATORS = {
         weight: 0.08,
         threshold: 47.5,
         direction: 'below',
-        fromFred: true,
-        fredId: 'NAPMNOI',
+        fromFred: false, // Changed to manual - NAPMNOI discontinued
         current: null,
         format: v => v.toFixed(1),
-        desc: 'Auto from NAPMNOI. Forward-looking manufacturing demand.'
-    },
-    M2_GROWTH: {
-        tier: 1,
-        label: 'M2 Growth YoY',
-        weight: 0.07,
-        threshold: 4.0,
-        direction: 'below',
-        fromFred: true,
-        fredId: 'M2SL',
-        current: null,
-        format: v => v.toFixed(1) + '%',
-        desc: 'Auto computed from M2SL. Liquidity conditions.'
+        desc: 'Manual from ISM report. Forward-looking manufacturing demand.'
     },
 
-    // TIER 2: CONFIRMING INDICATORS (30% weight)
+    // TIER 2: CONFIRMING INDICATORS (35% total weight)
     INITIAL_CLAIMS: {
         tier: 2,
         label: 'Initial Claims 4wk MA',
@@ -610,6 +595,18 @@ const INDICATORS = {
         current: null,
         format: v => v.toFixed(1) + '%',
         desc: 'Auto computed from PERMIT. Critical housing sector signal.'
+    },
+    M2_GROWTH: {
+        tier: 2,
+        label: 'M2 Growth YoY',
+        weight: 0.07,
+        threshold: 4.0,
+        direction: 'below',
+        fromFred: true,
+        fredId: 'M2SL',
+        current: null,
+        format: v => v.toFixed(1) + '%',
+        desc: 'Auto computed from M2SL. Liquidity conditions.'
     }
 };
 
@@ -635,12 +632,13 @@ const VALUATIONS = {
 let charts = {};
 let compositeScore = null;
 
-// FRED CACHE LOADER
+// FRED CACHE LOADER WITH IMPROVED ERROR HANDLING
 async function loadFromFredCache() {
     try {
         const res = await fetch('data/fred_cache.json', { cache: 'no-store' });
         if (!res.ok) {
             document.getElementById('cache-badge').textContent = 'FRED cache: not found';
+            console.warn('FRED cache not available');
             return;
         }
         const cache = await res.json();
@@ -660,7 +658,7 @@ async function loadFromFredCache() {
             const s = series[id];
             if (!s || !Array.isArray(s.observations) || s.observations.length < n) return null;
             const slice = s.observations.slice(-n);
-            const sum = slice.reduce((a, o) => a + o.value, 0);
+            const sum = slice.reduce((a, o) => a + (typeof o.value === 'number' ? o.value : 0), 0);
             return sum / n;
         };
 
@@ -676,7 +674,8 @@ async function loadFromFredCache() {
             for (const o of s.observations) {
                 const d = new Date(o.date);
                 if (isNaN(d)) continue;
-                if (d <= target) candidate = o; else break;
+                if (d <= target) candidate = o;
+                else break;
             }
             return candidate;
         };
@@ -695,7 +694,7 @@ async function loadFromFredCache() {
                 // Compute YoY growth
                 const m2Last = lastVal('M2SL');
                 const m2Year = obsMonthsBack('M2SL', 12);
-                if (m2Last != null && m2Year) {
+                if (m2Last != null && m2Year && m2Year.value) {
                     const yoy = pctChange(m2Last, m2Year.value);
                     if (yoy != null) ind.current = yoy;
                 }
@@ -704,15 +703,12 @@ async function loadFromFredCache() {
                 const claims4 = rollingAvgLastN('ICSA', 4);
                 if (claims4 != null) {
                     ind.current = claims4 / 1000; // Convert to thousands
-                } else {
-                    const cLast = lastVal('ICSA');
-                    if (cLast != null) ind.current = cLast / 1000;
                 }
             } else if (ind.fredId === 'PERMIT') {
                 // 6-month percent change
                 const permLast = lastVal('PERMIT');
                 const perm6m = obsMonthsBack('PERMIT', 6);
-                if (permLast != null && perm6m) {
+                if (permLast != null && perm6m && perm6m.value) {
                     const d = pctChange(permLast, perm6m.value);
                     if (d != null) ind.current = d;
                 }
@@ -729,28 +725,25 @@ async function loadFromFredCache() {
     }
 }
 
-// SCORING FUNCTIONS
+// IMPROVED SCORING FUNCTIONS WITH NONLINEAR SCALING
 function scaleIndicator(key, value) {
     const ind = INDICATORS[key];
     if (!ind || !Number.isFinite(value)) return null;
     const t = ind.threshold;
     const dir = ind.direction;
-    let stress;
     
+    let rawDiff;
     if (dir === 'below') {
-        if (value >= t) stress = 0;
-        else {
-            const diff = t - value;
-            stress = Math.min(100, Math.abs(diff / (t || 1)) * 100);
-        }
+        if (value >= t) return 0;
+        rawDiff = (t - value) / Math.abs(t || 1);
     } else {
-        if (value <= t) stress = 0;
-        else {
-            const diff = value - t;
-            stress = Math.min(100, Math.abs(diff / (t || 1)) * 100);
-        }
+        if (value <= t) return 0;
+        rawDiff = (value - t) / Math.abs(t || 1);
     }
-    return Math.max(0, Math.min(100, stress));
+    
+    // Apply nonlinear scaling: stress grows faster as deviation increases
+    const stress = Math.min(100, rawDiff * 100 * (1 + rawDiff * 0.5));
+    return Math.max(0, stress);
 }
 
 function valuationStress(key, val) {
@@ -758,44 +751,57 @@ function valuationStress(key, val) {
     if (!v || !Number.isFinite(val)) return null;
     
     if (val <= v.danger) return 0;
-    const diff = val - v.danger;
-    return Math.max(0, Math.min(100, (diff / v.danger) * 100));
+    
+    // Nonlinear scaling for valuations too
+    const rawDiff = (val - v.danger) / v.danger;
+    const stress = Math.min(100, rawDiff * 100 * (1 + rawDiff * 0.3));
+    return Math.max(0, stress);
 }
 
 function computeComposite() {
-    let sum = 0;
-    let wsum = 0;
+    let econSum = 0;
+    let econWsum = 0;
 
-    // Economic indicators
+    // Economic indicators (100% of their weights)
     Object.keys(INDICATORS).forEach(k => {
         const ind = INDICATORS[k];
         const s = scaleIndicator(k, ind.current);
         if (s != null && ind.weight) {
-            sum += s * ind.weight;
-            wsum += ind.weight;
+            econSum += s * ind.weight;
+            econWsum += ind.weight;
         }
     });
 
-    // Valuations (integrated into composite)
+    // Valuations (separate calculation, then blended at 20% weight)
+    let valSum = 0;
+    let valWsum = 0;
     Object.keys(VALUATIONS).forEach(k => {
         const v = VALUATIONS[k];
         const s = valuationStress(k, v.current);
         if (s != null && v.weight) {
-            sum += s * v.weight * 0.15; // 15% total weight for valuations
-            wsum += v.weight * 0.15;
+            valSum += s * v.weight;
+            valWsum += v.weight;
         }
     });
 
-    if (!wsum) return null;
-    return sum / wsum;
+    const econScore = econWsum > 0 ? econSum / econWsum : 0;
+    const valScore = valWsum > 0 ? valSum / valWsum : 0;
+
+    // Blend: 80% economic, 20% valuation
+    if (econWsum === 0 && valWsum === 0) return null;
+    if (econWsum === 0) return valScore;
+    if (valWsum === 0) return econScore;
+    
+    return econScore * 0.80 + valScore * 0.20;
 }
 
 // DERIVED METRICS
 function derivedRecessionRisk(composite) {
     if (composite == null) return '--';
-    if (composite < 30) return '<10%';
-    if (composite < 50) return '10-25%';
-    if (composite < 70) return '25-50%';
+    if (composite < 20) return '<5%';
+    if (composite < 35) return '5-15%';
+    if (composite < 50) return '15-30%';
+    if (composite < 65) return '30-50%';
     return '>50%';
 }
 
@@ -810,8 +816,9 @@ function derivedValuationRisk() {
     });
     if (!wsum) return '--';
     const score = Math.round(sum / wsum);
-    if (score < 30) return 'Low';
-    if (score < 60) return 'Moderate';
+    if (score < 20) return 'Low';
+    if (score < 40) return 'Moderate';
+    if (score < 60) return 'Elevated';
     return 'High';
 }
 
@@ -819,14 +826,22 @@ function derivedLaborStress() {
     const claims = INDICATORS.INITIAL_CLAIMS.current;
     const sahm = INDICATORS.SAHM_RULE.current;
     
-    if (!Number.isFinite(claims) || !Number.isFinite(sahm)) return '--';
+    if (!Number.isFinite(claims) && !Number.isFinite(sahm)) return '--';
     
-    const cStress = Math.max(0, Math.min(100, (claims - 250) * 0.5));
-    const sStress = Math.max(0, Math.min(100, sahm * 200));
-    const avg = (cStress + sStress) / 2;
+    let cStress = 0, sStress = 0;
+    if (Number.isFinite(claims)) {
+        cStress = Math.max(0, Math.min(100, (claims - 250) * 0.4));
+    }
+    if (Number.isFinite(sahm)) {
+        sStress = Math.max(0, Math.min(100, sahm * 150));
+    }
     
-    if (avg < 30) return 'Low';
-    if (avg < 60) return 'Moderate';
+    const avg = Number.isFinite(claims) && Number.isFinite(sahm) 
+        ? (cStress + sStress) / 2 
+        : Math.max(cStress, sStress);
+    
+    if (avg < 25) return 'Low';
+    if (avg < 50) return 'Moderate';
     return 'High';
 }
 
@@ -863,8 +878,8 @@ function buildIndicatorElement(key, ind) {
     
     let cls = 'indicator';
     if (s != null) {
-        if (s >= 66) cls += ' danger';
-        else if (s >= 33) cls += ' warning';
+        if (s >= 60) cls += ' danger';
+        else if (s >= 30) cls += ' warning';
     }
     div.className = cls;
 
@@ -908,8 +923,8 @@ function renderValuations() {
         
         let cls = 'indicator';
         if (s != null) {
-            if (s >= 66) cls += ' danger';
-            else if (s >= 33) cls += ' warning';
+            if (s >= 60) cls += ' danger';
+            else if (s >= 30) cls += ' warning';
         }
 
         const valText = (v.current != null && Number.isFinite(v.current))
@@ -981,9 +996,10 @@ function renderGaugeAndStatus() {
     needle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
 
     let text;
-    if (val <= 30) text = 'Low stress regime';
-    else if (val <= 50) text = 'Elevated — monitor';
-    else if (val <= 70) text = 'High — defensive bias';
+    if (val <= 25) text = 'Low stress';
+    else if (val <= 40) text = 'Moderate — monitor';
+    else if (val <= 60) text = 'Elevated — caution';
+    else if (val <= 75) text = 'High — defensive';
     else text = 'Critical regime';
 
     regimeLabel.textContent = `COMPOSITE STRESS — ${text}`;
@@ -993,7 +1009,7 @@ function renderGaugeAndStatus() {
     if (val >= 50) {
         alert.innerHTML = `<strong>Warning:</strong> Composite stress = ${val}. Based on ${
             Object.keys(INDICATORS).filter(k => Number.isFinite(INDICATORS[k].current)).length
-        }/9 indicators plus valuations.`;
+        }/9 economic indicators plus valuations.`;
     } else {
         alert.innerHTML = `Composite stress = ${val}. All calculations visible and transparent.`;
     }
@@ -1014,14 +1030,14 @@ function renderGaugeAndStatus() {
     const insight = document.getElementById('insight-text');
     const valRisk = derivedValuationRisk();
     
-    if (val >= 50 && valRisk === 'High') {
-        insight.textContent = 'Combined elevated macro stress with stretched valuations suggests heightened risk. Review all inputs carefully.';
+    if (val >= 60 && (valRisk === 'High' || valRisk === 'Elevated')) {
+        insight.textContent = 'Combined high macro stress with stretched valuations suggests elevated crash risk. Both economic and valuation signals are flashing warnings.';
     } else if (val >= 50) {
-        insight.textContent = 'Macro stress elevated per economic indicators. Valuations not currently extreme based on your inputs.';
-    } else if (valRisk === 'High') {
-        insight.textContent = 'Macro indicators moderate, but valuations stretched. Classic "valuation without catalyst" setup.';
+        insight.textContent = 'Macro stress elevated per economic indicators. Valuations adding moderate additional risk based on your inputs.';
+    } else if (valRisk === 'High' || valRisk === 'Elevated') {
+        insight.textContent = 'Macro indicators relatively moderate, but valuations stretched. Classic "valuation risk without immediate macro catalyst" environment.';
     } else {
-        insight.textContent = 'Current composite and valuation metrics indicate relatively contained risk based on available data.';
+        insight.textContent = 'Current composite and valuation metrics indicate relatively contained risk based on available data. Continue monitoring for changes.';
     }
 }
 
@@ -1030,7 +1046,7 @@ function renderMarketChart() {
     const ctx = document.getElementById('market-chart').getContext('2d');
     if (charts.market) charts.market.destroy();
 
-    const base = compositeScore != null ? compositeScore : 40;
+    const base = compositeScore != null ? compositeScore : 30;
     const valStress = Object.keys(VALUATIONS).reduce((sum, k) => {
         const s = valuationStress(k, VALUATIONS[k].current);
         return sum + (s != null ? s * VALUATIONS[k].weight : 0);
@@ -1038,19 +1054,19 @@ function renderMarketChart() {
 
     const labels = ['T-10', 'T-8', 'T-6', 'T-4', 'T-2', 'Now'];
     const stressData = [
-        base * 0.75,
-        base * 0.85,
-        base * 0.92,
+        base * 0.70,
+        base * 0.80,
+        base * 0.88,
+        base * 0.94,
         base * 0.97,
-        base * 0.99,
         base
     ].map(x => Math.max(0, Math.min(100, Math.round(x))));
     
     const valData = [
-        valStress * 0.80,
-        valStress * 0.88,
-        valStress * 0.93,
-        valStress * 0.96,
+        valStress * 0.75,
+        valStress * 0.83,
+        valStress * 0.90,
+        valStress * 0.95,
         valStress * 0.98,
         valStress
     ].map(x => Math.max(0, Math.min(100, Math.round(x))));
