@@ -3,11 +3,13 @@ name: Update FRED Cache
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 6 * * *"
+    - cron: "0 6 * * *"  # Runs daily at 6am UTC
 
 jobs:
-  build:
+  update-cache:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -18,17 +20,17 @@ jobs:
           node-version: 20
 
       - name: Install node-fetch
-        run: npm install node-fetch
+        run: npm install node-fetch@2
 
-      - name: Fetch FRED data
+      - name: Run fetch script
         run: node scripts/fetch_fred.js
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
-      - name: Commit and push updated cache
+      - name: Commit and push updated fred_cache.json
         run: |
-          git config user.name "github-actions"
+          git config user.name "github-actions[bot]"
           git config user.email "actions@github.com"
           git add data/fred_cache.json
-          git commit -m "Auto-update FRED cache" || echo "No changes"
+          git commit -m "Update fred_cache.json" || echo "No changes to commit"
           git push
