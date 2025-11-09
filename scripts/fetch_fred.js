@@ -9,7 +9,7 @@ const fs = require("fs/promises");
       throw new Error("Missing env FRED_API_KEY");
     }
 
-    // Use global fetch when available (Node 18+), else node-fetch
+    // Use Node 18+ fetch if present, otherwise node-fetch
     let _fetch = global.fetch;
     if (typeof _fetch !== "function") {
       _fetch = (await import("node-fetch")).default;
@@ -18,24 +18,24 @@ const fs = require("fs/promises");
     const FRED = "https://api.stlouisfed.org/fred";
     const KEY = process.env.FRED_API_KEY;
 
-    // Series aligned with CONFIG.ALIAS in index.html
+    // Series universe aligned with front-end ALIAS map
     const SERIES = {
-      T10Y3M:      "1959-01-01", // 10y-3m curve
+      T10Y3M:      "1959-01-01", // 10y-3m
       BAMLH0A0HYM2:"1997-01-01", // HY OAS
       UNRATE:      "1948-01-01", // Unemployment
       ICSA:        "1967-01-01", // Initial claims
-      AWHMAN:      "1964-01-01", // Avg weekly hours (mfg)
+      AWHMAN:      "1964-01-01", // Avg weekly hours, mfg
       INDPRO:      "1919-01-01", // Industrial production
-      UMCSENT:     "1978-01-01", // Consumer sentiment
+      UMCSENT:     "1978-01-01", // UMich Sentiment
       NFCI:        "1971-01-01", // Chicago Fed NFCI
       VIXCLS:      "1990-01-01", // VIX
       PERMIT:      "1960-01-01", // Building permits
       HOUST:       "1959-01-01", // Housing starts (fallback)
-      NEWORDER:    "1960-01-01", // ISM new orders (if defined)
-      NAPMNOI:     "1960-01-01", // alt ISM new orders code
-      SP500:       "1950-01-01", // S&P 500 (for anchor dates)
+      NEWORDER:    "1960-01-01", // ISM new orders (if available)
+      NAPMNOI:     "1960-01-01", // alt new orders ID
+      SP500:       "1950-01-01", // S&P 500 (anchor series)
 
-      // Extras (safe; FE ignores if not mapped):
+      // Extras (safe if unused)
       SAHMREALTIME:"2000-01-01",
       USSLIND:     "1960-01-01",
       RSAFS:       "1992-01-01",
@@ -97,6 +97,7 @@ const fs = require("fs/promises");
       JSON.stringify(cache, null, 2),
       "utf8"
     );
+
     console.log("✅ data/fred_cache.json written.");
   } catch (err) {
     console.error("FATAL", err);
