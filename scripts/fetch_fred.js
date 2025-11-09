@@ -9,7 +9,7 @@ const fs = require("fs/promises");
       throw new Error("Missing env FRED_API_KEY");
     }
 
-    // Use Node >=18 fetch if present, else node-fetch
+    // Use Node 18+ fetch if available, else node-fetch
     let _fetch = global.fetch;
     if (typeof _fetch !== "function") {
       _fetch = (await import("node-fetch")).default;
@@ -18,28 +18,30 @@ const fs = require("fs/promises");
     const FRED = "https://api.stlouisfed.org/fred";
     const KEY = process.env.FRED_API_KEY;
 
-    // Series needed by the current index + reasonable starts
-    // (Extra series harmless; front-end will only use what it knows.)
+    // Series needed by the current index + safe extras.
+    // Keys must match CONFIG.ALIAS in index.html.
     const SERIES = {
       T10Y3M:      "1959-01-01", // 10y-3m curve
       BAMLH0A0HYM2:"1997-01-01", // HY OAS
       UNRATE:      "1948-01-01", // Unemployment
-      ICSA:        "1967-01-01", // Initial claims
-      AWHMAN:      "1964-01-01", // Avg weekly hours, mfg
+      ICSA:        "1967-01-01", // Initial claims (4w MA)
+      AWHMAN:      "1964-01-01", // Avg weekly hours, manufacturing
       INDPRO:      "1919-01-01", // Industrial production
-      UMCSENT:     "1978-01-01", // Consumer sentiment
+      UMCSENT:     "1978-01-01", // U. Michigan sentiment
       NFCI:        "1971-01-01", // Chicago Fed NFCI
       VIXCLS:      "1990-01-01", // VIX
       PERMIT:      "1960-01-01", // Building permits
       HOUST:       "1959-01-01", // Housing starts (fallback)
       NEWORDER:    "1960-01-01", // ISM new orders (if available)
-      NAPMNOI:     "1960-01-01", // alt ISM new orders ID (fallback)
-      SAHMREALTIME:"2000-01-01", // Not required by front-end but kept
-      USSLIND:     "1960-01-01", // Leading index (legacy)
-      RSAFS:       "1992-01-01", // Retail sales (legacy/momentum)
-      TEDRATE:     "1986-01-01", // TED spread (legacy)
-      TDSP:        "1980-01-01", // Debt service ratio (legacy)
-      SP500:       "1950-01-01"  // For anchor dates if needed
+      NAPMNOI:     "1960-01-01", // alt ISM new orders (fallback)
+      SP500:       "1950-01-01", // S&P (anchors history if needed)
+
+      // Legacy/extra (harmless for front-end if unused)
+      SAHMREALTIME:"2000-01-01",
+      USSLIND:     "1960-01-01",
+      RSAFS:       "1992-01-01",
+      TEDRATE:     "1986-01-01",
+      TDSP:        "1980-01-01"
     };
 
     async function getSeries(id, start) {
@@ -57,6 +59,7 @@ const fs = require("fs/promises");
 
       const data = await res.json();
       const raw = data.observations || [];
+
       const observations = raw
         .map(o => ({
           date: o.date,
