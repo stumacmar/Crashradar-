@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Economic Crash Radar Pro</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
@@ -471,7 +471,7 @@
 <script>
 'use strict';
 
-// ==== CONFIG ====
+// ================= CONFIG =================
 
 const VALUATION_BLOCK_WEIGHT = 0.30;
 
@@ -485,7 +485,7 @@ const INDICATORS = {
     fromFred:false,
     fredId:null,
     current:null,
-    format:function(v){return v.toFixed(1) + '%';},
+    format:v => v.toFixed(1) + '%',
     desc:'Manual quarterly input.'
   },
   YIELD_CURVE: {
@@ -497,7 +497,7 @@ const INDICATORS = {
     fromFred:true,
     fredId:'T10Y3M',
     current:null,
-    format:function(v){return v.toFixed(2) + '%';},
+    format:v => v.toFixed(2) + '%',
     desc:'T10Y3M. 12–18m lead.'
   },
   CREDIT_SPREAD: {
@@ -509,7 +509,7 @@ const INDICATORS = {
     fromFred:true,
     fredId:'BAMLH0A0HYM2',
     current:null,
-    format:function(v){return v.toFixed(2) + '%';},
+    format:v => v.toFixed(2) + '%',
     desc:'BAMLH0A0HYM2. Credit stress.'
   },
   CONSUMER_SENTIMENT: {
@@ -521,7 +521,7 @@ const INDICATORS = {
     fromFred:true,
     fredId:'UMCSENT',
     current:null,
-    format:function(v){return v.toFixed(1);},
+    format:v => v.toFixed(1),
     desc:'UMCSENT. Demand & confidence.'
   },
   ISM_NEW_ORDERS: {
@@ -533,7 +533,7 @@ const INDICATORS = {
     fromFred:true,
     fredId:'NAPMNOI',
     current:null,
-    format:function(v){return v.toFixed(1);},
+    format:v => v.toFixed(1),
     desc:'NAPMNOI. Manufacturing lead.'
   },
   M2_GROWTH: {
@@ -545,7 +545,7 @@ const INDICATORS = {
     fromFred:true,
     fredId:'M2SL',
     current:null,
-    format:function(v){return v.toFixed(1) + '%';},
+    format:v => v.toFixed(1) + '%',
     desc:'YoY from M2SL. Liquidity regime.'
   },
   INITIAL_CLAIMS: {
@@ -557,7 +557,7 @@ const INDICATORS = {
     fromFred:true,
     fredId:'ICSA',
     current:null,
-    format:function(v){return Math.round(v) + 'k';},
+    format:v => Math.round(v) + 'k',
     desc:'4-week avg. Labor market turn.'
   },
   SAHM_RULE: {
@@ -569,7 +569,7 @@ const INDICATORS = {
     fromFred:true,
     fredId:'SAHMREALTIME',
     current:null,
-    format:function(v){return v.toFixed(2);},
+    format:v => v.toFixed(2),
     desc:'>= 0.5 is recession confirmation.'
   },
   BUILDING_PERMITS: {
@@ -581,7 +581,7 @@ const INDICATORS = {
     fromFred:true,
     fredId:'PERMIT',
     current:null,
-    format:function(v){return v.toFixed(1) + '%';},
+    format:v => v.toFixed(1) + '%',
     desc:'6m change. Housing lead.'
   }
 };
@@ -592,7 +592,7 @@ const VALUATIONS = {
     weight:0.50,
     danger:180,
     current:null,
-    format:function(v){return v.toFixed(1) + '%';},
+    format:v => v.toFixed(1) + '%',
     desc:'Manual. Wilshire 5000 / GDP.'
   },
   SHILLER_PE: {
@@ -600,236 +600,259 @@ const VALUATIONS = {
     weight:0.50,
     danger:30,
     current:null,
-    format:function(v){return v.toFixed(1);},
+    format:v => v.toFixed(1),
     desc:'Manual. Long-term earnings multiple.'
   }
 };
 
-var charts = { trend:null, radar:null };
-var compositeScore = null;
+let charts = { trend:null, radar:null };
+let compositeScore = null;
 
-// ==== FRED LOADER ====
+// ================= FRED LOADER =================
 
 async function loadFromFredCache(){
-  try{
-    var res = await fetch('data/fred_cache.json', { cache:'no-store' });
-    if(!res.ok){
+  try {
+    // Relative path – works both on root pages and repo pages
+    const res = await fetch('data/fred_cache.json', { cache:'no-store' });
+
+    if (!res.ok) {
+      console.error('❌ FRED cache HTTP error', res.status);
       document.getElementById('cache-badge').textContent = 'FRED cache: not found';
       return;
     }
-    var cache = await res.json();
-    var series = cache.series || {};
+
+    const cache = await res.json();
+    const series = cache.series || {};
     document.getElementById('cache-badge').textContent =
       'FRED cache: ' + (cache.generated_at || 'loaded');
 
     function lastVal(id){
-      var s = series[id];
-      if(!s || !Array.isArray(s.observations) || !s.observations.length) return null;
-      var o = s.observations[s.observations.length - 1];
-      var v = Number(o.value);
-      return isFinite(v) ? v : null;
+      const s = series[id];
+      if (!s || !Array.isArray(s.observations) || !s.observations.length) return null;
+      const o = s.observations[s.observations.length - 1];
+      const v = Number(o.value);
+      return Number.isFinite(v) ? v : null;
     }
 
     function obsMonthsBack(id, months){
-      var s = series[id];
-      if(!s || !Array.isArray(s.observations) || !s.observations.length) return null;
-      var last = s.observations[s.observations.length - 1];
-      var lastDate = new Date(last.date);
-      if(isNaN(lastDate)) return null;
-      var target = new Date(lastDate);
+      const s = series[id];
+      if (!s || !Array.isArray(s.observations) || !s.observations.length) return null;
+      const last = s.observations[s.observations.length - 1];
+      const lastDate = new Date(last.date);
+      if (isNaN(lastDate)) return null;
+      const target = new Date(lastDate);
       target.setMonth(target.getMonth() - months);
-      var candidate = null;
-      for(var i=0;i<s.observations.length;i++){
-        var o = s.observations[i];
-        var d = new Date(o.date);
-        if(isNaN(d)) continue;
-        if(d <= target) candidate = o; else break;
+      let candidate = null;
+      for (let i=0;i<s.observations.length;i++){
+        const o = s.observations[i];
+        const d = new Date(o.date);
+        if (isNaN(d)) continue;
+        if (d <= target) candidate = o; else break;
       }
       return candidate;
     }
 
     function rollingAvgLastN(id, n){
-      var s = series[id];
-      if(!s || !Array.isArray(s.observations) || s.observations.length < n) return null;
-      var slice = s.observations.slice(-n);
-      var vals = [];
-      for(var i=0;i<slice.length;i++){
-        var v = Number(slice[i].value);
-        if(isFinite(v)) vals.push(v);
+      const s = series[id];
+      if (!s || !Array.isArray(s.observations) || s.observations.length < n) return null;
+      const slice = s.observations.slice(-n);
+      const vals = [];
+      for (let i=0;i<slice.length;i++){
+        const v = Number(slice[i].value);
+        if (Number.isFinite(v)) vals.push(v);
       }
-      if(vals.length < n) return null;
-      var sum = 0;
-      for(i=0;i<vals.length;i++) sum += vals[i];
+      if (vals.length < n) return null;
+      let sum = 0;
+      for (let i=0;i<vals.length;i++) sum += vals[i];
       return sum / n;
     }
 
     function pctChange(nv, ov){
-      var n = Number(nv), o = Number(ov);
-      if(!isFinite(n) || !isFinite(o) || o === 0) return null;
+      const n = Number(nv), o = Number(ov);
+      if (!Number.isFinite(n) || !Number.isFinite(o) || o === 0) return null;
       return ((n - o) / o) * 100;
     }
 
-    // Map into indicator state
-    Object.keys(INDICATORS).forEach(function(k){
-      var ind = INDICATORS[k];
-      if(!ind.fromFred || !ind.fredId) return;
-
-      if(ind.fredId === 'M2SL'){
-        var last = lastVal('M2SL');
-        var back = obsMonthsBack('M2SL', 12);
-        if(last != null && back && back.value != null){
-          var pc = pctChange(last, back.value);
-          if(pc != null) ind.current = pc;
-        }
-      } else if(ind.fredId === 'ICSA'){
-        var avg = rollingAvgLastN('ICSA', 4);
-        if(avg != null) ind.current = avg / 1000;
-      } else if(ind.fredId === 'PERMIT'){
-        var pl = lastVal('PERMIT');
-        var pb = obsMonthsBack('PERMIT', 6);
-        if(pl != null && pb && pb.value != null){
-          var pc2 = pctChange(pl, pb.value);
-          if(pc2 != null) ind.current = pc2;
-        }
+    // ---- Unit-test style logs for each expected series ----
+    const TEST_SERIES = [
+      'T10Y3M','BAMLH0A0HYM2','UMCSENT','NAPMNOI','M2SL',
+      'ICSA','SAHMREALTIME','PERMIT','NFCI','VIXCLS','TDSP'
+    ];
+    TEST_SERIES.forEach(id => {
+      const v = lastVal(id);
+      if (v != null) {
+        console.log(`✅ ${id} loaded OK`, v);
       } else {
-        var v = lastVal(ind.fredId);
-        if(v != null) ind.current = v;
+        console.warn(`⛔ ${id} missing or non-numeric in fred_cache.json`);
       }
     });
 
-  }catch(e){
+    // ---- Map FRED data into indicator currents ----
+    Object.keys(INDICATORS).forEach(key => {
+      const ind = INDICATORS[key];
+      if (!ind.fromFred || !ind.fredId) return;
+
+      if (ind.fredId === 'M2SL') {
+        const last = lastVal('M2SL');
+        const back = obsMonthsBack('M2SL', 12);
+        if (last != null && back && back.value != null) {
+          const pc = pctChange(last, back.value);
+          if (pc != null) ind.current = pc;
+        } else if (last != null) {
+          // fallback: treat as already YoY %
+          ind.current = last;
+        }
+      } else if (ind.fredId === 'ICSA') {
+        const avg = rollingAvgLastN('ICSA', 4);
+        if (avg != null) ind.current = avg / 1000;
+      } else if (ind.fredId === 'PERMIT') {
+        const pl = lastVal('PERMIT');
+        const pb = obsMonthsBack('PERMIT', 6);
+        if (pl != null && pb && pb.value != null) {
+          const pc2 = pctChange(pl, pb.value);
+          if (pc2 != null) ind.current = pc2;
+        }
+      } else {
+        const v = lastVal(ind.fredId);
+        if (v != null) ind.current = v;
+      }
+    });
+
+    console.log('Indicator state after FRED load:', JSON.parse(JSON.stringify(INDICATORS)));
+
+  } catch (e) {
     console.error('FRED cache error:', e);
     document.getElementById('cache-badge').textContent = 'FRED cache: error';
   }
 }
 
-// ==== SCORING ====
+// ================= SCORING =================
 
 function scaleIndicator(key, value){
-  var ind = INDICATORS[key];
-  if(!ind || !isFinite(value)) return null;
-  var t = ind.threshold;
-  var dir = ind.direction;
-  var base = (t === 0) ? 1 : Math.abs(t);
-  var stress = 0;
+  const ind = INDICATORS[key];
+  if (!ind || !Number.isFinite(value)) return null;
+  const t = ind.threshold;
+  const dir = ind.direction;
+  const base = (t === 0) ? 1 : Math.abs(t);
+  let stress = 0;
 
-  if(dir === 'below' && value < t){
+  if (dir === 'below' && value < t) {
     stress = Math.min(100, ((t - value) / base) * 100);
-  } else if(dir === 'above' && value > t){
+  } else if (dir === 'above' && value > t) {
     stress = Math.min(100, ((value - t) / base) * 100);
   }
-  if(stress < 0) stress = 0;
-  if(stress > 100) stress = 100;
+  if (stress < 0) stress = 0;
+  if (stress > 100) stress = 100;
   return stress;
 }
 
 function valuationStress(key, val){
-  var v = VALUATIONS[key];
-  if(!v || !isFinite(val)) return null;
-  if(val <= v.danger) return 0;
-  var ratio = val / v.danger;
-  var stress = (ratio - 1) * 300; // aggressive scaling
-  if(stress < 0) stress = 0;
-  if(stress > 100) stress = 100;
+  const v = VALUATIONS[key];
+  if (!v || !Number.isFinite(val)) return null;
+  if (val <= v.danger) return 0;
+  const ratio = val / v.danger;
+  let stress = (ratio - 1) * 300;
+  if (stress < 0) stress = 0;
+  if (stress > 100) stress = 100;
   return stress;
 }
 
 function computeComposite(){
-  var mSum = 0, mW = 0;
-  Object.keys(INDICATORS).forEach(function(k){
-    var ind = INDICATORS[k];
-    var s = scaleIndicator(k, ind.current);
-    if(s != null && ind.weight){
+  let mSum = 0, mW = 0;
+  Object.keys(INDICATORS).forEach(k => {
+    const ind = INDICATORS[k];
+    const s = scaleIndicator(k, ind.current);
+    if (s != null && ind.weight) {
       mSum += s * ind.weight;
       mW   += ind.weight;
     }
   });
-  var macroAvg = mW > 0 ? (mSum / mW) : null;
+  const macroAvg = mW > 0 ? (mSum / mW) : null;
 
-  var vSum = 0, vW = 0;
-  Object.keys(VALUATIONS).forEach(function(k){
-    var s = valuationStress(k, VALUATIONS[k].current);
-    var v = VALUATIONS[k];
-    if(s != null && v.weight){
-      vSum += s * v.weight;
-      vW   += v.weight;
+  let vSum = 0, vW = 0;
+  Object.keys(VALUATIONS).forEach(k => {
+    const val = VALUATIONS[k];
+    const s = valuationStress(k, val.current);
+    if (s != null && val.weight) {
+      vSum += s * val.weight;
+      vW   += val.weight;
     }
   });
-  var valAvg = vW > 0 ? (vSum / vW) : null;
+  const valAvg = vW > 0 ? (vSum / vW) : null;
 
-  if(macroAvg == null && valAvg == null) return null;
-  if(macroAvg != null && valAvg != null){
+  if (macroAvg == null && valAvg == null) return null;
+  if (macroAvg != null && valAvg != null) {
     return macroAvg * (1 - VALUATION_BLOCK_WEIGHT) + valAvg * VALUATION_BLOCK_WEIGHT;
   }
   return macroAvg != null ? macroAvg : valAvg;
 }
 
-// ==== DERIVED ====
+// ================= DERIVED LABELS =================
 
 function derivedRecessionRisk(c){
-  if(c == null) return '--';
-  if(c < 25) return '<10%';
-  if(c < 40) return '10–20%';
-  if(c < 55) return '20–30%';
-  if(c < 70) return '30–50%';
+  if (c == null) return '--';
+  if (c < 25) return '<10%';
+  if (c < 40) return '10–20%';
+  if (c < 55) return '20–30%';
+  if (c < 70) return '30–50%';
   return '>50%';
 }
 
 function derivedValuationRisk(){
-  var sum = 0, w = 0;
-  Object.keys(VALUATIONS).forEach(function(k){
-    var s = valuationStress(k, VALUATIONS[k].current);
-    var v = VALUATIONS[k];
-    if(s != null && v.weight){
+  let sum = 0, w = 0;
+  Object.keys(VALUATIONS).forEach(k => {
+    const v = VALUATIONS[k];
+    const s = valuationStress(k, v.current);
+    if (s != null && v.weight) {
       sum += s * v.weight;
       w   += v.weight;
     }
   });
-  if(!w) return '--';
-  var sc = Math.round(sum / w);
-  if(sc < 33) return 'Low';
-  if(sc < 66) return 'Moderate';
+  if (!w) return '--';
+  const sc = Math.round(sum / w);
+  if (sc < 33) return 'Low';
+  if (sc < 66) return 'Moderate';
   return 'High';
 }
 
 function derivedLaborStress(){
-  var c = INDICATORS.INITIAL_CLAIMS.current;
-  var s = INDICATORS.SAHM_RULE.current;
-  if(!isFinite(c) || !isFinite(s)) return '--';
-  var cs = Math.max(0, Math.min(100, (c - 250) * 0.5));
-  var ss = Math.max(0, Math.min(100, s * 200));
-  var avg = (cs + ss) / 2;
-  if(avg < 30) return 'Low';
-  if(avg < 60) return 'Moderate';
+  const c = INDICATORS.INITIAL_CLAIMS.current;
+  const s = INDICATORS.SAHM_RULE.current;
+  if (!Number.isFinite(c) || !Number.isFinite(s)) return '--';
+  const cs = Math.max(0, Math.min(100, (c - 250) * 0.5));
+  const ss = Math.max(0, Math.min(100, s * 200));
+  const avg = (cs + ss) / 2;
+  if (avg < 30) return 'Low';
+  if (avg < 60) return 'Moderate';
   return 'High';
 }
 
-// ==== RENDER ====
+// ================= RENDER HELPERS =================
 
 function buildIndicatorElement(key, ind){
-  var s = scaleIndicator(key, ind.current);
-  var cls = 'indicator';
-  if(s != null){
-    if(s >= 66) cls += ' danger';
-    else if(s >= 33) cls += ' warning';
+  const s = scaleIndicator(key, ind.current);
+  let cls = 'indicator';
+  if (s != null) {
+    if (s >= 66) cls += ' danger';
+    else if (s >= 33) cls += ' warning';
   }
-  var hasVal = isFinite(ind.current);
-  var valText = hasVal ? ind.format(ind.current) : '--';
-  var thr = ind.threshold != null
+  const hasVal = Number.isFinite(ind.current);
+  const valText = hasVal ? ind.format(ind.current) : '--';
+  const thr = ind.threshold != null
     ? ('Threshold: ' + (ind.direction === 'below' ? '< ' : '> ') + ind.format(ind.threshold))
     : '';
-  var src = ind.fromFred ? 'Auto from FRED' : 'Manual input';
+  const src = ind.fromFred ? 'Auto from FRED' : 'Manual input';
 
-  var manual = '';
-  if(!ind.fromFred){
+  let manual = '';
+  if (!ind.fromFred){
     manual =
       '<div class="manual-input-row">' +
-      '<span>Set:</span>' +
-      '<input class="manual-input" type="number" step="0.1" data-ind-key="'+key+'" value="'+(hasVal ? ind.current : '')+'">' +
+        '<span>Set:</span>' +
+        '<input class="manual-input" type="number" step="0.1" data-ind-key="'+key+'" value="'+(hasVal ? ind.current : '')+'">' +
       '</div>';
   }
 
-  var div = document.createElement('div');
+  const div = document.createElement('div');
   div.className = cls;
   div.innerHTML =
     '<div class="indicator-header">' +
@@ -844,51 +867,47 @@ function buildIndicatorElement(key, ind){
 }
 
 function renderIndicators(){
-  var t1 = document.getElementById('tier1-indicators');
-  var t2 = document.getElementById('tier2-indicators');
+  const t1 = document.getElementById('tier1-indicators');
+  const t2 = document.getElementById('tier2-indicators');
   t1.innerHTML = '';
   t2.innerHTML = '';
 
-  Object.keys(INDICATORS).forEach(function(k){
-    var ind = INDICATORS[k];
-    var el = buildIndicatorElement(k, ind);
-    if(ind.tier === 1) t1.appendChild(el);
+  Object.keys(INDICATORS).forEach(k => {
+    const ind = INDICATORS[k];
+    const el = buildIndicatorElement(k, ind);
+    if (ind.tier === 1) t1.appendChild(el);
     else t2.appendChild(el);
   });
 
-  // manual LEI input
-  var manualInputs = document.querySelectorAll('.manual-input[data-ind-key]');
-  for(var i=0;i<manualInputs.length;i++){
-    (function(inp){
-      function handler(){
-        var key = inp.getAttribute('data-ind-key');
-        var v = parseFloat(inp.value);
-        if(!isNaN(v)) INDICATORS[key].current = v;
-        else INDICATORS[key].current = null;
-        updateAll();
-      }
-      inp.addEventListener('input', handler);
-      inp.addEventListener('change', handler);
-    })(manualInputs[i]);
-  }
+  // Manual LEI input handler
+  document.querySelectorAll('.manual-input[data-ind-key]').forEach(inp => {
+    const handler = () => {
+      const key = inp.getAttribute('data-ind-key');
+      const v = parseFloat(inp.value);
+      INDICATORS[key].current = Number.isFinite(v) ? v : null;
+      updateAll();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
 }
 
 function renderValuations(){
-  var box = document.getElementById('valuation-indicators');
+  const box = document.getElementById('valuation-indicators');
   box.innerHTML = '';
 
-  Object.keys(VALUATIONS).forEach(function(k){
-    var v = VALUATIONS[k];
-    var s = valuationStress(k, v.current);
-    var cls = 'indicator';
-    if(s != null){
-      if(s >= 66) cls += ' danger';
-      else if(s >= 33) cls += ' warning';
+  Object.keys(VALUATIONS).forEach(k => {
+    const v = VALUATIONS[k];
+    const s = valuationStress(k, v.current);
+    let cls = 'indicator';
+    if (s != null){
+      if (s >= 66) cls += ' danger';
+      else if (s >= 33) cls += ' warning';
     }
-    var hasVal = isFinite(v.current);
-    var valText = hasVal ? v.format(v.current) : '--';
+    const hasVal = Number.isFinite(v.current);
+    const valText = hasVal ? v.format(v.current) : '--';
 
-    var div = document.createElement('div');
+    const div = document.createElement('div');
     div.className = cls;
     div.innerHTML =
       '<div class="indicator-header">' +
@@ -905,51 +924,56 @@ function renderValuations(){
     box.appendChild(div);
   });
 
-  // attach handlers (Buffett + CAPE)
-  var valInputs = document.querySelectorAll('.manual-input[data-val-key]');
-  for(var i=0;i<valInputs.length;i++){
-    (function(inp){
-      function handler(){
-        var key = inp.getAttribute('data-val-key');
-        var v = parseFloat(inp.value);
-        if(!isNaN(v)) VALUATIONS[key].current = v;
-        else VALUATIONS[key].current = null;
-        updateAll();
-      }
-      inp.addEventListener('input', handler);
-      inp.addEventListener('change', handler);
-    })(valInputs[i]);
-  }
+  // Buffett + CAPE handlers
+  document.querySelectorAll('.manual-input[data-val-key]').forEach(inp => {
+    const handler = () => {
+      const key = inp.getAttribute('data-val-key');
+      const v = parseFloat(inp.value);
+      VALUATIONS[key].current = Number.isFinite(v) ? v : null;
 
-  // sync "Current (your inputs)" labels
-  var b = VALUATIONS.BUFFETT.current;
-  var c = VALUATIONS.SHILLER_PE.current;
+      // sync "Current (your inputs)"
+      const b = VALUATIONS.BUFFETT.current;
+      const c = VALUATIONS.SHILLER_PE.current;
+      document.getElementById('current-buffett-label').textContent =
+        Number.isFinite(b) ? ('Buffett: ' + b.toFixed(1) + '%') : 'Buffett: --';
+      document.getElementById('current-cape-label').textContent =
+        Number.isFinite(c) ? ('CAPE: ' + c.toFixed(1)) : 'CAPE: --';
+
+      updateAll();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
+
+  // Initial sync
+  const b = VALUATIONS.BUFFETT.current;
+  const c = VALUATIONS.SHILLER_PE.current;
   document.getElementById('current-buffett-label').textContent =
-    isFinite(b) ? ('Buffett: ' + b.toFixed(1) + '%') : 'Buffett: --';
+    Number.isFinite(b) ? ('Buffett: ' + b.toFixed(1) + '%') : 'Buffett: --';
   document.getElementById('current-cape-label').textContent =
-    isFinite(c) ? ('CAPE: ' + c.toFixed(1)) : 'CAPE: --';
+    Number.isFinite(c) ? ('CAPE: ' + c.toFixed(1)) : 'CAPE: --';
 }
 
 function renderGaugeAndStatus(){
   compositeScore = computeComposite();
 
-  var scoreEl = document.getElementById('composite-score');
-  var needle = document.getElementById('needle');
-  var fill = document.getElementById('risk-fill');
-  var regimeEl = document.getElementById('regime-label');
-  var alert = document.getElementById('alert-banner');
+  const scoreEl = document.getElementById('composite-score');
+  const needle = document.getElementById('needle');
+  const fill = document.getElementById('risk-fill');
+  const regimeEl = document.getElementById('regime-label');
+  const alert = document.getElementById('alert-banner');
 
-  var total = Object.keys(INDICATORS).length + Object.keys(VALUATIONS).length;
-  var used =
-    Object.keys(INDICATORS).filter(function(k){return isFinite(INDICATORS[k].current);}).length +
-    Object.keys(VALUATIONS).filter(function(k){return isFinite(VALUATIONS[k].current);}).length;
+  const total = Object.keys(INDICATORS).length + Object.keys(VALUATIONS).length;
+  const used =
+    Object.keys(INDICATORS).filter(k => Number.isFinite(INDICATORS[k].current)).length +
+    Object.keys(VALUATIONS).filter(k => Number.isFinite(VALUATIONS[k].current)).length;
 
   document.getElementById('inputs-badge').textContent =
     'Inputs: ' + used + '/' + total + ' populated';
   document.getElementById('quality-display').textContent =
     total ? Math.round(used / total * 100) + '%' : '--';
 
-  if(compositeScore == null){
+  if (compositeScore == null){
     scoreEl.textContent = '--';
     fill.style.width = '0%';
     needle.style.transform = 'translateX(-50%) rotate(0deg)';
@@ -961,16 +985,16 @@ function renderGaugeAndStatus(){
     return;
   }
 
-  var v = Math.round(compositeScore);
+  const v = Math.round(compositeScore);
   scoreEl.textContent = v;
   fill.style.width = v + '%';
-  var angle = (v / 100) * 360;
+  const angle = (v / 100) * 360;
   needle.style.transform = 'translateX(-50%) rotate(' + angle + 'deg)';
 
-  var regime;
-  if(v <= 30) regime = 'Low stress regime';
-  else if(v <= 50) regime = 'Elevated — monitor';
-  else if(v <= 70) regime = 'High — defensive bias';
+  let regime;
+  if (v <= 30) regime = 'Low stress regime';
+  else if (v <= 50) regime = 'Elevated — monitor';
+  else if (v <= 70) regime = 'High — defensive bias';
   else regime = 'Critical regime';
   regimeEl.textContent = 'COMPOSITE STRESS — ' + regime;
 
@@ -981,13 +1005,13 @@ function renderGaugeAndStatus(){
   document.getElementById('labor-risk-display').textContent =
     derivedLaborStress();
 
-  if(v >= 70){
+  if (v >= 70){
     alert.innerHTML = '<strong>Critical:</strong> Composite = ' + v +
       '. Macro + valuations in historical danger cluster.';
-  }else if(v >= 50){
+  } else if (v >= 50){
     alert.innerHTML = '<strong>Warning:</strong> Composite = ' + v +
       '. Elevated risk — inspect indicator tiles.';
-  }else{
+  } else {
     alert.textContent =
       'Composite = ' + v +
       '. On your inputs, configuration is not yet in the classic crash cluster, but always cross-check.';
@@ -995,39 +1019,40 @@ function renderGaugeAndStatus(){
 }
 
 function renderMarketTrendChart(){
-  var ctx = document.getElementById('market-trend').getContext('2d');
-  if(charts.trend){ charts.trend.destroy(); }
+  const ctx = document.getElementById('market-trend').getContext('2d');
+  if (charts.trend) charts.trend.destroy();
 
-  var base = compositeScore != null ? compositeScore : 40;
-  var labels = ['T-10','T-8','T-6','T-4','T-2','Now'];
-  var compData = [0.7,0.8,0.9,0.95,0.98,1].map(function(f){
-    var x = base * f;
-    if(x < 0) x = 0;
-    if(x > 100) x = 100;
+  const base = compositeScore != null ? compositeScore : 40;
+  const labels = ['T-10','T-8','T-6','T-4','T-2','Now'];
+
+  const compData = [0.7,0.8,0.9,0.95,0.98,1].map(f => {
+    let x = base * f;
+    if (x < 0) x = 0;
+    if (x > 100) x = 100;
     return Math.round(x);
   });
 
-  var vSum = 0, vW = 0;
-  Object.keys(VALUATIONS).forEach(function(k){
-    var s = valuationStress(k, VALUATIONS[k].current);
-    var v = VALUATIONS[k];
-    if(s != null && v.weight){
+  let vSum = 0, vW = 0;
+  Object.keys(VALUATIONS).forEach(k => {
+    const v = VALUATIONS[k];
+    const s = valuationStress(k, v.current);
+    if (s != null && v.weight){
       vSum += s * v.weight;
       vW   += v.weight;
     }
   });
-  var valBase = vW ? (vSum / vW) : 30;
-  var valData = [0.75,0.85,0.92,0.96,0.99,1].map(function(f){
-    var x = valBase * f;
-    if(x < 0) x = 0;
-    if(x > 100) x = 100;
+  const valBase = vW ? (vSum / vW) : 30;
+  const valData = [0.75,0.85,0.92,0.96,0.99,1].map(f => {
+    let x = valBase * f;
+    if (x < 0) x = 0;
+    if (x > 100) x = 100;
     return Math.round(x);
   });
 
   charts.trend = new Chart(ctx, {
     type:'line',
     data:{
-      labels:labels,
+      labels,
       datasets:[
         {
           label:'Composite Stress',
@@ -1077,44 +1102,44 @@ function renderMarketTrendChart(){
 }
 
 function renderRiskRadarChart(){
-  var ctx = document.getElementById('risk-radar').getContext('2d');
-  if(charts.radar){ charts.radar.destroy(); }
+  const ctx = document.getElementById('risk-radar').getContext('2d');
+  if (charts.radar) charts.radar.destroy();
 
-  var labels = [];
-  var data = [];
+  const labels = [];
+  const data = [];
 
-  Object.keys(INDICATORS).forEach(function(k){
-    var ind = INDICATORS[k];
-    var s = scaleIndicator(k, ind.current);
-    if(s != null){
+  Object.keys(INDICATORS).forEach(k => {
+    const ind = INDICATORS[k];
+    const s = scaleIndicator(k, ind.current);
+    if (s != null){
       labels.push(ind.label);
       data.push(Math.round(s));
     }
   });
 
-  var vSum = 0, vW = 0;
-  Object.keys(VALUATIONS).forEach(function(k){
-    var s = valuationStress(k, VALUATIONS[k].current);
-    var v = VALUATIONS[k];
-    if(s != null && v.weight){
+  let vSum = 0, vW = 0;
+  Object.keys(VALUATIONS).forEach(k => {
+    const v = VALUATIONS[k];
+    const s = valuationStress(k, v.current);
+    if (s != null && v.weight){
       vSum += s * v.weight;
       vW   += v.weight;
     }
   });
-  if(vW){
+  if (vW){
     labels.push('Valuations (Buffett + CAPE)');
     data.push(Math.round(vSum / vW));
   }
 
-  if(!labels.length){ return; }
+  if (!labels.length) return;
 
   charts.radar = new Chart(ctx, {
     type:'radar',
     data:{
-      labels:labels,
+      labels,
       datasets:[{
         label:'Normalized Stress (0–100)',
-        data:data,
+        data,
         borderColor:'#6b9eff',
         backgroundColor:'rgba(107,158,255,0.18)',
         pointRadius:2
@@ -1138,20 +1163,20 @@ function renderRiskRadarChart(){
 }
 
 function updateInsight(){
-  var el = document.getElementById('insight-text');
-  if(!el) return;
-  var c = compositeScore;
-  var vRisk = derivedValuationRisk();
+  const el = document.getElementById('insight-text');
+  if (!el) return;
+  const c = compositeScore;
+  const vRisk = derivedValuationRisk();
 
-  if(c == null){
+  if (c == null){
     el.textContent = 'No composite yet. Ensure FRED cache is updated and manual LEI / valuations are set.';
-  } else if(c >= 70 && vRisk === 'High'){
+  } else if (c >= 70 && vRisk === 'High'){
     el.textContent = 'Macro and valuations both extreme. Historically associated with major drawdowns.';
-  } else if(c >= 50 && vRisk !== 'Low'){
+  } else if (c >= 50 && vRisk !== 'Low'){
     el.textContent = 'Elevated macro stress with stretched valuations. Asymmetry poor.';
-  } else if(c < 40 && vRisk === 'High'){
+  } else if (c < 40 && vRisk === 'High'){
     el.textContent = 'Macro ok but valuations rich. Vulnerable to shocks or policy surprises.';
-  } else if(c < 40 && vRisk === 'Low'){
+  } else if (c < 40 && vRisk === 'Low'){
     el.textContent = 'Macro and valuations both moderate vs history. No obvious crash cluster.';
   } else {
     el.textContent = 'Mixed configuration. Use radar and tiles to see which levers are driving risk.';
@@ -1167,15 +1192,18 @@ function updateAll(){
   updateInsight();
 }
 
-// ==== INIT ====
+// ================= INIT =================
 
-document.addEventListener('DOMContentLoaded', function(){
-  loadFromFredCache().then(function(){
-    updateAll();
-  }).catch(function(e){
-    console.error(e);
-    updateAll();
-  });
+document.addEventListener('DOMContentLoaded', () => {
+  loadFromFredCache()
+    .then(() => {
+      console.log('✅ FRED cache load complete, rendering dashboard.');
+      updateAll();
+    })
+    .catch(e => {
+      console.error('❌ Error in init:', e);
+      updateAll();
+    });
 });
 </script>
 </body>
