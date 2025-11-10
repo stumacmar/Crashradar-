@@ -295,7 +295,7 @@
     .manual-input{
       width:100%;
       padding:8px 8px;
-      min-height:44px;              /* mobile touch target */
+      min-height:44px;
       border-radius:6px;
       border:1px solid rgba(255,255,255,0.25);
       background:rgba(0,0,0,0.5);
@@ -385,13 +385,13 @@
   <div class="header">
     <h1>⚡ Economic Crash Radar Pro</h1>
     <div class="subtitle">
-      9 indicators (8 auto from FRED, 1 manual) + 2 valuations. Transparent, deterministic logic.
+      8 indicators (7 auto from FRED, 1 manual) + 2 valuations. Transparent, deterministic logic.
     </div>
     <div class="meta-badges">
       <div class="badge" id="cache-badge">FRED cache: not loaded</div>
       <div class="badge">Manual: LEI, Buffett, CAPE</div>
-      <div class="badge">Auto: Yield, HY, UMich, ISM, M2, Claims, Sahm, Permits</div>
-      <div class="badge" id="inputs-badge">Inputs: 0/11 populated</div>
+      <div class="badge">Auto: Yield, HY, UMich, M2, Claims, Sahm, Permits</div>
+      <div class="badge" id="inputs-badge">Inputs: 0/10 populated</div>
     </div>
   </div>
 
@@ -533,8 +533,7 @@
 
 /**
  * Transparent configuration:
- * Leading indicators total weight = 0.62
- * Confirming indicators total weight = 0.28
+ * Leading indicators total weight used directly in weighted average.
  * Valuation block = 30% of final composite when present.
  */
 
@@ -561,7 +560,7 @@ const INDICATORS = {
     weight:0.12,
     threshold:0,
     direction:'below',
-    span:1.0, // -1% inversion => 100 stress
+    span:1.0,
     fromFred:true,
     fredId:'T10Y3M',
     current:null,
@@ -574,7 +573,7 @@ const INDICATORS = {
     weight:0.10,
     threshold:5.0,
     direction:'above',
-    span:3.0, // 5%->8% => 100 stress
+    span:3.0,
     fromFred:true,
     fredId:'BAMLH0A0HYM2',
     current:null,
@@ -587,26 +586,12 @@ const INDICATORS = {
     weight:0.09,
     threshold:60,
     direction:'below',
-    span:20, // 60->40 => 100 stress
+    span:20,
     fromFred:true,
     fredId:'UMCSENT',
     current:null,
     format:v => v.toFixed(1),
     desc:'UMCSENT. Demand & confidence.'
-  },
-  ISM_NEW_ORDERS: {
-    tier:1,
-    label:'ISM New Orders',
-    weight:0.07,
-    threshold:47.5,
-    direction:'below',
-    span:5.0, // 47.5->42.5 => 100 stress
-    fromFred:true,
-    // Use NAPMNOI: documented FRED ID for ISM New Orders Index.  [oai_citation:0‡Social Science Computing Cooperative](https://www.ssc.wisc.edu/~bhansen/econometrics/FRED-MD_description.pdf?utm_source=chatgpt.com)
-    fredId:'NAPMNOI',
-    current:null,
-    format:v => v.toFixed(1),
-    desc:'ISM: New Orders Index.'
   },
   M2_GROWTH: {
     tier:1,
@@ -627,7 +612,7 @@ const INDICATORS = {
     weight:0.10,
     threshold:323,
     direction:'above',
-    span:150, // +150k => 100 stress
+    span:150,
     fromFred:true,
     fredId:'ICSA',
     current:null,
@@ -653,7 +638,7 @@ const INDICATORS = {
     weight:0.08,
     threshold:-15,
     direction:'below',
-    span:15, // -15 -> -30 => 100 stress
+    span:15,
     fromFred:true,
     fredId:'PERMIT',
     current:null,
@@ -685,8 +670,7 @@ let charts = { trend:null, radar:null };
 let compositeScore = null;
 
 /**
- * Load FRED cache (data/fred_cache.json).
- * No hard-coded indicator values.
+ * Load FRED cache.
  */
 
 async function loadFromFredCache(){
@@ -701,21 +685,18 @@ async function loadFromFredCache(){
     const cache = await res.json();
     const series = cache.series || {};
     const gen = cache.generated_at || 'loaded';
-
     document.getElementById('cache-badge').textContent = 'FRED cache: ' + gen;
 
-    // Cache age diagnostics (stale > 7 days)
     const genDate = new Date(gen);
     if(!isNaN(genDate)){
       const now = new Date();
       cacheAgeDays = (now - genDate) / (1000*60*60*24);
-      if(cacheAgeDays < 0) cacheAgeDays = null; // bad clock, ignore
+      if(cacheAgeDays < 0) cacheAgeDays = null;
     }
 
     function lastVal(id){
       const s = series[id];
       if(!s) return null;
-      // Support either {value,last_updated} OR full observations[]
       if(Array.isArray(s.observations) && s.observations.length){
         const o = s.observations[s.observations.length - 1];
         const v = Number(o.value);
@@ -750,9 +731,7 @@ async function loadFromFredCache(){
       const s = series[id];
       if(!s || !Array.isArray(s.observations) || s.observations.length < n) return null;
       const slice = s.observations.slice(-n);
-      const vals = slice
-        .map(o => Number(o.value))
-        .filter(v => Number.isFinite(v));
+      const vals = slice.map(o => Number(o.value)).filter(v => Number.isFinite(v));
       if(vals.length < n) return null;
       const sum = vals.reduce((a,b)=>a+b,0);
       return sum / n;
@@ -764,7 +743,6 @@ async function loadFromFredCache(){
       return ((n - o) / o) * 100;
     }
 
-    // Map FRED -> indicator.current
     Object.keys(INDICATORS).forEach(key => {
       const ind = INDICATORS[key];
       if(!ind.fromFred || !ind.fredId) return;
@@ -778,7 +756,7 @@ async function loadFromFredCache(){
         }
       } else if(ind.fredId === 'ICSA'){
         const avg = rollingAvgLastN('ICSA', 4);
-        if(avg != null) ind.current = avg / 1000; // thousands
+        if(avg != null) ind.current = avg / 1000;
       } else if(ind.fredId === 'PERMIT'){
         const now = lastVal('PERMIT');
         const back = obsMonthsBack('PERMIT', 6);
@@ -792,9 +770,8 @@ async function loadFromFredCache(){
       }
     });
 
-    // Diagnostics: which key FRED series are present
     const required = [
-      'T10Y3M','BAMLH0A0HYM2','UMCSENT','NAPMNOI','M2SL',
+      'T10Y3M','BAMLH0A0HYM2','UMCSENT','M2SL',
       'ICSA','SAHMREALTIME','PERMIT'
     ];
     required.forEach(id => {
@@ -813,8 +790,7 @@ async function loadFromFredCache(){
 }
 
 /**
- * Scale indicator values to 0–100 stress.
- * By construction: crossing threshold = >0; 1 span beyond = 100.
+ * Scale indicators to 0–100 stress.
  */
 
 function scaleIndicator(key, value){
@@ -830,13 +806,9 @@ function scaleIndicator(key, value){
   let stress = 0;
 
   if(dir === 'below'){
-    if(value < t){
-      stress = ((t - value) / span) * 100;
-    }
+    if(value < t) stress = ((t - value) / span) * 100;
   } else if(dir === 'above'){
-    if(value > t){
-      stress = ((value - t) / span) * 100;
-    }
+    if(value > t) stress = ((value - t) / span) * 100;
   }
 
   if(stress < 0) stress = 0;
@@ -846,8 +818,6 @@ function scaleIndicator(key, value){
 
 /**
  * Valuation stress.
- * (ratio - 1) * 300 => 20% above danger ≈ 60, 33% ≈ 100.
- * Clamped 0–100.
  */
 
 function valuationStress(key, val){
@@ -862,11 +832,7 @@ function valuationStress(key, val){
 }
 
 /**
- * Composite:
- * - Macro block = weighted average of all available indicator stresses.
- * - Val block = weighted average of valuation stresses.
- * - Final = 70% macro + 30% val when both exist.
- * Console logs expose every contribution.
+ * Composite.
  */
 
 function computeComposite(){
@@ -944,12 +910,9 @@ function derivedLaborStress(){
   const c = INDICATORS.INITIAL_CLAIMS.current;
   const s = INDICATORS.SAHM_RULE.current;
   if(!Number.isFinite(c) || !Number.isFinite(s)) return '--';
-
-  // Claims above ~250k and Sahm above 0 raise stress.
   const cs = Math.max(0, Math.min(100, (c - 250) * 0.5));
   const ss = Math.max(0, Math.min(100, s * 200));
   const avg = (cs + ss) / 2;
-
   if(avg < 30) return 'Low';
   if(avg < 60) return 'Moderate';
   return 'High';
@@ -1012,7 +975,6 @@ function renderIndicators(){
     else t2.appendChild(el);
   });
 
-  // Manual LEI input.
   document.querySelectorAll('.manual-input[data-ind-key]').forEach(inp => {
     inp.addEventListener('input', () => {
       const key = inp.getAttribute('data-ind-key');
@@ -1067,7 +1029,6 @@ function renderValuations(){
     box.appendChild(div);
   });
 
-  // Manual valuation inputs.
   document.querySelectorAll('.manual-input[data-val-key]').forEach(inp => {
     inp.addEventListener('input', () => {
       const key = inp.getAttribute('data-val-key');
@@ -1086,7 +1047,7 @@ function renderValuations(){
 }
 
 /**
- * Sync "Current (your inputs)" valuation tile.
+ * Sync valuation "Current" tile.
  */
 
 function syncValuationCurrentBox(){
@@ -1108,7 +1069,7 @@ function syncValuationCurrentBox(){
 }
 
 /**
- * Gauge, coverage, messaging.
+ * Gauge & statuses.
  */
 
 function renderGaugeAndStatus(){
@@ -1152,7 +1113,7 @@ function renderGaugeAndStatus(){
   const v = Math.round(compositeScore);
   scoreEl.textContent = v;
   fill.style.width = v + '%';
-  const angle = (v / 100) * 360;        // 0–100 -> 0–360 degrees
+  const angle = (v / 100) * 360;
   needle.style.transform = 'translateX(-50%) rotate(' + angle + 'deg)';
 
   let regime;
@@ -1170,7 +1131,6 @@ function renderGaugeAndStatus(){
   document.getElementById('labor-risk-display').textContent =
     derivedLaborStress();
 
-  // Alert text with data quality overlays.
   let prefix = '';
   if(cacheAgeDays != null && cacheAgeDays > 7){
     prefix += 'Data warning: FRED cache is ' + cacheAgeDays.toFixed(1) +
@@ -1194,7 +1154,7 @@ function renderGaugeAndStatus(){
 }
 
 /**
- * Charts (illustrative, driven by current composite / valuation stresses).
+ * Charts.
  */
 
 function renderMarketTrendChart(){
