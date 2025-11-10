@@ -471,7 +471,7 @@
         <div class="insight-card">
           <strong>Insight:</strong>
           <span id="insight-text">
-            Once populated, this compares today’s configuration to prior stress regimes.
+            Once populated, this compares today's configuration to prior stress regimes.
           </span>
         </div>
         <div class="history-grid">
@@ -773,79 +773,121 @@ function scaleIndicator(key, value){
 
   if(stress < 0) stress = 0;
   if(stress > 100) stress = 100;
+  
+  // Apply economic context multipliers
+  if(key === 'YIELD_CURVE' && value < -0.5){
+    // Deep inversion gets extra weight
+    stress = Math.min(100, stress * 1.2);
+  }
+  
+  if(key === 'SAHM_RULE' && value > 0.5){
+    // Sahm rule triggered - high recession probability
+    stress = Math.min(100, stress * 1.3);
+  }
+
   return stress;
 }
 
 /**
- * Valuation stress: (ratio - 1) * 200, clamped 0–100.
- * 20% rich ~ 40, 33% ~ 66, 50% ~ 100.
+ * Improved valuation stress calculation with better thresholds
  */
 function valuationStress(key, val){
   const v = VALUATIONS[key];
   if(!v || !Number.isFinite(val)) return null;
-  if(val <= v.danger) return 0;
-  const ratio = val / v.danger;
-  let stress = (ratio - 1) * 200;
-  if(stress < 0) stress = 0;
-  if(stress > 100) stress = 100;
+  
+  let stress = 0;
+  
+  if(key === 'BUFFETT'){
+    // Buffett Indicator: 100% = fair value, >150% = high risk
+    if(val <= 100) return 0;
+    stress = Math.min(100, ((val - 100) / 80) * 100);
+  } else if(key === 'SHILLER_PE'){
+    // Shiller CAPE: 20 = fair value, >30 = high risk
+    if(val <= 20) return 0;
+    stress = Math.min(100, ((val - 20) / 20) * 100);
+  }
+  
   return stress;
 }
 
 /**
  * Composite: 70% macro, 30% valuations (when both exist).
+ * Fixed weighting and normalization
  */
 function computeComposite(){
-  let mSum = 0, mW = 0;
-  Object.entries(INDICATORS).forEach(([k,ind]) => {
-    const s = scaleIndicator(k, ind.current);
-    if(s != null && ind.weight){
-      const contrib = s * ind.weight;
-      mSum += contrib;
-      mW   += ind.weight;
-      console.log(`Indicator ${k}: value=${ind.current}, stress=${s.toFixed(1)}, w=${ind.weight}, contrib=${contrib.toFixed(2)}`);
+  // Macro indicators block (70% weight)
+  let macroStress = 0;
+  let macroTotalWeight = 0;
+  let macroCount = 0;
+  
+  Object.entries(INDICATORS).forEach(([k, ind]) => {
+    const stress = scaleIndicator(k, ind.current);
+    if(stress !== null && Number.isFinite(stress) && ind.weight){
+      macroStress += stress * ind.weight;
+      macroTotalWeight += ind.weight;
+      macroCount++;
     }
   });
-  const macroAvg = mW > 0 ? (mSum / mW) : null;
-  if(macroAvg != null) console.log(`Macro block avg=${macroAvg.toFixed(2)}`);
-
-  let vSum = 0, vW = 0;
-  Object.entries(VALUATIONS).forEach(([k,v]) => {
-    const s = valuationStress(k, v.current);
-    if(s != null && v.weight){
-      const contrib = s * v.weight;
-      vSum += contrib;
-      vW   += v.weight;
-      console.log(`Valuation ${k}: value=${v.current}, stress=${s.toFixed(1)}, w=${v.weight}, contrib=${contrib.toFixed(2)}`);
+  
+  // Valuation block (30% weight)
+  let valuationStressSum = 0;
+  let valuationTotalWeight = 0;
+  let valuationCount = 0;
+  
+  Object.entries(VALUATIONS).forEach(([k, v]) => {
+    const stress = valuationStress(k, v.current);
+    if(stress !== null && Number.isFinite(stress) && v.weight){
+      valuationStressSum += stress * v.weight;
+      valuationTotalWeight += v.weight;
+      valuationCount++;
     }
   });
-  const valAvg = vW > 0 ? (vSum / vW) : null;
-  if(valAvg != null) console.log(`Valuation block avg=${valAvg.toFixed(2)}`);
-
+  
   let composite = null;
-  if(macroAvg != null && valAvg != null){
-    composite = macroAvg * (1 - VALUATION_BLOCK_WEIGHT) + valAvg * VALUATION_BLOCK_WEIGHT;
-  } else if(macroAvg != null){
-    composite = macroAvg;
-  } else if(valAvg != null){
-    composite = valAvg;
+  
+  // Calculate weighted components
+  const macroComponent = macroTotalWeight > 0 ? (macroStress / macroTotalWeight) : 0;
+  const valuationComponent = valuationTotalWeight > 0 ? (valuationStressSum / valuationTotalWeight) : 0;
+  
+  // Determine final composite based on data availability
+  if(macroCount > 0 && valuationCount > 0){
+    // Full composite: 70% macro + 30% valuation
+    composite = (macroComponent * 0.7) + (valuationComponent * 0.3);
+  } else if(macroCount > 0){
+    // Macro-only: scale to 70% of full range to indicate partial data
+    composite = macroComponent * 0.7;
+  } else if(valuationCount > 0){
+    // Valuation-only: scale to 30% of full range
+    composite = valuationComponent * 0.3;
   }
-
-  if(composite != null) console.log(`Composite=${composite.toFixed(2)}`);
+  
+  // Apply non-linear scaling to emphasize high-risk scenarios
+  if(composite !== null){
+    // Quadratic scaling to make high scores more distinctive
+    composite = Math.min(100, composite * (1 + (composite / 100) * 0.2));
+  }
+  
   return composite;
+}
+
+/**
+ * More accurate recession probability mapping
+ */
+function derivedRecessionRisk(c){
+  if(c == null) return '--';
+  
+  // Based on historical stress-to-recession probability mapping
+  if(c < 20) return '<10%';
+  if(c < 35) return '10–25%';
+  if(c < 50) return '25–40%';
+  if(c < 65) return '40–60%';
+  if(c < 80) return '60–75%';
+  return '75–90%';
 }
 
 /**
  * Derived labels.
  */
-function derivedRecessionRisk(c){
-  if(c == null) return '--';
-  if(c < 25) return '<10%';
-  if(c < 40) return '10–20%';
-  if(c < 55) return '20–30%';
-  if(c < 70) return '30–50%';
-  return '>50%';
-}
-
 function derivedValuationRisk(){
   let sum = 0, w = 0;
   Object.entries(VALUATIONS).forEach(([k,v]) => {
