@@ -484,6 +484,7 @@ const INDICATORS = {
     weight:0.20,
     threshold:-4.1,
     direction:'below',
+    span:3.0, // ~2-3ppt further deterioration = max stress
     fromFred:false,
     fredId:null,
     current:null,
@@ -496,6 +497,7 @@ const INDICATORS = {
     weight:0.15,
     threshold:0,
     direction:'below',
+    span:1.0, // -1% inversion -> max stress
     fromFred:true,
     fredId:'T10Y3M',
     current:null,
@@ -508,6 +510,7 @@ const INDICATORS = {
     weight:0.12,
     threshold:5.0,
     direction:'above',
+    span:3.0, // 5%->8% = full stress
     fromFred:true,
     fredId:'BAMLH0A0HYM2',
     current:null,
@@ -520,6 +523,7 @@ const INDICATORS = {
     weight:0.10,
     threshold:60,
     direction:'below',
+    span:20, // 60->40 = full stress
     fromFred:true,
     fredId:'UMCSENT',
     current:null,
@@ -532,11 +536,12 @@ const INDICATORS = {
     weight:0.08,
     threshold:47.5,
     direction:'below',
+    span:5.0, // 47.5->42.5 = full stress
     fromFred:true,
-    fredId:'NAPMNOI',
+    fredId:'ISMNO', // FIX: correct FRED series
     current:null,
     format:v => v.toFixed(1),
-    desc:'NAPMNOI. Manufacturing lead.'
+    desc:'ISMNO. Manufacturing lead.'
   },
   M2_GROWTH: {
     tier:1,
@@ -544,6 +549,7 @@ const INDICATORS = {
     weight:0.07,
     threshold:4.0,
     direction:'below',
+    span:5.0, // materially below trend
     fromFred:true,
     fredId:'M2SL',
     current:null,
@@ -556,6 +562,7 @@ const INDICATORS = {
     weight:0.10,
     threshold:323,
     direction:'above',
+    span:150, // +150k -> full stress
     fromFred:true,
     fredId:'ICSA',
     current:null,
@@ -568,6 +575,7 @@ const INDICATORS = {
     weight:0.10,
     threshold:0.50,
     direction:'above',
+    span:1.0, // 0.5->1.5 = max
     fromFred:true,
     fredId:'SAHMREALTIME',
     current:null,
@@ -580,6 +588,7 @@ const INDICATORS = {
     weight:0.08,
     threshold:-15,
     direction:'below',
+    span:15, // -15 -> -30 = max
     fromFred:true,
     fredId:'PERMIT',
     current:null,
@@ -612,6 +621,7 @@ let compositeScore = null;
 
 /**
  * LOAD FRED CACHE
+ * (All auto indicators read exclusively from data/fred_cache.json)
  */
 
 async function loadFromFredCache(){
@@ -700,9 +710,9 @@ async function loadFromFredCache(){
       }
     });
 
-    // Unit test style logs for required IDs
+    // Required IDs sanity log (no hard-wiring)
     const required = [
-      'T10Y3M','BAMLH0A0HYM2','UMCSENT','NAPMNOI','M2SL',
+      'T10Y3M','BAMLH0A0HYM2','UMCSENT','ISMNO','M2SL',
       'ICSA','SAHMREALTIME','PERMIT','NFCI','VIXCLS','TDSP'
     ];
     required.forEach(id => {
@@ -722,20 +732,30 @@ async function loadFromFredCache(){
 
 /**
  * SCORING HELPERS
+ * Threshold = start of danger.
+ * span = how far into danger zone to hit 100 stress.
  */
 
 function scaleIndicator(key, value){
   const ind = INDICATORS[key];
   if(!ind || !Number.isFinite(value)) return null;
+
   const t = ind.threshold;
   const dir = ind.direction;
-  const base = (t === 0) ? 1 : Math.abs(t);
+  const span = (ind.span && ind.span > 0)
+    ? ind.span
+    : Math.max(1, Math.abs(t) * 0.5);
+
   let stress = 0;
 
-  if(dir === 'below' && value < t){
-    stress = ((t - value) / base) * 100;
-  } else if(dir === 'above' && value > t){
-    stress = ((value - t) / base) * 100;
+  if(dir === 'below'){
+    if(value < t){
+      stress = ((t - value) / span) * 100;
+    }
+  } else if(dir === 'above'){
+    if(value > t){
+      stress = ((value - t) / span) * 100;
+    }
   }
 
   if(stress < 0) stress = 0;
@@ -748,7 +768,7 @@ function valuationStress(key, val){
   if(!v || !Number.isFinite(val)) return null;
   if(val <= v.danger) return 0;
   const ratio = val / v.danger;
-  let stress = (ratio - 1) * 300; // aggressive
+  let stress = (ratio - 1) * 300; // keep aggressive: rich valuations bite
   if(stress < 0) stress = 0;
   if(stress > 100) stress = 100;
   return stress;
@@ -829,7 +849,7 @@ function derivedLaborStress(){
 }
 
 /**
- * RENDER: INDICATOR CARDS (STATIC STRUCTURE)
+ * RENDER: INDICATOR CARDS
  */
 
 function buildIndicatorElement(key, ind){
@@ -884,7 +904,7 @@ function renderIndicators(){
     else t2.appendChild(el);
   });
 
-  // Manual LEI input handlers (no full re-render; only dynamic updates)
+  // Manual LEI input handlers
   document.querySelectorAll('.manual-input[data-ind-key]').forEach(inp => {
     inp.addEventListener('input', () => {
       const key = inp.getAttribute('data-ind-key');
@@ -903,7 +923,7 @@ function renderIndicators(){
 }
 
 /**
- * RENDER: VALUATION CARDS (STATIC STRUCTURE)
+ * RENDER: VALUATION CARDS
  */
 
 function renderValuations(){
@@ -947,7 +967,6 @@ function renderValuations(){
       const v = parseFloat(inp.value);
       VALUATIONS[key].current = Number.isFinite(v) ? v : null;
 
-      // Update value label in same card
       const valEl = document.querySelector('[data-val-value="'+key+'"]');
       if(valEl){
         valEl.textContent = Number.isFinite(v)
