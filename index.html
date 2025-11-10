@@ -4,11 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Economic Crash Radar Pro</title>
+
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
   <style>
     :root {
       --bg:#0a0e1a;
       --panel:#12182b;
+      --panel-soft:#151b30;
       --text:#e8eeff;
       --muted:#8b96b0;
       --accent:#6b9eff;
@@ -16,1263 +20,1080 @@
       --green:#1ec28b;
       --amber:#ffc247;
       --red:#ff6070;
+      --purple:#a78bfa;
+      --cyan:#22d3ee;
       --radius-lg:16px;
+      --radius-md:12px;
+      --radius-sm:8px;
       --shadow-soft:0 8px 24px rgba(0,0,0,0.45);
-      --font-main:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+      --border-subtle:1px solid rgba(255,255,255,0.06);
+      --gap-xs:6px;
+      --gap-sm:10px;
+      --gap-md:16px;
+      --gap-lg:22px;
+      --gap-xl:30px;
+      --transition-fast:0.18s ease-out;
     }
-    *{margin:0;padding:0;box-sizing:border-box;}
-    body{
-      background:var(--bg);
+
+    * {
+      box-sizing:border-box;
+      margin:0;
+      padding:0;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #151b30 0, #050813 44%, #020309 100%);
       color:var(--text);
-      font:15px/1.6 var(--font-main);
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
       -webkit-font-smoothing:antialiased;
-      padding:18px 12px 40px;
+      line-height:1.6;
     }
-    .container{max-width:1440px;margin:0 auto;}
-    .header{text-align:center;margin-bottom:18px;}
-    h1{
-      font-size:clamp(30px,6vw,46px);
-      font-weight:800;
-      margin-bottom:6px;
-      background:linear-gradient(135deg,var(--text),var(--accent-soft));
-      -webkit-background-clip:text;
-      -webkit-text-fill-color:transparent;
+
+    .wrap {
+      max-width:1600px;
+      margin:0 auto;
+      padding:18px 14px 40px;
     }
-    .subtitle{
-      color:var(--muted);
-      font-size:0.95rem;
-    }
-    .meta-badges{
+
+    header {
       display:flex;
       flex-wrap:wrap;
-      justify-content:center;
-      gap:6px;
-      margin-top:8px;
-      font-size:0.7rem;
-      color:var(--muted);
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:var(--gap-md);
+      margin-bottom:var(--gap-lg);
     }
-    .badge{
-      padding:4px 8px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(255,255,255,0.02);
-    }
-    .alert-banner{
-      margin:16px auto 18px;
-      padding:10px 12px;
-      max-width:900px;
-      border-radius:10px;
-      background:linear-gradient(135deg,rgba(107,158,255,0.08),rgba(139,187,255,0.02));
-      border:1px solid rgba(107,158,255,0.25);
-      font-size:0.8rem;
-      color:var(--text);
-    }
-    .dashboard{
-      display:grid;
-      grid-template-columns:280px 1fr;
-      gap:16px;
-      align-items:flex-start;
-    }
-    .sidebar{
-      background:var(--panel);
-      border-radius:var(--radius-lg);
-      padding:16px 14px 14px;
-      box-shadow:var(--shadow-soft);
-    }
-    .main-content{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:14px;
-    }
-    .card{
-      background:var(--panel);
-      border-radius:var(--radius-lg);
-      padding:14px 12px 12px;
-      box-shadow:var(--shadow-soft);
-    }
-    .card-title{
-      font-size:1rem;
-      font-weight:700;
-      color:var(--accent-soft);
+
+    .title-block h1 {
+      font-size:clamp(26px,4.2vw,40px);
+      font-weight:600;
+      letter-spacing:0.03em;
+      text-transform:uppercase;
       display:flex;
       align-items:center;
-      gap:6px;
-      margin-bottom:8px;
+      gap:10px;
     }
-    .card-title .icon{font-size:1.1rem;}
-    .gauge-container{text-align:center;margin-bottom:8px;}
-    .gauge{
-      position:relative;
-      width:190px;
-      height:190px;
-      margin:0 auto;
+
+    .title-pill {
+      font-size:10px;
+      padding:3px 7px;
+      border-radius:999px;
+      border:1px solid rgba(107,158,255,0.6);
+      color:var(--accent-soft);
+      text-transform:uppercase;
     }
-    .gauge-background{
-      position:absolute;
-      inset:0;
-      border-radius:50%;
-      background:conic-gradient(
-        var(--green) 0deg 108deg,
-        var(--amber) 108deg 216deg,
-        var(--red) 216deg 360deg
-      );
-      opacity:0.28;
+
+    .subtitle {
+      font-size:13px;
+      color:var(--muted);
+      margin-top:3px;
     }
-    .gauge-center{
-      position:absolute;
-      top:10%;
-      left:10%;
-      width:80%;
-      height:80%;
-      border-radius:50%;
-      background:var(--panel);
+
+    .meta {
       display:flex;
       flex-direction:column;
-      align-items:center;
-      justify-content:center;
-    }
-    .gauge-score{
-      font-size:2.4rem;
-      font-weight:800;
-    }
-    .gauge-label{
-      font-size:0.7rem;
+      gap:4px;
+      font-size:11px;
       color:var(--muted);
-      text-transform:uppercase;
-      letter-spacing:0.08em;
-      margin-top:2px;
+      align-items:flex-end;
     }
-    .gauge-needle{
-      position:absolute;
-      bottom:50%;
-      left:50%;
-      width:3px;
-      height:46%;
-      background:var(--accent);
-      transform-origin:bottom center;
-      transform:translateX(-50%) rotate(0deg);
-      border-radius:4px 4px 0 0;
-      transition:transform 0.9s ease;
+
+    .badge {
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 9px;
+      border-radius:999px;
+      font-size:10px;
+      background:rgba(18,24,43,0.96);
+      border:1px solid rgba(139,150,176,0.35);
     }
-    .risk-meter{margin-top:6px;}
-    .risk-bar{
-      height:6px;
-      border-radius:4px;
-      background:rgba(255,255,255,0.1);
+
+    .badge span.dot {
+      width:7px;
+      height:7px;
+      border-radius:50%;
+      background:#22c55e;
+      box-shadow:0 0 8px rgba(34,197,94,0.9);
+    }
+
+    main {
+      display:grid;
+      grid-template-columns: minmax(0,2.2fr) minmax(260px,1.4fr);
+      gap:var(--gap-lg);
+    }
+
+    @media (max-width:960px) {
+      main {
+        display:flex;
+        flex-direction:column;
+      }
+      header {
+        align-items:flex-start;
+      }
+      .meta {
+        align-items:flex-start;
+      }
+    }
+
+    /* Left: composite + charts */
+
+    .panel {
+      background:radial-gradient(circle at top, rgba(111,143,255,0.05) 0, rgba(5,8,19,0.98) 55%);
+      border-radius:var(--radius-lg);
+      padding:var(--gap-md);
+      border:var(--border-subtle);
+      box-shadow:var(--shadow-soft);
+      position:relative;
       overflow:hidden;
     }
-    .risk-fill{
-      height:100%;
-      width:0%;
-      background:linear-gradient(90deg,var(--green),var(--amber),var(--red));
-      transition:width 0.8s ease;
-    }
-    .risk-labels{
+
+    .panel-header {
       display:flex;
       justify-content:space-between;
-      margin-top:4px;
-      font-size:0.65rem;
-      color:var(--muted);
-    }
-    .status-grid{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:6px;
-      margin-top:10px;
-    }
-    .status-item{
-      padding:7px 6px;
-      background:rgba(255,255,255,0.02);
-      border-radius:8px;
-      font-size:0.7rem;
-    }
-    .status-label{
-      color:var(--muted);
-      font-size:0.66rem;
-    }
-    .status-value{
-      font-weight:700;
-      font-size:0.95rem;
-      margin-top:1px;
-    }
-    .indicator-grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-      gap:7px;
-      margin-top:4px;
-    }
-    .indicator{
-      padding:7px 7px 6px;
-      background:rgba(255,255,255,0.03);
-      border-radius:8px;
-      border-left:3px solid var(--green);
-      font-size:0.7rem;
-    }
-    .indicator.warning{border-left-color:var(--amber);}
-    .indicator.danger{border-left-color:var(--red);}
-    .indicator-header{
-      display:flex;
-      justify-content:space-between;
-      gap:4px;
       align-items:baseline;
-      margin-bottom:2px;
+      gap:var(--gap-md);
+      margin-bottom:var(--gap-md);
     }
-    .indicator-name{
-      font-weight:600;
-      font-size:0.78rem;
+
+    .panel-title {
+      font-size:14px;
+      font-weight:500;
+      text-transform:uppercase;
+      letter-spacing:0.12em;
+      color:var(--accent-soft);
     }
-    .indicator-value{
-      font-weight:700;
-      font-size:0.9rem;
-    }
-    .indicator-threshold{
+
+    .panel-sub {
+      font-size:11px;
       color:var(--muted);
-      font-size:0.62rem;
+    }
+
+    .primary-score {
+      display:flex;
+      align-items:flex-end;
+      gap:10px;
+      margin-bottom:var(--gap-md);
+    }
+
+    .primary-score-value {
+      font-size:32px;
+      font-weight:600;
+    }
+
+    .primary-score-label {
+      font-size:11px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:0.14em;
+    }
+
+    .primary-score-pill {
+      padding:4px 9px;
+      border-radius:999px;
+      font-size:10px;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      background:rgba(6,10,24,0.96);
+      border:1px solid rgba(255,255,255,0.06);
+      color:var(--muted);
+    }
+
+    .primary-score-pill span.indicator-dot {
+      width:7px;
+      height:7px;
+      border-radius:50%;
+      background:var(--green);
+    }
+
+    .gauge-wrap {
+      position:relative;
+      margin:4px 0 14px;
+      height:150px;
+    }
+
+    .gauge-labels {
+      display:flex;
+      justify-content:space-between;
+      font-size:9px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:0.12em;
+      margin-bottom:4px;
+    }
+
+    .horizon-row {
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      font-size:9px;
+      margin-top:4px;
+      color:var(--muted);
+    }
+
+    .horizon-pill {
+      padding:3px 7px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.04);
+      background:rgba(10,14,26,0.96);
+    }
+
+    .tabs {
+      display:flex;
+      gap:8px;
+      margin:2px 0 8px;
+      font-size:10px;
+    }
+
+    .tab-btn {
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid transparent;
+      background:transparent;
+      color:var(--muted);
+      cursor:pointer;
+      transition:var(--transition-fast);
+      font-size:10px;
+    }
+
+    .tab-btn.active {
+      background:rgba(20,32,66,0.96);
+      border-color:rgba(107,158,255,0.7);
+      color:var(--accent-soft);
+    }
+
+    .chart-wrap {
+      margin-top:4px;
+      height:160px;
+    }
+
+    /* Right: indicators grid */
+
+    .indicators-panel {
+      display:flex;
+      flex-direction:column;
+      gap:var(--gap-md);
+    }
+
+    .indicators-grid {
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:8px;
+    }
+
+    @media (max-width:640px) {
+      .indicators-grid {
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+    }
+
+    .indicator-card {
+      background:radial-gradient(circle at top left, rgba(107,158,255,0.06) 0, rgba(9,13,25,0.98) 52%);
+      border-radius:var(--radius-md);
+      padding:6px 7px 7px;
+      border:1px solid rgba(255,255,255,0.05);
+      display:flex;
+      flex-direction:column;
+      gap:1px;
+      min-height:40px;
+      position:relative;
+      overflow:hidden;
+      cursor:default;
+    }
+
+    .indicator-label {
+      font-size:9px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:0.11em;
+    }
+
+    .indicator-main {
+      display:flex;
+      align-items:baseline;
+      gap:4px;
+    }
+
+    .indicator-value {
+      font-size:15px;
+      font-weight:500;
+    }
+
+    .indicator-unit {
+      font-size:9px;
+      color:var(--muted);
+    }
+
+    .indicator-status {
+      font-size:8px;
+      padding:1px 5px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.06);
+      align-self:flex-start;
       margin-top:1px;
     }
-    .source-tag{
-      display:inline-block;
-      margin-top:3px;
-      padding:2px 5px;
-      border-radius:6px;
-      border:1px solid rgba(255,255,255,0.14);
-      font-size:0.58rem;
+
+    .indicator-fresh {
+      font-size:7px;
       color:var(--muted);
     }
-    .manual-input-row{
-      display:flex;
-      align-items:center;
-      gap:3px;
-      margin-top:3px;
-      font-size:0.6rem;
-    }
-    .manual-input{
-      width:72px;
-      padding:2px 4px;
-      border-radius:4px;
-      border:1px solid rgba(255,255,255,0.25);
-      background:rgba(0,0,0,0.5);
-      color:var(--text);
-      font-size:0.65rem;
-      outline:none;
-    }
-    .manual-input:focus{
-      border-color:var(--accent);
-      box-shadow:0 0 4px var(--accent);
-    }
-    .valuation-comparison{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-      gap:6px;
-      margin-top:8px;
-      font-size:0.68rem;
-    }
-    .valuation-item{
-      padding:6px;
-      background:rgba(255,255,255,0.02);
-      border-radius:8px;
-      text-align:center;
-    }
-    .valuation-item.current{
-      border:1px solid var(--red);
-      background:rgba(255,96,112,0.05);
-    }
-    .valuation-title{
-      font-weight:600;
-      margin-bottom:2px;
-    }
-    .valuation-metric{margin:1px 0;}
-    .valuation-outcome{
+
+    .rag-green { color:var(--green); border-color:rgba(30,194,139,0.4);}
+    .rag-amber { color:var(--amber); border-color:rgba(255,194,71,0.4);}
+    .rag-red { color:var(--red); border-color:rgba(255,96,112,0.4);}
+
+    .indicator-missing {
+      color:var(--red);
+      font-size:8px;
       margin-top:2px;
+    }
+
+    .audit-panel {
+      background:var(--panel-soft);
+      border-radius:var(--radius-md);
+      padding:7px;
+      border:var(--border-subtle);
+      font-size:8px;
       color:var(--muted);
+      display:flex;
+      flex-direction:column;
+      gap:3px;
     }
-    .insight-card{
-      margin-top:6px;
-      padding:6px 7px;
-      border-radius:8px;
-      background:linear-gradient(135deg,rgba(107,158,255,0.10),rgba(10,14,26,1));
-      border:1px solid rgba(107,158,255,0.25);
-      font-size:0.7rem;
+
+    .audit-panel strong {
+      color:var(--accent-soft);
+      font-weight:500;
     }
-    .chart-container{margin-top:4px;}
-    .history-grid{
-      margin-top:6px;
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-      gap:5px;
-      font-size:0.66rem;
-    }
-    .history-item{
-      padding:5px;
-      border-radius:8px;
-      background:rgba(255,255,255,0.02);
-    }
-    .history-title{
-      font-weight:600;
-      margin-bottom:1px;
-      font-size:0.7rem;
-    }
-    @media(max-width:900px){
-      body{padding:14px 8px 26px;}
-      .dashboard{grid-template-columns:1fr;}
-      .main-content{grid-template-columns:1fr;}
-      .sidebar{order:-1;}
+
+    a {
+      color:var(--accent-soft);
+      text-decoration:none;
     }
   </style>
 </head>
 <body>
-<div class="container">
-  <div class="header">
-    <h1>⚡ Economic Crash Radar Pro</h1>
-    <div class="subtitle">
-      9 indicators (8 auto from FRED, 1 manual) + 2 valuations. Transparent, deterministic logic.
-    </div>
-    <div class="meta-badges">
-      <div class="badge" id="cache-badge">FRED cache: not loaded</div>
-      <div class="badge">Manual: LEI, Buffett, CAPE</div>
-      <div class="badge">Auto: Yield, HY, UMich, ISM, M2, Claims, Sahm, Permits</div>
-      <div class="badge" id="inputs-badge">Inputs: 0/11 populated</div>
-    </div>
-  </div>
-
-  <div class="alert-banner" id="alert-banner">
-    Composite stress = 70% macro indicators + 30% valuations when both blocks have data.
-  </div>
-
-  <div class="dashboard">
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-      <div class="gauge-container">
-        <div class="gauge">
-          <div class="gauge-background"></div>
-          <div class="gauge-center">
-            <div class="gauge-score" id="composite-score">--</div>
-            <div class="gauge-label" id="regime-label">COMPOSITE STRESS</div>
-          </div>
-          <div class="gauge-needle" id="needle"></div>
-        </div>
-        <div class="risk-meter">
-          <div class="risk-bar">
-            <div class="risk-fill" id="risk-fill"></div>
-          </div>
-          <div class="risk-labels">
-            <span>Low (0-30)</span>
-            <span>Med (30-50)</span>
-            <span>High (50-70)</span>
-            <span>Critical (70-100)</span>
-          </div>
-        </div>
-      </div>
-      <div class="status-grid">
-        <div class="status-item">
-          <div class="status-label">Recession Probability (12–18m)</div>
-          <div class="status-value" id="recession-risk-display">--</div>
-          <div class="indicator-threshold">Mapped from composite.</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">Valuation Risk</div>
-          <div class="status-value" id="valuation-risk-display">--</div>
-          <div class="indicator-threshold">Buffett + CAPE combined.</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">Labor Market Stress</div>
-          <div class="status-value" id="labor-risk-display">--</div>
-          <div class="indicator-threshold">Claims + Sahm.</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">Data Coverage</div>
-          <div class="status-value" id="quality-display">--</div>
-          <div class="indicator-threshold">Filled indicators / total.</div>
-        </div>
+<div class="wrap">
+  <header>
+    <div class="title-block">
+      <div class="title-pill">CrashRadar Pro · Institutional Macro Monitor</div>
+      <h1>Economic Crash Radar Pro</h1>
+      <div class="subtitle">
+        Composite stress signal from yield curve, credit, ISM, housing, labour, sentiment &amp; liquidity.
       </div>
     </div>
-
-    <!-- MAIN -->
-    <div class="main-content">
-      <div class="card">
-        <div class="card-title"><span class="icon">📊</span>Tier 1 Leading Indicators</div>
-        <div class="indicator-grid" id="tier1-indicators"></div>
+    <div class="meta">
+      <div class="badge">
+        <span class="dot"></span>
+        <span>Live FRED cache reader</span>
       </div>
-
-      <div class="card">
-        <div class="card-title"><span class="icon">📈</span>Tier 2 Confirming Indicators</div>
-        <div class="indicator-grid" id="tier2-indicators"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title"><span class="icon">💰</span>Valuation Indicators</div>
-        <div class="indicator-grid" id="valuation-indicators"></div>
-
-        <div class="valuation-comparison">
-          <div class="valuation-item">
-            <div class="valuation-title">2000 Dot-com</div>
-            <div class="valuation-metric">CAPE ≈ 44</div>
-            <div class="valuation-metric">Buffett ≈ 140–160%</div>
-            <div class="valuation-outcome">Severe drawdown.</div>
-          </div>
-          <div class="valuation-item">
-            <div class="valuation-title">2007 Pre-GFC</div>
-            <div class="valuation-metric">CAPE ≈ 27</div>
-            <div class="valuation-metric">Buffett ≈ 105%</div>
-            <div class="valuation-outcome">Crisis.</div>
-          </div>
-          <div class="valuation-item">
-            <div class="valuation-title">2021 Peak</div>
-            <div class="valuation-metric">CAPE ≈ 38</div>
-            <div class="valuation-metric">Buffett ≈ 195%</div>
-            <div class="valuation-outcome">2022 correction.</div>
-          </div>
-          <div class="valuation-item current">
-            <div class="valuation-title">Current (your inputs)</div>
-            <div class="valuation-metric" id="current-buffett-label">Buffett: --</div>
-            <div class="valuation-metric" id="current-cape-label">CAPE: --</div>
-            <div class="valuation-outcome">Reflects manual entries.</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title"><span class="icon">🕒</span>History, Radar & Prior Recessions</div>
-        <div class="chart-container">
-          <canvas id="market-trend" height="130"></canvas>
-        </div>
-        <div class="chart-container">
-          <canvas id="risk-radar" height="140"></canvas>
-        </div>
-        <div class="insight-card">
-          <strong>Insight:</strong>
-          <span id="insight-text">
-            Once populated, this compares today’s configuration to prior stress regimes.
-          </span>
-        </div>
-        <div class="history-grid">
-          <div class="history-item">
-            <div class="history-title">1973–75 / early 80s</div>
-            <div>Curve inversion + energy shocks + weak leads.</div>
-          </div>
-          <div class="history-item">
-            <div class="history-title">2000–02</div>
-            <div>Extreme valuations, tightening, growth rollover.</div>
-          </div>
-          <div class="history-item">
-            <div class="history-title">2007–09</div>
-            <div>Housing + credit + inversion aligned.</div>
-          </div>
-          <div class="history-item">
-            <div class="history-title">2020</div>
-            <div>External shock; indicator behavior distinct.</div>
-          </div>
-        </div>
-      </div>
+      <div>Cache source: <code>data/fred_cache.json</code></div>
+      <div id="metaGenerated">Cache: --</div>
+      <div id="metaStatus">Status: waiting for data…</div>
     </div>
-  </div>
+  </header>
+
+  <main>
+    <!-- LEFT: Composite + charts -->
+    <section class="panel" id="compositePanel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Composite Fragility Index</div>
+          <div class="panel-sub">
+            0 = calm · 100 = crisis. Auto-built only from data present in fred_cache.json.
+          </div>
+        </div>
+      </div>
+
+      <div class="primary-score">
+        <div>
+          <div class="primary-score-label">Current composite risk</div>
+          <div class="primary-score-value" id="compositeScore">--</div>
+        </div>
+        <div class="primary-score-pill" id="compositeTag">
+          <span class="indicator-dot"></span>
+          <span>Awaiting data</span>
+        </div>
+      </div>
+
+      <div class="gauge-labels">
+        <span>Subdued</span>
+        <span>Elevated</span>
+        <span>Severe</span>
+      </div>
+      <div class="gauge-wrap">
+        <canvas id="gaugeCanvas"></canvas>
+      </div>
+
+      <div class="horizon-row" id="horizonRow">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="lead">Lead stress</button>
+        <button class="tab-btn" data-tab="coincident">Real economy</button>
+        <button class="tab-btn" data-tab="markets">Market & liquidity</button>
+      </div>
+
+      <div class="chart-wrap">
+        <canvas id="decompChart"></canvas>
+      </div>
+    </section>
+
+    <!-- RIGHT: Indicators + audit -->
+    <section class="indicators-panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Key Indicators</div>
+          <div class="panel-sub">Each tile reads directly from fred_cache.json; missing = our fault, not yours.</div>
+        </div>
+      </div>
+
+      <div class="indicators-grid" id="indicatorsGrid">
+        <!-- indicator cards via JS -->
+      </div>
+
+      <div class="audit-panel" id="auditPanel">
+        <strong>Data audit</strong>
+        <div id="auditSummary">Awaiting cache load…</div>
+        <div id="missingList"></div>
+      </div>
+    </section>
+  </main>
 </div>
 
 <script>
-'use strict';
+  // ---------- CONFIG: keep this in sync with fetch_fred.js REQUIRED_SERIES ----------
 
-/**
- * CONFIG
- */
+  const FRED_CACHE_PATH = "data/fred_cache.json";
 
-const VALUATION_BLOCK_WEIGHT = 0.30;
+  // Indicator definitions:
+  // - id: FRED series id in fred_cache.json
+  // - group: lead / coincident / markets (for tabs & decomp)
+  // - invert: if true, higher = safer (we flip when scoring risk)
+  // - thresholds: simple RAG bands for tile colouring (design choice)
+  const INDICATOR_CONFIG = {
+    T10Y3M: {
+      label: "10Y-3M Curve",
+      id: "T10Y3M",
+      group: "lead",
+      invert: false,
+      unit: "pp",
+      thresholds: { green: 0.5, amber: 0, red: -0.25 },
+      note: "Inverted curve = stress"
+    },
+    BAMLH0A0HYM2: {
+      label: "HY Credit OAS",
+      id: "BAMLH0A0HYM2",
+      group: "markets",
+      invert: false,
+      unit: "pp",
+      thresholds: { green: 3.0, amber: 4.5, red: 6.0 },
+      note: "Wider = stress"
+    },
+    NAPMNOI: {
+      label: "ISM New Orders",
+      id: "NAPMNOI",
+      group: "lead",
+      invert: false,
+      unit: "",
+      thresholds: { green: 52, amber: 48, red: 45 },
+      note: "Manufacturing lead (NAPMNOI)"
+    },
+    UMCSENT: {
+      label: "Consumer Sentiment",
+      id: "UMCSENT",
+      group: "coincident",
+      invert: false,
+      unit: "",
+      thresholds: { green: 70, amber: 60, red: 50 }
+    },
+    M2SL: {
+      label: "M2 (level)",
+      id: "M2SL",
+      group: "markets",
+      invert: null,
+      unit: "bn",
+      ignoreInComposite: true
+    },
+    ICSA: {
+      label: "Initial Claims",
+      id: "ICSA",
+      group: "coincident",
+      invert: false,
+      unit: "",
+      thresholds: { green: 300000, amber: 350000, red: 450000 }
+    },
+    UNRATE: {
+      label: "Unemployment Rate",
+      id: "UNRATE",
+      group: "coincident",
+      invert: false,
+      unit: "%",
+      thresholds: { green: 5, amber: 6, red: 7 }
+    },
+    SAHMREALTIME: {
+      label: "Sahm Rule",
+      id: "SAHMREALTIME",
+      group: "coincident",
+      invert: false,
+      unit: "pp",
+      thresholds: { green: 0.5, amber: 0.75, red: 0.99 }
+    },
+    INDPRO: {
+      label: "Industrial Production",
+      id: "INDPRO",
+      group: "coincident",
+      invert: null,
+      unit: "",
+      ignoreInComposite: true
+    },
+    AWHMAN: {
+      label: "Weekly Hours (Mfg)",
+      id: "AWHMAN",
+      group: "lead",
+      invert: false,
+      unit: "hrs",
+      thresholds: { green: 40, amber: 39, red: 38 }
+    },
+    USSLIND: {
+      label: "US Leading Index",
+      id: "USSLIND",
+      group: "lead",
+      invert: false,
+      unit: "",
+      thresholds: { green: 0.2, amber: -0.1, red: -0.4 }
+    },
+    PERMIT: {
+      label: "Building Permits",
+      id: "PERMIT",
+      group: "lead",
+      invert: false,
+      unit: "k",
+      thresholds: { green: 1300, amber: 1100, red: 900 }
+    },
+    HOUST: {
+      label: "Housing Starts",
+      id: "HOUST",
+      group: "lead",
+      invert: false,
+      unit: "k",
+      thresholds: { green: 1300, amber: 1100, red: 900 }
+    },
+    NFCI: {
+      label: "Financial Conditions",
+      id: "NFCI",
+      group: "markets",
+      invert: true,
+      unit: "",
+      thresholds: { green: 0, amber: 0.3, red: 0.6 }
+    },
+    TEDRATE: {
+      label: "TED Spread",
+      id: "TEDRATE",
+      group: "markets",
+      invert: false,
+      unit: "pp",
+      thresholds: { green: 0.4, amber: 0.75, red: 1.0 }
+    },
+    TDSP: {
+      label: "Term Spread Proxy",
+      id: "TDSP",
+      group: "lead",
+      invert: false,
+      unit: "pp",
+      thresholds: { green: 0.75, amber: 0.25, red: 0 }
+    },
+    VIXCLS: {
+      label: "VIX",
+      id: "VIXCLS",
+      group: "markets",
+      invert: false,
+      unit: "",
+      thresholds: { green: 15, amber: 22, red: 30 }
+    }
+  };
 
-const INDICATORS = {
-  LEI: {
-    tier:1,
-    label:'Conference Board LEI 6m %Δ',
-    weight:0.20,
-    threshold:-4.1,
-    direction:'below',
-    span:3.0, // ~2-3ppt further deterioration = max stress
-    fromFred:false,
-    fredId:null,
-    current:null,
-    format:v => v.toFixed(1) + '%',
-    desc:'Manual quarterly input.'
-  },
-  YIELD_CURVE: {
-    tier:1,
-    label:'Yield Curve (10y-3m)',
-    weight:0.15,
-    threshold:0,
-    direction:'below',
-    span:1.0, // -1% inversion -> max stress
-    fromFred:true,
-    fredId:'T10Y3M',
-    current:null,
-    format:v => v.toFixed(2) + '%',
-    desc:'T10Y3M. 12–18m lead.'
-  },
-  CREDIT_SPREAD: {
-    tier:1,
-    label:'HY Credit Spread',
-    weight:0.12,
-    threshold:5.0,
-    direction:'above',
-    span:3.0, // 5%->8% = full stress
-    fromFred:true,
-    fredId:'BAMLH0A0HYM2',
-    current:null,
-    format:v => v.toFixed(2) + '%',
-    desc:'BAMLH0A0HYM2. Credit stress.'
-  },
-  CONSUMER_SENTIMENT: {
-    tier:1,
-    label:'UMich Sentiment',
-    weight:0.10,
-    threshold:60,
-    direction:'below',
-    span:20, // 60->40 = full stress
-    fromFred:true,
-    fredId:'UMCSENT',
-    current:null,
-    format:v => v.toFixed(1),
-    desc:'UMCSENT. Demand & confidence.'
-  },
-  ISM_NEW_ORDERS: {
-    tier:1,
-    label:'ISM New Orders',
-    weight:0.08,
-    threshold:47.5,
-    direction:'below',
-    span:5.0, // 47.5->42.5 = full stress
-    fromFred:true,
-    fredId:'ISMNO', // FIX: correct FRED series
-    current:null,
-    format:v => v.toFixed(1),
-    desc:'ISMNO. Manufacturing lead.'
-  },
-  M2_GROWTH: {
-    tier:1,
-    label:'M2 Growth YoY',
-    weight:0.07,
-    threshold:4.0,
-    direction:'below',
-    span:5.0, // materially below trend
-    fromFred:true,
-    fredId:'M2SL',
-    current:null,
-    format:v => v.toFixed(1) + '%',
-    desc:'YoY growth from M2SL. Liquidity regime.'
-  },
-  INITIAL_CLAIMS: {
-    tier:2,
-    label:'Initial Claims 4wk MA',
-    weight:0.10,
-    threshold:323,
-    direction:'above',
-    span:150, // +150k -> full stress
-    fromFred:true,
-    fredId:'ICSA',
-    current:null,
-    format:v => Math.round(v) + 'k',
-    desc:'4-week avg. Labor market turn.'
-  },
-  SAHM_RULE: {
-    tier:2,
-    label:'Sahm Rule',
-    weight:0.10,
-    threshold:0.50,
-    direction:'above',
-    span:1.0, // 0.5->1.5 = max
-    fromFred:true,
-    fredId:'SAHMREALTIME',
-    current:null,
-    format:v => v.toFixed(2),
-    desc:'>= 0.5 is recession confirmation.'
-  },
-  BUILDING_PERMITS: {
-    tier:2,
-    label:'Building Permits 6m %Δ',
-    weight:0.08,
-    threshold:-15,
-    direction:'below',
-    span:15, // -15 -> -30 = max
-    fromFred:true,
-    fredId:'PERMIT',
-    current:null,
-    format:v => v.toFixed(1) + '%',
-    desc:'6m change. Housing lead.'
+  const REQUIRED_IDS = Object.values(INDICATOR_CONFIG).map(d => d.id);
+
+  // ---------- UTILITIES ----------
+
+  function getSeries(cache, id) {
+    if (!cache || !cache.series) return null;
+    return cache.series[id] || null;
   }
-};
 
-const VALUATIONS = {
-  BUFFETT: {
-    label:'Buffett Indicator (MktCap/GDP)',
-    weight:0.50,
-    danger:180,
-    current:null,
-    format:v => v.toFixed(1) + '%',
-    desc:'Manual. Wilshire 5000 / GDP.'
-  },
-  SHILLER_PE: {
-    label:'Shiller CAPE',
-    weight:0.50,
-    danger:30,
-    current:null,
-    format:v => v.toFixed(1),
-    desc:'Manual. Long-term earnings multiple.'
+  function getLatestPoint(series) {
+    if (!series) return null;
+
+    if (typeof series.value === "number") {
+      // Use convenience field if present; we still trust observations for date if needed
+      if (Array.isArray(series.observations) && series.observations.length) {
+        for (let i = series.observations.length - 1; i >= 0; i--) {
+          const v = series.observations[i].value;
+          if (v !== null && !Number.isNaN(v)) {
+            return { value: series.value, date: series.observations[i].date };
+          }
+        }
+      }
+      return { value: series.value, date: series.last_updated || null };
+    }
+
+    if (!Array.isArray(series.observations) || !series.observations.length) {
+      return null;
+    }
+    for (let i = series.observations.length - 1; i >= 0; i--) {
+      const v = series.observations[i].value;
+      if (v !== null && !Number.isNaN(v)) {
+        return { value: v, date: series.observations[i].date };
+      }
+    }
+    return null;
   }
-};
 
-let charts = { trend:null, radar:null };
-let compositeScore = null;
+  function classifyRAG(cfg, value) {
+    if (value == null || !cfg || !cfg.thresholds) return { cls: "", label: "N/A" };
+    const t = cfg.thresholds;
 
-/**
- * LOAD FRED CACHE
- * (All auto indicators read exclusively from data/fred_cache.json)
- */
+    // Design choice: thresholds assume "normal" direction; if invert == true,
+    // we flip interpretation for composite, but RAG shown is simple banding.
+    if (value >= t.red && t.red > t.amber && t.amber > t.green) {
+      // Not using that pattern here; keep explicit below.
+      return { cls: "", label: "" };
+    }
 
-async function loadFromFredCache(){
-  try{
-    const res = await fetch('data/fred_cache.json', { cache:'no-store' });
-    if(!res.ok){
-      console.error('FRED cache HTTP error', res.status);
-      document.getElementById('cache-badge').textContent = 'FRED cache: not found';
+    // Most of ours: green < amber < red for risk (non-inverted)
+    if (cfg.id === "T10Y3M" || cfg.id === "TDSP") {
+      // More negative = worse
+      if (value <= t.red) return { cls: "rag-red", label: "Inverted" };
+      if (value <= t.amber) return { cls: "rag-amber", label: "Flat" };
+      return { cls: "rag-green", label: "Normal" };
+    }
+
+    if (cfg.id === "BAMLH0A0HYM2" || cfg.id === "TEDRATE" || cfg.id === "VIXCLS") {
+      if (value >= t.red) return { cls: "rag-red", label: "Stressed" };
+      if (value >= t.amber) return { cls: "rag-amber", label: "Elevated" };
+      return { cls: "rag-green", label: "Calm" };
+    }
+
+    if (cfg.id === "NAPMNOI") {
+      if (value <= t.red) return { cls: "rag-red", label: "Contraction" };
+      if (value <= t.amber) return { cls: "rag-amber", label: "Soft" };
+      if (value >= t.green) return { cls: "rag-green", label: "Expansion" };
+      return { cls: "", label: "" };
+    }
+
+    if (cfg.id === "UMCSENT") {
+      if (value <= t.red) return { cls: "rag-red", label: "Recessionary" };
+      if (value <= t.amber) return { cls: "rag-amber", label: "Weak" };
+      if (value >= t.green) return { cls: "rag-green", label: "Strong" };
+      return { cls: "", label: "" };
+    }
+
+    if (cfg.id === "ICSA") {
+      if (value >= t.red) return { cls: "rag-red", label: "Surging" };
+      if (value >= t.amber) return { cls: "rag-amber", label: "Rising" };
+      return { cls: "rag-green", label: "Contained" };
+    }
+
+    if (cfg.id === "UNRATE") {
+      if (value >= t.red) return { cls: "rag-red", label: "High" };
+      if (value >= t.amber) return { cls: "rag-amber", label: "Drifting up" };
+      return { cls: "rag-green", label: "Low" };
+    }
+
+    if (cfg.id === "SAHMREALTIME") {
+      if (value >= t.red) return { cls: "rag-red", label: "Trigger" };
+      if (value >= t.amber) return { cls: "rag-amber", label: "Watch" };
+      return { cls: "rag-green", label: "No trigger" };
+    }
+
+    if (cfg.id === "NFCI") {
+      // negative = loose, positive = tight
+      if (value >= t.red) return { cls: "rag-red", label: "Tight" };
+      if (value >= t.amber) return { cls: "rag-amber", label: "Less easy" };
+      return { cls: "rag-green", label: "Easy" };
+    }
+
+    return { cls: "", label: "" };
+  }
+
+  // Composite: crude but transparent equal-weight scoring of selected indicators.
+  function computeComposite(cache) {
+    let total = 0;
+    let count = 0;
+
+    for (const key in INDICATOR_CONFIG) {
+      const cfg = INDICATOR_CONFIG[key];
+      if (cfg.ignoreInComposite) continue;
+      const s = getSeries(cache, cfg.id);
+      const pt = getLatestPoint(s);
+      if (!pt) continue;
+
+      const v = pt.value;
+      let score = 50; // neutral
+
+      // Basic rules – design, not prophecy.
+      switch (cfg.id) {
+        case "T10Y3M":
+          if (v <= -0.75) score = 95;
+          else if (v <= -0.25) score = 80;
+          else if (v <= 0) score = 65;
+          else score = 35;
+          break;
+        case "BAMLH0A0HYM2":
+          if (v >= 6) score = 95;
+          else if (v >= 4.5) score = 80;
+          else if (v >= 3) score = 60;
+          else score = 35;
+          break;
+        case "NAPMNOI":
+          if (v <= 45) score = 90;
+          else if (v <= 48) score = 70;
+          else if (v < 52) score = 55;
+          else score = 35;
+          break;
+        case "UMCSENT":
+          if (v <= 50) score = 80;
+          else if (v <= 60) score = 65;
+          else if (v >= 70) score = 40;
+          else score = 50;
+          break;
+        case "ICSA":
+          if (v >= 450000) score = 95;
+          else if (v >= 350000) score = 75;
+          else score = 40;
+          break;
+        case "UNRATE":
+          if (v >= 7) score = 90;
+          else if (v >= 6) score = 70;
+          else if (v <= 4) score = 40;
+          else score = 55;
+          break;
+        case "SAHMREALTIME":
+          if (v >= 0.5) score = 95;
+          else if (v >= 0.3) score = 75;
+          else score = 40;
+          break;
+        case "PERMIT":
+        case "HOUST":
+          if (v <= 900) score = 80;
+          else if (v <= 1100) score = 65;
+          else score = 45;
+          break;
+        case "NFCI":
+          if (v >= 0.6) score = 90;
+          else if (v >= 0.3) score = 70;
+          else if (v <= -0.5) score = 40;
+          else score = 55;
+          break;
+        case "TEDRATE":
+          if (v >= 1) score = 85;
+          else if (v >= 0.75) score = 70;
+          else score = 45;
+          break;
+        case "VIXCLS":
+          if (v >= 30) score = 90;
+          else if (v >= 22) score = 70;
+          else score = 40;
+          break;
+        default:
+          score = 50;
+      }
+
+      total += score;
+      count++;
+    }
+
+    if (!count) return null;
+
+    const avg = total / count;
+    return Math.round(avg);
+  }
+
+  function horizonRisk(composite) {
+    if (composite == null) return { "3m": "--", "6m": "--", "12m": "--" };
+    // Simple mapping: higher composite → higher short-term risk
+    const base = composite / 100;
+    const clamp = x => Math.max(0, Math.min(99, Math.round(x)));
+    return {
+      "3m": clamp(base * 90),
+      "6m": clamp(base * 80),
+      "12m": clamp(base * 65)
+    };
+  }
+
+  // ---------- RENDERING ----------
+
+  let gaugeChart, decompChart;
+
+  function renderIndicators(cache) {
+    const grid = document.getElementById("indicatorsGrid");
+    grid.innerHTML = "";
+
+    REQUIRED_IDS.forEach(id => {
+      const cfg = Object.values(INDICATOR_CONFIG).find(c => c.id === id);
+      const card = document.createElement("div");
+      card.className = "indicator-card";
+
+      const label = document.createElement("div");
+      label.className = "indicator-label";
+      label.textContent = cfg ? cfg.label : id;
+      card.appendChild(label);
+
+      const s = getSeries(cache, id);
+      const pt = getLatestPoint(s);
+
+      const main = document.createElement("div");
+      main.className = "indicator-main";
+
+      const valEl = document.createElement("div");
+      valEl.className = "indicator-value";
+
+      const unitEl = document.createElement("div");
+      unitEl.className = "indicator-unit";
+
+      if (!s || !pt) {
+        valEl.textContent = "--";
+        const miss = document.createElement("div");
+        miss.className = "indicator-missing";
+        miss.textContent = "Missing in fred_cache.json";
+        card.appendChild(main);
+        main.appendChild(valEl);
+        card.appendChild(miss);
+      } else {
+        let display = pt.value;
+        if (cfg && (cfg.id === "PERMIT" || cfg.id === "HOUST")) {
+          display = (pt.value / 1).toFixed(0); // thousands in reality; keep raw for now
+        } else if (cfg && cfg.id === "ICSA") {
+          display = pt.value.toLocaleString("en-US");
+        } else if (cfg && (cfg.id === "T10Y3M" || cfg.id === "TDSP" || cfg.id === "TEDRATE")) {
+          display = pt.value.toFixed(2);
+        } else if (cfg && cfg.id === "BAMLH0A0HYM2") {
+          display = pt.value.toFixed(2);
+        } else if (cfg && cfg.id === "VIXCLS") {
+          display = pt.value.toFixed(1);
+        } else if (cfg && cfg.id === "NFCI") {
+          display = pt.value.toFixed(2);
+        } else if (cfg && cfg.id === "NAPMNOI") {
+          display = pt.value.toFixed(1);
+        } else if (cfg && (cfg.id === "UMCSENT" || cfg.id === "UNRATE" || cfg.id === "SAHMREALTIME")) {
+          display = pt.value.toFixed(1);
+        } else {
+          display = (typeof pt.value === "number") ? pt.value.toFixed(2) : pt.value;
+        }
+
+        valEl.textContent = display;
+        unitEl.textContent = cfg && cfg.unit ? cfg.unit : "";
+
+        main.appendChild(valEl);
+        main.appendChild(unitEl);
+
+        const status = document.createElement("div");
+        const rag = classifyRAG(cfg, pt.value);
+        status.className = "indicator-status " + rag.cls;
+        status.textContent = rag.label || "OK";
+
+        const fresh = document.createElement("div");
+        fresh.className = "indicator-fresh";
+        fresh.textContent = pt.date ? `Last: ${pt.date}` : `Updated: ${s.last_updated || "n/a"}`;
+
+        card.appendChild(main);
+        card.appendChild(status);
+        card.appendChild(fresh);
+      }
+
+      grid.appendChild(card);
+    });
+  }
+
+  function renderGauge(score) {
+    const ctx = document.getElementById("gaugeCanvas").getContext("2d");
+    if (gaugeChart) gaugeChart.destroy();
+
+    const value = score == null ? 0 : score;
+    const norm = Math.max(0, Math.min(100, value));
+
+    gaugeChart = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: ["Risk", ""],
+        datasets: [{
+          data: [norm, 100 - norm],
+          borderWidth:0,
+          cutout:"72%",
+          circumference:180,
+          rotation:270,
+          backgroundColor:[
+            norm < 40 ? "#1ec28b" : (norm < 70 ? "#ffc247" : "#ff6070"),
+            "rgba(40,48,80,0.6)"
+          ]
+        }]
+      },
+      options: {
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{ legend:{ display:false }, tooltip:{ enabled:false } }
+      }
+    });
+  }
+
+  function renderDecomp(cache) {
+    const ctx = document.getElementById("decompChart").getContext("2d");
+    if (decompChart) decompChart.destroy();
+
+    const labels = [];
+    const data = [];
+    const bg = [];
+
+    Object.keys(INDICATOR_CONFIG).forEach(key => {
+      const cfg = INDICATOR_CONFIG[key];
+      if (cfg.ignoreInComposite) return;
+      const s = getSeries(cache, cfg.id);
+      const pt = getLatestPoint(s);
+      if (!pt) return;
+
+      labels.push(cfg.label);
+      const rag = classifyRAG(cfg, pt.value);
+      let val = 50;
+      if (rag.cls === "rag-green") val = 30;
+      else if (rag.cls === "rag-amber") val = 65;
+      else if (rag.cls === "rag-red") val = 90;
+      data.push(val);
+
+      if (rag.cls === "rag-green") bg.push("rgba(30,194,139,0.82)");
+      else if (rag.cls === "rag-amber") bg.push("rgba(255,194,71,0.88)");
+      else if (rag.cls === "rag-red") bg.push("rgba(255,96,112,0.9)");
+      else bg.push("rgba(139,150,176,0.6)");
+    });
+
+    decompChart = new Chart(ctx, {
+      type:"bar",
+      data:{
+        labels,
+        datasets:[{
+          data,
+          borderWidth:0,
+          backgroundColor:bg
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        indexAxis:"y",
+        scales:{
+          x:{ display:false, min:0, max:100 },
+          y:{ ticks:{ color:"#8b96b0", font:{ size:8 } }, grid:{ display:false } }
+        },
+        plugins:{ legend:{ display:false }, tooltip:{ enabled:false } }
+      }
+    });
+  }
+
+  function renderHorizon(score) {
+    const row = document.getElementById("horizonRow");
+    row.innerHTML = "";
+    const hr = horizonRisk(score);
+    ["3m","6m","12m"].forEach(k => {
+      const d = document.createElement("div");
+      d.className = "horizon-pill";
+      d.textContent = `${k.toUpperCase()} crash risk: ${hr[k]}%`;
+      row.appendChild(d);
+    });
+  }
+
+  function renderComposite(score) {
+    const el = document.getElementById("compositeScore");
+    const tag = document.getElementById("compositeTag");
+
+    if (score == null) {
+      el.textContent = "--";
+      tag.innerHTML = '<span class="indicator-dot"></span><span>No composite (missing data)</span>';
       return;
     }
 
-    const cache = await res.json();
-    const series = cache.series || {};
-    document.getElementById('cache-badge').textContent =
-      'FRED cache: ' + (cache.generated_at || 'loaded');
+    el.textContent = score;
+    let label = "Calm";
+    let color = "var(--green)";
 
-    function lastVal(id){
-      const s = series[id];
-      if(!s || !Array.isArray(s.observations) || !s.observations.length) return null;
-      const o = s.observations[s.observations.length - 1];
-      const v = Number(o.value);
-      return Number.isFinite(v) ? v : null;
+    if (score >= 75) { label = "Severe stress"; color = "var(--red)"; }
+    else if (score >= 55) { label = "Elevated"; color = "var(--amber)"; }
+
+    tag.innerHTML = `<span class="indicator-dot" style="background:${color}"></span><span>${label}</span>`;
+  }
+
+  function renderAudit(cache) {
+    const auditSummary = document.getElementById("auditSummary");
+    const missingList = document.getElementById("missingList");
+
+    if (!cache || !cache.series) {
+      auditSummary.textContent = "Cache failed to load or has no 'series' key.";
+      missingList.textContent = "Check data/fred_cache.json and GitHub Action logs.";
+      return;
     }
 
-    function obsMonthsBack(id, months){
-      const s = series[id];
-      if(!s || !Array.isArray(s.observations) || !s.observations.length) return null;
-      const last = s.observations[s.observations.length - 1];
-      const lastDate = new Date(last.date);
-      if(isNaN(lastDate)) return null;
-      const target = new Date(lastDate);
-      target.setMonth(target.getMonth() - months);
-      let candidate = null;
-      for(let i=0;i<s.observations.length;i++){
-        const o = s.observations[i];
-        const d = new Date(o.date);
-        if(isNaN(d)) continue;
-        if(d <= target) candidate = o; else break;
-      }
-      return candidate;
-    }
+    const present = [];
+    const missing = [];
 
-    function rollingAvgLastN(id, n){
-      const s = series[id];
-      if(!s || !Array.isArray(s.observations) || s.observations.length < n) return null;
-      const slice = s.observations.slice(-n);
-      const vals = slice
-        .map(o => Number(o.value))
-        .filter(v => Number.isFinite(v));
-      if(vals.length < n) return null;
-      const sum = vals.reduce((a,b)=>a+b,0);
-      return sum / n;
-    }
-
-    function pctChange(nv, ov){
-      const n = Number(nv), o = Number(ov);
-      if(!Number.isFinite(n) || !Number.isFinite(o) || o === 0) return null;
-      return ((n - o) / o) * 100;
-    }
-
-    // Map series -> indicator.current
-    Object.keys(INDICATORS).forEach(key => {
-      const ind = INDICATORS[key];
-      if(!ind.fromFred || !ind.fredId) return;
-
-      if(ind.fredId === 'M2SL'){
-        const lvlNow = lastVal('M2SL');
-        const back = obsMonthsBack('M2SL', 12);
-        if(lvlNow != null && back && back.value != null){
-          const pc = pctChange(lvlNow, back.value);
-          if(pc != null) ind.current = pc;
-        }
-      } else if(ind.fredId === 'ICSA'){
-        const avg = rollingAvgLastN('ICSA', 4);
-        if(avg != null) ind.current = avg / 1000; // k
-      } else if(ind.fredId === 'PERMIT'){
-        const now = lastVal('PERMIT');
-        const back = obsMonthsBack('PERMIT', 6);
-        if(now != null && back && back.value != null){
-          const pc = pctChange(now, back.value);
-          if(pc != null) ind.current = pc;
-        }
-      } else {
-        const v = lastVal(ind.fredId);
-        if(v != null) ind.current = v;
-      }
+    REQUIRED_IDS.forEach(id => {
+      if (cache.series[id]) present.push(id);
+      else missing.push(id);
     });
 
-    // Required IDs sanity log (no hard-wiring)
-    const required = [
-      'T10Y3M','BAMLH0A0HYM2','UMCSENT','ISMNO','M2SL',
-      'ICSA','SAHMREALTIME','PERMIT','NFCI','VIXCLS','TDSP'
-    ];
-    required.forEach(id => {
-      const v = lastVal(id);
-      if(v != null){
-        console.log(`✅ ${id} loaded OK`, v);
-      } else {
-        console.warn(`⚠️ ${id} missing or invalid in fred_cache.json`);
+    auditSummary.textContent =
+      `Present: ${present.length}/${REQUIRED_IDS.length}. Missing: ${missing.length}.`;
+
+    if (missing.length) {
+      missingList.textContent =
+        "Missing series: " + missing.join(", ") + ". If NAPMNOI is here, ISM will render; if not, fix fetch_fred.js.";
+      document.getElementById("metaStatus").textContent = "Status: MISSING SERIES – see console/audit.";
+    } else {
+      missingList.textContent = "All required series found.";
+    }
+  }
+
+  // ---------- INIT ----------
+
+  async function init() {
+    try {
+      const res = await fetch(FRED_CACHE_PATH, { cache: "no-store" });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status} loading fred_cache.json`);
       }
+      const cache = await res.json();
+
+      document.getElementById("metaGenerated").textContent =
+        `Cache generated_at: ${cache.generated_at || "n/a"}`;
+      document.getElementById("metaStatus").textContent = "Status: cache loaded.";
+
+      renderIndicators(cache);
+
+      const composite = computeComposite(cache);
+      renderComposite(composite);
+      renderGauge(composite);
+      renderDecomp(cache);
+      renderHorizon(composite);
+      renderAudit(cache);
+
+      console.log("CrashRadar init complete. Composite:", composite);
+    } catch (err) {
+      console.error("Init error:", err);
+      document.getElementById("metaStatus").textContent =
+        "Status: FAILED TO LOAD fred_cache.json (see console).";
+      document.getElementById("auditSummary").textContent =
+        "Could not load fred_cache.json. Check path /data/fred_cache.json and GitHub Action.";
+    }
+
+    // Tabs (simple filter: this demo keeps one decomp; you can extend if needed)
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
     });
-
-  }catch(err){
-    console.error('FRED cache error:', err);
-    document.getElementById('cache-badge').textContent = 'FRED cache: error';
-  }
-}
-
-/**
- * SCORING HELPERS
- * Threshold = start of danger.
- * span = how far into danger zone to hit 100 stress.
- */
-
-function scaleIndicator(key, value){
-  const ind = INDICATORS[key];
-  if(!ind || !Number.isFinite(value)) return null;
-
-  const t = ind.threshold;
-  const dir = ind.direction;
-  const span = (ind.span && ind.span > 0)
-    ? ind.span
-    : Math.max(1, Math.abs(t) * 0.5);
-
-  let stress = 0;
-
-  if(dir === 'below'){
-    if(value < t){
-      stress = ((t - value) / span) * 100;
-    }
-  } else if(dir === 'above'){
-    if(value > t){
-      stress = ((value - t) / span) * 100;
-    }
   }
 
-  if(stress < 0) stress = 0;
-  if(stress > 100) stress = 100;
-  return stress;
-}
-
-function valuationStress(key, val){
-  const v = VALUATIONS[key];
-  if(!v || !Number.isFinite(val)) return null;
-  if(val <= v.danger) return 0;
-  const ratio = val / v.danger;
-  let stress = (ratio - 1) * 300; // keep aggressive: rich valuations bite
-  if(stress < 0) stress = 0;
-  if(stress > 100) stress = 100;
-  return stress;
-}
-
-function computeComposite(){
-  // macro
-  let mSum = 0, mW = 0;
-  Object.keys(INDICATORS).forEach(k => {
-    const ind = INDICATORS[k];
-    const s = scaleIndicator(k, ind.current);
-    if(s != null && ind.weight){
-      mSum += s * ind.weight;
-      mW   += ind.weight;
-    }
-  });
-  const macroAvg = mW > 0 ? (mSum / mW) : null;
-
-  // valuations
-  let vSum = 0, vW = 0;
-  Object.keys(VALUATIONS).forEach(k => {
-    const s = valuationStress(k, VALUATIONS[k].current);
-    const v = VALUATIONS[k];
-    if(s != null && v.weight){
-      vSum += s * v.weight;
-      vW   += v.weight;
-    }
-  });
-  const valAvg = vW > 0 ? (vSum / vW) : null;
-
-  if(macroAvg == null && valAvg == null) return null;
-  if(macroAvg != null && valAvg != null){
-    return macroAvg * (1 - VALUATION_BLOCK_WEIGHT) + valAvg * VALUATION_BLOCK_WEIGHT;
-  }
-  return macroAvg != null ? macroAvg : valAvg;
-}
-
-/**
- * DERIVED LABELS
- */
-
-function derivedRecessionRisk(c){
-  if(c == null) return '--';
-  if(c < 25) return '<10%';
-  if(c < 40) return '10–20%';
-  if(c < 55) return '20–30%';
-  if(c < 70) return '30–50%';
-  return '>50%';
-}
-
-function derivedValuationRisk(){
-  let sum = 0, w = 0;
-  Object.keys(VALUATIONS).forEach(k => {
-    const s = valuationStress(k, VALUATIONS[k].current);
-    const v = VALUATIONS[k];
-    if(s != null && v.weight){
-      sum += s * v.weight;
-      w   += v.weight;
-    }
-  });
-  if(!w) return '--';
-  const sc = Math.round(sum / w);
-  if(sc < 33) return 'Low';
-  if(sc < 66) return 'Moderate';
-  return 'High';
-}
-
-function derivedLaborStress(){
-  const c = INDICATORS.INITIAL_CLAIMS.current;
-  const s = INDICATORS.SAHM_RULE.current;
-  if(!Number.isFinite(c) || !Number.isFinite(s)) return '--';
-  const cs = Math.max(0, Math.min(100, (c - 250) * 0.5));
-  const ss = Math.max(0, Math.min(100, s * 200));
-  const avg = (cs + ss) / 2;
-  if(avg < 30) return 'Low';
-  if(avg < 60) return 'Moderate';
-  return 'High';
-}
-
-/**
- * RENDER: INDICATOR CARDS
- */
-
-function buildIndicatorElement(key, ind){
-  const s = scaleIndicator(key, ind.current);
-  let cls = 'indicator';
-  if(s != null){
-    if(s >= 66) cls += ' danger';
-    else if(s >= 33) cls += ' warning';
-  }
-  const hasVal = Number.isFinite(ind.current);
-  const valText = hasVal ? ind.format(ind.current) : '--';
-  const thr = ind.threshold != null
-    ? ('Threshold: ' + (ind.direction === 'below' ? '< ' : '> ') + ind.format(ind.threshold))
-    : '';
-  const src = ind.fromFred ? 'Auto from FRED' : 'Manual input';
-
-  let manual = '';
-  if(!ind.fromFred){
-    manual =
-      '<div class="manual-input-row">' +
-      '<span>Set:</span>' +
-      '<input class="manual-input" type="number" step="0.1" ' +
-      'data-ind-key="'+key+'" value="'+(hasVal ? ind.current : '')+'">' +
-      '</div>';
-  }
-
-  const div = document.createElement('div');
-  div.className = cls;
-  div.setAttribute('data-ind-card', key);
-  div.innerHTML =
-    '<div class="indicator-header">' +
-      '<div class="indicator-name">'+ind.label+'</div>' +
-      '<div class="indicator-value" data-ind-value="'+key+'">'+valText+'</div>' +
-    '</div>' +
-    '<div class="indicator-threshold">'+thr+'</div>' +
-    '<div class="indicator-threshold">'+ind.desc+'</div>' +
-    '<div class="source-tag">'+src+'</div>' +
-    manual;
-  return div;
-}
-
-function renderIndicators(){
-  const t1 = document.getElementById('tier1-indicators');
-  const t2 = document.getElementById('tier2-indicators');
-  t1.innerHTML = '';
-  t2.innerHTML = '';
-
-  Object.keys(INDICATORS).forEach(k => {
-    const ind = INDICATORS[k];
-    const el = buildIndicatorElement(k, ind);
-    if(ind.tier === 1) t1.appendChild(el);
-    else t2.appendChild(el);
-  });
-
-  // Manual LEI input handlers
-  document.querySelectorAll('.manual-input[data-ind-key]').forEach(inp => {
-    inp.addEventListener('input', () => {
-      const key = inp.getAttribute('data-ind-key');
-      const v = parseFloat(inp.value);
-      INDICATORS[key].current = Number.isFinite(v) ? v : null;
-
-      const valEl = document.querySelector('[data-ind-value="'+key+'"]');
-      if(valEl){
-        valEl.textContent = Number.isFinite(v)
-          ? INDICATORS[key].format(v)
-          : '--';
-      }
-      updateDynamic();
-    });
-  });
-}
-
-/**
- * RENDER: VALUATION CARDS
- */
-
-function renderValuations(){
-  const box = document.getElementById('valuation-indicators');
-  box.innerHTML = '';
-
-  Object.keys(VALUATIONS).forEach(k => {
-    const v = VALUATIONS[k];
-    const s = valuationStress(k, v.current);
-    let cls = 'indicator';
-    if(s != null){
-      if(s >= 66) cls += ' danger';
-      else if(s >= 33) cls += ' warning';
-    }
-    const hasVal = Number.isFinite(v.current);
-    const valText = hasVal ? v.format(v.current) : '--';
-
-    const div = document.createElement('div');
-    div.className = cls;
-    div.setAttribute('data-val-card', k);
-    div.innerHTML =
-      '<div class="indicator-header">' +
-        '<div class="indicator-name">'+v.label+'</div>' +
-        '<div class="indicator-value" data-val-value="'+k+'">'+valText+'</div>' +
-      '</div>' +
-      '<div class="indicator-threshold">Danger threshold: '+v.danger+'</div>' +
-      '<div class="indicator-threshold">'+v.desc+'</div>' +
-      '<div class="source-tag">Manual input</div>' +
-      '<div class="manual-input-row">' +
-        '<span>Set:</span>' +
-        '<input class="manual-input" type="number" step="0.1" ' +
-        'data-val-key="'+k+'" value="'+(hasVal ? v.current : '')+'">' +
-      '</div>';
-    box.appendChild(div);
-  });
-
-  // Manual valuation inputs
-  document.querySelectorAll('.manual-input[data-val-key]').forEach(inp => {
-    inp.addEventListener('input', () => {
-      const key = inp.getAttribute('data-val-key');
-      const v = parseFloat(inp.value);
-      VALUATIONS[key].current = Number.isFinite(v) ? v : null;
-
-      const valEl = document.querySelector('[data-val-value="'+key+'"]');
-      if(valEl){
-        valEl.textContent = Number.isFinite(v)
-          ? VALUATIONS[key].format(v)
-          : '--';
-      }
-      updateDynamic();
-    });
-  });
-}
-
-/**
- * SYNC "CURRENT (YOUR INPUTS)" BOX
- */
-
-function syncValuationCurrentBox(){
-  const b = VALUATIONS.BUFFETT.current;
-  const c = VALUATIONS.SHILLER_PE.current;
-  const bEl = document.getElementById('current-buffett-label');
-  const cEl = document.getElementById('current-cape-label');
-
-  if(bEl){
-    bEl.textContent = Number.isFinite(b)
-      ? ('Buffett: ' + b.toFixed(1) + '%')
-      : 'Buffett: --';
-  }
-  if(cEl){
-    cEl.textContent = Number.isFinite(c)
-      ? ('CAPE: ' + c.toFixed(1))
-      : 'CAPE: --';
-  }
-}
-
-/**
- * GAUGE + STATUS
- */
-
-function renderGaugeAndStatus(){
-  compositeScore = computeComposite();
-
-  const scoreEl = document.getElementById('composite-score');
-  const needle = document.getElementById('needle');
-  const fill = document.getElementById('risk-fill');
-  const regimeEl = document.getElementById('regime-label');
-  const alert = document.getElementById('alert-banner');
-
-  const total = Object.keys(INDICATORS).length + Object.keys(VALUATIONS).length;
-  const used =
-    Object.keys(INDICATORS).filter(k => Number.isFinite(INDICATORS[k].current)).length +
-    Object.keys(VALUATIONS).filter(k => Number.isFinite(VALUATIONS[k].current)).length;
-
-  document.getElementById('inputs-badge').textContent =
-    'Inputs: ' + used + '/' + total + ' populated';
-  document.getElementById('quality-display').textContent =
-    total ? Math.round(used / total * 100) + '%' : '--';
-
-  if(compositeScore == null){
-    scoreEl.textContent = '--';
-    fill.style.width = '0%';
-    needle.style.transform = 'translateX(-50%) rotate(0deg)';
-    regimeEl.textContent = 'COMPOSITE STRESS (insufficient data)';
-    document.getElementById('recession-risk-display').textContent = '--';
-    document.getElementById('valuation-risk-display').textContent = '--';
-    document.getElementById('labor-risk-display').textContent = '--';
-    alert.textContent = 'No composite yet. Check FRED cache and manual inputs.';
-    return;
-  }
-
-  const v = Math.round(compositeScore);
-  scoreEl.textContent = v;
-  fill.style.width = v + '%';
-  const angle = (v / 100) * 360;
-  needle.style.transform = 'translateX(-50%) rotate(' + angle + 'deg)';
-
-  let regime;
-  if(v <= 30) regime = 'Low stress regime';
-  else if(v <= 50) regime = 'Elevated — monitor';
-  else if(v <= 70) regime = 'High — defensive bias';
-  else regime = 'Critical regime';
-
-  regimeEl.textContent = 'COMPOSITE STRESS — ' + regime;
-
-  document.getElementById('recession-risk-display').textContent =
-    derivedRecessionRisk(v);
-  document.getElementById('valuation-risk-display').textContent =
-    derivedValuationRisk();
-  document.getElementById('labor-risk-display').textContent =
-    derivedLaborStress();
-
-  if(v >= 70){
-    alert.innerHTML = '<strong>Critical:</strong> Composite = ' + v +
-      '. Macro + valuations in historical danger cluster.';
-  }else if(v >= 50){
-    alert.innerHTML = '<strong>Warning:</strong> Composite = ' + v +
-      '. Elevated risk — inspect indicator tiles.';
-  }else{
-    alert.textContent =
-      'Composite = ' + v +
-      '. On your inputs, configuration is not yet in the classic crash cluster, but always cross-check.';
-  }
-}
-
-/**
- * CHARTS
- */
-
-function renderMarketTrendChart(){
-  const ctx = document.getElementById('market-trend').getContext('2d');
-  if(charts.trend) charts.trend.destroy();
-
-  const base = compositeScore != null ? compositeScore : 40;
-  const labels = ['T-10','T-8','T-6','T-4','T-2','Now'];
-  const compData = [0.7,0.8,0.9,0.95,0.98,1].map(f => {
-    let x = base * f;
-    if(x < 0) x = 0;
-    if(x > 100) x = 100;
-    return Math.round(x);
-  });
-
-  let vSum = 0, vW = 0;
-  Object.keys(VALUATIONS).forEach(k => {
-    const s = valuationStress(k, VALUATIONS[k].current);
-    const v = VALUATIONS[k];
-    if(s != null && v.weight){
-      vSum += s * v.weight;
-      vW   += v.weight;
-    }
-  });
-  const valBase = vW ? (vSum / vW) : 30;
-  const valData = [0.75,0.85,0.92,0.96,0.99,1].map(f => {
-    let x = valBase * f;
-    if(x < 0) x = 0;
-    if(x > 100) x = 100;
-    return Math.round(x);
-  });
-
-  charts.trend = new Chart(ctx, {
-    type:'line',
-    data:{
-      labels,
-      datasets:[
-        {
-          label:'Composite Stress',
-          data:compData,
-          borderColor:'#6b9eff',
-          backgroundColor:'rgba(107,158,255,0.14)',
-          tension:0.32,
-          fill:true,
-          pointRadius:2
-        },
-        {
-          label:'Valuation Stress',
-          data:valData,
-          borderColor:'#ff6070',
-          backgroundColor:'rgba(255,96,112,0.12)',
-          tension:0.32,
-          fill:true,
-          pointRadius:2
-        }
-      ]
-    },
-    options:{
-      responsive:true,
-      plugins:{
-        legend:{labels:{color:'#e8eeff',font:{size:9}}},
-        title:{
-          display:true,
-          text:'Stress & Valuation Trajectory (Illustrative)',
-          color:'#e8eeff',
-          font:{size:11}
-        }
-      },
-      scales:{
-        y:{
-          min:0,
-          max:100,
-          ticks:{color:'#8b96b0',font:{size:8}},
-          grid:{color:'rgba(255,255,255,0.08)'}
-        },
-        x:{
-          ticks:{color:'#8b96b0',font:{size:8}},
-          grid:{color:'rgba(255,255,255,0.06)'}
-        }
-      }
-    }
-  });
-}
-
-function renderRiskRadarChart(){
-  const ctx = document.getElementById('risk-radar').getContext('2d');
-  if(charts.radar) charts.radar.destroy();
-
-  const labels = [];
-  const data = [];
-
-  Object.keys(INDICATORS).forEach(k => {
-    const ind = INDICATORS[k];
-    const s = scaleIndicator(k, ind.current);
-    if(s != null){
-      labels.push(ind.label);
-      data.push(Math.round(s));
-    }
-  });
-
-  let vSum = 0, vW = 0;
-  Object.keys(VALUATIONS).forEach(k => {
-    const s = valuationStress(k, VALUATIONS[k].current);
-    const v = VALUATIONS[k];
-    if(s != null && v.weight){
-      vSum += s * v.weight;
-      vW   += v.weight;
-    }
-  });
-  if(vW){
-    labels.push('Valuations (Buffett + CAPE)');
-    data.push(Math.round(vSum / vW));
-  }
-
-  if(!labels.length) return;
-
-  charts.radar = new Chart(ctx, {
-    type:'radar',
-    data:{
-      labels,
-      datasets:[{
-        label:'Normalized Stress (0–100)',
-        data,
-        borderColor:'#6b9eff',
-        backgroundColor:'rgba(107,158,255,0.18)',
-        pointRadius:2
-      }]
-    },
-    options:{
-      responsive:true,
-      plugins:{legend:{display:false}},
-      scales:{
-        r:{
-          angleLines:{color:'rgba(255,255,255,0.05)'},
-          grid:{color:'rgba(255,255,255,0.09)'},
-          suggestedMin:0,
-          suggestedMax:100,
-          ticks:{display:false},
-          pointLabels:{color:'#8b96b0',font:{size:7}}
-        }
-      }
-    }
-  });
-}
-
-/**
- * INSIGHT
- */
-
-function updateInsight(){
-  const el = document.getElementById('insight-text');
-  if(!el) return;
-  const c = compositeScore;
-  const vRisk = derivedValuationRisk();
-
-  if(c == null){
-    el.textContent = 'No composite yet. Ensure FRED cache is updated and manual LEI / valuations are set.';
-  } else if(c >= 70 && vRisk === 'High'){
-    el.textContent = 'Macro and valuations both extreme. Historically associated with major drawdowns.';
-  } else if(c >= 50 && vRisk !== 'Low'){
-    el.textContent = 'Elevated macro stress with stretched valuations. Asymmetry poor.';
-  } else if(c < 40 && vRisk === 'High'){
-    el.textContent = 'Macro ok but valuations rich. Vulnerable to shocks or policy surprises.';
-  } else if(c < 40 && vRisk === 'Low'){
-    el.textContent = 'Macro and valuations both moderate vs history. No obvious crash cluster.';
-  } else {
-    el.textContent = 'Mixed configuration. Use radar and tiles to see which levers are driving risk.';
-  }
-}
-
-/**
- * UPDATE COORDINATOR
- */
-
-function updateDynamic(){
-  renderGaugeAndStatus();
-  renderMarketTrendChart();
-  renderRiskRadarChart();
-  syncValuationCurrentBox();
-  updateInsight();
-}
-
-function updateAll(){
-  renderIndicators();
-  renderValuations();
-  updateDynamic();
-}
-
-/**
- * INIT
- */
-
-document.addEventListener('DOMContentLoaded', () => {
-  loadFromFredCache()
-    .then(() => {
-      updateAll();
-    })
-    .catch(err => {
-      console.error('Init error:', err);
-      updateAll();
-    });
-});
+  document.addEventListener("DOMContentLoaded", init);
 </script>
 </body>
 </html>
