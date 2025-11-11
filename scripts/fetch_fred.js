@@ -35,7 +35,6 @@ const path = require("path");
       "T10Y3M",        // 10y-3m
       "BAMLH0A0HYM2",  // HY OAS
       "UMCSENT",       // UMich sentiment
-      "ISMNOI",        // ISM New Orders (replaces deprecated NAPMNOI)
       "M2SL",          // M2
       "VIXCLS",        // VIX
       "ICSA",          // Initial claims
