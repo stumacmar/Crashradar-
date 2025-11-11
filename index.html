@@ -553,7 +553,7 @@ const INDICATORS = {
     fredId:'NFCI',
     current:null,
     format:v => v.toFixed(2),
-    desc:'Chicago Fed NFCI. >0 indicates tighter-than-average conditions.'
+    desc:'Chicago Fed NFCI. >0 indicates tighter-than-average financial conditions.'
   },
   CONSUMER_SENTIMENT: {
     tier:1,
@@ -579,7 +579,7 @@ const INDICATORS = {
     fredId:'M2SL',
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'YoY growth from M2SL. ≤0% is historically rare and restrictive.'
+    desc:'YoY change from M2SL. ≤0% is historically rare and restrictive.'
   },
   INDUSTRIAL_PRODUCTION: {
     tier:2,
@@ -605,7 +605,7 @@ const INDICATORS = {
     fredId:'PERMIT',
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'6m % change. Sharp drops lead housing & broader weakness.'
+    desc:'6m % change. Sharp drops lead housing and broader weakness.'
   },
   INITIAL_CLAIMS: {
     tier:2,
@@ -642,7 +642,7 @@ const VALUATIONS = {
     danger:200,
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'>150% stretched; >200% historically extreme.'
+    desc:'<150% neutral; 150–199% stretched; ≥200% extreme.'
   },
   SHILLER_PE: {
     label:'Shiller CAPE',
@@ -650,7 +650,7 @@ const VALUATIONS = {
     danger:30,
     current:null,
     format:v => v.toFixed(1),
-    desc:'>25 elevated; >30 associated with poor long-run returns.'
+    desc:'<25 neutral; 25–29.9 stretched; ≥30 extreme.'
   }
 };
 
@@ -767,7 +767,7 @@ async function loadFromFredCache(){
       }
     });
 
-    // Log coverage for core macro series
+    // Log coverage for trace
     ['T10Y3M','BAMLH0A0HYM2','UMCSENT','M2SL','NFCI','ICSA','SAHMREALTIME','INDPRO','PERMIT']
       .forEach(id => {
         const v = lastVal(id);
@@ -820,19 +820,21 @@ function scaleIndicator(key, value){
 
 /**
  * Valuation stress.
+ * (Used for composite; colours also keyed directly off raw levels.)
  */
 function valuationStress(key, val){
   const v = VALUATIONS[key];
   if(!v || !Number.isFinite(val)) return null;
-
   let stress = 0;
 
   if(key === 'BUFFETT'){
     if(val <= 100) return 0;
-    stress = ((val - 100) / 100) * 100; // 100->0, 150->50, 200->100
+    // 100->0, 150->50, 200->100
+    stress = ((val - 100) / 100) * 100;
   } else if(key === 'SHILLER_PE'){
     if(val <= 20) return 0;
-    stress = ((val - 20) / 20) * 100;   // 20->0, 30->50, 40->100
+    // 20->0, 30->50, 40->100
+    stress = ((val - 20) / 20) * 100;
   }
 
   if(stress < 0) stress = 0;
@@ -944,11 +946,8 @@ function buildIndicatorElement(key, ind){
   let cls = 'indicator';
 
   if (s != null) {
-    if (s >= 66) {
-      cls += ' danger';
-    } else if (s > 0) {
-      cls += ' warning';
-    }
+    if (s >= 66) cls += ' danger';
+    else if (s > 0) cls += ' warning';
   }
 
   const hasVal = Number.isFinite(ind.current);
@@ -985,50 +984,32 @@ function buildIndicatorElement(key, ind){
   return div;
 }
 
-function renderIndicators(){
-  const t1 = document.getElementById('tier1-indicators');
-  const t2 = document.getElementById('tier2-indicators');
-  t1.innerHTML = '';
-  t2.innerHTML = '';
-
-  Object.entries(INDICATORS).forEach(([k,ind]) => {
-    const el = buildIndicatorElement(k, ind);
-    if(ind.tier === 1) t1.appendChild(el);
-    else t2.appendChild(el);
-  });
-
-  document.querySelectorAll('.manual-input[data-ind-key]').forEach(inp => {
-    inp.addEventListener('input', () => {
-      const key = inp.getAttribute('data-ind-key');
-      const v = parseFloat(inp.value);
-      INDICATORS[key].current = Number.isFinite(v) ? v : null;
-      const valEl = document.querySelector('[data-ind-value="'+key+'"]');
-      if(valEl){
-        valEl.textContent = Number.isFinite(v)
-          ? INDICATORS[key].format(v)
-          : '--';
-      }
-      updateDynamic();
-    });
-  });
-}
-
 /**
  * Valuation cards.
+ * Robust colour logic: directly keyed to real-world levels.
  */
 function renderValuations(){
   const box = document.getElementById('valuation-indicators');
   box.innerHTML = '';
 
   Object.entries(VALUATIONS).forEach(([k,v]) => {
+    const val = v.current;
     const s = valuationStress(k, v.current);
     let cls = 'indicator';
-    if(s != null){
-      if(s >= 66) cls += ' danger';
-      else if(s >= 33) cls += ' warning';
+
+    if (k === 'BUFFETT' && Number.isFinite(val)) {
+      if (val >= 200) cls += ' danger';
+      else if (val >= 150) cls += ' warning';
+    } else if (k === 'SHILLER_PE' && Number.isFinite(val)) {
+      if (val >= 30) cls += ' danger';
+      else if (val >= 25) cls += ' warning';
+    } else if (s != null) {
+      if (s >= 66) cls += ' danger';
+      else if (s >= 33) cls += ' warning';
     }
-    const hasVal = Number.isFinite(v.current);
-    const valText = hasVal ? v.format(v.current) : '--';
+
+    const hasVal = Number.isFinite(val);
+    const valText = hasVal ? v.format(val) : '--';
 
     const div = document.createElement('div');
     div.className = cls;
@@ -1044,7 +1025,7 @@ function renderValuations(){
       '<div class="manual-input-row">' +
         '<span>Set current reading:</span>' +
         '<input class="manual-input" type="number" step="0.1" ' +
-        'data-val-key="'+k+'" value="'+(hasVal ? v.current : '')+'">' +
+        'data-val-key="'+k+'" value="'+(hasVal ? val : '')+'">' +
       '</div>';
     box.appendChild(div);
   });
@@ -1052,12 +1033,13 @@ function renderValuations(){
   document.querySelectorAll('.manual-input[data-val-key]').forEach(inp => {
     inp.addEventListener('input', () => {
       const key = inp.getAttribute('data-val-key');
-      const v = parseFloat(inp.value);
-      VALUATIONS[key].current = Number.isFinite(v) ? v : null;
+      const vRaw = parseFloat(inp.value);
+      VALUATIONS[key].current = Number.isFinite(vRaw) ? vRaw : null;
       const valEl = document.querySelector('[data-val-value="'+key+'"]');
       if(valEl){
-        valEl.textContent = Number.isFinite(v)
-          ? VALUATIONS[key].format(v)
+        const meta = VALUATIONS[key];
+        valEl.textContent = Number.isFinite(vRaw)
+          ? meta.format(vRaw)
           : '--';
       }
       updateDynamic();
@@ -1313,7 +1295,6 @@ function updateInsight(){
   const el = document.getElementById('insight-text');
   const c = compositeScore;
   const vRisk = derivedValuationRisk();
-
   if(!el) return;
 
   if(c == null){
