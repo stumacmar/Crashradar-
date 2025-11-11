@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Economic Crash Radar Pro</title>
+  <title>Economic Crash Radar Pro v6</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root {
@@ -352,7 +352,7 @@
 <body>
 <div class="container">
   <div class="header">
-    <h1>⚡ Economic Crash Radar Pro</h1>
+    <h1>⚡ Economic Crash Radar Pro v6</h1>
     <div class="subtitle">
       10 macro indicators (9 auto via FRED, 1 manual) + 2 valuations. Transparent, deterministic composite.
     </div>
@@ -365,7 +365,7 @@
   </div>
 
   <div class="alert-banner" id="alert-banner">
-    Composite stress = 70% macro block + 30% valuation block when both are available.
+    Composite stress = 70% macro block + 30% valuation block when both are available; otherwise uses whichever block is populated.
   </div>
 
   <div class="dashboard">
@@ -500,7 +500,9 @@
 <script>
 'use strict';
 
+const MACRO_BLOCK_WEIGHT = 0.70;
 const VALUATION_BLOCK_WEIGHT = 0.30;
+
 let cacheAgeDays = null;
 
 const INDICATORS = {
@@ -561,7 +563,7 @@ const INDICATORS = {
     label:'UMich Sentiment',
     weight:0.08,
     threshold:60.0,
-    direction:'above',
+    direction:'below',
     span:25.0,
     fromFred:true,
     fredId:'UMCSENT',
@@ -768,7 +770,7 @@ async function loadFromFredCache(){
       }
     });
 
-    // Log coverage for core macro series
+    // Basic logging for key series
     ['T10Y3M','BAMLH0A0HYM2','UMCSENT','M2SL','NFCI','ICSA','SAHMREALTIME','INDPRO','PERMIT']
       .forEach(id => {
         const v = lastVal(id);
@@ -846,12 +848,10 @@ function valuationStress(key, val){
 }
 
 /**
- * Composite: 70% macro, 30% valuations when both exist.
- * If only one block present, it gets full weight (no artificial dilution).
+ * Composite: 70% macro, 30% valuations when both present.
+ * If only one block available, use that block directly.
  */
 function computeComposite(){
-  const MACRO_BLOCK_WEIGHT = 1 - VALUATION_BLOCK_WEIGHT;
-
   let macroStress = 0;
   let macroTotalWeight = 0;
   let macroCount = 0;
@@ -864,7 +864,6 @@ function computeComposite(){
       macroCount++;
     }
   });
-  const macroComponent = macroTotalWeight > 0 ? (macroStress / macroTotalWeight) : null;
 
   let valuationStressSum = 0;
   let valuationTotalWeight = 0;
@@ -878,22 +877,30 @@ function computeComposite(){
       valuationCount++;
     }
   });
+
+  if(macroTotalWeight === 0 && valuationTotalWeight === 0){
+    return null;
+  }
+
+  const macroComponent = macroTotalWeight > 0 ? (macroStress / macroTotalWeight) : null;
   const valuationComponent = valuationTotalWeight > 0 ? (valuationStressSum / valuationTotalWeight) : null;
 
   let composite = null;
 
-  if(macroComponent != null && valuationComponent != null){
-    composite = macroComponent * MACRO_BLOCK_WEIGHT +
-                valuationComponent * VALUATION_BLOCK_WEIGHT;
-  } else if(macroComponent != null){
-    composite = macroComponent; // macro only → full weight
-  } else if(valuationComponent != null){
-    composite = valuationComponent; // valuations only → full weight
+  if(macroComponent !== null && valuationComponent !== null){
+    composite = (macroComponent * MACRO_BLOCK_WEIGHT) +
+                (valuationComponent * VALUATION_BLOCK_WEIGHT);
+  } else if(macroComponent !== null){
+    composite = macroComponent;
+  } else if(valuationComponent !== null){
+    composite = valuationComponent;
   }
 
-  if(composite != null){
-    composite = Math.min(100, composite * (1 + (composite / 100) * 0.2));
-  }
+  if(composite === null || !Number.isFinite(composite)) return null;
+
+  // No nonlinear boost. Deterministic mapping only.
+  if(composite < 0) composite = 0;
+  if(composite > 100) composite = 100;
 
   return composite;
 }
@@ -924,29 +931,13 @@ function derivedValuationRisk(){
   return 'High';
 }
 
-/**
- * Labor stress: use whichever of Claims / Sahm is available; don't drop to '--' if one is live.
- */
 function derivedLaborStress(){
   const c = INDICATORS.INITIAL_CLAIMS.current;
   const s = INDICATORS.SAHM_RULE.current;
-
-  const hasC = Number.isFinite(c);
-  const hasS = Number.isFinite(s);
-
-  if(!hasC && !hasS) return '--';
-
-  const cs = hasC
-    ? Math.max(0, Math.min(100, (c - 250) * 0.5))
-    : 0;
-
-  const ss = hasS
-    ? Math.max(0, Math.min(100, s * 200))
-    : 0;
-
-  const used = (hasC ? 1 : 0) + (hasS ? 1 : 0);
-  const avg = (cs + ss) / used;
-
+  if(!Number.isFinite(c) || !Number.isFinite(s)) return '--';
+  const cs = Math.max(0, Math.min(100, (c - 250) * 0.5));
+  const ss = Math.max(0, Math.min(100, s * 200));
+  const avg = (cs + ss) / 2;
   if(avg < 30) return 'Low';
   if(avg < 60) return 'Moderate';
   return 'High';
@@ -969,6 +960,10 @@ function buildIndicatorElement(key, ind){
     ? 'Threshold: ' + (ind.direction === 'below' ? '< ' : '> ') + ind.format(ind.threshold)
     : '';
 
+  const stressText = (s != null)
+    ? ('Stress: ' + Math.round(s) + '/100')
+    : 'Stress: --';
+
   const src = ind.fromFred ? 'Auto from FRED' : 'Manual input';
 
   let manual = '';
@@ -990,6 +985,7 @@ function buildIndicatorElement(key, ind){
       '<div class="indicator-value" data-ind-value="'+key+'">'+valText+'</div>' +
     '</div>' +
     '<div class="indicator-threshold">'+thrText+'</div>' +
+    '<div class="indicator-threshold" data-ind-stress="'+key+'">'+stressText+'</div>' +
     '<div class="indicator-threshold">'+ind.desc+'</div>' +
     '<div class="source-tag">'+src+'</div>' +
     manual;
@@ -1040,10 +1036,9 @@ function renderValuations(){
     }
     const hasVal = Number.isFinite(v.current);
     const valText = hasVal ? v.format(v.current) : '--';
-
-    const dangerLabel = (k === 'BUFFETT'
-      ? '> ' + v.danger + '%'
-      : '> ' + v.danger);
+    const stressText = (s != null)
+      ? ('Stress: ' + Math.round(s) + '/100')
+      : 'Stress: --';
 
     const div = document.createElement('div');
     div.className = cls;
@@ -1053,7 +1048,8 @@ function renderValuations(){
         '<div class="indicator-name">'+v.label+'</div>' +
         '<div class="indicator-value" data-val-value="'+k+'">'+valText+'</div>' +
       '</div>' +
-      '<div class="indicator-threshold">Danger band: '+dangerLabel+'</div>' +
+      '<div class="indicator-threshold">Danger band: '+v.danger+'</div>' +
+      '<div class="indicator-threshold" data-val-stress="'+k+'">'+stressText+'</div>' +
       '<div class="indicator-threshold">'+v.desc+'</div>' +
       '<div class="source-tag">Manual input</div>' +
       '<div class="manual-input-row">' +
