@@ -500,6 +500,7 @@
 <script>
 'use strict';
 
+const VALUATION_BLOCK_WEIGHT = 0.30;
 let cacheAgeDays = null;
 
 const INDICATORS = {
@@ -553,14 +554,14 @@ const INDICATORS = {
     fredId:'NFCI',
     current:null,
     format:v => v.toFixed(2),
-    desc:'Chicago Fed NFCI. >0 indicates tighter-than-average financial conditions.'
+    desc:'Chicago Fed NFCI. >0 indicates tighter-than-average conditions.'
   },
   CONSUMER_SENTIMENT: {
     tier:1,
     label:'UMich Sentiment',
     weight:0.08,
     threshold:60.0,
-    direction:'below',
+    direction:'above',
     span:25.0,
     fromFred:true,
     fredId:'UMCSENT',
@@ -579,7 +580,7 @@ const INDICATORS = {
     fredId:'M2SL',
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'YoY change from M2SL. ≤0% is historically rare and restrictive.'
+    desc:'YoY growth from M2SL. ≤0% is historically rare and restrictive.'
   },
   INDUSTRIAL_PRODUCTION: {
     tier:2,
@@ -605,7 +606,7 @@ const INDICATORS = {
     fredId:'PERMIT',
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'6m % change. Sharp drops lead housing and broader weakness.'
+    desc:'6m % change. Sharp drops lead housing & broader weakness.'
   },
   INITIAL_CLAIMS: {
     tier:2,
@@ -642,7 +643,7 @@ const VALUATIONS = {
     danger:200,
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'<150% neutral; 150–199% stretched; ≥200% extreme.'
+    desc:'>150% stretched; >200% historically extreme.'
   },
   SHILLER_PE: {
     label:'Shiller CAPE',
@@ -650,7 +651,7 @@ const VALUATIONS = {
     danger:30,
     current:null,
     format:v => v.toFixed(1),
-    desc:'<25 neutral; 25–29.9 stretched; ≥30 extreme.'
+    desc:'>25 elevated; >30 associated with poor long-run returns.'
   }
 };
 
@@ -760,14 +761,14 @@ async function loadFromFredCache(){
         }
       } else if(ind.fredId === 'ICSA'){
         const avg = rollingAvgLastN('ICSA', 4);
-        if(avg != null) ind.current = avg / 1000; // thousands
+        if(avg != null) ind.current = avg / 1000; // in thousands
       } else {
         const v = lastVal(ind.fredId);
         if(v != null) ind.current = v;
       }
     });
 
-    // Log coverage for trace
+    // Log coverage for core macro series
     ['T10Y3M','BAMLH0A0HYM2','UMCSENT','M2SL','NFCI','ICSA','SAHMREALTIME','INDPRO','PERMIT']
       .forEach(id => {
         const v = lastVal(id);
@@ -786,6 +787,7 @@ async function loadFromFredCache(){
 
 /**
  * Scale indicators to 0–100 stress.
+ * 1 span beyond threshold => 100.
  */
 function scaleIndicator(key, value){
   const ind = INDICATORS[key];
@@ -808,6 +810,7 @@ function scaleIndicator(key, value){
   if(stress < 0) stress = 0;
   if(stress > 100) stress = 100;
 
+  // Emphasize empirically-strong signals
   if(key === 'YIELD_CURVE' && value <= 0){
     stress = Math.min(100, stress * 1.2);
   }
@@ -819,21 +822,21 @@ function scaleIndicator(key, value){
 }
 
 /**
- * Valuation stress.
- * (Used for composite; colours also keyed directly off raw levels.)
+ * Valuation stress mapping.
  */
 function valuationStress(key, val){
   const v = VALUATIONS[key];
   if(!v || !Number.isFinite(val)) return null;
+
   let stress = 0;
 
   if(key === 'BUFFETT'){
     if(val <= 100) return 0;
-    // 100->0, 150->50, 200->100
+    // 100 -> 0, 150 -> 50, 200 -> 100
     stress = ((val - 100) / 100) * 100;
   } else if(key === 'SHILLER_PE'){
     if(val <= 20) return 0;
-    // 20->0, 30->50, 40->100
+    // 20 -> 0, 30 -> 50, 40 -> 100
     stress = ((val - 20) / 20) * 100;
   }
 
@@ -843,14 +846,15 @@ function valuationStress(key, val){
 }
 
 /**
- * Composite: 70% macro, 30% valuations.
- * Macro-only and val-only use full signal; Tier 1 stress prevents fake-zero.
+ * Composite: 70% macro, 30% valuations when both exist.
+ * If only one block present, it gets full weight (no artificial dilution).
  */
 function computeComposite(){
+  const MACRO_BLOCK_WEIGHT = 1 - VALUATION_BLOCK_WEIGHT;
+
   let macroStress = 0;
   let macroTotalWeight = 0;
   let macroCount = 0;
-  let maxTier1Stress = 0;
 
   Object.entries(INDICATORS).forEach(([k, ind]) => {
     const stress = scaleIndicator(k, ind.current);
@@ -858,11 +862,9 @@ function computeComposite(){
       macroStress += stress * ind.weight;
       macroTotalWeight += ind.weight;
       macroCount++;
-      if(ind.tier === 1 && stress > maxTier1Stress){
-        maxTier1Stress = stress;
-      }
     }
   });
+  const macroComponent = macroTotalWeight > 0 ? (macroStress / macroTotalWeight) : null;
 
   let valuationStressSum = 0;
   let valuationTotalWeight = 0;
@@ -876,24 +878,21 @@ function computeComposite(){
       valuationCount++;
     }
   });
+  const valuationComponent = valuationTotalWeight > 0 ? (valuationStressSum / valuationTotalWeight) : null;
 
   let composite = null;
-  const macroComponent = macroTotalWeight > 0 ? (macroStress / macroTotalWeight) : 0;
-  const valuationComponent = valuationTotalWeight > 0 ? (valuationStressSum / valuationTotalWeight) : 0;
 
-  if (macroCount > 0 && valuationCount > 0) {
-    composite = (macroComponent * 0.7) + (valuationComponent * 0.3);
-  } else if (macroCount > 0) {
-    composite = macroComponent;
-  } else if (valuationCount > 0) {
-    composite = valuationComponent;
+  if(macroComponent != null && valuationComponent != null){
+    composite = macroComponent * MACRO_BLOCK_WEIGHT +
+                valuationComponent * VALUATION_BLOCK_WEIGHT;
+  } else if(macroComponent != null){
+    composite = macroComponent; // macro only → full weight
+  } else if(valuationComponent != null){
+    composite = valuationComponent; // valuations only → full weight
   }
 
-  if (composite !== null) {
+  if(composite != null){
     composite = Math.min(100, composite * (1 + (composite / 100) * 0.2));
-    if (maxTier1Stress > 0 && composite < 10) {
-      composite = 10;
-    }
   }
 
   return composite;
@@ -925,13 +924,29 @@ function derivedValuationRisk(){
   return 'High';
 }
 
+/**
+ * Labor stress: use whichever of Claims / Sahm is available; don't drop to '--' if one is live.
+ */
 function derivedLaborStress(){
   const c = INDICATORS.INITIAL_CLAIMS.current;
   const s = INDICATORS.SAHM_RULE.current;
-  if(!Number.isFinite(c) || !Number.isFinite(s)) return '--';
-  const cs = Math.max(0, Math.min(100, (c - 250) * 0.5));
-  const ss = Math.max(0, Math.min(100, s * 200));
-  const avg = (cs + ss) / 2;
+
+  const hasC = Number.isFinite(c);
+  const hasS = Number.isFinite(s);
+
+  if(!hasC && !hasS) return '--';
+
+  const cs = hasC
+    ? Math.max(0, Math.min(100, (c - 250) * 0.5))
+    : 0;
+
+  const ss = hasS
+    ? Math.max(0, Math.min(100, s * 200))
+    : 0;
+
+  const used = (hasC ? 1 : 0) + (hasS ? 1 : 0);
+  const avg = (cs + ss) / used;
+
   if(avg < 30) return 'Low';
   if(avg < 60) return 'Moderate';
   return 'High';
@@ -939,17 +954,14 @@ function derivedLaborStress(){
 
 /**
  * Indicator cards.
- * Any stress > 0 => amber, >= 66 => red.
  */
 function buildIndicatorElement(key, ind){
   const s = scaleIndicator(key, ind.current);
   let cls = 'indicator';
-
-  if (s != null) {
-    if (s >= 66) cls += ' danger';
-    else if (s > 0) cls += ' warning';
+  if(s != null){
+    if(s >= 66) cls += ' danger';
+    else if(s >= 33) cls += ' warning';
   }
-
   const hasVal = Number.isFinite(ind.current);
   const valText = hasVal ? ind.format(ind.current) : '--';
 
@@ -984,32 +996,54 @@ function buildIndicatorElement(key, ind){
   return div;
 }
 
+function renderIndicators(){
+  const t1 = document.getElementById('tier1-indicators');
+  const t2 = document.getElementById('tier2-indicators');
+  t1.innerHTML = '';
+  t2.innerHTML = '';
+
+  Object.entries(INDICATORS).forEach(([k,ind]) => {
+    const el = buildIndicatorElement(k, ind);
+    if(ind.tier === 1) t1.appendChild(el);
+    else t2.appendChild(el);
+  });
+
+  document.querySelectorAll('.manual-input[data-ind-key]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const key = inp.getAttribute('data-ind-key');
+      const v = parseFloat(inp.value);
+      INDICATORS[key].current = Number.isFinite(v) ? v : null;
+      const valEl = document.querySelector('[data-ind-value="'+key+'"]');
+      if(valEl){
+        valEl.textContent = Number.isFinite(v)
+          ? INDICATORS[key].format(v)
+          : '--';
+      }
+      updateDynamic();
+    });
+  });
+}
+
 /**
  * Valuation cards.
- * Robust colour logic: directly keyed to real-world levels.
  */
 function renderValuations(){
   const box = document.getElementById('valuation-indicators');
   box.innerHTML = '';
 
   Object.entries(VALUATIONS).forEach(([k,v]) => {
-    const val = v.current;
     const s = valuationStress(k, v.current);
     let cls = 'indicator';
-
-    if (k === 'BUFFETT' && Number.isFinite(val)) {
-      if (val >= 200) cls += ' danger';
-      else if (val >= 150) cls += ' warning';
-    } else if (k === 'SHILLER_PE' && Number.isFinite(val)) {
-      if (val >= 30) cls += ' danger';
-      else if (val >= 25) cls += ' warning';
-    } else if (s != null) {
-      if (s >= 66) cls += ' danger';
-      else if (s >= 33) cls += ' warning';
+    if(s != null){
+      if(s >= 66) cls += ' danger';
+      else if(s >= 33) cls += ' warning';
     }
+    const hasVal = Number.isFinite(v.current);
+    const valText = hasVal ? v.format(v.current) : '--';
 
-    const hasVal = Number.isFinite(val);
-    const valText = hasVal ? v.format(val) : '--';
+    const dangerLabel = (k === 'BUFFETT'
+      ? '> ' + v.danger + '%'
+      : '> ' + v.danger);
 
     const div = document.createElement('div');
     div.className = cls;
@@ -1019,13 +1053,13 @@ function renderValuations(){
         '<div class="indicator-name">'+v.label+'</div>' +
         '<div class="indicator-value" data-val-value="'+k+'">'+valText+'</div>' +
       '</div>' +
-      '<div class="indicator-threshold">Danger band: '+v.danger+'</div>' +
+      '<div class="indicator-threshold">Danger band: '+dangerLabel+'</div>' +
       '<div class="indicator-threshold">'+v.desc+'</div>' +
       '<div class="source-tag">Manual input</div>' +
       '<div class="manual-input-row">' +
         '<span>Set current reading:</span>' +
         '<input class="manual-input" type="number" step="0.1" ' +
-        'data-val-key="'+k+'" value="'+(hasVal ? val : '')+'">' +
+        'data-val-key="'+k+'" value="'+(hasVal ? v.current : '')+'">' +
       '</div>';
     box.appendChild(div);
   });
@@ -1033,13 +1067,12 @@ function renderValuations(){
   document.querySelectorAll('.manual-input[data-val-key]').forEach(inp => {
     inp.addEventListener('input', () => {
       const key = inp.getAttribute('data-val-key');
-      const vRaw = parseFloat(inp.value);
-      VALUATIONS[key].current = Number.isFinite(vRaw) ? vRaw : null;
+      const v = parseFloat(inp.value);
+      VALUATIONS[key].current = Number.isFinite(v) ? v : null;
       const valEl = document.querySelector('[data-val-value="'+key+'"]');
       if(valEl){
-        const meta = VALUATIONS[key];
-        valEl.textContent = Number.isFinite(vRaw)
-          ? meta.format(vRaw)
+        valEl.textContent = Number.isFinite(v)
+          ? VALUATIONS[key].format(v)
           : '--';
       }
       updateDynamic();
@@ -1047,9 +1080,6 @@ function renderValuations(){
   });
 }
 
-/**
- * Sync "Current" valuation tile.
- */
 function syncValuationCurrentBox(){
   const b = VALUATIONS.BUFFETT.current;
   const c = VALUATIONS.SHILLER_PE.current;
@@ -1293,9 +1323,9 @@ function renderRiskRadarChart(){
 
 function updateInsight(){
   const el = document.getElementById('insight-text');
+  if(!el) return;
   const c = compositeScore;
   const vRisk = derivedValuationRisk();
-  if(!el) return;
 
   if(c == null){
     el.textContent = 'No composite yet. Ensure fred_cache.json is fresh and LEI/Buffett/CAPE are populated.';
