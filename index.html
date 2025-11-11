@@ -354,13 +354,13 @@
   <div class="header">
     <h1>⚡ Economic Crash Radar Pro</h1>
     <div class="subtitle">
-      8 macro indicators (7 auto via FRED, 1 manual) + 2 valuations. Transparent, deterministic composite.
+      10 macro indicators (9 auto via FRED, 1 manual) + 2 valuations. Transparent, deterministic composite.
     </div>
     <div class="meta-badges">
       <div class="badge" id="cache-badge">FRED cache: not loaded</div>
       <div class="badge">Manual: LEI 6m Δ, Buffett, CAPE</div>
-      <div class="badge">Auto: Yield, HY, UMich, M2, Claims, Sahm, Permits</div>
-      <div class="badge" id="inputs-badge">Inputs: 0/10 populated</div>
+      <div class="badge">Auto: Curve, HY, NFCI, UMich, M2, INDPRO, Permits, Claims, Sahm</div>
+      <div class="badge" id="inputs-badge">Inputs: 0/12 populated</div>
     </div>
   </div>
 
@@ -503,146 +503,155 @@
 const VALUATION_BLOCK_WEIGHT = 0.30;
 let cacheAgeDays = null;
 
-/**
- * Indicator configuration
- * Thresholds chosen to align with widely-used professional heuristics:
- * - LEI: meaningful deterioration ~ -3% over 6m.
- * - Yield curve: 10y-3m <= 0 strongly associated with later recessions.
- * - HY spread: >500bps is classic stress; 800+ extreme.
- * - UMich: <80 warning, <60 severe pessimism.
- * - M2: <=0% YoY rare; signals restrictive liquidity vs history.
- * - Claims: >280k-400k has historically aligned with weakening labor markets.
- * - Sahm: >=0.5 is the rule’s trigger.
- * - Permits: large negative 6m change flags housing rollover.
- */
 const INDICATORS = {
   LEI: {
     tier:1,
     label:'Conference Board LEI 6m %Δ',
-    weight:0.18,
-    threshold:-3.0,        // warning from about -3% 6m change
+    weight:0.15,
+    threshold:-3.5,
     direction:'below',
-    span:3.0,              // -6% -> max stress
+    span:3.0,
     fromFred:false,
     fredId:null,
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'Manual: 6m % change in LEI. ≤ -3% has preceded most US recessions.'
+    desc:'Manual. 6m % change in LEI. ≤ -3.5% has preceded most post-1960 recessions.'
   },
   YIELD_CURVE: {
     tier:1,
-    label:'Yield Curve (10y-3m)',
+    label:'Yield Curve (10y–3m)',
     weight:0.12,
-    threshold:0.0,         // inversion line
+    threshold:0.0,
     direction:'below',
-    span:1.0,              // -1% -> max stress
+    span:1.0,
     fromFred:true,
     fredId:'T10Y3M',
     current:null,
     format:v => v.toFixed(2) + ' pp',
-    desc:'10y-3m term spread. ≤ 0 pp has a strong track record as a recession lead.'
+    desc:'10y–3m spread. Inversions (≤0) are classic recession leads.'
   },
   CREDIT_SPREAD: {
     tier:1,
     label:'HY Credit Spread',
     weight:0.10,
-    threshold:5.0,         // 500 bps
+    threshold:5.0,
     direction:'above',
-    span:3.0,              // 800+ bps -> max stress
+    span:3.0,
     fromFred:true,
     fredId:'BAMLH0A0HYM2',
     current:null,
     format:v => v.toFixed(2) + ' pp',
     desc:'US HY OAS. >5% = stress, >8% = crisis-like conditions.'
   },
+  FIN_STRESS: {
+    tier:1,
+    label:'Financial Stress (NFCI)',
+    weight:0.08,
+    threshold:0.0,
+    direction:'above',
+    span:0.5,
+    fromFred:true,
+    fredId:'NFCI',
+    current:null,
+    format:v => v.toFixed(2),
+    desc:'Chicago Fed NFCI. >0 indicates tighter-than-average conditions.'
+  },
   CONSUMER_SENTIMENT: {
     tier:1,
     label:'UMich Sentiment',
-    weight:0.09,
-    threshold:80.0,        // literature "recession warning" zone
+    weight:0.08,
+    threshold:60.0,
     direction:'below',
-    span:20.0,             // 60 or below -> max stress
+    span:25.0,
     fromFred:true,
     fredId:'UMCSENT',
     current:null,
     format:v => v.toFixed(1),
-    desc:'<80 = persistent caution, ≤60 = extreme pessimism seen near major recessions.'
+    desc:'Deep pessimism. Sustained <60 readings cluster around recessions.'
   },
   M2_GROWTH: {
     tier:1,
     label:'M2 Growth YoY',
-    weight:0.06,
-    threshold:0.0,         // falling to/below 0% is historically tight
+    weight:0.08,
+    threshold:0.0,
     direction:'below',
-    span:5.0,              // -5% -> max stress
+    span:6.0,
     fromFred:true,
     fredId:'M2SL',
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'YoY change (from M2SL). ≤0% is rare and signals restrictive liquidity.'
+    desc:'YoY growth from M2SL. ≤0% is historically rare and restrictive.'
   },
-  INITIAL_CLAIMS: {
+  INDUSTRIAL_PRODUCTION: {
     tier:2,
-    label:'Initial Claims 4wk MA (k)',
-    weight:0.10,
-    threshold:280,         // starts to pressure labor market
-    direction:'above',
-    span:120,              // ~400k -> max stress
+    label:'Industrial Production YoY',
+    weight:0.07,
+    threshold:0.0,
+    direction:'below',
+    span:5.0,
     fromFred:true,
-    fredId:'ICSA',
+    fredId:'INDPRO',
     current:null,
-    format:v => Math.round(v) + 'k',
-    desc:'4-week avg. Sustained >280–300k has preceded downturns.'
-  },
-  SAHM_RULE: {
-    tier:2,
-    label:'Sahm Rule (pp)',
-    weight:0.10,
-    threshold:0.50,        // official trigger
-    direction:'above',
-    span:1.0,              // 1.5 -> max stress
-    fromFred:true,
-    fredId:'SAHMREALTIME',
-    current:null,
-    format:v => v.toFixed(2),
-    desc:'≥0.50 = Sahm trigger; historically coincident with recession onset.'
+    format:v => v.toFixed(1) + '%',
+    desc:'YoY change. Sustained contraction confirms downturn.'
   },
   BUILDING_PERMITS: {
     tier:2,
     label:'Building Permits 6m %Δ',
-    weight:0.08,
-    threshold:-10.0,       // significant housing slowdown
+    weight:0.07,
+    threshold:-10.0,
     direction:'below',
-    span:20.0,             // -30% -> max stress
+    span:10.0,
     fromFred:true,
     fredId:'PERMIT',
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'6m change. Large drops often lead broader weakness.'
+    desc:'6m % change. Sharp drops lead housing & broader weakness.'
+  },
+  INITIAL_CLAIMS: {
+    tier:2,
+    label:'Initial Claims 4wk MA (k)',
+    weight:0.08,
+    threshold:325,
+    direction:'above',
+    span:150,
+    fromFred:true,
+    fredId:'ICSA',
+    current:null,
+    format:v => Math.round(v) + 'k',
+    desc:'4-week avg in thousands. >325k consistent with labor market stress.'
+  },
+  SAHM_RULE: {
+    tier:2,
+    label:'Sahm Rule (pp)',
+    weight:0.07,
+    threshold:0.50,
+    direction:'above',
+    span:0.5,
+    fromFred:true,
+    fredId:'SAHMREALTIME',
+    current:null,
+    format:v => v.toFixed(2),
+    desc:'≥0.50 triggers real-time recession signal.'
   }
 };
 
-/**
- * Valuations with more realistic bands:
- * - Buffett: >150% warning, >200% high risk.
- * - CAPE: >25 elevated, >30 high risk.
- */
 const VALUATIONS = {
   BUFFETT: {
     label:'Buffett Indicator (MktCap/GDP)',
     weight:0.50,
-    danger:200,            // display: high-risk band
+    danger:200,
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'Wilshire 5000 / GDP (or equivalent). >150% stretched, >200% historically extreme.'
+    desc:'>150% stretched; >200% historically extreme.'
   },
   SHILLER_PE: {
     label:'Shiller CAPE',
     weight:0.50,
-    danger:30,             // display: high-risk band
+    danger:30,
     current:null,
     format:v => v.toFixed(1),
-    desc:'CAPE >25 elevated; >30 historically associated with poor forward returns.'
+    desc:'>25 elevated; >30 associated with poor long-run returns.'
   }
 };
 
@@ -677,9 +686,11 @@ async function loadFromFredCache(){
       const s = series[id];
       if(!s) return null;
       if(Array.isArray(s.observations) && s.observations.length){
-        const o = s.observations[s.observations.length - 1];
-        const v = Number(o.value);
-        return Number.isFinite(v) ? v : null;
+        for(let i = s.observations.length - 1; i >= 0; i--){
+          const v = Number(s.observations[i].value);
+          if(Number.isFinite(v)) return v;
+        }
+        return null;
       }
       if(typeof s.value !== 'undefined'){
         const v = Number(s.value);
@@ -734,9 +745,13 @@ async function loadFromFredCache(){
           const pc = pctChange(lvlNow, back.value);
           if(pc != null) ind.current = pc;
         }
-      } else if(ind.fredId === 'ICSA'){
-        const avg = rollingAvgLastN('ICSA', 4);
-        if(avg != null) ind.current = avg / 1000; // thousands
+      } else if(ind.fredId === 'INDPRO'){
+        const lvlNow = lastVal('INDPRO');
+        const back = obsMonthsBack('INDPRO', 12);
+        if(lvlNow != null && back && back.value != null){
+          const pc = pctChange(lvlNow, back.value);
+          if(pc != null) ind.current = pc;
+        }
       } else if(ind.fredId === 'PERMIT'){
         const now = lastVal('PERMIT');
         const back = obsMonthsBack('PERMIT', 6);
@@ -744,6 +759,9 @@ async function loadFromFredCache(){
           const pc = pctChange(now, back.value);
           if(pc != null) ind.current = pc;
         }
+      } else if(ind.fredId === 'ICSA'){
+        const avg = rollingAvgLastN('ICSA', 4);
+        if(avg != null) ind.current = avg / 1000; // in thousands
       } else {
         const v = lastVal(ind.fredId);
         if(v != null) ind.current = v;
@@ -751,14 +769,15 @@ async function loadFromFredCache(){
     });
 
     // Log coverage for core macro series
-    ['T10Y3M','BAMLH0A0HYM2','UMCSENT','M2SL','ICSA','SAHMREALTIME','PERMIT'].forEach(id => {
-      const v = lastVal(id);
-      if(v != null){
-        console.log(`✅ ${id} loaded from fred_cache.json:`, v);
-      } else {
-        console.warn(`⚠️ ${id} missing or invalid in fred_cache.json`);
-      }
-    });
+    ['T10Y3M','BAMLH0A0HYM2','UMCSENT','M2SL','NFCI','ICSA','SAHMREALTIME','INDPRO','PERMIT']
+      .forEach(id => {
+        const v = lastVal(id);
+        if(v != null){
+          console.log(`✅ ${id} loaded from fred_cache.json:`, v);
+        } else {
+          console.warn(`⚠️ ${id} missing or invalid in fred_cache.json`);
+        }
+      });
 
   }catch(err){
     console.error('FRED cache error:', err);
@@ -790,14 +809,12 @@ function scaleIndicator(key, value){
 
   if(stress < 0) stress = 0;
   if(stress > 100) stress = 100;
-  
-  // Context multipliers where there is strong empirical justification.
+
+  // Emphasize empirically-strong signals
   if(key === 'YIELD_CURVE' && value <= 0){
-    // Inversion itself is powerful; modestly emphasize.
     stress = Math.min(100, stress * 1.2);
   }
   if(key === 'SAHM_RULE' && value >= 0.5){
-    // Sahm trigger: near-contemporaneous confirmation.
     stress = Math.min(100, stress * 1.3);
   }
 
@@ -805,15 +822,7 @@ function scaleIndicator(key, value){
 }
 
 /**
- * Valuation stress:
- * - Buffett:
- *    100% or below: 0
- *    150%: ~50
- *    200%: ~100
- * - Shiller CAPE:
- *    20 or below: 0
- *    30: ~50
- *    40: ~100
+ * Valuation stress mapping.
  */
 function valuationStress(key, val){
   const v = VALUATIONS[key];
@@ -823,11 +832,11 @@ function valuationStress(key, val){
 
   if(key === 'BUFFETT'){
     if(val <= 100) return 0;
-    // 100 → 0, 150 → 50, 200 → 100
+    // 100 -> 0, 150 -> 50, 200 -> 100
     stress = ((val - 100) / 100) * 100;
   } else if(key === 'SHILLER_PE'){
     if(val <= 20) return 0;
-    // 20 → 0, 30 → 50, 40 → 100
+    // 20 -> 0, 30 -> 50, 40 -> 100
     stress = ((val - 20) / 20) * 100;
   }
 
@@ -837,14 +846,13 @@ function valuationStress(key, val){
 }
 
 /**
- * Composite: 70% macro, 30% valuations (when both exist).
+ * Composite: 70% macro, 30% valuations.
  */
 function computeComposite(){
-  // Macro indicators block (70% weight)
   let macroStress = 0;
   let macroTotalWeight = 0;
   let macroCount = 0;
-  
+
   Object.entries(INDICATORS).forEach(([k, ind]) => {
     const stress = scaleIndicator(k, ind.current);
     if(stress !== null && Number.isFinite(stress) && ind.weight){
@@ -853,12 +861,11 @@ function computeComposite(){
       macroCount++;
     }
   });
-  
-  // Valuation block (30% weight)
+
   let valuationStressSum = 0;
   let valuationTotalWeight = 0;
   let valuationCount = 0;
-  
+
   Object.entries(VALUATIONS).forEach(([k, v]) => {
     const stress = valuationStress(k, v.current);
     if(stress !== null && Number.isFinite(stress) && v.weight){
@@ -867,12 +874,11 @@ function computeComposite(){
       valuationCount++;
     }
   });
-  
+
   let composite = null;
-  
   const macroComponent = macroTotalWeight > 0 ? (macroStress / macroTotalWeight) : 0;
   const valuationComponent = valuationTotalWeight > 0 ? (valuationStressSum / valuationTotalWeight) : 0;
-  
+
   if(macroCount > 0 && valuationCount > 0){
     composite = (macroComponent * 0.7) + (valuationComponent * 0.3);
   } else if(macroCount > 0){
@@ -880,17 +886,14 @@ function computeComposite(){
   } else if(valuationCount > 0){
     composite = valuationComponent * 0.3;
   }
-  
+
   if(composite !== null){
     composite = Math.min(100, composite * (1 + (composite / 100) * 0.2));
   }
-  
+
   return composite;
 }
 
-/**
- * Recession probability mapping (heuristic).
- */
 function derivedRecessionRisk(c){
   if(c == null) return '--';
   if(c < 20) return '<10%';
@@ -901,9 +904,6 @@ function derivedRecessionRisk(c){
   return '75–90%';
 }
 
-/**
- * Derived labels.
- */
 function derivedValuationRisk(){
   let sum = 0, w = 0;
   Object.entries(VALUATIONS).forEach(([k,v]) => {
@@ -952,7 +952,7 @@ function buildIndicatorElement(key, ind){
   const src = ind.fromFred ? 'Auto from FRED' : 'Manual input';
 
   let manual = '';
-  if(!ind.fromFred){
+  if(!ind.fromFred && key === 'LEI'){
     manual =
       '<div class="manual-input-row">' +
         '<span>Set latest 6m %Δ for LEI:</span>' +
@@ -1056,9 +1056,6 @@ function renderValuations(){
   });
 }
 
-/**
- * Sync "Current" valuation tile.
- */
 function syncValuationCurrentBox(){
   const b = VALUATIONS.BUFFETT.current;
   const c = VALUATIONS.SHILLER_PE.current;
@@ -1153,7 +1150,7 @@ function renderGaugeAndStatus(){
   }else{
     alert.textContent = prefix +
       'Composite = ' + v +
-      '. Configuration not in the classic crash cluster on your inputs; cross-check context.';
+      '. No classic crash cluster on this configuration; still consider exogenous shocks.';
   }
 }
 
@@ -1195,7 +1192,7 @@ function renderMarketTrendChart(){
       labels,
       datasets:[
         {
-          label:'Composite Stress (Macro+Valuation)',
+          label:'Composite Stress',
           data:compData,
           borderColor:'#6b9eff',
           backgroundColor:'rgba(107,158,255,0.14)',
@@ -1300,9 +1297,6 @@ function renderRiskRadarChart(){
   });
 }
 
-/**
- * Insight text.
- */
 function updateInsight(){
   const el = document.getElementById('insight-text');
   if(!el) return;
@@ -1310,23 +1304,20 @@ function updateInsight(){
   const vRisk = derivedValuationRisk();
 
   if(c == null){
-    el.textContent = 'No composite yet. Ensure fred_cache.json is present, fresh (<7 days), and LEI/Buffett/CAPE are populated.';
+    el.textContent = 'No composite yet. Ensure fred_cache.json is fresh and LEI/Buffett/CAPE are populated.';
   } else if(c >= 70 && vRisk === 'High'){
     el.textContent = 'Macro + valuations both extreme: configuration consistent with major drawdown regimes.';
   } else if(c >= 50 && vRisk !== 'Low'){
     el.textContent = 'Elevated macro stress with stretched valuations: risk-reward skewed left.';
   } else if(c < 40 && vRisk === 'High'){
-    el.textContent = 'Macro relatively okay but valuations rich: vulnerable to shocks/policy errors.';
+    el.textContent = 'Macro relatively okay but valuations rich: vulnerable to shocks or policy error.';
   } else if(c < 40 && vRisk === 'Low'){
-    el.textContent = 'Macro and valuations both moderate vs history: no classic crash cluster.';
+    el.textContent = 'Macro and valuations both moderate vs history: no classic crash cluster here.';
   } else {
-    el.textContent = 'Mixed configuration. Use radar and tiles to see which components drive the score.';
+    el.textContent = 'Mixed configuration. Use radar and tiles to see what drives the score.';
   }
 }
 
-/**
- * Update orchestrator.
- */
 function updateDynamic(){
   renderGaugeAndStatus();
   renderMarketTrendChart();
@@ -1341,9 +1332,6 @@ function updateAll(){
   updateDynamic();
 }
 
-/**
- * Init.
- */
 document.addEventListener('DOMContentLoaded', () => {
   loadFromFredCache()
     .then(updateAll)
