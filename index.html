@@ -549,12 +549,12 @@ const INDICATORS = {
     weight:0.09,
     threshold:60,
     direction:'below',
-    span:20,
+    span:10, // tightened: sub-60 escalates stress faster
     fromFred:true,
     fredId:'UMCSENT',
     current:null,
     format:v => v.toFixed(1),
-    desc:'Deep pessimism clusters with recessions.'
+    desc:'Deep pessimism (<60) clusters with recessions.'
   },
   M2_GROWTH: {
     tier:1,
@@ -923,8 +923,13 @@ function buildIndicatorElement(key, ind){
   const s = scaleIndicator(key, ind.current);
   let cls = 'indicator';
   if(s != null){
-    if(s >= 66) cls += ' danger';
-    else if(s >= 33) cls += ' warning';
+    if(s >= 66){
+      cls += ' danger';
+    } else {
+      // UMich (CONSUMER_SENTIMENT) uses an earlier warning trigger (>=20 stress)
+      const warnThreshold = (key === 'CONSUMER_SENTIMENT') ? 20 : 33;
+      if(s >= warnThreshold) cls += ' warning';
+    }
   }
   const hasVal = Number.isFinite(ind.current);
   const valText = hasVal ? ind.format(ind.current) : '--';
