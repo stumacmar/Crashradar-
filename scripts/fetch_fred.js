@@ -6,9 +6,9 @@
 //   "series": {
 //     "<ID>": {
 //       "id": "<ID>",
-//       "last_updated": "<ISO timestamp of last obs>",
+//       "last_updated": "<ISO timestamp>",
 //       "observations": [ { "date": "YYYY-MM-DD", "value": <number|null> }, ... ],
-//       "value": <latest-number|null>
+//       "value": <latest-number|null>   // convenience field (last non-null)
 //     }
 //   }
 // }
@@ -21,33 +21,25 @@ const path = require("path");
     const KEY = process.env.FRED_API_KEY;
     if (!KEY) throw new Error("Missing FRED_API_KEY");
 
-    // Use built-in fetch if available (Node 18+), else node-fetch@2 (installed in workflow)
-    let fetchFn = global.fetch;
-    if (typeof fetchFn !== "function") {
-      const nf = require("node-fetch");
-      fetchFn = nf.default || nf;
+    let _fetch = global.fetch;
+    if (typeof _fetch !== "function") {
+      _fetch = require("node-fetch"); // node-fetch@2 installed in workflow
     }
 
     const FRED = "https://api.stlouisfed.org/fred";
 
-    // KEEP IN SYNC WITH DASHBOARD
+    // REQUIRED series — MUST stay in sync with index.html INDICATORS.
     const REQUIRED_SERIES = [
-      "T10Y3M",        // 10y-3m
+      "T10Y3M",        // Yield curve (10y-3m)
       "BAMLH0A0HYM2",  // HY OAS
-      "UMCSENT",       // UMich sentiment
-      "M2SL",          // M2
-      "VIXCLS",        // VIX
+      "UMCSENT",       // UMich Sentiment
+      "M2SL",          // M2 level (we derive YoY)
+      "NFCI",          // Chicago Fed Financial Conditions Index
       "ICSA",          // Initial claims
-      "UNRATE",        // Unemployment rate
-      "SAHMREALTIME",  // Sahm rule
-      "INDPRO",        // Industrial production
-      "AWHMAN",        // Avg weekly hours, manufacturing
-      "USSLIND",       // Leading index
-      "PERMIT",        // Building permits
-      "HOUST",         // Housing starts
-      "NFCI",          // Chicago Fed NFCI
-      "TEDRATE",       // TED spread
-      "TDSP"           // Debt service ratio
+      "SAHMREALTIME",  // Sahm Rule
+      "INDPRO",        // Industrial Production (we derive YoY)
+      "PERMIT"         // Building Permits (we derive 6m %Δ)
+// LEI and valuations are manual inputs; no FRED id required here.
     ];
 
     async function fetchSeries(id) {
@@ -58,13 +50,13 @@ const path = require("path");
         `&file_type=json` +
         `&observation_start=1950-01-01`;
 
-      const res = await fetchFn(url);
+      const res = await _fetch(url);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status} ${res.statusText}`);
       }
 
       const data = await res.json();
-      if (!Array.isArray(data.observations) || data.observations.length === 0) {
+      if (!data.observations || !data.observations.length) {
         throw new Error("No observations");
       }
 
@@ -76,7 +68,7 @@ const path = require("path");
         return { date: o.date, value: Number.isFinite(v) ? v : null };
       });
 
-      // Find last non-null value + its date
+      // latest non-null numeric
       let latest = null;
       for (let i = observations.length - 1; i >= 0; i--) {
         if (observations[i].value !== null) {
@@ -88,7 +80,7 @@ const path = require("path");
 
       return {
         id,
-        last_updated: latest.date,
+        last_updated: new Date().toISOString(),
         observations,
         value: latest.value
       };
@@ -124,9 +116,9 @@ const path = require("path");
       `Written fred_cache.json with ${Object.keys(out.series).length} series`
     );
 
-    // If any required series failed, flag the workflow as failed
     if (failed.length) {
       console.error("Missing required series:", failed.join(", "));
+      // Non-zero so GitHub Actions surfaces the problem.
       process.exitCode = 1;
     }
   } catch (err) {
