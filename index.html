@@ -761,7 +761,7 @@ async function loadFromFredCache(){
         }
       } else if(ind.fredId === 'ICSA'){
         const avg = rollingAvgLastN('ICSA', 4);
-        if(avg != null) ind.current = avg / 1000; // in thousands
+        if(avg != null) ind.current = avg / 1000; // thousands
       } else {
         const v = lastVal(ind.fredId);
         if(v != null) ind.current = v;
@@ -847,11 +847,13 @@ function valuationStress(key, val){
 
 /**
  * Composite: 70% macro, 30% valuations.
+ * Macro-only and val-only use full signal; Tier 1 stress cannot yield ~0.
  */
 function computeComposite(){
   let macroStress = 0;
   let macroTotalWeight = 0;
   let macroCount = 0;
+  let maxTier1Stress = 0;
 
   Object.entries(INDICATORS).forEach(([k, ind]) => {
     const stress = scaleIndicator(k, ind.current);
@@ -859,6 +861,9 @@ function computeComposite(){
       macroStress += stress * ind.weight;
       macroTotalWeight += ind.weight;
       macroCount++;
+      if(ind.tier === 1 && stress > maxTier1Stress){
+        maxTier1Stress = stress;
+      }
     }
   });
 
@@ -879,16 +884,22 @@ function computeComposite(){
   const macroComponent = macroTotalWeight > 0 ? (macroStress / macroTotalWeight) : 0;
   const valuationComponent = valuationTotalWeight > 0 ? (valuationStressSum / valuationTotalWeight) : 0;
 
-  if(macroCount > 0 && valuationCount > 0){
+  if (macroCount > 0 && valuationCount > 0) {
     composite = (macroComponent * 0.7) + (valuationComponent * 0.3);
-  } else if(macroCount > 0){
-    composite = macroComponent * 0.7;
-  } else if(valuationCount > 0){
-    composite = valuationComponent * 0.3;
+  } else if (macroCount > 0) {
+    composite = macroComponent;          // full macro signal
+  } else if (valuationCount > 0) {
+    composite = valuationComponent;      // full valuation signal
   }
 
-  if(composite !== null){
+  if (composite !== null) {
+    // Non-linear scaling to accentuate high risk
     composite = Math.min(100, composite * (1 + (composite / 100) * 0.2));
+
+    // If any Tier 1 shows stress at all, composite cannot be "near-zero"
+    if (maxTier1Stress > 0 && composite < 10) {
+      composite = 10;
+    }
   }
 
   return composite;
@@ -1056,6 +1067,9 @@ function renderValuations(){
   });
 }
 
+/**
+ * Sync "Current" valuation tile.
+ */
 function syncValuationCurrentBox(){
   const b = VALUATIONS.BUFFETT.current;
   const c = VALUATIONS.SHILLER_PE.current;
