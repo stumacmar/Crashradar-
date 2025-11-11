@@ -35,7 +35,7 @@ const path = require("path");
       "T10Y3M",
       "BAMLH0A0HYM2",
       "UMCSENT",
-      "NAPMNOI",      // ISM New Orders (critical one)
+      "ISMNOI",
       "M2SL",
       "VIXCLS",
       "ICSA",
