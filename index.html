@@ -503,129 +503,146 @@
 const VALUATION_BLOCK_WEIGHT = 0.30;
 let cacheAgeDays = null;
 
+/**
+ * Indicator configuration
+ * Thresholds chosen to align with widely-used professional heuristics:
+ * - LEI: meaningful deterioration ~ -3% over 6m.
+ * - Yield curve: 10y-3m <= 0 strongly associated with later recessions.
+ * - HY spread: >500bps is classic stress; 800+ extreme.
+ * - UMich: <80 warning, <60 severe pessimism.
+ * - M2: <=0% YoY rare; signals restrictive liquidity vs history.
+ * - Claims: >280k-400k has historically aligned with weakening labor markets.
+ * - Sahm: >=0.5 is the rule’s trigger.
+ * - Permits: large negative 6m change flags housing rollover.
+ */
 const INDICATORS = {
   LEI: {
     tier:1,
     label:'Conference Board LEI 6m %Δ',
     weight:0.18,
-    threshold:-4.0,
+    threshold:-3.0,        // warning from about -3% 6m change
     direction:'below',
-    span:3.0,
+    span:3.0,              // -6% -> max stress
     fromFred:false,
     fredId:null,
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'Manual: 6m % change in LEI (Conference Board).'
+    desc:'Manual: 6m % change in LEI. ≤ -3% has preceded most US recessions.'
   },
   YIELD_CURVE: {
     tier:1,
     label:'Yield Curve (10y-3m)',
     weight:0.12,
-    threshold:0,
+    threshold:0.0,         // inversion line
     direction:'below',
-    span:1.0,
+    span:1.0,              // -1% -> max stress
     fromFred:true,
     fredId:'T10Y3M',
     current:null,
-    format:v => v.toFixed(2) + '%',
-    desc:'T10Y3M. Inversion (<0) raises forward recession risk.'
+    format:v => v.toFixed(2) + ' pp',
+    desc:'10y-3m term spread. ≤ 0 pp has a strong track record as a recession lead.'
   },
   CREDIT_SPREAD: {
     tier:1,
     label:'HY Credit Spread',
     weight:0.10,
-    threshold:5.0,
+    threshold:5.0,         // 500 bps
     direction:'above',
-    span:3.0,
+    span:3.0,              // 800+ bps -> max stress
     fromFred:true,
     fredId:'BAMLH0A0HYM2',
     current:null,
-    format:v => v.toFixed(2) + '%',
-    desc:'High yield spread; >5–8% historically stress regime.'
+    format:v => v.toFixed(2) + ' pp',
+    desc:'US HY OAS. >5% = stress, >8% = crisis-like conditions.'
   },
   CONSUMER_SENTIMENT: {
     tier:1,
     label:'UMich Sentiment',
     weight:0.09,
-    threshold:60,
+    threshold:80.0,        // literature "recession warning" zone
     direction:'below',
-    span:10, // tightened: sub-60 escalates stress faster
+    span:20.0,             // 60 or below -> max stress
     fromFred:true,
     fredId:'UMCSENT',
     current:null,
     format:v => v.toFixed(1),
-    desc:'Deep pessimism (<60) clusters with recessions.'
+    desc:'<80 = persistent caution, ≤60 = extreme pessimism seen near major recessions.'
   },
   M2_GROWTH: {
     tier:1,
     label:'M2 Growth YoY',
     weight:0.06,
-    threshold:4.0,
+    threshold:0.0,         // falling to/below 0% is historically tight
     direction:'below',
-    span:5.0,
+    span:5.0,              // -5% -> max stress
     fromFred:true,
     fredId:'M2SL',
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'YoY growth from M2SL. Persistently weak/negative = tight liquidity.'
+    desc:'YoY change (from M2SL). ≤0% is rare and signals restrictive liquidity.'
   },
   INITIAL_CLAIMS: {
     tier:2,
-    label:'Initial Claims 4wk MA',
+    label:'Initial Claims 4wk MA (k)',
     weight:0.10,
-    threshold:323,
+    threshold:280,         // starts to pressure labor market
     direction:'above',
-    span:150,
+    span:120,              // ~400k -> max stress
     fromFred:true,
     fredId:'ICSA',
     current:null,
     format:v => Math.round(v) + 'k',
-    desc:'4-week avg. Rapid rise confirms labor weakness.'
+    desc:'4-week avg. Sustained >280–300k has preceded downturns.'
   },
   SAHM_RULE: {
     tier:2,
-    label:'Sahm Rule',
+    label:'Sahm Rule (pp)',
     weight:0.10,
-    threshold:0.50,
+    threshold:0.50,        // official trigger
     direction:'above',
-    span:1.0,
+    span:1.0,              // 1.5 -> max stress
     fromFred:true,
     fredId:'SAHMREALTIME',
     current:null,
     format:v => v.toFixed(2),
-    desc:'≥0.5 = strong real-time recession confirmation.'
+    desc:'≥0.50 = Sahm trigger; historically coincident with recession onset.'
   },
   BUILDING_PERMITS: {
     tier:2,
     label:'Building Permits 6m %Δ',
     weight:0.08,
-    threshold:-15,
+    threshold:-10.0,       // significant housing slowdown
     direction:'below',
-    span:15,
+    span:20.0,             // -30% -> max stress
     fromFred:true,
     fredId:'PERMIT',
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'6m change; housing slowdown as classic lead.'
+    desc:'6m change. Large drops often lead broader weakness.'
   }
 };
 
+/**
+ * Valuations with more realistic bands:
+ * - Buffett: >150% warning, >200% high risk.
+ * - CAPE: >25 elevated, >30 high risk.
+ */
 const VALUATIONS = {
   BUFFETT: {
     label:'Buffett Indicator (MktCap/GDP)',
     weight:0.50,
-    danger:180,
+    danger:200,            // display: high-risk band
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'Manual. Wilshire 5000 / GDP (or equivalent).'
+    desc:'Wilshire 5000 / GDP (or equivalent). >150% stretched, >200% historically extreme.'
   },
   SHILLER_PE: {
     label:'Shiller CAPE',
     weight:0.50,
-    danger:30,
+    danger:30,             // display: high-risk band
     current:null,
     format:v => v.toFixed(1),
-    desc:'Manual. Long-term CAPE vs history.'
+    desc:'CAPE >25 elevated; >30 historically associated with poor forward returns.'
   }
 };
 
@@ -774,14 +791,13 @@ function scaleIndicator(key, value){
   if(stress < 0) stress = 0;
   if(stress > 100) stress = 100;
   
-  // Apply economic context multipliers
-  if(key === 'YIELD_CURVE' && value < -0.5){
-    // Deep inversion gets extra weight
+  // Context multipliers where there is strong empirical justification.
+  if(key === 'YIELD_CURVE' && value <= 0){
+    // Inversion itself is powerful; modestly emphasize.
     stress = Math.min(100, stress * 1.2);
   }
-  
-  if(key === 'SAHM_RULE' && value > 0.5){
-    // Sahm rule triggered - high recession probability
+  if(key === 'SAHM_RULE' && value >= 0.5){
+    // Sahm trigger: near-contemporaneous confirmation.
     stress = Math.min(100, stress * 1.3);
   }
 
@@ -789,30 +805,39 @@ function scaleIndicator(key, value){
 }
 
 /**
- * Improved valuation stress calculation with better thresholds
+ * Valuation stress:
+ * - Buffett:
+ *    100% or below: 0
+ *    150%: ~50
+ *    200%: ~100
+ * - Shiller CAPE:
+ *    20 or below: 0
+ *    30: ~50
+ *    40: ~100
  */
 function valuationStress(key, val){
   const v = VALUATIONS[key];
   if(!v || !Number.isFinite(val)) return null;
-  
+
   let stress = 0;
-  
+
   if(key === 'BUFFETT'){
-    // Buffett Indicator: 100% = fair value, >150% = high risk
     if(val <= 100) return 0;
-    stress = Math.min(100, ((val - 100) / 80) * 100);
+    // 100 → 0, 150 → 50, 200 → 100
+    stress = ((val - 100) / 100) * 100;
   } else if(key === 'SHILLER_PE'){
-    // Shiller CAPE: 20 = fair value, >30 = high risk
     if(val <= 20) return 0;
-    stress = Math.min(100, ((val - 20) / 20) * 100);
+    // 20 → 0, 30 → 50, 40 → 100
+    stress = ((val - 20) / 20) * 100;
   }
-  
+
+  if(stress < 0) stress = 0;
+  if(stress > 100) stress = 100;
   return stress;
 }
 
 /**
  * Composite: 70% macro, 30% valuations (when both exist).
- * Fixed weighting and normalization
  */
 function computeComposite(){
   // Macro indicators block (70% weight)
@@ -845,25 +870,18 @@ function computeComposite(){
   
   let composite = null;
   
-  // Calculate weighted components
   const macroComponent = macroTotalWeight > 0 ? (macroStress / macroTotalWeight) : 0;
   const valuationComponent = valuationTotalWeight > 0 ? (valuationStressSum / valuationTotalWeight) : 0;
   
-  // Determine final composite based on data availability
   if(macroCount > 0 && valuationCount > 0){
-    // Full composite: 70% macro + 30% valuation
     composite = (macroComponent * 0.7) + (valuationComponent * 0.3);
   } else if(macroCount > 0){
-    // Macro-only: scale to 70% of full range to indicate partial data
     composite = macroComponent * 0.7;
   } else if(valuationCount > 0){
-    // Valuation-only: scale to 30% of full range
     composite = valuationComponent * 0.3;
   }
   
-  // Apply non-linear scaling to emphasize high-risk scenarios
   if(composite !== null){
-    // Quadratic scaling to make high scores more distinctive
     composite = Math.min(100, composite * (1 + (composite / 100) * 0.2));
   }
   
@@ -871,12 +889,10 @@ function computeComposite(){
 }
 
 /**
- * More accurate recession probability mapping
+ * Recession probability mapping (heuristic).
  */
 function derivedRecessionRisk(c){
   if(c == null) return '--';
-  
-  // Based on historical stress-to-recession probability mapping
   if(c < 20) return '<10%';
   if(c < 35) return '10–25%';
   if(c < 50) return '25–40%';
@@ -923,13 +939,8 @@ function buildIndicatorElement(key, ind){
   const s = scaleIndicator(key, ind.current);
   let cls = 'indicator';
   if(s != null){
-    if(s >= 66){
-      cls += ' danger';
-    } else {
-      // UMich (CONSUMER_SENTIMENT) uses an earlier warning trigger (>=20 stress)
-      const warnThreshold = (key === 'CONSUMER_SENTIMENT') ? 20 : 33;
-      if(s >= warnThreshold) cls += ' warning';
-    }
+    if(s >= 66) cls += ' danger';
+    else if(s >= 33) cls += ' warning';
   }
   const hasVal = Number.isFinite(ind.current);
   const valText = hasVal ? ind.format(ind.current) : '--';
@@ -1018,7 +1029,7 @@ function renderValuations(){
         '<div class="indicator-name">'+v.label+'</div>' +
         '<div class="indicator-value" data-val-value="'+k+'">'+valText+'</div>' +
       '</div>' +
-      '<div class="indicator-threshold">Danger threshold: '+v.danger+'</div>' +
+      '<div class="indicator-threshold">Danger band: '+v.danger+'</div>' +
       '<div class="indicator-threshold">'+v.desc+'</div>' +
       '<div class="source-tag">Manual input</div>' +
       '<div class="manual-input-row">' +
@@ -1184,7 +1195,7 @@ function renderMarketTrendChart(){
       labels,
       datasets:[
         {
-          label:'Composite Stress',
+          label:'Composite Stress (Macro+Valuation)',
           data:compData,
           borderColor:'#6b9eff',
           backgroundColor:'rgba(107,158,255,0.14)',
