@@ -500,7 +500,6 @@
 <script>
 'use strict';
 
-const VALUATION_BLOCK_WEIGHT = 0.30;
 let cacheAgeDays = null;
 
 const INDICATORS = {
@@ -787,7 +786,6 @@ async function loadFromFredCache(){
 
 /**
  * Scale indicators to 0–100 stress.
- * 1 span beyond threshold => 100.
  */
 function scaleIndicator(key, value){
   const ind = INDICATORS[key];
@@ -810,7 +808,6 @@ function scaleIndicator(key, value){
   if(stress < 0) stress = 0;
   if(stress > 100) stress = 100;
 
-  // Emphasize empirically-strong signals
   if(key === 'YIELD_CURVE' && value <= 0){
     stress = Math.min(100, stress * 1.2);
   }
@@ -822,7 +819,7 @@ function scaleIndicator(key, value){
 }
 
 /**
- * Valuation stress mapping.
+ * Valuation stress.
  */
 function valuationStress(key, val){
   const v = VALUATIONS[key];
@@ -832,12 +829,10 @@ function valuationStress(key, val){
 
   if(key === 'BUFFETT'){
     if(val <= 100) return 0;
-    // 100 -> 0, 150 -> 50, 200 -> 100
-    stress = ((val - 100) / 100) * 100;
+    stress = ((val - 100) / 100) * 100; // 100->0, 150->50, 200->100
   } else if(key === 'SHILLER_PE'){
     if(val <= 20) return 0;
-    // 20 -> 0, 30 -> 50, 40 -> 100
-    stress = ((val - 20) / 20) * 100;
+    stress = ((val - 20) / 20) * 100;   // 20->0, 30->50, 40->100
   }
 
   if(stress < 0) stress = 0;
@@ -847,7 +842,7 @@ function valuationStress(key, val){
 
 /**
  * Composite: 70% macro, 30% valuations.
- * Macro-only and val-only use full signal; Tier 1 stress cannot yield ~0.
+ * Macro-only and val-only use full signal; Tier 1 stress prevents fake-zero.
  */
 function computeComposite(){
   let macroStress = 0;
@@ -887,16 +882,13 @@ function computeComposite(){
   if (macroCount > 0 && valuationCount > 0) {
     composite = (macroComponent * 0.7) + (valuationComponent * 0.3);
   } else if (macroCount > 0) {
-    composite = macroComponent;          // full macro signal
+    composite = macroComponent;
   } else if (valuationCount > 0) {
-    composite = valuationComponent;      // full valuation signal
+    composite = valuationComponent;
   }
 
   if (composite !== null) {
-    // Non-linear scaling to accentuate high risk
     composite = Math.min(100, composite * (1 + (composite / 100) * 0.2));
-
-    // If any Tier 1 shows stress at all, composite cannot be "near-zero"
     if (maxTier1Stress > 0 && composite < 10) {
       composite = 10;
     }
@@ -945,14 +937,20 @@ function derivedLaborStress(){
 
 /**
  * Indicator cards.
+ * Any stress > 0 => amber, >= 66 => red.
  */
 function buildIndicatorElement(key, ind){
   const s = scaleIndicator(key, ind.current);
   let cls = 'indicator';
-  if(s != null){
-    if(s >= 66) cls += ' danger';
-    else if(s >= 33) cls += ' warning';
+
+  if (s != null) {
+    if (s >= 66) {
+      cls += ' danger';
+    } else if (s > 0) {
+      cls += ' warning';
+    }
   }
+
   const hasVal = Number.isFinite(ind.current);
   const valText = hasVal ? ind.format(ind.current) : '--';
 
@@ -1313,9 +1311,10 @@ function renderRiskRadarChart(){
 
 function updateInsight(){
   const el = document.getElementById('insight-text');
-  if(!el) return;
   const c = compositeScore;
   const vRisk = derivedValuationRisk();
+
+  if(!el) return;
 
   if(c == null){
     el.textContent = 'No composite yet. Ensure fred_cache.json is fresh and LEI/Buffett/CAPE are populated.';
