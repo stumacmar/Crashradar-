@@ -9,6 +9,7 @@
     :root {
       --bg:#0a0e1a;
       --panel:#12182b;
+      --panel-soft:#151d33;
       --text:#e8eeff;
       --muted:#8b96b0;
       --accent:#6b9eff;
@@ -24,38 +25,47 @@
     *{margin:0;padding:0;box-sizing:border-box;}
 
     body{
-      background:var(--bg);
+      background:#050813;
+      background-image:
+        radial-gradient(circle at 0 0,rgba(107,158,255,0.12),transparent 55%),
+        radial-gradient(circle at 100% 0,rgba(30,194,139,0.08),transparent 55%);
       color:var(--text);
-      font:15px/1.6 var(--font-main);
+      font-family:var(--font-main);
       -webkit-font-smoothing:antialiased;
-      padding:18px 12px 40px;
     }
 
-    .container{max-width:1440px;margin:0 auto;}
-    .header{text-align:center;margin-bottom:18px;}
-
-    h1{
-      font-size:clamp(30px,6vw,46px);
-      font-weight:800;
-      margin-bottom:6px;
-      background:linear-gradient(135deg,var(--text),var(--accent-soft));
-      -webkit-background-clip:text;
-      -webkit-text-fill-color:transparent;
+    .wrap{
+      max-width:1400px;
+      margin:0 auto;
+      padding:16px 12px 40px;
     }
 
-    .subtitle{
+    header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .title-block h1{
+      font-size:clamp(24px,4vw,32px);
+      letter-spacing:0.08em;
+      text-transform:uppercase;
+      color:#f4f6ff;
+    }
+
+    .title-block .subtitle{
+      margin-top:4px;
+      font-size:0.85rem;
       color:var(--muted);
-      font-size:0.95rem;
     }
 
-    .meta-badges{
+    .badge-row{
       display:flex;
       flex-wrap:wrap;
-      justify-content:center;
       gap:6px;
-      margin-top:8px;
-      font-size:0.7rem;
-      color:var(--muted);
+      margin-top:6px;
     }
 
     .badge{
@@ -63,1322 +73,1165 @@
       border-radius:999px;
       border:1px solid rgba(255,255,255,0.12);
       background:rgba(255,255,255,0.02);
+      font-size:0.75rem;
+      color:var(--muted);
     }
 
     .alert-banner{
-      margin:16px auto 18px;
-      padding:10px 12px;
-      max-width:900px;
+      margin:10px 0 14px;
+      padding:8px 12px;
+      background:rgba(255,255,255,0.02);
       border-radius:10px;
-      background:linear-gradient(135deg,rgba(107,158,255,0.08),rgba(139,187,255,0.02));
-      border:1px solid rgba(107,158,255,0.25);
+      border:1px solid rgba(255,255,255,0.08);
       font-size:0.8rem;
+      color:var(--muted);
+    }
+
+    .status-pill{
+      padding:3px 8px;
+      border-radius:999px;
+      font-size:0.7rem;
+    }
+    .status-green{background:rgba(30,194,139,0.1);color:var(--green);}
+    .status-amber{background:rgba(255,194,71,0.08);color:var(--amber);}
+    .status-red{background:rgba(255,96,112,0.08);color:var(--red);}
+
+    /* === Tabs / history / micro charts === */
+    .tab-container{
+      margin:12px auto 18px;
+      max-width:1400px;
+    }
+    .tab-buttons{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .tab-button{
+      padding:8px 16px;
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:8px;
+      color:var(--muted);
+      cursor:pointer;
+      font-size:0.85rem;
+    }
+    .tab-button.active{
+      background:var(--accent);
       color:var(--text);
     }
+    .tab-content{
+      display:none;
+    }
+    .tab-content.active{
+      display:block;
+    }
 
+    .sparkline-container{
+      margin-top:4px;
+      height:40px;
+      position:relative;
+    }
+
+    .saved-indicator{
+      position:absolute;
+      right:4px;
+      top:4px;
+      font-size:0.6rem;
+      color:var(--green);
+      opacity:0;
+      transition:opacity 0.25s;
+    }
+    .saved-indicator.show{
+      opacity:1;
+    }
+
+    /* === Layout / cards === */
     .dashboard{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .grid-top{
       display:grid;
-      grid-template-columns:280px 1fr;
-      gap:16px;
-      align-items:flex-start;
+      grid-template-columns:minmax(0,1.1fr) minmax(0,0.9fr);
+      gap:12px;
     }
 
-    .sidebar{
-      background:var(--panel);
-      border-radius:var(--radius-lg);
-      padding:16px 14px 14px;
-      box-shadow:var(--shadow-soft);
-    }
-
-    .main-content{
+    .grid-2{
       display:grid;
       grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:14px;
+      gap:12px;
+    }
+
+    @media (max-width:900px){
+      .grid-top,
+      .grid-2{
+        grid-template-columns:1fr;
+      }
     }
 
     .card{
-      background:var(--panel);
+      background:radial-gradient(circle at 0 0,rgba(107,158,255,0.16),transparent 55%),
+                 radial-gradient(circle at 100% 100%,rgba(30,194,139,0.16),transparent 55%),
+                 var(--panel);
       border-radius:var(--radius-lg);
-      padding:14px 12px 12px;
       box-shadow:var(--shadow-soft);
+      padding:14px 14px 12px;
+      border:1px solid rgba(255,255,255,0.06);
     }
 
     .card-title{
-      font-size:1rem;
-      font-weight:700;
-      color:var(--accent-soft);
+      font-size:0.9rem;
+      font-weight:600;
+      margin-bottom:4px;
       display:flex;
       align-items:center;
       gap:6px;
-      margin-bottom:8px;
     }
-    .card-title .icon{font-size:1.1rem;}
 
-    .gauge-container{text-align:center;margin-bottom:8px;}
-    .gauge{
-      position:relative;
-      width:190px;
-      height:190px;
-      margin:0 auto;
+    .card-subtitle{
+      font-size:0.78rem;
+      color:var(--muted);
+      margin-bottom:10px;
     }
-    .gauge-background{
-      position:absolute;
-      inset:0;
-      border-radius:50%;
-      background:conic-gradient(
-        var(--green) 0deg 108deg,
-        var(--amber) 108deg 216deg,
-        var(--red) 216deg 360deg
-      );
-      opacity:0.28;
+
+    .icon{
+      font-size:0.9rem;
     }
-    .gauge-center{
-      position:absolute;
-      top:10%;
-      left:10%;
-      width:80%;
-      height:80%;
-      border-radius:50%;
-      background:var(--panel);
+
+    /* === Gauge === */
+    .gauge-wrap{
       display:flex;
       flex-direction:column;
       align-items:center;
       justify-content:center;
+      gap:8px;
     }
-    .gauge-score{
-      font-size:2.4rem;
-      font-weight:800;
+
+    .gauge-main-value{
+      font-size:1.7rem;
+      font-weight:600;
     }
     .gauge-label{
-      font-size:0.7rem;
+      font-size:0.8rem;
       color:var(--muted);
-      text-transform:uppercase;
-      letter-spacing:0.08em;
-      margin-top:2px;
-      text-align:center;
-    }
-    .gauge-needle{
-      position:absolute;
-      bottom:50%;
-      left:50%;
-      width:3px;
-      height:46%;
-      background:var(--accent);
-      transform-origin:bottom center;
-      transform:translateX(-50%) rotate(0deg);
-      border-radius:4px 4px 0 0;
-      transition:transform 0.9s ease;
     }
 
-    .risk-meter{margin-top:6px;}
-    .risk-bar{
-      height:6px;
-      border-radius:4px;
-      background:rgba(255,255,255,0.1);
-      overflow:hidden;
+    .gauge-meta{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      gap:8px;
+      margin-top:4px;
+      font-size:0.75rem;
+      color:var(--muted);
     }
-    .risk-fill{
-      height:100%;
-      width:0%;
-      background:linear-gradient(90deg,var(--green),var(--amber),var(--red));
-      transition:width 0.8s ease;
+
+    /* === Summary box === */
+    .summary-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1.1fr) minmax(0,0.9fr);
+      gap:8px;
+      font-size:0.8rem;
     }
-    .risk-labels{
+    @media (max-width:720px){
+      .summary-grid{grid-template-columns:1fr;}
+    }
+
+    .summary-row{
       display:flex;
       justify-content:space-between;
-      margin-top:4px;
-      font-size:0.65rem;
-      color:var(--muted);
+      margin-bottom:4px;
     }
+    .summary-label{color:var(--muted);}
+    .summary-value{font-weight:500;}
 
-    .status-grid{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:6px;
-      margin-top:10px;
-    }
-    .status-item{
-      padding:7px 6px;
-      background:rgba(255,255,255,0.02);
-      border-radius:8px;
-      font-size:0.7rem;
-    }
-    .status-label{
+    /* === Indicators === */
+    .indicator-tier-label{
+      font-size:0.75rem;
+      text-transform:uppercase;
+      letter-spacing:0.08em;
       color:var(--muted);
-      font-size:0.66rem;
-    }
-    .status-value{
-      font-weight:700;
-      font-size:0.95rem;
-      margin-top:1px;
+      margin:4px 0 6px;
     }
 
     .indicator-grid{
       display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-      gap:7px;
-      margin-top:4px;
+      grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+      gap:8px;
     }
-    .indicator{
-      padding:7px 7px 6px;
-      background:rgba(255,255,255,0.03);
-      border-radius:8px;
-      border-left:3px solid var(--green);
-      font-size:0.7rem;
+
+    .indicator-box{
+      background:rgba(0,0,0,0.25);
+      border-radius:12px;
+      padding:8px 9px;
+      border:1px solid rgba(255,255,255,0.05);
+      position:relative;
+      overflow:hidden;
     }
-    .indicator.warning{border-left-color:var(--amber);}
-    .indicator.danger{border-left-color:var(--red);}
 
     .indicator-header{
       display:flex;
       justify-content:space-between;
+      align-items:flex-start;
       gap:4px;
-      align-items:baseline;
-      margin-bottom:2px;
+      margin-bottom:4px;
     }
+
     .indicator-name{
-      font-weight:600;
-      font-size:0.78rem;
+      font-size:0.8rem;
+      font-weight:500;
     }
+
     .indicator-value{
-      font-weight:700;
-      font-size:0.9rem;
+      font-size:0.8rem;
+      font-weight:500;
     }
+
     .indicator-threshold{
+      font-size:0.74rem;
       color:var(--muted);
-      font-size:0.62rem;
-      margin-top:1px;
+      margin-top:2px;
     }
+
     .source-tag{
-      display:inline-block;
-      margin-top:3px;
-      padding:2px 5px;
-      border-radius:6px;
-      border:1px solid rgba(255,255,255,0.14);
-      font-size:0.58rem;
+      margin-top:4px;
+      font-size:0.7rem;
       color:var(--muted);
+      opacity:0.9;
     }
 
     .manual-input-row{
+      margin-top:6px;
       display:flex;
-      flex-direction:column;
-      gap:3px;
-      margin-top:4px;
-      font-size:0.6rem;
+      align-items:center;
+      gap:6px;
+      font-size:0.75rem;
+      position:relative;
     }
+
     .manual-input-row span{
       color:var(--muted);
-      font-size:0.62rem;
     }
+
     .manual-input{
-      width:100%;
-      padding:8px 8px;
-      min-height:44px;
+      flex:0 0 80px;
+      padding:4px 6px;
       border-radius:6px;
-      border:1px solid rgba(255,255,255,0.25);
-      background:rgba(0,0,0,0.5);
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(0,0,0,0.4);
       color:var(--text);
       font-size:0.75rem;
-      outline:none;
-    }
-    .manual-input:focus{
-      border-color:var(--accent);
-      box-shadow:0 0 4px(var(--accent));
     }
 
-    .valuation-comparison{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-      gap:6px;
-      margin-top:8px;
-      font-size:0.68rem;
+    /* === Valuations === */
+    .valuation-box{
+      background:rgba(0,0,0,0.25);
+      border-radius:12px;
+      padding:8px 9px;
+      border:1px solid rgba(255,255,255,0.05);
+      margin-bottom:8px;
+      position:relative;
     }
-    .valuation-item{
-      padding:6px;
-      background:rgba(255,255,255,0.02);
-      border-radius:8px;
-      text-align:center;
+
+    .valuation-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:4px;
+      margin-bottom:4px;
     }
-    .valuation-item.current{
-      border:1px solid var(--red);
-      background:rgba(255,96,112,0.05);
+
+    .valuation-name{
+      font-size:0.8rem;
+      font-weight:500;
     }
-    .valuation-title{
-      font-weight:600;
-      margin-bottom:2px;
+
+    .valuation-value{
+      font-size:0.8rem;
+      font-weight:500;
     }
-    .valuation-metric{margin:1px 0;}
-    .valuation-outcome{
-      margin-top:2px;
+
+    /* === History tab === */
+    .chart-container{
+      margin-top:6px;
+      position:relative;
+      height:260px;
+    }
+
+    .history-note{
+      font-size:0.72rem;
       color:var(--muted);
-    }
-
-    .insight-card{
-      margin-top:6px;
-      padding:6px 7px;
-      border-radius:8px;
-      background:linear-gradient(135deg,rgba(107,158,255,0.10),rgba(10,14,26,1));
-      border:1px solid rgba(107,158,255,0.25);
-      font-size:0.7rem;
-    }
-    .chart-container{margin-top:4px;}
-
-    .history-grid{
-      margin-top:6px;
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-      gap:5px;
-      font-size:0.66rem;
-    }
-    .history-item{
-      padding:5px;
-      border-radius:8px;
-      background:rgba(255,255,255,0.02);
-    }
-    .history-title{
-      font-weight:600;
-      margin-bottom:1px;
-      font-size:0.7rem;
-    }
-
-    @media(max-width:900px){
-      body{padding:14px 8px 26px;}
-      .dashboard{grid-template-columns:1fr;}
-      .main-content{grid-template-columns:1fr;}
-      .sidebar{order:-1;}
+      margin-top:8px;
     }
   </style>
 </head>
 <body>
-<div class="container">
-  <div class="header">
-    <h1>⚡ Economic Crash Radar Pro v7</h1>
-    <div class="subtitle">
-      10 macro indicators (9 auto via FRED, 1 manual) + 2 valuations. Transparent, deterministic composite with smoothed stress bands.
-    </div>
-    <div class="meta-badges">
-      <div class="badge" id="cache-badge">FRED cache: not loaded</div>
-      <div class="badge">Manual: LEI 6m Δ, Buffett, CAPE</div>
-      <div class="badge">Auto: Curve, HY, NFCI, UMich, M2, INDPRO, Permits, Claims, Sahm</div>
-      <div class="badge" id="inputs-badge">Inputs: 0/12 populated</div>
-    </div>
-  </div>
-
-  <div class="alert-banner" id="alert-banner">
-    Composite stress = 70% macro block + 30% valuation block when both are available; otherwise uses whichever block is populated.
-  </div>
-
-  <div class="dashboard">
-    <div class="sidebar">
-      <div class="gauge-container">
-        <div class="gauge">
-          <div class="gauge-background"></div>
-          <div class="gauge-center">
-            <div class="gauge-score" id="composite-score">--</div>
-            <div class="gauge-label" id="regime-label">COMPOSITE STRESS</div>
-          </div>
-          <div class="gauge-needle" id="needle"></div>
+  <div class="wrap">
+    <header>
+      <div class="title-block">
+        <h1>Economic Crash Radar Pro</h1>
+        <div class="subtitle">
+          Live composite stress gauge – macro fragility + market valuations
         </div>
-        <div class="risk-meter">
-          <div class="risk-bar">
-            <div class="risk-fill" id="risk-fill"></div>
-          </div>
-          <div class="risk-labels">
-            <span>Low (0-30)</span>
-            <span>Med (30-50)</span>
-            <span>High (50-70)</span>
-            <span>Critical (70-100)</span>
-          </div>
+        <div class="badge-row">
+          <div class="badge">Composite: macro 70% · valuations 30%</div>
+          <div class="badge">Data source: FRED cache + manual inputs</div>
+          <div class="badge" id="data-stamp">Cache: --</div>
         </div>
       </div>
-      <div class="status-grid">
-        <div class="status-item">
-          <div class="status-label">Recession Probability (12–18m)</div>
-          <div class="status-value" id="recession-risk-display">--</div>
-          <div class="indicator-threshold">Mapped from composite.</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">Valuation Risk</div>
-          <div class="status-value" id="valuation-risk-display">--</div>
-          <div class="indicator-threshold">Buffett + CAPE combined.</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">Labor Market Stress</div>
-          <div class="status-value" id="labor-risk-display">--</div>
-          <div class="indicator-threshold">Claims + Sahm.</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">Data Coverage</div>
-          <div class="status-value" id="quality-display">--</div>
-          <div class="indicator-threshold">Filled indicators / total.</div>
-        </div>
+    </header>
+
+    <div class="alert-banner" id="alert-banner">
+      Composite stress = 70% macro block + 30% valuation block when both are available; otherwise uses whichever block is populated.
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-container">
+      <div class="tab-buttons">
+        <button class="tab-button active" onclick="switchTab(event,'dashboard')">Dashboard</button>
+        <button class="tab-button" onclick="switchTab(event,'history')">History</button>
       </div>
     </div>
 
-    <div class="main-content">
-      <div class="card">
-        <div class="card-title"><span class="icon">📊</span>Tier 1 Leading Indicators</div>
-        <div class="indicator-grid" id="tier1-indicators"></div>
-      </div>
+    <!-- DASHBOARD TAB -->
+    <div class="tab-content active" id="dashboard-tab">
+      <div class="dashboard">
 
-      <div class="card">
-        <div class="card-title"><span class="icon">📈</span>Tier 2 Confirming Indicators</div>
-        <div class="indicator-grid" id="tier2-indicators"></div>
-      </div>
+        <div class="grid-top">
+          <!-- Gauge -->
+          <div class="card">
+            <div class="card-title"><span class="icon">🧭</span>Composite Crash Risk</div>
+            <div class="card-subtitle">Smoothed 0–100 stress score combining macro & valuations</div>
+            <div class="gauge-wrap">
+              <canvas id="composite-gauge" width="260" height="260"></canvas>
+              <div class="gauge-main-value" id="gauge-main">--</div>
+              <div class="gauge-label" id="gauge-label">Waiting for data…</div>
+              <div class="gauge-meta">
+                <div id="gauge-macro-pill" class="status-pill status-green">Macro: --</div>
+                <div id="gauge-val-pill" class="status-pill status-green">Valuations: --</div>
+              </div>
+            </div>
+          </div>
 
-      <div class="card">
-        <div class="card-title"><span class="icon">💰</span>Valuation Indicators</div>
-        <div class="indicator-grid" id="valuation-indicators"></div>
+          <!-- Summary -->
+          <div class="card">
+            <div class="card-title"><span class="icon">📊</span>Risk Decomposition</div>
+            <div class="card-subtitle">Macro block groups vs valuation pressure</div>
+            <div class="summary-grid">
+              <div>
+                <div class="summary-row">
+                  <span class="summary-label">Macro stress</span>
+                  <span class="summary-value" id="macro-score-label">--</span>
+                </div>
+                <div class="summary-row">
+                  <span class="summary-label">Valuation stress</span>
+                  <span class="summary-value" id="val-score-label">--</span>
+                </div>
+                <div class="summary-row">
+                  <span class="summary-label">Composite (0–100)</span>
+                  <span class="summary-value" id="comp-score-label">--</span>
+                </div>
+                <div class="summary-row">
+                  <span class="summary-label">Regime</span>
+                  <span class="summary-value" id="regime-label">--</span>
+                </div>
+              </div>
+              <div>
+                <div class="summary-row">
+                  <span class="summary-label">Macro ≥ 2 reds?</span>
+                  <span class="summary-value" id="macro-reds-label">--</span>
+                </div>
+                <div class="summary-row">
+                  <span class="summary-label">Valuations ≥ 2 reds?</span>
+                  <span class="summary-value" id="val-reds-label">--</span>
+                </div>
+                <div class="summary-row">
+                  <span class="summary-label">Total red flags</span>
+                  <span class="summary-value" id="total-reds-label">--</span>
+                </div>
+                <div class="summary-row">
+                  <span class="summary-label">Override status</span>
+                  <span class="summary-value" id="override-label">None</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <div class="valuation-comparison">
-          <div class="valuation-item">
-            <div class="valuation-title">2000 Dot-com</div>
-            <div class="valuation-metric">CAPE ≈ 44</div>
-            <div class="valuation-metric">Buffett ≈ 140–160%</div>
-            <div class="valuation-outcome">Severe drawdown.</div>
+        <!-- Macro KPIs + Valuations -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title"><span class="icon">📉</span>Macro Stress KPIs</div>
+            <div class="card-subtitle">Tier 1 are primary recession/funding signals; Tier 2 supporting</div>
+
+            <div class="indicator-tier-label">Tier 1 – Primary</div>
+            <div class="indicator-grid" id="indicator-tier-1"></div>
+
+            <div class="indicator-tier-label" style="margin-top:10px;">Tier 2 – Secondary</div>
+            <div class="indicator-grid" id="indicator-tier-2"></div>
           </div>
-          <div class="valuation-item">
-            <div class="valuation-title">2007 Pre-GFC</div>
-            <div class="valuation-metric">CAPE ≈ 27</div>
-            <div class="valuation-metric">Buffett ≈ 105%</div>
-            <div class="valuation-outcome">Crisis.</div>
-          </div>
-          <div class="valuation-item">
-            <div class="valuation-title">2021 Peak</div>
-            <div class="valuation-metric">CAPE ≈ 38</div>
-            <div class="valuation-metric">Buffett ≈ 195%</div>
-            <div class="valuation-outcome">2022 correction.</div>
-          </div>
-          <div class="valuation-item current">
-            <div class="valuation-title">Current (your inputs)</div>
-            <div class="valuation-metric" id="current-buffett-label">Buffett: --</div>
-            <div class="valuation-metric" id="current-cape-label">CAPE: --</div>
-            <div class="valuation-outcome">Reflects manual entries.</div>
+
+          <div class="card">
+            <div class="card-title"><span class="icon">💸</span>Valuations</div>
+            <div class="card-subtitle">Buffett, Shiller PE, Dow/Gold – manual with persistence</div>
+            <div id="valuation-container"></div>
           </div>
         </div>
       </div>
+    </div>
 
+    <!-- HISTORY TAB -->
+    <div class="tab-content" id="history-tab">
       <div class="card">
-        <div class="card-title"><span class="icon">🕒</span>History, Radar & Prior Recessions</div>
+        <div class="card-title"><span class="icon">📈</span>Composite Score History</div>
+        <div class="card-subtitle">Placeholder – wiring to full FRED history is still to do</div>
         <div class="chart-container">
-          <canvas id="market-trend" height="130"></canvas>
+          <canvas id="composite-history-chart"></canvas>
         </div>
-        <div class="chart-container">
-          <canvas id="risk-radar" height="140"></canvas>
-        </div>
-        <div class="insight-card">
-          <strong>Insight:</strong>
-          <span id="insight-text">
-            Once populated, this compares today's configuration to prior stress regimes.
-          </span>
-        </div>
-        <div class="history-grid">
-          <div class="history-item">
-            <div class="history-title">1973–75 / early 80s</div>
-            <div>Curve inversion + energy shocks + weak leads.</div>
-          </div>
-          <div class="history-item">
-            <div class="history-title">2000–02</div>
-            <div>Extreme valuations, tightening, growth rollover.</div>
-          </div>
-          <div class="history-item">
-            <div class="history-title">2007–09</div>
-            <div>Housing + credit + inversion aligned.</div>
-          </div>
-          <div class="history-item">
-            <div class="history-title">2020</div>
-            <div>External shock; indicator behavior distinct.</div>
-          </div>
+        <div class="history-note">
+          This chart currently uses synthetic placeholder data based on today’s composite.
+          To avoid bullshit, it is <strong>not</strong> claiming to be back-tested from FRED.  
+          Once we expose your composite function over full fred_cache history, we can replace this with a real series.
         </div>
       </div>
     </div>
   </div>
-</div>
 
-<script>
-'use strict';
+  <script>
+  'use strict';
 
-const MACRO_BLOCK_WEIGHT = 0.70;
-const VALUATION_BLOCK_WEIGHT = 0.30;
-const WARN_MAX = 30;
+  // -------------------------
+  // CONFIG / STATE
+  // -------------------------
 
-let cacheAgeDays = null;
+  const INDICATORS = {
+    T10Y3M: {
+      label: 'Yield curve: 10Y–3M',
+      desc: 'Medium-term recession signal. Deep inversion is bad.',
+      fromFred: true,
+      fredId: 'T10Y3M',
+      tier: 1,
+      direction: 'lower-worse',   // more negative = worse
+      green: -0.1,
+      amber: -0.5,                // below this gets red
+      formatter: (v) => v.toFixed(2) + ' pts',
+      current: null
+    },
+    CREDIT: {
+      label: 'HY credit spread',
+      desc: 'US HY option-adjusted spread (BAMLH0A0HYM2).',
+      fromFred: true,
+      fredId: 'BAMLH0A0HYM2',
+      tier: 1,
+      direction: 'higher-worse',
+      green: 3.5,
+      amber: 6.0,
+      formatter: (v) => v.toFixed(2) + ' %',
+      current: null
+    },
+    NFCI: {
+      label: 'Chicago NFCI',
+      desc: 'Financial conditions index, above 0 = tight.',
+      fromFred: true,
+      fredId: 'NFCI',
+      tier: 1,
+      direction: 'higher-worse',
+      green: 0.0,
+      amber: 0.5,
+      formatter: (v) => v.toFixed(2),
+      current: null
+    },
+    VIX_PROXY: {
+      label: 'Volatility (VIX proxy)',
+      desc: 'Implied equity vol; persistent high vol = stress.',
+      fromFred: true,
+      fredId: 'VIXCLS',
+      tier: 2,
+      direction: 'higher-worse',
+      green: 20,
+      amber: 30,
+      formatter: (v) => v.toFixed(1),
+      current: null
+    },
+    RETAIL_MOMENTUM: {
+      label: 'Real retail momentum',
+      desc: 'Retail sales YoY / trend proxy.',
+      fromFred: true,
+      fredId: 'RSAFS',
+      tier: 2,
+      direction: 'lower-worse',
+      green: 0,
+      amber: -5,
+      formatter: (v) => v.toFixed(1) + ' %',
+      current: null
+    },
+    SENTIMENT: {
+      label: 'UMich consumer sentiment',
+      desc: 'Household sentiment: extremes often mark cycles.',
+      fromFred: true,
+      fredId: 'UMCSENT',
+      tier: 2,
+      direction: 'lower-worse',
+      green: 70,
+      amber: 60,
+      formatter: (v) => v.toFixed(1),
+      current: null
+    },
+    LEI: {
+      label: 'Conf. Board LEI (6m %Δ)',
+      desc: 'Manual input: latest 6-month % change in LEI.',
+      fromFred: false,
+      tier: 1,
+      direction: 'lower-worse',
+      green: -2,
+      amber: -4,
+      formatter: (v) => v.toFixed(1) + ' %',
+      current: null
+    }
+  };
 
-const INDICATORS = {
-  LEI: {
-    tier:1,
-    label:'Conference Board LEI 6m %Δ',
-    weight:0.15,
-    threshold:-3.5,
-    direction:'below',
-    span:3.0,
-    fromFred:false,
-    fredId:null,
-    current:null,
-    format:v => v.toFixed(1) + '%',
-    desc:'Manual. 6m % change in LEI. ≤ -3.5% has preceded most post-1960 recessions.'
-  },
-  YIELD_CURVE: {
-    tier:1,
-    label:'Yield Curve (10y–3m)',
-    weight:0.12,
-    threshold:0.0,
-    direction:'below',
-    span:1.0,
-    fromFred:true,
-    fredId:'T10Y3M',
-    current:null,
-    format:v => v.toFixed(2) + ' pp',
-    desc:'10y–3m spread. Inversions (≤0) are classic recession leads.'
-  },
-  CREDIT_SPREAD: {
-    tier:1,
-    label:'HY Credit Spread',
-    weight:0.10,
-    threshold:5.0,
-    direction:'above',
-    span:3.0,
-    fromFred:true,
-    fredId:'BAMLH0A0HYM2',
-    current:null,
-    format:v => v.toFixed(2) + ' pp',
-    desc:'US HY OAS. >5% = stress, >8% = crisis-like conditions.'
-  },
-  FIN_STRESS: {
-    tier:1,
-    label:'Financial Stress (NFCI)',
-    weight:0.08,
-    threshold:0.0,
-    direction:'above',
-    span:0.5,
-    fromFred:true,
-    fredId:'NFCI',
-    current:null,
-    format:v => v.toFixed(2),
-    desc:'Chicago Fed NFCI. >0 indicates tighter-than-average conditions.'
-  },
-  CONSUMER_SENTIMENT: {
-    tier:1,
-    label:'UMich Sentiment',
-    weight:0.08,
-    threshold:60.0,
-    direction:'below',
-    span:25.0,
-    fromFred:true,
-    fredId:'UMCSENT',
-    current:null,
-    format:v => v.toFixed(1),
-    desc:'Deep pessimism. Sustained <60 readings cluster around recessions.'
-  },
-  M2_GROWTH: {
-    tier:1,
-    label:'M2 Growth YoY',
-    weight:0.08,
-    threshold:0.0,
-    direction:'below',
-    span:6.0,
-    fromFred:true,
-    fredId:'M2SL',
-    current:null,
-    format:v => v.toFixed(1) + '%',
-    desc:'YoY growth from M2SL. ≤0% is historically rare and restrictive.'
-  },
-  INDUSTRIAL_PRODUCTION: {
-    tier:2,
-    label:'Industrial Production YoY',
-    weight:0.07,
-    threshold:0.0,
-    direction:'below',
-    span:5.0,
-    fromFred:true,
-    fredId:'INDPRO',
-    current:null,
-    format:v => v.toFixed(1) + '%',
-    desc:'YoY change. Sustained contraction confirms downturn.'
-  },
-  BUILDING_PERMITS: {
-    tier:2,
-    label:'Building Permits 6m %Δ',
-    weight:0.07,
-    threshold:-10.0,
-    direction:'below',
-    span:10.0,
-    fromFred:true,
-    fredId:'PERMIT',
-    current:null,
-    format:v => v.toFixed(1) + '%',
-    desc:'6m % change. Sharp drops lead housing & broader weakness.'
-  },
-  INITIAL_CLAIMS: {
-    tier:2,
-    label:'Initial Claims 4wk MA (k)',
-    weight:0.08,
-    threshold:325,
-    direction:'above',
-    span:150,
-    fromFred:true,
-    fredId:'ICSA',
-    current:null,
-    format:v => Math.round(v) + 'k',
-    desc:'4-week avg in thousands. >325k consistent with labor market stress.'
-  },
-  SAHM_RULE: {
-    tier:2,
-    label:'Sahm Rule (pp)',
-    weight:0.07,
-    threshold:0.50,
-    direction:'above',
-    span:0.5,
-    fromFred:true,
-    fredId:'SAHMREALTIME',
-    current:null,
-    format:v => v.toFixed(2),
-    desc:'≥0.50 triggers real-time recession signal.'
+  const VALUATIONS = {
+    BUFFETT: {
+      label: 'Buffett indicator',
+      desc: 'Total US market cap / GDP (%).',
+      green: 150,
+      amber: 200,
+      current: null
+    },
+    SHILLER_PE: {
+      label: 'Shiller CAPE',
+      desc: 'Cyclically adjusted US PE ratio.',
+      green: 25,
+      amber: 30,
+      current: null
+    },
+    DOW_GOLD: {
+      label: 'Dow / Gold ratio',
+      desc: 'Equities vs hard asset valuation regime.',
+      green: 12,
+      amber: 16,
+      current: null
+    }
+  };
+
+  let fredSeries = {};
+  let compositeScore = null;
+  let macroScore = null;
+  let valScore = null;
+
+  let gaugeChart = null;
+  let historyChart = null;
+  let manualOverrides = {};
+
+  // -------------------------
+  // UTIL
+  // -------------------------
+
+  function safeNumber(v){
+    const n = typeof v === 'number' ? v : parseFloat(v);
+    return Number.isFinite(n) ? n : null;
   }
-};
 
-const VALUATIONS = {
-  BUFFETT: {
-    label:'Buffett Indicator (MktCap/GDP)',
-    weight:0.50,
-    danger:200,
-    current:null,
-    format:v => v.toFixed(1) + '%',
-    desc:'>150% stretched; >200% historically extreme.'
-  },
-  SHILLER_PE: {
-    label:'Shiller CAPE',
-    weight:0.50,
-    danger:30,
-    current:null,
-    format:v => v.toFixed(1),
-    desc:'>25 elevated; >30 associated with poor long-run returns.'
+  function stressFromThresholds(value, cfg){
+    if (value === null || value === undefined) return null;
+    const v = value;
+
+    const dir = cfg.direction || 'higher-worse';
+    const g = cfg.green;
+    const a = cfg.amber;
+
+    // Map to 0–100 with a gentle S-shape
+    if (dir === 'higher-worse'){
+      if (v <= g) return 20 * (v / g);      // sub-green
+      if (v <= a){
+        const t = (v - g) / (a - g);
+        return 20 + t * 50;                 // 20–70
+      }
+      const t = Math.min(1, (v - a) / Math.max(1, Math.abs(a)));
+      return 70 + t * 30;                   // 70–100
+    } else {
+      // lower-worse (e.g. yield curve, LEI)
+      if (v >= g) return 20 * (g / v);      // safely above green
+      if (v >= a){
+        const t = (g - v) / (g - a);
+        return 20 + t * 50;
+      }
+      const t = Math.min(1, (a - v) / Math.max(1, Math.abs(a)));
+      return 70 + t * 30;
+    }
   }
-};
 
-let charts = { trend:null, radar:null };
-let compositeScore = null;
+  function ragClass(score){
+    if (!Number.isFinite(score)) return 'status-green';
+    if (score < 40) return 'status-green';
+    if (score < 70) return 'status-amber';
+    return 'status-red';
+  }
 
-async function loadFromFredCache(){
-  try{
-    const res = await fetch('data/fred_cache.json', { cache:'no-store' });
-    if(!res.ok){
-      console.error('FRED cache HTTP error', res.status);
-      document.getElementById('cache-badge').textContent = 'FRED cache: not found';
-      return;
+  function ragText(score){
+    if (!Number.isFinite(score)) return '--';
+    if (score < 40) return 'Calm / benign';
+    if (score < 70) return 'Watchful / mid-risk';
+    return 'Stressed / late-cycle';
+  }
+
+  function formatIndicatorValue(key, v){
+    const cfg = INDICATORS[key];
+    if (!Number.isFinite(v)) return '--';
+    if (cfg && typeof cfg.formatter === 'function'){
+      try { return cfg.formatter(v); } catch(e){ return v.toFixed(2); }
     }
+    return v.toFixed(2);
+  }
 
-    const cache = await res.json();
-    const series = cache.series || {};
-    const gen = cache.generated_at || 'loaded';
-    document.getElementById('cache-badge').textContent = 'FRED cache: ' + gen;
+  // -------------------------
+  // FRED CACHE LOADER
+  // -------------------------
 
-    const genDate = new Date(gen);
-    if(!isNaN(genDate)){
-      const now = new Date();
-      cacheAgeDays = (now - genDate) / (1000*60*60*24);
-      if(cacheAgeDays < 0) cacheAgeDays = null;
-    }
+  async function loadFromFredCache(){
+    const res = await fetch('data/fred_cache.json?_=' + Date.now());
+    if (!res.ok) throw new Error('Failed to fetch fred_cache.json: ' + res.status);
+    const json = await res.json();
+    const series = json.series || json;
+    fredSeries = series || {};
 
-    function lastVal(id){
-      const s = series[id];
-      if(!s) return null;
-      if(Array.isArray(s.observations) && s.observations.length){
-        for(let i = s.observations.length - 1; i >= 0; i--){
-          const v = Number(s.observations[i].value);
-          if(Number.isFinite(v)) return v;
-        }
-        return null;
+    // Cache timestamp if available
+    if (json.generated_at){
+      const stampEl = document.getElementById('data-stamp');
+      if (stampEl){
+        stampEl.textContent = 'Cache: ' + json.generated_at;
       }
-      if(typeof s.value !== 'undefined'){
-        const v = Number(s.value);
-        return Number.isFinite(v) ? v : null;
-      }
-      return null;
     }
 
-    function obsMonthsBack(id, months){
-      const s = series[id];
-      if(!s || !Array.isArray(s.observations) || !s.observations.length) return null;
-      const last = s.observations[s.observations.length - 1];
-      const lastDate = new Date(last.date);
-      if(isNaN(lastDate)) return null;
-      const target = new Date(lastDate);
-      target.setMonth(target.getMonth() - months);
-      let candidate = null;
-      for(let i=0;i<s.observations.length;i++){
-        const o = s.observations[i];
-        const d = new Date(o.date);
-        if(isNaN(d)) continue;
-        if(d <= target) candidate = o; else break;
-      }
-      return candidate;
-    }
+    Object.entries(INDICATORS).forEach(([key, cfg]) => {
+      if (!cfg.fromFred || !cfg.fredId) return;
+      const s = series[cfg.fredId];
+      if (!s) return;
+      const v = safeNumber(s.value);
+      if (v !== null) cfg.current = v;
+    });
+  }
 
-    function rollingAvgLastN(id, n){
-      const s = series[id];
-      if(!s || !Array.isArray(s.observations) || s.observations.length < n) return null;
-      const slice = s.observations.slice(-n);
-      const vals = slice.map(o => Number(o.value)).filter(v => Number.isFinite(v));
-      if(vals.length < n) return null;
-      const sum = vals.reduce((a,b)=>a+b,0);
-      return sum / n;
-    }
+  // -------------------------
+  // LOCALSTORAGE OVERRIDES
+  // -------------------------
 
-    function pctChange(nv, ov){
-      const n = Number(nv), o = Number(ov);
-      if(!Number.isFinite(n) || !Number.isFinite(o) || o === 0) return null;
-      return ((n - o) / o) * 100;
-    }
+  function loadManualOverrides(){
+    try{
+      const stored = localStorage.getItem('cr_manualOverrides');
+      if (!stored) return;
+      manualOverrides = JSON.parse(stored) || {};
 
-    Object.keys(INDICATORS).forEach(key => {
-      const ind = INDICATORS[key];
-      if(!ind.fromFred || !ind.fredId) return;
-
-      if(ind.fredId === 'M2SL'){
-        const lvlNow = lastVal('M2SL');
-        const back = obsMonthsBack('M2SL', 12);
-        if(lvlNow != null && back && back.value != null){
-          const pc = pctChange(lvlNow, back.value);
-          if(pc != null) ind.current = pc;
+      if (manualOverrides.LEI !== undefined){
+        const v = safeNumber(manualOverrides.LEI);
+        if (v !== null && INDICATORS.LEI){
+          INDICATORS.LEI.current = v;
         }
-      } else if(ind.fredId === 'INDPRO'){
-        const lvlNow = lastVal('INDPRO');
-        const back = obsMonthsBack('INDPRO', 12);
-        if(lvlNow != null && back && back.value != null){
-          const pc = pctChange(lvlNow, back.value);
-          if(pc != null) ind.current = pc;
-        }
-      } else if(ind.fredId === 'PERMIT'){
-        const now = lastVal('PERMIT');
-        const back = obsMonthsBack('PERMIT', 6);
-        if(now != null && back && back.value != null){
-          const pc = pctChange(now, back.value);
-          if(pc != null) ind.current = pc;
-        }
-      } else if(ind.fredId === 'ICSA'){
-        const avg = rollingAvgLastN('ICSA', 4);
-        if(avg != null) ind.current = avg / 1000;
-      } else {
-        const v = lastVal(ind.fredId);
-        if(v != null) ind.current = v;
       }
+      if (manualOverrides.BUFFETT !== undefined){
+        const v = safeNumber(manualOverrides.BUFFETT);
+        if (v !== null && VALUATIONS.BUFFETT){
+          VALUATIONS.BUFFETT.current = v;
+        }
+      }
+      if (manualOverrides.SHILLER_PE !== undefined){
+        const v = safeNumber(manualOverrides.SHILLER_PE);
+        if (v !== null && VALUATIONS.SHILLER_PE){
+          VALUATIONS.SHILLER_PE.current = v;
+        }
+      }
+    }catch(err){
+      console.error('Error loading manual overrides', err);
+    }
+  }
+
+  function persistOverride(key, value, isValuation){
+    const n = safeNumber(value);
+    if (n === null){
+      delete manualOverrides[key];
+    } else {
+      manualOverrides[key] = n;
+    }
+    try{
+      localStorage.setItem('cr_manualOverrides', JSON.stringify(manualOverrides));
+    }catch(e){
+      console.error('Error saving manual overrides', e);
+    }
+
+    const id = isValuation ? ('saved-val-' + key) : ('saved-' + key);
+    const el = document.getElementById(id);
+    if (el){
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 1800);
+    }
+  }
+
+  // -------------------------
+  // RENDER: INDICATORS
+  // -------------------------
+
+  function buildIndicatorBox(key, cfg){
+    const value = safeNumber(cfg.current);
+    const stress = stressFromThresholds(value, cfg);
+    const valueText = formatIndicatorValue(key, value);
+    const stressText = Number.isFinite(stress) ? ('Stress: ' + Math.round(stress) + '/100') : 'Stress: --';
+
+    const box = document.createElement('div');
+    box.className = 'indicator-box';
+    box.dataset.indicatorKey = key;
+
+    const src = cfg.fromFred ? 'Auto from FRED' : 'Manual input';
+
+    const savedIndicator = !cfg.fromFred
+      ? '<span class="saved-indicator" id="saved-'+key+'">✓ saved</span>'
+      : '';
+
+    let manualHtml = '';
+    if (!cfg.fromFred && key === 'LEI'){
+      manualHtml =
+        '<div class="manual-input-row">' +
+          '<span>Set latest 6m %Δ:</span>' +
+          '<input class="manual-input" type="number" step="0.1" data-ind-key="'+key+'" value="'+(value !== null ? value : '')+'">' +
+          savedIndicator +
+        '</div>';
+    }
+
+    const sparkHtml = cfg.fromFred && cfg.fredId
+      ? '<div class="sparkline-container" id="spark-'+key+'"></div>'
+      : '';
+
+    box.innerHTML =
+      '<div class="indicator-header">' +
+        '<div class="indicator-name">'+cfg.label+'</div>' +
+        '<div class="indicator-value" data-ind-value="'+key+'">'+valueText+'</div>' +
+      '</div>' +
+      '<div class="indicator-threshold" data-ind-stress="'+key+'">'+stressText+'</div>' +
+      '<div class="indicator-threshold">'+cfg.desc+'</div>' +
+      '<div class="source-tag">'+src+'</div>' +
+      sparkHtml +
+      manualHtml;
+
+    return box;
+  }
+
+  function renderIndicators(){
+    const t1 = document.getElementById('indicator-tier-1');
+    const t2 = document.getElementById('indicator-tier-2');
+    if (!t1 || !t2) return;
+
+    t1.innerHTML = '';
+    t2.innerHTML = '';
+
+    Object.entries(INDICATORS).forEach(([key, cfg]) => {
+      const el = buildIndicatorBox(key, cfg);
+      if (cfg.tier === 1) t1.appendChild(el);
+      else t2.appendChild(el);
     });
 
-    ['T10Y3M','BAMLH0A0HYM2','UMCSENT','M2SL','NFCI','ICSA','SAHMREALTIME','INDPRO','PERMIT']
-      .forEach(id => {
-        const v = lastVal(id);
-        if(v != null){
-          console.log(`✅ ${id} loaded from fred_cache.json:`, v);
-        } else {
-          console.warn(`⚠️ ${id} missing or invalid in fred_cache.json`);
+    // Wire manual indicator inputs (LEI)
+    document.querySelectorAll('.manual-input[data-ind-key]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const key = inp.getAttribute('data-ind-key');
+        const cfg = INDICATORS[key];
+        if (!cfg) return;
+        const v = safeNumber(inp.value);
+        cfg.current = v;
+        persistOverride(key, v, false);
+
+        const valEl = document.querySelector('[data-ind-value="'+key+'"]');
+        if (valEl){
+          valEl.textContent = v !== null ? formatIndicatorValue(key, v) : '--';
+        }
+        updateAll(false); // recompute but avoid re-building entire DOM again
+      });
+    });
+
+    // Render sparkline placeholders
+    setTimeout(() => {
+      Object.entries(INDICATORS).forEach(([k, cfg]) => {
+        if (cfg.fromFred && cfg.fredId){
+          renderSparkline(k, cfg.fredId);
         }
       });
-
-  }catch(err){
-    console.error('FRED cache error:', err);
-    document.getElementById('cache-badge').textContent = 'FRED cache: error';
+    }, 80);
   }
-}
 
-function scaleIndicator(key, value){
-  const ind = INDICATORS[key];
-  if(!ind || !Number.isFinite(value)) return null;
+  // -------------------------
+  // RENDER: VALUATIONS
+  // -------------------------
 
-  const t = ind.threshold;
-  const dir = ind.direction;
-  const span = (ind.span && ind.span > 0)
-    ? ind.span
-    : Math.max(1, Math.abs(t) * 0.5);
-  const buffer = (ind.buffer && ind.buffer > 0)
-    ? ind.buffer
-    : span * 0.5;
+  function computeValuationStress(key, v){
+    const cfg = VALUATIONS[key];
+    const value = safeNumber(v);
+    if (!cfg || value === null) return null;
+    const g = cfg.green;
+    const a = cfg.amber;
 
-  let stress = 0;
-
-  if(dir === 'below'){
-    const safeCut = t + buffer;
-
-    if(value >= safeCut){
-      stress = 0;
-    } else if(value >= t){
-      const frac = (safeCut - value) / buffer;
-      stress = frac * WARN_MAX;
-    } else {
-      const frac = Math.max(0, Math.min(1, (t - value) / span));
-      stress = WARN_MAX + frac * (100 - WARN_MAX);
+    if (value <= g) return 25 * (value / g); // very rough, but monotonic
+    if (value <= a){
+      const t = (value - g) / (a - g);
+      return 25 + 45 * t;
     }
-
-  } else if(dir === 'above'){
-    const safeCut = t - buffer;
-
-    if(value <= safeCut){
-      stress = 0;
-    } else if(value <= t){
-      const frac = (value - safeCut) / buffer;
-      stress = frac * WARN_MAX;
-    } else {
-      const frac = Math.max(0, Math.min(1, (value - t) / span));
-      stress = WARN_MAX + frac * (100 - WARN_MAX);
-    }
-
-  } else {
-    return null;
+    const t = Math.min(1, (value - a) / Math.max(1, a));
+    return 70 + 30 * t;
   }
 
-  if(key === 'YIELD_CURVE' && value <= 0){
-    stress = Math.min(100, stress * 1.2);
-  }
-  if(key === 'SAHM_RULE' && value >= 0.5){
-    stress = Math.min(100, stress * 1.3);
-  }
+  function renderValuations(){
+    const container = document.getElementById('valuation-container');
+    if (!container) return;
+    container.innerHTML = '';
 
-  if(!Number.isFinite(stress)) return null;
-  if(stress < 0) stress = 0;
-  if(stress > 100) stress = 100;
+    Object.entries(VALUATIONS).forEach(([key, cfg]) => {
+      const v = safeNumber(cfg.current);
+      const stress = computeValuationStress(key, v);
 
-  return stress;
-}
+      const hasVal = v !== null;
+      const valueText = hasVal ? v.toFixed(1) : '--';
+      const stressText = Number.isFinite(stress)
+        ? ('Stress: ' + Math.round(stress) + '/100')
+        : 'Stress: --';
 
-function valuationStress(key, val){
-  if(!Number.isFinite(val)) return null;
+      let dangerLabel = '';
+      if (key === 'BUFFETT') dangerLabel = 'Danger band: > '+cfg.amber.toFixed(0)+'%';
+      if (key === 'SHILLER_PE') dangerLabel = 'Danger band: > '+cfg.amber.toFixed(0)+'x';
+      if (key === 'DOW_GOLD') dangerLabel = 'Danger band: > '+cfg.amber.toFixed(0);
 
-  let s = 0;
+      const div = document.createElement('div');
+      div.className = 'valuation-box';
+      div.innerHTML =
+        '<div class="valuation-header">' +
+          '<div class="valuation-name">'+cfg.label+'</div>' +
+          '<div class="valuation-value" data-val-value="'+key+'">'+valueText+'</div>' +
+        '</div>' +
+        (dangerLabel ? '<div class="indicator-threshold">'+dangerLabel+'</div>' : '') +
+        '<div class="indicator-threshold">'+cfg.desc+'</div>' +
+        '<div class="source-tag">Manual input</div>' +
+        '<div class="manual-input-row">' +
+          '<span>Set current reading:</span>' +
+          '<input class="manual-input" type="number" step="0.1" data-val-key="'+key+'" value="'+(hasVal ? v : '')+'">' +
+          '<span class="saved-indicator" id="saved-val-'+key+'">✓ saved</span>' +
+        '</div>';
 
-  if(key === 'BUFFETT'){
-    if(val <= 120){
-      s = 0;
-    } else if(val <= 150){
-      const frac = (val - 120) / (150 - 120);
-      s = frac * 40;
-    } else if(val <= 200){
-      const frac = (val - 150) / (200 - 150);
-      s = 40 + frac * 60;
-    } else {
-      s = 100;
-    }
-  } else if(key === 'SHILLER_PE'){
-    if(val <= 22){
-      s = 0;
-    } else if(val <= 30){
-      const frac = (val - 22) / (30 - 22);
-      s = frac * 40;
-    } else if(val <= 40){
-      const frac = (val - 30) / (40 - 30);
-      s = 40 + frac * 60;
-    } else {
-      s = 100;
-    }
-  } else {
-    return null;
-  }
-
-  if(s < 0) s = 0;
-  if(s > 100) s = 100;
-  return s;
-}
-
-function computeComposite(){
-  let macroStress = 0;
-  let macroTotalWeight = 0;
-
-  Object.entries(INDICATORS).forEach(([k, ind]) => {
-    const stress = scaleIndicator(k, ind.current);
-    if(stress !== null && Number.isFinite(stress) && ind.weight){
-      macroStress += stress * ind.weight;
-      macroTotalWeight += ind.weight;
-    }
-  });
-
-  let valuationStressSum = 0;
-  let valuationTotalWeight = 0;
-
-  Object.entries(VALUATIONS).forEach(([k, v]) => {
-    const stress = valuationStress(k, v.current);
-    if(stress !== null && Number.isFinite(stress) && v.weight){
-      valuationStressSum += stress * v.weight;
-      valuationTotalWeight += v.weight;
-    }
-  });
-
-  if(macroTotalWeight === 0 && valuationTotalWeight === 0){
-    return null;
-  }
-
-  const macroComponent = macroTotalWeight > 0 ? (macroStress / macroTotalWeight) : null;
-  const valuationComponent = valuationTotalWeight > 0 ? (valuationStressSum / valuationTotalWeight) : null;
-
-  let composite = null;
-
-  if(macroComponent !== null && valuationComponent !== null){
-    composite = (macroComponent * MACRO_BLOCK_WEIGHT) +
-                (valuationComponent * VALUATION_BLOCK_WEIGHT);
-  } else if(macroComponent !== null){
-    composite = macroComponent;
-  } else if(valuationComponent !== null){
-    composite = valuationComponent;
-  }
-
-  if(composite === null || !Number.isFinite(composite)) return null;
-  if(composite < 0) composite = 0;
-  if(composite > 100) composite = 100;
-
-  return composite;
-}
-
-function derivedRecessionRisk(c){
-  if(c == null) return '--';
-  if(c < 20) return '<10%';
-  if(c < 35) return '10–25%';
-  if(c < 50) return '25–40%';
-  if(c < 65) return '40–60%';
-  if(c < 80) return '60–75%';
-  return '75–90%';
-}
-
-function derivedValuationRisk(){
-  let sum = 0, w = 0;
-  Object.entries(VALUATIONS).forEach(([k,v]) => {
-    const s = valuationStress(k, v.current);
-    if(s != null && v.weight){
-      sum += s * v.weight;
-      w   += v.weight;
-    }
-  });
-  if(!w) return '--';
-  const sc = Math.round(sum / w);
-  if(sc < 33) return 'Low';
-  if(sc < 66) return 'Moderate';
-  return 'High';
-}
-
-function derivedLaborStress(){
-  const c = INDICATORS.INITIAL_CLAIMS.current;
-  const s = INDICATORS.SAHM_RULE.current;
-  if(!Number.isFinite(c) || !Number.isFinite(s)) return '--';
-  const cs = Math.max(0, Math.min(100, (c - 250) * 0.5));
-  const ss = Math.max(0, Math.min(100, s * 200));
-  const avg = (cs + ss) / 2;
-  if(avg < 30) return 'Low';
-  if(avg < 60) return 'Moderate';
-  return 'High';
-}
-
-function buildIndicatorElement(key, ind){
-  const s = scaleIndicator(key, ind.current);
-  let cls = 'indicator';
-  if(s != null){
-    if(s >= 66) cls += ' danger';
-    else if(s >= 33) cls += ' warning';
-  }
-  const hasVal = Number.isFinite(ind.current);
-  const valText = hasVal ? ind.format(ind.current) : '--';
-
-  const thrText = (ind.threshold != null && ind.format)
-    ? 'Threshold pivot: ' + ind.format(ind.threshold) +
-      (ind.direction === 'below' ? ' (worse below)' : ' (worse above)')
-    : '';
-
-  const stressText = (s != null)
-    ? ('Stress: ' + Math.round(s) + '/100')
-    : 'Stress: --';
-
-  const src = ind.fromFred ? 'Auto from FRED' : 'Manual input';
-
-  let manual = '';
-  if(!ind.fromFred && key === 'LEI'){
-    manual =
-      '<div class="manual-input-row">' +
-        '<span>Set latest 6m %Δ for LEI:</span>' +
-        '<input class="manual-input" type="number" step="0.1" ' +
-        'data-ind-key="'+key+'" value="'+(hasVal ? ind.current : '')+'">' +
-      '</div>';
-  }
-
-  const div = document.createElement('div');
-  div.className = cls;
-  div.setAttribute('data-ind-card', key);
-  div.innerHTML =
-    '<div class="indicator-header">' +
-      '<div class="indicator-name">'+ind.label+'</div>' +
-      '<div class="indicator-value" data-ind-value="'+key+'">'+valText+'</div>' +
-    '</div>' +
-    '<div class="indicator-threshold">'+thrText+'</div>' +
-    '<div class="indicator-threshold" data-ind-stress="'+key+'">'+stressText+'</div>' +
-    '<div class="indicator-threshold">'+ind.desc+'</div>' +
-    '<div class="source-tag">'+src+'</div>' +
-    manual;
-  return div;
-}
-
-function renderIndicators(){
-  const t1 = document.getElementById('tier1-indicators');
-  const t2 = document.getElementById('tier2-indicators');
-  t1.innerHTML = '';
-  t2.innerHTML = '';
-
-  Object.entries(INDICATORS).forEach(([k,ind]) => {
-    const el = buildIndicatorElement(k, ind);
-    if(ind.tier === 1) t1.appendChild(el);
-    else t2.appendChild(el);
-  });
-
-  document.querySelectorAll('.manual-input[data-ind-key]').forEach(inp => {
-    inp.addEventListener('input', () => {
-      const key = inp.getAttribute('data-ind-key');
-      const v = parseFloat(inp.value);
-      INDICATORS[key].current = Number.isFinite(v) ? v : null;
-      const valEl = document.querySelector('[data-ind-value="'+key+'"]');
-      if(valEl){
-        valEl.textContent = Number.isFinite(v)
-          ? INDICATORS[key].format(v)
-          : '--';
-      }
-      updateDynamic();
+      container.appendChild(div);
     });
-  });
-}
 
-function renderValuations(){
-  const box = document.getElementById('valuation-indicators');
-  box.innerHTML = '';
+    document.querySelectorAll('.manual-input[data-val-key]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const key = inp.getAttribute('data-val-key');
+        const cfg = VALUATIONS[key];
+        if (!cfg) return;
+        const v = safeNumber(inp.value);
+        cfg.current = v;
+        persistOverride(key, v, true);
 
-  Object.entries(VALUATIONS).forEach(([k,v]) => {
-    const s = valuationStress(k, v.current);
-    let cls = 'indicator';
-    if(s != null){
-      if(s >= 66) cls += ' danger';
-      else if(s >= 33) cls += ' warning';
-    }
-    const hasVal = Number.isFinite(v.current);
-    const valText = hasVal ? v.format(v.current) : '--';
-    const stressText = (s != null)
-      ? ('Stress: ' + Math.round(s) + '/100')
-      : 'Stress: --';
-
-    let dangerLabel = '';
-    if(k === 'BUFFETT'){
-      dangerLabel = 'Danger band: > 200%';
-    }else if(k === 'SHILLER_PE'){
-      dangerLabel = 'Danger band: > 30';
-    }else{
-      dangerLabel = 'Danger band: ' + v.danger;
-    }
-
-    const div = document.createElement('div');
-    div.className = cls;
-    div.setAttribute('data-val-card', k);
-    div.innerHTML =
-      '<div class="indicator-header">' +
-        '<div class="indicator-name">'+v.label+'</div>' +
-        '<div class="indicator-value" data-val-value="'+k+'">'+valText+'</div>' +
-      '</div>' +
-      '<div class="indicator-threshold">'+dangerLabel+'</div>' +
-      '<div class="indicator-threshold" data-val-stress="'+k+'">'+stressText+'</div>' +
-      '<div class="indicator-threshold">'+v.desc+'</div>' +
-      '<div class="source-tag">Manual input</div>' +
-      '<div class="manual-input-row">' +
-        '<span>Set current reading:</span>' +
-        '<input class="manual-input" type="number" step="0.1" ' +
-        'data-val-key="'+k+'" value="'+(hasVal ? v.current : '')+'">' +
-      '</div>';
-    box.appendChild(div);
-  });
-
-  document.querySelectorAll('.manual-input[data-val-key]').forEach(inp => {
-    inp.addEventListener('input', () => {
-      const key = inp.getAttribute('data-val-key');
-      const v = parseFloat(inp.value);
-      VALUATIONS[key].current = Number.isFinite(v) ? v : null;
-      const valEl = document.querySelector('[data-val-value="'+key+'"]');
-      if(valEl){
-        valEl.textContent = Number.isFinite(v)
-          ? VALUATIONS[key].format(v)
-          : '--';
-      }
-      updateDynamic();
+        const valEl = document.querySelector('[data-val-value="'+key+'"]');
+        if (valEl){
+          valEl.textContent = v !== null ? v.toFixed(1) : '--';
+        }
+        updateAll(false);
+      });
     });
-  });
-}
-
-function syncValuationCurrentBox(){
-  const b = VALUATIONS.BUFFETT.current;
-  const c = VALUATIONS.SHILLER_PE.current;
-  const bEl = document.getElementById('current-buffett-label');
-  const cEl = document.getElementById('current-cape-label');
-
-  if(bEl){
-    bEl.textContent = Number.isFinite(b)
-      ? ('Buffett: ' + b.toFixed(1) + '%')
-      : 'Buffett: --';
   }
-  if(cEl){
-    cEl.textContent = Number.isFinite(c)
-      ? ('CAPE: ' + c.toFixed(1))
-      : 'CAPE: --';
+
+  // -------------------------
+  // COMPOSITE CALC / GAUGE
+  // -------------------------
+
+  function computeMacroScore(){
+    let sum = 0;
+    let count = 0;
+    Object.entries(INDICATORS).forEach(([key, cfg]) => {
+      const value = safeNumber(cfg.current);
+      const s = stressFromThresholds(value, cfg);
+      if (Number.isFinite(s)){
+        sum += s;
+        count += 1;
+      }
+    });
+    return count ? sum / count : null;
   }
-}
 
-function renderGaugeAndStatus(){
-  compositeScore = computeComposite();
+  function computeValScore(){
+    let sum = 0;
+    let count = 0;
+    Object.entries(VALUATIONS).forEach(([key, cfg]) => {
+      const s = computeValuationStress(key, cfg.current);
+      if (Number.isFinite(s)){
+        sum += s;
+        count += 1;
+      }
+    });
+    return count ? sum / count : null;
+  }
 
-  const scoreEl = document.getElementById('composite-score');
-  const needle = document.getElementById('needle');
-  const fill = document.getElementById('risk-fill');
-  const regimeEl = document.getElementById('regime-label');
-  const alert = document.getElementById('alert-banner');
+  function computeComposite(macro, val){
+    if (!Number.isFinite(macro) && !Number.isFinite(val)) return null;
+    if (!Number.isFinite(val)) return macro;
+    if (!Number.isFinite(macro)) return val;
+    return macro * 0.7 + val * 0.3;
+  }
 
-  const total = Object.keys(INDICATORS).length + Object.keys(VALUATIONS).length;
-  const used =
-    Object.keys(INDICATORS).filter(k => Number.isFinite(INDICATORS[k].current)).length +
-    Object.keys(VALUATIONS).filter(k => Number.isFinite(VALUATIONS[k].current)).length;
+  function initGauge(){
+    const canvas = document.getElementById('composite-gauge');
+    if (!canvas || !window.Chart) return;
 
-  const coverage = total ? (used / total) : 0;
-  document.getElementById('inputs-badge').textContent =
-    'Inputs: ' + used + '/' + total + ' populated';
-  document.getElementById('quality-display').textContent =
-    total ? Math.round(coverage * 100) + '%' : '--';
+    const ctx = canvas.getContext('2d');
+    const rootStyles = getComputedStyle(document.documentElement);
+    const green = '#1ec28b';
+    const amber = '#ffc247';
+    const red = '#ff6070';
 
-  if(compositeScore == null){
-    scoreEl.textContent = '--';
-    fill.style.width = '0%';
-    needle.style.transform = 'translateX(-50%) rotate(0deg)';
-    regimeEl.textContent = 'COMPOSITE STRESS — insufficient data';
-    document.getElementById('recession-risk-display').textContent = '--';
-    document.getElementById('valuation-risk-display').textContent = '--';
-    document.getElementById('labor-risk-display').textContent = '--';
-
-    let msg = 'No composite yet. Check FRED cache and manual LEI / valuation inputs.';
-    if(cacheAgeDays != null && cacheAgeDays > 7){
-      msg = 'Data warning: FRED cache is ' + cacheAgeDays.toFixed(1) +
-            ' days old. Update fred_cache.json. ' + msg;
+    if (gaugeChart){
+      gaugeChart.destroy();
+      gaugeChart = null;
     }
-    alert.textContent = msg;
-    return;
-  }
 
-  const v = Math.round(compositeScore);
-  scoreEl.textContent = v;
-  fill.style.width = v + '%';
-  const angle = (v / 100) * 360;
-  needle.style.transform = 'translateX(-50%) rotate(' + angle + 'deg)';
-
-  let regime;
-  if(v <= 30) regime = 'Low stress regime';
-  else if(v <= 50) regime = 'Elevated — monitor';
-  else if(v <= 70) regime = 'High — defensive bias';
-  else regime = 'Critical regime';
-
-  regimeEl.textContent = 'COMPOSITE STRESS — ' + regime;
-  document.getElementById('recession-risk-display').textContent = derivedRecessionRisk(v);
-  document.getElementById('valuation-risk-display').textContent = derivedValuationRisk();
-  document.getElementById('labor-risk-display').textContent = derivedLaborStress();
-
-  let prefix = '';
-  if(cacheAgeDays != null && cacheAgeDays > 7){
-    prefix += 'Data warning: FRED cache is ' + cacheAgeDays.toFixed(1) +
-              ' days old. Update fred_cache.json. ';
-  }
-  if(coverage < 0.8){
-    prefix += 'Coverage below 80%. Treat composite as tentative. ';
-  }
-
-  if(v >= 70){
-    alert.innerHTML = prefix + '<strong>Critical:</strong> Composite = ' + v +
-      '. Macro + valuations in historical danger cluster.';
-  }else if(v >= 50){
-    alert.innerHTML = prefix + '<strong>Warning:</strong> Composite = ' + v +
-      '. Elevated risk — inspect indicator tiles.';
-  }else{
-    alert.textContent = prefix +
-      'Composite = ' + v +
-      '. No classic crash cluster on this configuration; still consider exogenous shocks.';
-  }
-}
-
-function renderMarketTrendChart(){
-  const ctx = document.getElementById('market-trend').getContext('2d');
-  if(charts.trend) charts.trend.destroy();
-
-  const base = compositeScore != null ? compositeScore : 40;
-  const labels = ['T-10','T-8','T-6','T-4','T-2','Now'];
-  const compData = [0.7,0.8,0.9,0.95,0.98,1].map(f => {
-    let x = base * f;
-    if(x < 0) x = 0;
-    if(x > 100) x = 100;
-    return Math.round(x);
-  });
-
-  let vSum = 0, vW = 0;
-  Object.entries(VALUATIONS).forEach(([k,v]) => {
-    const s = valuationStress(k, v.current);
-    if(s != null && v.weight){
-      vSum += s * v.weight;
-      vW   += v.weight;
-    }
-  });
-  const valBase = vW ? (vSum / vW) : 30;
-  const valData = [0.75,0.85,0.92,0.96,0.99,1].map(f => {
-    let x = valBase * f;
-    if(x < 0) x = 0;
-    if(x > 100) x = 100;
-    return Math.round(x);
-  });
-
-  charts.trend = new Chart(ctx, {
-    type:'line',
-    data:{
-      labels,
-      datasets:[
-        {
-          label:'Composite Stress',
-          data:compData,
-          borderColor:'#6b9eff',
-          backgroundColor:'rgba(107,158,255,0.14)',
-          tension:0.32,
-          fill:true,
-          pointRadius:2
-        },
-        {
-          label:'Valuation Stress',
-          data:valData,
-          borderColor:'#ff6070',
-          backgroundColor:'rgba(255,96,112,0.12)',
-          tension:0.32,
-          fill:true,
-          pointRadius:2
-        }
-      ]
-    },
-    options:{
-      responsive:true,
-      plugins:{
-        legend:{labels:{color:'#e8eeff',font:{size:9}}},
-        title:{
-          display:true,
-          text:'Stress & Valuation Trajectory (illustrative)',
-          color:'#e8eeff',
-          font:{size:11}
-        }
+    gaugeChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Low', 'Medium', 'High'],
+        datasets: [{
+          data: [40, 30, 30],
+          backgroundColor: [green, amber, red],
+          borderWidth:0,
+          circumference:180,
+          rotation:270,
+          cutout:'78%'
+        }]
       },
-      scales:{
-        y:{
-          min:0,
-          max:100,
-          ticks:{color:'#8b96b0',font:{size:8}},
-          grid:{color:'rgba(255,255,255,0.08)'}
-        },
-        x:{
-          ticks:{color:'#8b96b0',font:{size:8}},
-          grid:{color:'rgba(255,255,255,0.06)'}
+      options: {
+        responsive:true,
+        plugins: {
+          legend:{display:false},
+          tooltip:{enabled:false}
         }
       }
-    }
-  });
-}
-
-function renderRiskRadarChart(){
-  const ctx = document.getElementById('risk-radar').getContext('2d');
-  if(charts.radar) charts.radar.destroy();
-
-  const labels = [];
-  const data = [];
-
-  Object.entries(INDICATORS).forEach(([k,ind]) => {
-    const s = scaleIndicator(k, ind.current);
-    if(s != null){
-      labels.push(ind.label);
-      data.push(Math.round(s));
-    }
-  });
-
-  let vSum = 0, vW = 0;
-  Object.entries(VALUATIONS).forEach(([k,v]) => {
-    const s = valuationStress(k, v.current);
-    if(s != null && v.weight){
-      vSum += s * v.weight;
-      vW   += v.weight;
-    }
-  });
-  if(vW){
-    labels.push('Valuations (Buffett + CAPE)');
-    data.push(Math.round(vSum / vW));
-  }
-
-  if(!labels.length) return;
-
-  charts.radar = new Chart(ctx, {
-    type:'radar',
-    data:{
-      labels,
-      datasets:[{
-        label:'Normalized Stress (0–100)',
-        data,
-        borderColor:'#6b9eff',
-        backgroundColor:'rgba(107,158,255,0.18)',
-        pointRadius:2
-      }]
-    },
-    options:{
-      responsive:true,
-      plugins:{legend:{display:false}},
-      scales:{
-        r:{
-          angleLines:{color:'rgba(255,255,255,0.05)'},
-          grid:{color:'rgba(255,255,255,0.09)'},
-          suggestedMin:0,
-          suggestedMax:100,
-          ticks:{display:false},
-          pointLabels:{color:'#8b96b0',font:{size:7}}
-        }
-      }
-    }
-  });
-}
-
-function updateInsight(){
-  const el = document.getElementById('insight-text');
-  if(!el) return;
-  const c = compositeScore;
-  const vRisk = derivedValuationRisk();
-
-  if(c == null){
-    el.textContent = 'No composite yet. Ensure fred_cache.json is fresh and LEI/Buffett/CAPE are populated.';
-  } else if(c >= 70 && vRisk === 'High'){
-    el.textContent = 'Macro + valuations both extreme: configuration consistent with major drawdown regimes.';
-  } else if(c >= 50 && vRisk !== 'Low'){
-    el.textContent = 'Elevated macro stress with stretched valuations: risk-reward skewed left.';
-  } else if(c < 40 && vRisk === 'High'){
-    el.textContent = 'Macro relatively okay but valuations rich: vulnerable to shocks or policy error.';
-  } else if(c < 40 && vRisk === 'Low'){
-    el.textContent = 'Macro and valuations both moderate vs history: no classic crash cluster here.';
-  } else {
-    el.textContent = 'Mixed configuration. Use radar and tiles to see what drives the score.';
-  }
-}
-
-function updateDynamic(){
-  renderGaugeAndStatus();
-  renderMarketTrendChart();
-  renderRiskRadarChart();
-  syncValuationCurrentBox();
-  updateInsight();
-}
-
-function updateAll(){
-  renderIndicators();
-  renderValuations();
-  updateDynamic();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  loadFromFredCache()
-    .then(updateAll)
-    .catch(err => {
-      console.error('Init error:', err);
-      updateAll();
     });
-});
-</script>
+  }
+
+  function updateGauge(score){
+    const main = document.getElementById('gauge-main');
+    const label = document.getElementById('gauge-label');
+    if (!main || !label) return;
+
+    if (!Number.isFinite(score)){
+      main.textContent = '--';
+      label.textContent = 'Waiting for enough data…';
+      return;
+    }
+    main.textContent = Math.round(score) + ' / 100';
+    label.textContent = ragText(score);
+  }
+
+  // -------------------------
+  // HISTORY CHART (PLACEHOLDER)
+  // -------------------------
+
+  function renderHistoryChart(){
+    const canvas = document.getElementById('composite-history-chart');
+    if (!canvas || !window.Chart) return;
+
+    const ctx = canvas.getContext('2d');
+    if (historyChart){
+      historyChart.destroy();
+      historyChart = null;
+    }
+
+    const labels = [];
+    const data = [];
+    const nowScore = Number.isFinite(compositeScore) ? compositeScore : 40;
+
+    // simple synthetic curve around current score – clearly labeled as fake
+    for (let i = 11; i >= 0; i--){
+      labels.push(`T-${i}`);
+      const noise = (Math.sin(i * 0.7) * 5);
+      data.push(Math.max(0, Math.min(100, nowScore + noise)));
+    }
+
+    const rootStyles = getComputedStyle(document.documentElement);
+    const accent = rootStyles.getPropertyValue('--accent').trim() || '#6b9eff';
+
+    historyChart = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels,
+        datasets:[{
+          label:'Composite (placeholder)',
+          data,
+          borderColor:accent,
+          backgroundColor:'rgba(107,158,255,0.15)',
+          tension:0.3,
+          fill:true,
+          pointRadius:0,
+          pointHoverRadius:3
+        }]
+      },
+      options:{
+        responsive:true,
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            callbacks:{
+              label:(c) => 'Stress: ' + Math.round(c.parsed.y) + '%'
+            }
+          }
+        },
+        scales:{
+          y:{
+            min:0,
+            max:100,
+            ticks:{color:'var(--muted)',font:{size:10}},
+            grid:{color:'rgba(255,255,255,0.08)'}
+          },
+          x:{
+            ticks:{color:'var(--muted)',font:{size:9}},
+            grid:{color:'rgba(255,255,255,0.04)'}
+          }
+        }
+      }
+    });
+  }
+
+  // -------------------------
+  // SPARKLINE PLACEHOLDERS
+  // -------------------------
+
+  function renderSparkline(indicatorKey, fredId){
+    const container = document.getElementById('spark-' + indicatorKey);
+    if (!container) return;
+    container.innerHTML =
+      '<div style="font-size:0.6rem;color:var(--muted);padding:4px;">' +
+        'Historical '+fredId+' series loaded in fred_cache – sparkline wiring pending.' +
+      '</div>';
+  }
+
+  // -------------------------
+  // TABS
+  // -------------------------
+
+  function switchTab(evt, tabName){
+    document.querySelectorAll('.tab-button').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-content').forEach(c => {
+      c.classList.remove('active');
+    });
+
+    if (evt && evt.target){
+      evt.target.classList.add('active');
+    }
+    const tab = document.getElementById(tabName + '-tab');
+    if (tab) tab.classList.add('active');
+
+    if (tabName === 'history'){
+      renderHistoryChart();
+    }
+  }
+
+  window.switchTab = switchTab; // expose for inline onclick
+
+  // -------------------------
+  // MASTER UPDATE
+  // -------------------------
+
+  function updateSummaryAndGauge(){
+    macroScore = computeMacroScore();
+    valScore = computeValScore();
+    compositeScore = computeComposite(macroScore, valScore);
+
+    const macroLabel = document.getElementById('macro-score-label');
+    const valLabel = document.getElementById('val-score-label');
+    const compLabel = document.getElementById('comp-score-label');
+    const regimeLabel = document.getElementById('regime-label');
+    const macroPill = document.getElementById('gauge-macro-pill');
+    const valPill = document.getElementById('gauge-val-pill');
+
+    if (macroLabel) macroLabel.textContent = Number.isFinite(macroScore) ? Math.round(macroScore) + '/100' : '--';
+    if (valLabel) valLabel.textContent = Number.isFinite(valScore) ? Math.round(valScore) + '/100' : '--';
+    if (compLabel) compLabel.textContent = Number.isFinite(compositeScore) ? Math.round(compositeScore) + '/100' : '--';
+
+    const macroCls = ragClass(macroScore);
+    const valCls = ragClass(valScore);
+    if (macroPill){
+      macroPill.className = 'status-pill ' + macroCls;
+      macroPill.textContent = 'Macro: ' + (Number.isFinite(macroScore) ? Math.round(macroScore) : '--');
+    }
+    if (valPill){
+      valPill.className = 'status-pill ' + valCls;
+      valPill.textContent = 'Valuations: ' + (Number.isFinite(valScore) ? Math.round(valScore) : '--');
+    }
+
+    if (regimeLabel){
+      regimeLabel.textContent = ragText(compositeScore);
+    }
+
+    // crude red-flag counts
+    let macroReds = 0;
+    Object.entries(INDICATORS).forEach(([key, cfg]) => {
+      const s = stressFromThresholds(cfg.current, cfg);
+      if (Number.isFinite(s) && s >= 70) macroReds++;
+    });
+    let valReds = 0;
+    Object.entries(VALUATIONS).forEach(([key, cfg]) => {
+      const s = computeValuationStress(key, cfg.current);
+      if (Number.isFinite(s) && s >= 70) valReds++;
+    });
+
+    const macroRedsLabel = document.getElementById('macro-reds-label');
+    const valRedsLabel = document.getElementById('val-reds-label');
+    const totalRedsLabel = document.getElementById('total-reds-label');
+    const overrideLabel = document.getElementById('override-label');
+
+    if (macroRedsLabel) macroRedsLabel.textContent = macroReds >= 2 ? 'Yes ('+macroReds+')' : 'No ('+macroReds+')';
+    if (valRedsLabel) valRedsLabel.textContent = valReds >= 2 ? 'Yes ('+valReds+')' : 'No ('+valReds+')';
+    const totalReds = macroReds + valReds;
+    if (totalRedsLabel) totalRedsLabel.textContent = String(totalReds);
+
+    let override = 'None';
+    if (totalReds >= 3) override = 'TOTAL MAYHEM (Red)';
+    else if (totalReds >= 2) override = 'Heightened (Amber+)';
+    if (overrideLabel) overrideLabel.textContent = override;
+
+    const banner = document.getElementById('alert-banner');
+    if (banner){
+      banner.textContent =
+        'Composite stress = 70% macro block + 30% valuation block when both are available; ' +
+        'currently macro: ' + (Number.isFinite(macroScore) ? Math.round(macroScore) : '--') +
+        ', valuations: ' + (Number.isFinite(valScore) ? Math.round(valScore) : '--') +
+        ', composite: ' + (Number.isFinite(compositeScore) ? Math.round(compositeScore) : '--') +
+        '. Override: ' + override + '.';
+    }
+
+    updateGauge(compositeScore);
+  }
+
+  function updateAll(rebuildDom = true){
+    if (rebuildDom){
+      renderIndicators();
+      renderValuations();
+    }
+    updateSummaryAndGauge();
+  }
+
+  // -------------------------
+  // BOOTSTRAP
+  // -------------------------
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadManualOverrides();  // make sure saved LEI / Buffett / Shiller are in memory
+    initGauge();
+
+    loadFromFredCache()
+      .catch(err => {
+        console.error(err);
+      })
+      .finally(() => {
+        // Even if fred_cache fails, UI will still render with whatever we have
+        updateAll(true);
+      });
+  });
+  </script>
 </body>
 </html>
