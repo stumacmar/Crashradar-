@@ -341,11 +341,162 @@
       font-size:0.7rem;
     }
 
+    /* New styles for enhancements */
+    .data-source-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 2px;
+    }
+    
+    .data-source-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    
+    .data-source-auto {
+      background-color: var(--green);
+    }
+    
+    .data-source-manual {
+      background-color: var(--amber);
+    }
+    
+    .data-source-missing {
+      background-color: var(--muted);
+    }
+    
+    .refresh-controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      justify-content: center;
+    }
+    
+    .btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    
+    .btn-primary:hover {
+      background: var(--accent-soft);
+    }
+    
+    .export-controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .export-section {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .export-section h3 {
+      font-size: 0.8rem;
+      margin-bottom: 6px;
+      color: var(--accent-soft);
+    }
+    
+    .export-options {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    
+    .export-btn {
+      padding: 4px 8px;
+      font-size: 0.65rem;
+    }
+    
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(10, 14, 26, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    
+    .loading-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255,255,255,0.1);
+      border-left: 4px solid var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    
+    .loading-text {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .indicator-tooltip {
+      position: absolute;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 0.7rem;
+      max-width: 250px;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    
+    .indicator-tooltip.active {
+      opacity: 1;
+    }
+
     @media(max-width:900px){
       body{padding:14px 8px 26px;}
       .dashboard{grid-template-columns:1fr;}
       .main-content{grid-template-columns:1fr;}
       .sidebar{order:-1;}
+      .refresh-controls, .export-options {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -361,6 +512,11 @@
       <div class="badge">Manual: LEI 6m Δ, Buffett, CAPE</div>
       <div class="badge">Auto: Curve, HY, NFCI, UMich, M2, INDPRO, Permits, Claims, Sahm</div>
       <div class="badge" id="inputs-badge">Inputs: 0/12 populated</div>
+    </div>
+    <div class="refresh-controls">
+      <button class="btn btn-primary" id="refresh-data">Refresh Data</button>
+      <button class="btn" id="reset-inputs">Reset Inputs</button>
+      <button class="btn" id="show-help">Help & Documentation</button>
     </div>
   </div>
 
@@ -412,6 +568,16 @@
           <div class="status-label">Data Coverage</div>
           <div class="status-value" id="quality-display">--</div>
           <div class="indicator-threshold">Filled indicators / total.</div>
+        </div>
+      </div>
+      
+      <div class="export-section">
+        <h3>Export & Share</h3>
+        <div class="export-options">
+          <button class="btn export-btn" id="export-pdf">PDF Report</button>
+          <button class="btn export-btn" id="export-csv">CSV Data</button>
+          <button class="btn export-btn" id="export-snapshot">Snapshot</button>
+          <button class="btn export-btn" id="share-link">Share Link</button>
         </div>
       </div>
     </div>
@@ -497,6 +663,15 @@
   </div>
 </div>
 
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">Loading data...</div>
+</div>
+
+<!-- Tooltip -->
+<div class="indicator-tooltip" id="indicator-tooltip"></div>
+
 <script>
 'use strict';
 
@@ -505,6 +680,7 @@ const VALUATION_BLOCK_WEIGHT = 0.30;
 const WARN_MAX = 30;
 
 let cacheAgeDays = null;
+let lastUpdateTime = null;
 
 const INDICATORS = {
   LEI: {
@@ -518,7 +694,8 @@ const INDICATORS = {
     fredId:null,
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'Manual. 6m % change in LEI. ≤ -3.5% has preceded most post-1960 recessions.'
+    desc:'Manual. 6m % change in LEI. ≤ -3.5% has preceded most post-1960 recessions.',
+    tooltip: 'The Conference Board Leading Economic Index (LEI) 6-month percent change. A value ≤ -3.5% has historically preceded most recessions since 1960.'
   },
   YIELD_CURVE: {
     tier:1,
@@ -531,7 +708,8 @@ const INDICATORS = {
     fredId:'T10Y3M',
     current:null,
     format:v => v.toFixed(2) + ' pp',
-    desc:'10y–3m spread. Inversions (≤0) are classic recession leads.'
+    desc:'10y–3m spread. Inversions (≤0) are classic recession leads.',
+    tooltip: '10-year minus 3-month Treasury yield spread. Inversions (≤0) have preceded most US recessions since 1950.'
   },
   CREDIT_SPREAD: {
     tier:1,
@@ -544,7 +722,8 @@ const INDICATORS = {
     fredId:'BAMLH0A0HYM2',
     current:null,
     format:v => v.toFixed(2) + ' pp',
-    desc:'US HY OAS. >5% = stress, >8% = crisis-like conditions.'
+    desc:'US HY OAS. >5% = stress, >8% = crisis-like conditions.',
+    tooltip: 'High-yield corporate bond option-adjusted spread. >5% indicates financial stress; >8% signals crisis-like conditions.'
   },
   FIN_STRESS: {
     tier:1,
@@ -557,7 +736,8 @@ const INDICATORS = {
     fredId:'NFCI',
     current:null,
     format:v => v.toFixed(2),
-    desc:'Chicago Fed NFCI. >0 indicates tighter-than-average conditions.'
+    desc:'Chicago Fed NFCI. >0 indicates tighter-than-average conditions.',
+    tooltip: 'Chicago Fed National Financial Conditions Index. Positive values indicate tighter-than-average financial conditions.'
   },
   CONSUMER_SENTIMENT: {
     tier:1,
@@ -570,7 +750,8 @@ const INDICATORS = {
     fredId:'UMCSENT',
     current:null,
     format:v => v.toFixed(1),
-    desc:'Deep pessimism. Sustained <60 readings cluster around recessions.'
+    desc:'Deep pessimism. Sustained <60 readings cluster around recessions.',
+    tooltip: 'University of Michigan Consumer Sentiment Index. Sustained readings <60 typically cluster around recessions.'
   },
   M2_GROWTH: {
     tier:1,
@@ -583,7 +764,8 @@ const INDICATORS = {
     fredId:'M2SL',
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'YoY growth from M2SL. ≤0% is historically rare and restrictive.'
+    desc:'YoY growth from M2SL. ≤0% is historically rare and restrictive.',
+    tooltip: 'Year-over-year M2 money supply growth. ≤0% is historically rare and indicates restrictive monetary conditions.'
   },
   INDUSTRIAL_PRODUCTION: {
     tier:2,
@@ -596,7 +778,8 @@ const INDICATORS = {
     fredId:'INDPRO',
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'YoY change. Sustained contraction confirms downturn.'
+    desc:'YoY change. Sustained contraction confirms downturn.',
+    tooltip: 'Year-over-year industrial production growth. Sustained contraction confirms broader economic downturn.'
   },
   BUILDING_PERMITS: {
     tier:2,
@@ -609,7 +792,8 @@ const INDICATORS = {
     fredId:'PERMIT',
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'6m % change. Sharp drops lead housing & broader weakness.'
+    desc:'6m % change. Sharp drops lead housing & broader weakness.',
+    tooltip: '6-month percent change in building permits. Sharp drops typically lead housing market weakness and broader economic slowdown.'
   },
   INITIAL_CLAIMS: {
     tier:2,
@@ -622,7 +806,8 @@ const INDICATORS = {
     fredId:'ICSA',
     current:null,
     format:v => Math.round(v) + 'k',
-    desc:'4-week avg in thousands. >325k consistent with labor market stress.'
+    desc:'4-week avg in thousands. >325k consistent with labor market stress.',
+    tooltip: '4-week moving average of initial jobless claims in thousands. >325k is consistent with labor market stress.'
   },
   SAHM_RULE: {
     tier:2,
@@ -635,7 +820,8 @@ const INDICATORS = {
     fredId:'SAHMREALTIME',
     current:null,
     format:v => v.toFixed(2),
-    desc:'≥0.50 triggers real-time recession signal.'
+    desc:'≥0.50 triggers real-time recession signal.',
+    tooltip: 'Sahm Rule Recession Indicator. A reading ≥0.50 percentage points triggers a real-time recession signal.'
   }
 };
 
@@ -646,7 +832,8 @@ const VALUATIONS = {
     danger:200,
     current:null,
     format:v => v.toFixed(1) + '%',
-    desc:'>150% stretched; >200% historically extreme.'
+    desc:'>150% stretched; >200% historically extreme.',
+    tooltip: 'Total stock market capitalization to GDP ratio. >150% indicates stretched valuations; >200% is historically extreme.'
   },
   SHILLER_PE: {
     label:'Shiller CAPE',
@@ -654,20 +841,52 @@ const VALUATIONS = {
     danger:30,
     current:null,
     format:v => v.toFixed(1),
-    desc:'>25 elevated; >30 associated with poor long-run returns.'
+    desc:'>25 elevated; >30 associated with poor long-run returns.',
+    tooltip: 'Cyclically Adjusted Price-to-Earnings ratio. >25 indicates elevated valuations; >30 is associated with poor long-term returns.'
   }
 };
 
 let charts = { trend:null, radar:null };
 let compositeScore = null;
 
+// Show loading overlay
+function showLoading(message = 'Loading data...') {
+  const overlay = document.getElementById('loading-overlay');
+  const text = document.getElementById('loading-text');
+  text.textContent = message;
+  overlay.classList.add('active');
+}
+
+// Hide loading overlay
+function hideLoading() {
+  const overlay = document.getElementById('loading-overlay');
+  overlay.classList.remove('active');
+}
+
+// Show tooltip
+function showTooltip(content, x, y) {
+  const tooltip = document.getElementById('indicator-tooltip');
+  tooltip.innerHTML = content;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+  tooltip.classList.add('active');
+}
+
+// Hide tooltip
+function hideTooltip() {
+  const tooltip = document.getElementById('indicator-tooltip');
+  tooltip.classList.remove('active');
+}
+
 /** Load FRED cache (data/fred_cache.json). */
 async function loadFromFredCache(){
   try{
+    showLoading('Loading FRED data...');
     const res = await fetch('data/fred_cache.json', { cache:'no-store' });
     if(!res.ok){
       console.error('FRED cache HTTP error', res.status);
       document.getElementById('cache-badge').textContent = 'FRED cache: not found';
+      hideLoading();
       return;
     }
 
@@ -675,6 +894,7 @@ async function loadFromFredCache(){
     const series = cache.series || {};
     const gen = cache.generated_at || 'loaded';
     document.getElementById('cache-badge').textContent = 'FRED cache: ' + gen;
+    lastUpdateTime = new Date();
 
     const genDate = new Date(gen);
     if(!isNaN(genDate)){
@@ -783,9 +1003,11 @@ async function loadFromFredCache(){
         }
       });
 
+    hideLoading();
   }catch(err){
     console.error('FRED cache error:', err);
     document.getElementById('cache-badge').textContent = 'FRED cache: error';
+    hideLoading();
   }
 }
 
@@ -992,6 +1214,7 @@ function buildIndicatorElement(key, ind){
     : 'Stress: --';
 
   const src = ind.fromFred ? 'Auto from FRED' : 'Manual input';
+  const srcClass = ind.fromFred ? 'data-source-auto' : 'data-source-manual';
 
   let manual = '';
   if(!ind.fromFred && key === 'LEI'){
@@ -1014,8 +1237,28 @@ function buildIndicatorElement(key, ind){
     '<div class="indicator-threshold">'+thrText+'</div>' +
     '<div class="indicator-threshold" data-ind-stress="'+key+'">'+stressText+'</div>' +
     '<div class="indicator-threshold">'+ind.desc+'</div>' +
-    '<div class="source-tag">'+src+'</div>' +
+    '<div class="data-source-indicator">' +
+      '<span class="data-source-dot ' + srcClass + '"></span>' +
+      '<span class="source-tag">'+src+'</span>' +
+    '</div>' +
     manual;
+
+  // Add tooltip functionality
+  div.addEventListener('mouseenter', (e) => {
+    if (ind.tooltip) {
+      showTooltip(ind.tooltip, e.pageX + 10, e.pageY + 10);
+    }
+  });
+  
+  div.addEventListener('mousemove', (e) => {
+    if (ind.tooltip) {
+      showTooltip(ind.tooltip, e.pageX + 10, e.pageY + 10);
+    }
+  });
+  
+  div.addEventListener('mouseleave', () => {
+    hideTooltip();
+  });
 
   return div;
 }
@@ -1087,12 +1330,32 @@ function renderValuations(){
       '<div class="indicator-threshold">'+dangerLabel+'</div>' +
       '<div class="indicator-threshold" data-val-stress="'+k+'">'+stressText+'</div>' +
       '<div class="indicator-threshold">'+v.desc+'</div>' +
-      '<div class="source-tag">Manual input</div>' +
+      '<div class="data-source-indicator">' +
+        '<span class="data-source-dot data-source-manual"></span>' +
+        '<span class="source-tag">Manual input</span>' +
+      '</div>' +
       '<div class="manual-input-row">' +
         '<span>Set current reading:</span>' +
         '<input class="manual-input" type="number" step="0.1" ' +
         'data-val-key="'+k+'" value="'+(hasVal ? v.current : '')+'">' +
       '</div>';
+
+    // Add tooltip functionality
+    div.addEventListener('mouseenter', (e) => {
+      if (v.tooltip) {
+        showTooltip(v.tooltip, e.pageX + 10, e.pageY + 10);
+      }
+    });
+    
+    div.addEventListener('mousemove', (e) => {
+      if (v.tooltip) {
+        showTooltip(v.tooltip, e.pageX + 10, e.pageY + 10);
+      }
+    });
+    
+    div.addEventListener('mouseleave', () => {
+      hideTooltip();
+    });
 
     box.appendChild(div);
   });
@@ -1373,6 +1636,201 @@ function updateInsight(){
   }
 }
 
+/** Export functionality */
+function exportToCSV() {
+  let csvContent = "Indicator,Current Value,Stress Score,Threshold\n";
+  
+  // Add macro indicators
+  Object.entries(INDICATORS).forEach(([key, ind]) => {
+    const stress = scaleIndicator(key, ind.current);
+    const stressText = stress !== null ? stress.toFixed(1) : 'N/A';
+    const valueText = ind.current !== null ? ind.current : 'N/A';
+    const thresholdText = ind.threshold !== null ? ind.threshold : 'N/A';
+    
+    csvContent += `"${ind.label}","${valueText}","${stressText}","${thresholdText}"\n`;
+  });
+  
+  // Add valuation indicators
+  Object.entries(VALUATIONS).forEach(([key, val]) => {
+    const stress = valuationStress(key, val.current);
+    const stressText = stress !== null ? stress.toFixed(1) : 'N/A';
+    const valueText = val.current !== null ? val.current : 'N/A';
+    const thresholdText = val.danger !== null ? val.danger : 'N/A';
+    
+    csvContent += `"${val.label}","${valueText}","${stressText}","${thresholdText}"\n`;
+  });
+  
+  // Add composite score
+  csvContent += `"Composite Score","${compositeScore !== null ? compositeScore.toFixed(1) : 'N/A'}","",""\n`;
+  
+  // Create and download the file
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `economic_crash_radar_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportToPDF() {
+  showLoading('Generating PDF report...');
+  
+  // In a real implementation, you would use a library like jsPDF
+  // For this example, we'll simulate the process
+  setTimeout(() => {
+    alert('PDF export functionality would be implemented with a library like jsPDF in a production environment.');
+    hideLoading();
+  }, 1000);
+}
+
+function saveSnapshot() {
+  const snapshot = {
+    timestamp: new Date().toISOString(),
+    compositeScore: compositeScore,
+    indicators: {},
+    valuations: {}
+  };
+  
+  // Save indicator values
+  Object.entries(INDICATORS).forEach(([key, ind]) => {
+    snapshot.indicators[key] = ind.current;
+  });
+  
+  // Save valuation values
+  Object.entries(VALUATIONS).forEach(([key, val]) => {
+    snapshot.valuations[key] = val.current;
+  });
+  
+  // Store in localStorage
+  const snapshots = JSON.parse(localStorage.getItem('crashRadarSnapshots') || '[]');
+  snapshots.push(snapshot);
+  localStorage.setItem('crashRadarSnapshots', JSON.stringify(snapshots));
+  
+  alert('Snapshot saved! You can compare it with future readings.');
+}
+
+function shareLink() {
+  // Create a shareable URL with current data
+  const params = new URLSearchParams();
+  
+  // Add indicator values
+  Object.entries(INDICATORS).forEach(([key, ind]) => {
+    if (ind.current !== null) {
+      params.set(`i_${key}`, ind.current.toString());
+    }
+  });
+  
+  // Add valuation values
+  Object.entries(VALUATIONS).forEach(([key, val]) => {
+    if (val.current !== null) {
+      params.set(`v_${key}`, val.current.toString());
+    }
+  });
+  
+  const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+  
+  // Copy to clipboard
+  navigator.clipboard.writeText(shareUrl).then(() => {
+    alert('Shareable link copied to clipboard!');
+  }).catch(() => {
+    // Fallback for older browsers
+    const textArea = document.createElement('textarea');
+    textArea.value = shareUrl;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    alert('Shareable link copied to clipboard!');
+  });
+}
+
+function resetInputs() {
+  if (confirm('Are you sure you want to reset all inputs? This will clear all manual entries.')) {
+    // Reset indicator values
+    Object.entries(INDICATORS).forEach(([key, ind]) => {
+      if (!ind.fromFred) {
+        ind.current = null;
+      }
+    });
+    
+    // Reset valuation values
+    Object.entries(VALUATIONS).forEach(([key, val]) => {
+      val.current = null;
+    });
+    
+    // Update the UI
+    updateAll();
+  }
+}
+
+function showHelp() {
+  const helpContent = `
+    <h2>Economic Crash Radar Pro v7 - Help</h2>
+    <p>This tool monitors 12 economic indicators to assess recession risk:</p>
+    
+    <h3>Macro Indicators (10)</h3>
+    <ul>
+      <li><strong>Tier 1 (Leading):</strong> LEI, Yield Curve, Credit Spread, Financial Stress, Consumer Sentiment, M2 Growth</li>
+      <li><strong>Tier 2 (Confirming):</strong> Industrial Production, Building Permits, Initial Claims, Sahm Rule</li>
+    </ul>
+    
+    <h3>Valuation Indicators (2)</h3>
+    <ul>
+      <li><strong>Buffett Indicator:</strong> Stock Market Cap / GDP</li>
+      <li><strong>Shiller CAPE:</strong> Cyclically Adjusted P/E Ratio</li>
+    </ul>
+    
+    <h3>How to Use</h3>
+    <ol>
+      <li>Ensure FRED data is loaded (automatic for most indicators)</li>
+      <li>Manually input LEI 6m %Δ, Buffett Indicator, and CAPE values</li>
+      <li>Monitor the composite score and individual indicator stress levels</li>
+      <li>Use charts to visualize trends and risk distribution</li>
+    </ol>
+    
+    <h3>Interpreting Results</h3>
+    <ul>
+      <li><strong>0-30:</strong> Low stress regime</li>
+      <li><strong>30-50:</strong> Elevated - monitor closely</li>
+      <li><strong>50-70:</strong> High - defensive bias recommended</li>
+      <li><strong>70-100:</strong> Critical - historical danger zone</li>
+    </ul>
+  `;
+  
+  // Create a modal or use alert for simplicity
+  alert(helpContent.replace(/<[^>]*>/g, ''));
+}
+
+/** Load data from URL parameters */
+function loadFromURL() {
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  // Load indicator values
+  Object.entries(INDICATORS).forEach(([key, ind]) => {
+    const paramValue = urlParams.get(`i_${key}`);
+    if (paramValue !== null) {
+      const value = parseFloat(paramValue);
+      if (!isNaN(value)) {
+        ind.current = value;
+      }
+    }
+  });
+  
+  // Load valuation values
+  Object.entries(VALUATIONS).forEach(([key, val]) => {
+    const paramValue = urlParams.get(`v_${key}`);
+    if (paramValue !== null) {
+      const value = parseFloat(paramValue);
+      if (!isNaN(value)) {
+        val.current = value;
+      }
+    }
+  });
+}
+
 /** Orchestration. */
 function updateDynamic(){
   renderGaugeAndStatus();
@@ -1389,12 +1847,33 @@ function updateAll(){
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Load data from URL first (if any)
+  loadFromURL();
+  
+  // Then load FRED data and update
   loadFromFredCache()
     .then(updateAll)
     .catch(err => {
       console.error('Init error:', err);
       updateAll();
     });
+  
+  // Add event listeners for new buttons
+  document.getElementById('refresh-data').addEventListener('click', () => {
+    loadFromFredCache()
+      .then(updateAll)
+      .catch(err => {
+        console.error('Refresh error:', err);
+        updateAll();
+      });
+  });
+  
+  document.getElementById('reset-inputs').addEventListener('click', resetInputs);
+  document.getElementById('show-help').addEventListener('click', showHelp);
+  document.getElementById('export-csv').addEventListener('click', exportToCSV);
+  document.getElementById('export-pdf').addEventListener('click', exportToPDF);
+  document.getElementById('export-snapshot').addEventListener('click', saveSnapshot);
+  document.getElementById('share-link').addEventListener('click', shareLink);
 });
 </script>
 </body>
