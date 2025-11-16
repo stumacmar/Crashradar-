@@ -1,0 +1,38 @@
+name: Update FRED Historical Cache
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 6 * * 1"  # Every Monday at 06:30 UTC
+
+jobs:
+  update-historical-cache:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: |
+          npm install node-fetch@2
+
+      - name: Run historical fetch script
+        run: node scripts/fetch_fred_historical.js
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+
+      - name: Commit and push updated fred_historical_cache.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add data/fred_historical_cache.json
+          git commit -m "Update FRED historical cache" || echo "No changes to commit"
+          git push
