@@ -1713,10 +1713,12 @@ function buildIndicatorElement(key, ind){
   }
 
   // Only show history section for FRED-based indicators
-  const historySection = ind.fromFred ? `
-    <div class="indicator-history">
+    const historySection = ind.fromFred ? `
+    <div class="indicator-history" data-history-key="${key}">
       <div class="history-period-selector">
-        <button class="period-btn active" data-period="12">12M</button>
+        <button class="period-btn active" data-period="12M">12M</button>
+        <button class="period-btn" data-period="5Y">5Y</button>
+        <button class="period-btn" data-period="MAX">MAX</button>
       </div>
       <div class="history-chart-container">
         <canvas class="history-chart"></canvas>
