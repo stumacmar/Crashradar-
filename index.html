@@ -225,9 +225,19 @@
       border-radius:8px;
       border-left:3px solid var(--green);
       font-size:0.7rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .indicator:hover {
+      background:rgba(255,255,255,0.05);
+      transform: translateY(-1px);
     }
     .indicator.warning{border-left-color:var(--amber);}
     .indicator.danger{border-left-color:var(--red);}
+    .indicator.expanded {
+      grid-column: 1 / -1;
+      background:rgba(255,255,255,0.04);
+    }
 
     .indicator-header{
       display:flex;
@@ -489,6 +499,78 @@
       opacity: 1;
     }
 
+    /* History chart styles */
+    .indicator-history {
+      margin-top: 10px;
+      display: none;
+    }
+    
+    .indicator.expanded .indicator-history {
+      display: block;
+    }
+    
+    .history-chart-container {
+      height: 160px;
+      margin-top: 8px;
+    }
+    
+    .history-period-selector {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+      justify-content: center;
+    }
+    
+    .period-btn {
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.03);
+      color: var(--muted);
+      font-size: 0.6rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .period-btn.active {
+      background: var(--accent);
+      color: var(--text);
+      border-color: var(--accent);
+    }
+    
+    .history-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 0.65rem;
+    }
+    
+    .history-stat {
+      padding: 4px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 4px;
+      text-align: center;
+    }
+    
+    .history-stat-value {
+      font-weight: 700;
+      font-size: 0.75rem;
+      margin-top: 2px;
+    }
+    
+    .history-stat-label {
+      color: var(--muted);
+      font-size: 0.55rem;
+    }
+
+    .no-data-message {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.7rem;
+      padding: 20px;
+    }
+
     @media(max-width:900px){
       body{padding:14px 8px 26px;}
       .dashboard{grid-template-columns:1fr;}
@@ -496,6 +578,9 @@
       .sidebar{order:-1;}
       .refresh-controls, .export-options {
         flex-direction: column;
+      }
+      .history-stats {
+        grid-template-columns: repeat(2, 1fr);
       }
     }
   </style>
@@ -681,6 +766,9 @@ const WARN_MAX = 30;
 
 let cacheAgeDays = null;
 let lastUpdateTime = null;
+let expandedIndicator = null;
+let historicalData = {};
+let indicatorCharts = {};
 
 const INDICATORS = {
   LEI: {
@@ -876,6 +964,372 @@ function showTooltip(content, x, y) {
 function hideTooltip() {
   const tooltip = document.getElementById('indicator-tooltip');
   tooltip.classList.remove('active');
+}
+
+// Data processing helper functions
+function calculateYoYGrowth(observations) {
+  const result = [];
+  
+  for (let i = 12; i < observations.length; i++) {
+    const current = parseFloat(observations[i].value);
+    const yearAgo = parseFloat(observations[i - 12].value);
+    
+    if (!isNaN(current) && !isNaN(yearAgo) && yearAgo !== 0) {
+      const growth = ((current - yearAgo) / yearAgo) * 100;
+      result.push({
+        date: observations[i].date,
+        value: growth
+      });
+    }
+  }
+  
+  return result;
+}
+
+function calculateRollingPercentChange(observations, months) {
+  const result = [];
+  
+  for (let i = months; i < observations.length; i++) {
+    const current = parseFloat(observations[i].value);
+    const periodAgo = parseFloat(observations[i - months].value);
+    
+    if (!isNaN(current) && !isNaN(periodAgo) && periodAgo !== 0) {
+      const change = ((current - periodAgo) / periodAgo) * 100;
+      result.push({
+        date: observations[i].date,
+        value: change
+      });
+    }
+  }
+  
+  return result;
+}
+
+function calculateMovingAverage(observations, periods) {
+  const result = [];
+  
+  for (let i = periods - 1; i < observations.length; i++) {
+    let sum = 0;
+    let count = 0;
+    
+    for (let j = 0; j < periods; j++) {
+      const value = parseFloat(observations[i - j].value);
+      if (!isNaN(value)) {
+        sum += value;
+        count++;
+      }
+    }
+    
+    if (count === periods) {
+      result.push({
+        date: observations[i].date,
+        value: sum / periods / 1000 // Convert to thousands
+      });
+    }
+  }
+  
+  return result;
+}
+
+// Toggle indicator expansion
+function toggleIndicatorExpansion(key, type = 'indicator') {
+  const selector = type === 'valuation' ? `[data-val-card="${key}"]` : `[data-ind-card="${key}"]`;
+  const element = document.querySelector(selector);
+  
+  if (!element) return;
+  
+  // If clicking the same indicator, collapse it
+  if (expandedIndicator === key) {
+    element.classList.remove('expanded');
+    expandedIndicator = null;
+    
+    // Destroy the chart if it exists
+    if (indicatorCharts[key]) {
+      indicatorCharts[key].destroy();
+      delete indicatorCharts[key];
+    }
+  } else {
+    // If another indicator is expanded, collapse it first
+    if (expandedIndicator) {
+      const prevElement = document.querySelector(
+        type === 'valuation' ? `[data-val-card="${expandedIndicator}"]` : `[data-ind-card="${expandedIndicator}"]`
+      );
+      if (prevElement) {
+        prevElement.classList.remove('expanded');
+        
+        // Destroy the previous chart
+        if (indicatorCharts[expandedIndicator]) {
+          indicatorCharts[expandedIndicator].destroy();
+          delete indicatorCharts[expandedIndicator];
+        }
+      }
+    }
+    
+    // Expand the clicked indicator
+    element.classList.add('expanded');
+    expandedIndicator = key;
+    
+    // Load and render the history chart
+    loadAndRenderIndicatorHistory(key, type);
+  }
+}
+
+// Load and render indicator history
+async function loadAndRenderIndicatorHistory(key, type = 'indicator') {
+  const indicator = type === 'valuation' ? VALUATIONS[key] : INDICATORS[key];
+  
+  // For manual indicators, we can't load historical data from FRED
+  if (type === 'valuation' || !indicator.fromFred) {
+    renderNoHistoryMessage(key, type);
+    return;
+  }
+  
+  showLoading(`Loading historical data for ${indicator.label}...`);
+  
+  try {
+    // Load historical data from combined cache
+    const history = await loadHistoricalData(indicator.fredId, indicator);
+    if (history && history.length > 0) {
+      renderIndicatorHistory(key, type, history);
+      updateHistoryStats(key, type, history);
+    } else {
+      renderNoHistoryMessage(key, type);
+    }
+  } catch (error) {
+    console.error(`Error loading historical data for ${key}:`, error);
+    renderNoHistoryMessage(key, type);
+  }
+  
+  hideLoading();
+}
+
+// Load historical data from combined cache
+async function loadHistoricalData(fredId, indicator) {
+  // Check if we already have this data cached
+  if (historicalData[fredId]) {
+    return historicalData[fredId];
+  }
+  
+  try {
+    // Load the combined historical data file
+    const response = await fetch('data/fred_historical_cache.json');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const seriesData = data.series[fredId];
+    
+    if (!seriesData || !seriesData.observations) {
+      throw new Error(`No historical data found for ${fredId}`);
+    }
+    
+    // Process the historical data based on indicator type
+    let processedData = [];
+    
+    if (indicator.fredId === 'M2SL') {
+      // Calculate YoY growth for M2
+      processedData = calculateYoYGrowth(seriesData.observations);
+    } else if (indicator.fredId === 'INDPRO') {
+      // Calculate YoY growth for industrial production
+      processedData = calculateYoYGrowth(seriesData.observations);
+    } else if (indicator.fredId === 'PERMIT') {
+      // Calculate 6-month percent change for building permits
+      processedData = calculateRollingPercentChange(seriesData.observations, 6);
+    } else if (indicator.fredId === 'ICSA') {
+      // Calculate 4-week moving average for initial claims
+      processedData = calculateMovingAverage(seriesData.observations, 4);
+    } else {
+      // For other indicators, use the raw values
+      processedData = seriesData.observations.map(obs => ({
+        date: obs.date,
+        value: parseFloat(obs.value)
+      })).filter(obs => !isNaN(obs.value));
+    }
+    
+    // Cache the processed data
+    historicalData[fredId] = processedData;
+    return processedData;
+    
+  } catch (error) {
+    console.error(`Error loading historical data for ${fredId}:`, error);
+    return null;
+  }
+}
+
+// Render no history message
+function renderNoHistoryMessage(key, type) {
+  const selector = type === 'valuation' 
+    ? `[data-val-card="${key}"] .history-chart-container`
+    : `[data-ind-card="${key}"] .history-chart-container`;
+  
+  const container = document.querySelector(selector);
+  if (container) {
+    container.innerHTML = '<div class="no-data-message">Historical data not available</div>';
+  }
+  
+  const statsContainer = type === 'valuation' 
+    ? `[data-val-card="${key}"] .history-stats`
+    : `[data-ind-card="${key}"] .history-stats`;
+  
+  const statsEl = document.querySelector(statsContainer);
+  if (statsEl) {
+    statsEl.innerHTML = '<div class="no-data-message">No historical statistics</div>';
+  }
+}
+
+// Render indicator history chart
+function renderIndicatorHistory(key, type = 'indicator', historyData) {
+  const indicator = type === 'valuation' ? VALUATIONS[key] : INDICATORS[key];
+  
+  const selector = type === 'valuation' ? `[data-val-card="${key}"] .history-chart` : `[data-ind-card="${key}"] .history-chart`;
+  const canvas = document.querySelector(selector);
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  
+  // Destroy existing chart if it exists
+  if (indicatorCharts[key]) {
+    indicatorCharts[key].destroy();
+  }
+  
+  // Prepare data - take last 12 months
+  const recentData = historyData.slice(-12);
+  const labels = recentData.map(item => {
+    const date = new Date(item.date);
+    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  });
+  const data = recentData.map(item => item.value);
+  
+  // Determine line color based on current stress level
+  let lineColor = '#6b9eff'; // Default blue
+  if (type === 'indicator') {
+    const stress = scaleIndicator(key, indicator.current);
+    if (stress >= 66) lineColor = '#ff6070'; // Red for danger
+    else if (stress >= 33) lineColor = '#ffc247'; // Amber for warning
+    else lineColor = '#1ec28b'; // Green for normal
+  } else {
+    const stress = valuationStress(key, indicator.current);
+    if (stress >= 66) lineColor = '#ff6070';
+    else if (stress >= 33) lineColor = '#ffc247';
+    else lineColor = '#1ec28b';
+  }
+  
+  // Create chart
+  indicatorCharts[key] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: indicator.label,
+        data: data,
+        borderColor: lineColor,
+        backgroundColor: lineColor + '20',
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true,
+        pointRadius: 2,
+        pointBackgroundColor: lineColor,
+        pointBorderColor: '#12182b',
+        pointBorderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(18, 24, 43, 0.9)',
+          titleColor: '#e8eeff',
+          bodyColor: '#e8eeff',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          cornerRadius: 4,
+          displayColors: false,
+          callbacks: {
+            label: function(context) {
+              const value = context.parsed.y;
+              return indicator.format ? indicator.format(value) : value;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          grid: {
+            color: 'rgba(255,255,255,0.05)'
+          },
+          ticks: {
+            color: '#8b96b0',
+            font: {
+              size: 9
+            }
+          }
+        },
+        x: {
+          grid: {
+            color: 'rgba(255,255,255,0.03)'
+          },
+          ticks: {
+            color: '#8b96b0',
+            font: {
+              size: 9
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Update history statistics
+function updateHistoryStats(key, type = 'indicator', historyData) {
+  const indicator = type === 'valuation' ? VALUATIONS[key] : INDICATORS[key];
+  if (!historyData || historyData.length === 0) return;
+  
+  const values = historyData.map(item => item.value);
+  const current = values[values.length - 1];
+  const threeMonthsAgo = values.length >= 4 ? values[values.length - 4] : null;
+  const sixMonthsAgo = values.length >= 7 ? values[values.length - 7] : null;
+  const twelveMonthsAgo = values.length >= 13 ? values[values.length - 13] : null;
+  
+  const threeMonthChange = threeMonthsAgo !== null ? ((current - threeMonthsAgo) / Math.abs(threeMonthsAgo) * 100) : null;
+  const sixMonthChange = sixMonthsAgo !== null ? ((current - sixMonthsAgo) / Math.abs(sixMonthsAgo) * 100) : null;
+  const twelveMonthChange = twelveMonthsAgo !== null ? ((current - twelveMonthsAgo) / Math.abs(twelveMonthsAgo) * 100) : null;
+  
+  const statsContainer = type === 'valuation' 
+    ? document.querySelector(`[data-val-card="${key}"] .history-stats`)
+    : document.querySelector(`[data-ind-card="${key}"] .history-stats`);
+  
+  if (!statsContainer) return;
+  
+  statsContainer.innerHTML = `
+    <div class="history-stat">
+      <div class="history-stat-label">Current</div>
+      <div class="history-stat-value">${indicator.format ? indicator.format(current) : current.toFixed(2)}</div>
+    </div>
+    <div class="history-stat">
+      <div class="history-stat-label">3M Change</div>
+      <div class="history-stat-value" style="color: ${threeMonthChange !== null && threeMonthChange >= 0 ? '#1ec28b' : '#ff6070'}">
+        ${threeMonthChange !== null ? threeMonthChange.toFixed(1) + '%' : '--'}
+      </div>
+    </div>
+    <div class="history-stat">
+      <div class="history-stat-label">6M Change</div>
+      <div class="history-stat-value" style="color: ${sixMonthChange !== null && sixMonthChange >= 0 ? '#1ec28b' : '#ff6070'}">
+        ${sixMonthChange !== null ? sixMonthChange.toFixed(1) + '%' : '--'}
+      </div>
+    </div>
+    <div class="history-stat">
+      <div class="history-stat-label">12M Change</div>
+      <div class="history-stat-value" style="color: ${twelveMonthChange !== null && twelveMonthChange >= 0 ? '#1ec28b' : '#ff6070'}">
+        ${twelveMonthChange !== null ? twelveMonthChange.toFixed(1) + '%' : '--'}
+      </div>
+    </div>
+  `;
 }
 
 /** Load FRED cache (data/fred_cache.json). */
@@ -1226,6 +1680,19 @@ function buildIndicatorElement(key, ind){
       '</div>';
   }
 
+  // Only show history section for FRED-based indicators
+  const historySection = ind.fromFred ? `
+    <div class="indicator-history">
+      <div class="history-period-selector">
+        <button class="period-btn active" data-period="12">12M</button>
+      </div>
+      <div class="history-chart-container">
+        <canvas class="history-chart"></canvas>
+      </div>
+      <div class="history-stats"></div>
+    </div>
+  ` : '';
+
   const div = document.createElement('div');
   div.className = cls;
   div.setAttribute('data-ind-card', key);
@@ -1241,7 +1708,18 @@ function buildIndicatorElement(key, ind){
       '<span class="data-source-dot ' + srcClass + '"></span>' +
       '<span class="source-tag">'+src+'</span>' +
     '</div>' +
-    manual;
+    manual +
+    historySection;
+
+  // Add click event for expansion (only for FRED-based indicators)
+  if (ind.fromFred) {
+    div.addEventListener('click', (e) => {
+      // Don't trigger expansion if clicking on input fields
+      if (!e.target.classList.contains('manual-input')) {
+        toggleIndicatorExpansion(key, 'indicator');
+      }
+    });
+  }
 
   // Add tooltip functionality
   div.addEventListener('mouseenter', (e) => {
@@ -1319,6 +1797,7 @@ function renderValuations(){
       dangerLabel = 'Danger band: ' + v.danger;
     }
 
+    // No history section for valuation indicators (manual inputs)
     const div = document.createElement('div');
     div.className = cls;
     div.setAttribute('data-val-card', k);
@@ -1789,6 +2268,7 @@ function showHelp() {
       <li>Manually input LEI 6m %Δ, Buffett Indicator, and CAPE values</li>
       <li>Monitor the composite score and individual indicator stress levels</li>
       <li>Use charts to visualize trends and risk distribution</li>
+      <li>Click on any FRED-based indicator to view its historical trend</li>
     </ol>
     
     <h3>Interpreting Results</h3>
