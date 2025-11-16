@@ -1178,51 +1178,85 @@ function renderNoHistoryMessage(key, type) {
   }
 }
 
-// Render indicator history chart
+// // Render indicator history chart (with better y-axis scaling)
 function renderIndicatorHistory(key, type = 'indicator', historyData) {
   const indicator = type === 'valuation' ? VALUATIONS[key] : INDICATORS[key];
-  
-  const selector = type === 'valuation' ? `[data-val-card="${key}"] .history-chart` : `[data-ind-card="${key}"] .history-chart`;
+
+  const selector = type === 'valuation'
+    ? `[data-val-card="${key}"] .history-chart`
+    : `[data-ind-card="${key}"] .history-chart`;
+
   const canvas = document.querySelector(selector);
   if (!canvas) return;
-  
+
   const ctx = canvas.getContext('2d');
-  
+
   // Destroy existing chart if it exists
   if (indicatorCharts[key]) {
     indicatorCharts[key].destroy();
   }
-  
-  // Prepare data - take last 12 months
+
+  // Prepare data – last 12 observations, ending at the latest date in the cache
   const recentData = historyData.slice(-12);
+  if (!recentData.length) {
+    renderNoHistoryMessage(key, type);
+    return;
+  }
+
   const labels = recentData.map(item => {
     const date = new Date(item.date);
     return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
   });
   const data = recentData.map(item => item.value);
-  
+
+  // Dynamic y-axis range with padding so the line isn’t glued to the edges
+  let minVal = Math.min(...data);
+  let maxVal = Math.max(...data);
+
+  if (!isFinite(minVal) || !isFinite(maxVal)) {
+    renderNoHistoryMessage(key, type);
+    return;
+  }
+
+  // If series is (almost) flat, widen the band a bit
+  if (Math.abs(maxVal - minVal) < 1e-6) {
+    const center = minVal;
+    minVal = center - 1;
+    maxVal = center + 1;
+  } else {
+    const span = maxVal - minVal;
+    const pad = span * 0.15; // 15% padding above and below
+    minVal -= pad;
+    maxVal += pad;
+  }
+
+  // Tidy rounding
+  const roundTo = (value, step) => Math.round(value / step) * step;
+  const step = (maxVal - minVal) > 10 ? 1 : 0.5;
+  minVal = roundTo(minVal, step);
+  maxVal = roundTo(maxVal, step);
+
   // Determine line color based on current stress level
-  let lineColor = '#6b9eff'; // Default blue
+  let lineColor = '#6b9eff'; // default blue
   if (type === 'indicator') {
     const stress = scaleIndicator(key, indicator.current);
-    if (stress >= 66) lineColor = '#ff6070'; // Red for danger
-    else if (stress >= 33) lineColor = '#ffc247'; // Amber for warning
-    else lineColor = '#1ec28b'; // Green for normal
+    if (stress >= 66) lineColor = '#ff6070';    // red = danger
+    else if (stress >= 33) lineColor = '#ffc247'; // amber = warning
+    else lineColor = '#1ec28b';                 // green = normal
   } else {
     const stress = valuationStress(key, indicator.current);
     if (stress >= 66) lineColor = '#ff6070';
     else if (stress >= 33) lineColor = '#ffc247';
     else lineColor = '#1ec28b';
   }
-  
-  // Create chart
+
   indicatorCharts[key] = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: labels,
+      labels,
       datasets: [{
         label: indicator.label,
-        data: data,
+        data,
         borderColor: lineColor,
         backgroundColor: lineColor + '20',
         borderWidth: 2,
@@ -1250,7 +1284,7 @@ function renderIndicatorHistory(key, type = 'indicator', historyData) {
           cornerRadius: 4,
           displayColors: false,
           callbacks: {
-            label: function(context) {
+            label: function (context) {
               const value = context.parsed.y;
               return indicator.format ? indicator.format(value) : value;
             }
@@ -1259,14 +1293,14 @@ function renderIndicatorHistory(key, type = 'indicator', historyData) {
       },
       scales: {
         y: {
+          min: minVal,
+          max: maxVal,
           grid: {
             color: 'rgba(255,255,255,0.05)'
           },
           ticks: {
             color: '#8b96b0',
-            font: {
-              size: 9
-            }
+            font: { size: 9 }
           }
         },
         x: {
@@ -1275,9 +1309,7 @@ function renderIndicatorHistory(key, type = 'indicator', historyData) {
           },
           ticks: {
             color: '#8b96b0',
-            font: {
-              size: 9
-            }
+            font: { size: 9 }
           }
         }
       }
