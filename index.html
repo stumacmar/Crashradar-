@@ -1112,7 +1112,7 @@ async function loadHistoricalData(fredId, indicator) {
   
   try {
     // Load the combined historical data file
-    const response = await fetch('data/fred_historical_cache.json');
+    const response = await fetch('data/fred_cache.json');
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
