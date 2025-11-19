@@ -225,17 +225,18 @@
       border-radius:8px;
       border-left:3px solid var(--green);
       font-size:0.7rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
+      cursor:pointer;
+      transition:all 0.2s ease;
+      position:relative;
     }
     .indicator:hover {
       background:rgba(255,255,255,0.05);
-      transform: translateY(-1px);
+      transform:translateY(-1px);
     }
     .indicator.warning{border-left-color:var(--amber);}
     .indicator.danger{border-left-color:var(--red);}
     .indicator.expanded {
-      grid-column: 1 / -1;
+      grid-column:1 / -1;
       background:rgba(255,255,255,0.04);
     }
 
@@ -353,222 +354,220 @@
 
     /* New styles for enhancements */
     .data-source-indicator {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin-top: 2px;
+      display:flex;
+      align-items:center;
+      gap:4px;
+      margin-top:2px;
     }
     
     .data-source-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      display: inline-block;
+      width:6px;
+      height:6px;
+      border-radius:50%;
+      display:inline-block;
     }
     
     .data-source-auto {
-      background-color: var(--green);
+      background-color:var(--green);
     }
     
     .data-source-manual {
-      background-color: var(--amber);
+      background-color:var(--amber);
     }
     
     .data-source-missing {
-      background-color: var(--muted);
+      background-color:var(--muted);
+    }
+
+    .data-source-stale {
+      background-color:var(--red);
     }
     
     .refresh-controls {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-      justify-content: center;
+      display:flex;
+      gap:8px;
+      margin-top:8px;
+      justify-content:center;
     }
     
     .btn {
-      padding: 6px 12px;
-      border-radius: 6px;
-      border: 1px solid rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.05);
-      color: var(--text);
-      font-size: 0.7rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
+      padding:6px 12px;
+      border-radius:6px;
+      border:1px solid rgba(255,255,255,0.2);
+      background:rgba(255,255,255,0.05);
+      color:var(--text);
+      font-size:0.7rem;
+      cursor:pointer;
+      transition:all 0.2s ease;
     }
     
     .btn:hover {
-      background: rgba(255,255,255,0.1);
+      background:rgba(255,255,255,0.1);
     }
     
     .btn-primary {
-      background: var(--accent);
-      border-color: var(--accent);
+      background:var(--accent);
+      border-color:var(--accent);
     }
     
     .btn-primary:hover {
-      background: var(--accent-soft);
-    }
-    
-    .export-controls {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
+      background:var(--accent-soft);
     }
     
     .export-section {
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid rgba(255,255,255,0.1);
+      margin-top:12px;
+      padding-top:12px;
+      border-top:1px solid rgba(255,255,255,0.1);
     }
     
     .export-section h3 {
-      font-size: 0.8rem;
-      margin-bottom: 6px;
-      color: var(--accent-soft);
+      font-size:0.8rem;
+      margin-bottom:6px;
+      color:var(--accent-soft);
     }
     
     .export-options {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
     }
     
     .export-btn {
-      padding: 4px 8px;
-      font-size: 0.65rem;
+      padding:4px 8px;
+      font-size:0.65rem;
     }
     
     .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(10, 14, 26, 0.9);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
+      position:fixed;
+      top:0;
+      left:0;
+      right:0;
+      bottom:0;
+      background:rgba(10,14,26,0.9);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      z-index:1000;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity 0.3s ease;
     }
     
     .loading-overlay.active {
-      opacity: 1;
-      pointer-events: all;
+      opacity:1;
+      pointer-events:all;
     }
     
     .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(255,255,255,0.1);
-      border-left: 4px solid var(--accent);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 16px;
+      width:40px;
+      height:40px;
+      border:4px solid rgba(255,255,255,0.1);
+      border-left:4px solid var(--accent);
+      border-radius:50%;
+      animation:spin 1s linear infinite;
+      margin-bottom:16px;
     }
     
     .loading-text {
-      font-size: 0.9rem;
-      color: var(--text);
+      font-size:0.9rem;
+      color:var(--text);
     }
     
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% { transform:rotate(0deg); }
+      100% { transform:rotate(360deg); }
     }
     
     .indicator-tooltip {
-      position: absolute;
-      background: var(--panel);
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 6px;
-      padding: 8px;
-      font-size: 0.7rem;
-      max-width: 250px;
-      z-index: 100;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s ease;
+      position:absolute;
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,0.2);
+      border-radius:6px;
+      padding:8px;
+      font-size:0.7rem;
+      max-width:250px;
+      z-index:100;
+      box-shadow:0 4px 12px rgba(0,0,0,0.5);
+      pointer-events:none;
+      opacity:0;
+      transition:opacity 0.2s ease;
     }
     
     .indicator-tooltip.active {
-      opacity: 1;
+      opacity:1;
     }
 
     /* History chart styles */
     .indicator-history {
-      margin-top: 10px;
-      display: none;
+      margin-top:10px;
+      display:none;
     }
     
     .indicator.expanded .indicator-history {
-      display: block;
+      display:block;
     }
     
     .history-chart-container {
-      height: 160px;
-      margin-top: 8px;
+      height:160px;
+      margin-top:8px;
     }
     
     .history-period-selector {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 8px;
-      justify-content: center;
+      display:flex;
+      gap:6px;
+      margin-bottom:8px;
+      justify-content:center;
     }
     
     .period-btn {
-      padding: 3px 8px;
-      border-radius: 4px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.03);
-      color: var(--muted);
-      font-size: 0.6rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
+      padding:3px 8px;
+      border-radius:4px;
+      border:1px solid rgba(255,255,255,0.1);
+      background:rgba(255,255,255,0.03);
+      color:var(--muted);
+      font-size:0.6rem;
+      cursor:pointer;
+      transition:all 0.2s ease;
     }
     
     .period-btn.active {
-      background: var(--accent);
-      color: var(--text);
-      border-color: var(--accent);
+      background:var(--accent);
+      color:var(--text);
+      border-color:var(--accent);
     }
     
     .history-stats {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      margin-top: 8px;
-      font-size: 0.65rem;
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:6px;
+      margin-top:8px;
+      font-size:0.65rem;
     }
     
     .history-stat {
-      padding: 4px;
-      background: rgba(255,255,255,0.02);
-      border-radius: 4px;
-      text-align: center;
+      padding:4px;
+      background:rgba(255,255,255,0.02);
+      border-radius:4px;
+      text-align:center;
     }
     
     .history-stat-value {
-      font-weight: 700;
-      font-size: 0.75rem;
-      margin-top: 2px;
+      font-weight:700;
+      font-size:0.75rem;
+      margin-top:2px;
     }
     
     .history-stat-label {
-      color: var(--muted);
-      font-size: 0.55rem;
+      color:var(--muted);
+      font-size:0.55rem;
     }
 
     .no-data-message {
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.7rem;
-      padding: 20px;
+      text-align:center;
+      color:var(--muted);
+      font-size:0.7rem;
+      padding:20px;
     }
 
     @media(max-width:900px){
@@ -576,12 +575,8 @@
       .dashboard{grid-template-columns:1fr;}
       .main-content{grid-template-columns:1fr;}
       .sidebar{order:-1;}
-      .refresh-controls, .export-options {
-        flex-direction: column;
-      }
-      .history-stats {
-        grid-template-columns: repeat(2, 1fr);
-      }
+      .export-options{flex-direction:column;}
+      .history-stats{grid-template-columns:repeat(2,1fr);}
     }
   </style>
 </head>
@@ -781,9 +776,11 @@ const INDICATORS = {
     fromFred:false,
     fredId:null,
     current:null,
+    lastDate:null,
+    isStale:false,
     format:v => v.toFixed(1) + '%',
     desc:'Manual. 6m % change in LEI. ≤ -3.5% has preceded most post-1960 recessions.',
-    tooltip: 'The Conference Board Leading Economic Index (LEI) 6-month percent change. A value ≤ -3.5% has historically preceded most recessions since 1960.'
+    tooltip:'The Conference Board Leading Economic Index (LEI) 6-month percent change. A value ≤ -3.5% has historically preceded most recessions since 1960.'
   },
   YIELD_CURVE: {
     tier:1,
@@ -795,9 +792,11 @@ const INDICATORS = {
     fromFred:true,
     fredId:'T10Y3M',
     current:null,
+    lastDate:null,
+    isStale:false,
     format:v => v.toFixed(2) + ' pp',
     desc:'10y–3m spread. Inversions (≤0) are classic recession leads.',
-    tooltip: '10-year minus 3-month Treasury yield spread. Inversions (≤0) have preceded most US recessions since 1950.'
+    tooltip:'10-year minus 3-month Treasury yield spread. Inversions (≤0) have preceded most US recessions since 1950.'
   },
   CREDIT_SPREAD: {
     tier:1,
@@ -809,9 +808,11 @@ const INDICATORS = {
     fromFred:true,
     fredId:'BAMLH0A0HYM2',
     current:null,
+    lastDate:null,
+    isStale:false,
     format:v => v.toFixed(2) + ' pp',
     desc:'US HY OAS. >5% = stress, >8% = crisis-like conditions.',
-    tooltip: 'High-yield corporate bond option-adjusted spread. >5% indicates financial stress; >8% signals crisis-like conditions.'
+    tooltip:'High-yield corporate bond option-adjusted spread. >5% indicates financial stress; >8% signals crisis-like conditions.'
   },
   FIN_STRESS: {
     tier:1,
@@ -823,9 +824,11 @@ const INDICATORS = {
     fromFred:true,
     fredId:'NFCI',
     current:null,
+    lastDate:null,
+    isStale:false,
     format:v => v.toFixed(2),
     desc:'Chicago Fed NFCI. >0 indicates tighter-than-average conditions.',
-    tooltip: 'Chicago Fed National Financial Conditions Index. Positive values indicate tighter-than-average financial conditions.'
+    tooltip:'Chicago Fed National Financial Conditions Index. Positive values indicate tighter-than-average financial conditions.'
   },
   CONSUMER_SENTIMENT: {
     tier:1,
@@ -837,9 +840,11 @@ const INDICATORS = {
     fromFred:true,
     fredId:'UMCSENT',
     current:null,
+    lastDate:null,
+    isStale:false,
     format:v => v.toFixed(1),
     desc:'Deep pessimism. Sustained <60 readings cluster around recessions.',
-    tooltip: 'University of Michigan Consumer Sentiment Index. Sustained readings <60 typically cluster around recessions.'
+    tooltip:'University of Michigan Consumer Sentiment Index. Sustained readings <60 typically cluster around recessions.'
   },
   M2_GROWTH: {
     tier:1,
@@ -851,9 +856,11 @@ const INDICATORS = {
     fromFred:true,
     fredId:'M2SL',
     current:null,
+    lastDate:null,
+    isStale:false,
     format:v => v.toFixed(1) + '%',
     desc:'YoY growth from M2SL. ≤0% is historically rare and restrictive.',
-    tooltip: 'Year-over-year M2 money supply growth. ≤0% is historically rare and indicates restrictive monetary conditions.'
+    tooltip:'Year-over-year M2 money supply growth. ≤0% is historically rare and indicates restrictive monetary conditions.'
   },
   INDUSTRIAL_PRODUCTION: {
     tier:2,
@@ -865,9 +872,11 @@ const INDICATORS = {
     fromFred:true,
     fredId:'INDPRO',
     current:null,
+    lastDate:null,
+    isStale:false,
     format:v => v.toFixed(1) + '%',
     desc:'YoY change. Sustained contraction confirms downturn.',
-    tooltip: 'Year-over-year industrial production growth. Sustained contraction confirms broader economic downturn.'
+    tooltip:'Year-over-year industrial production growth. Sustained contraction confirms broader economic downturn.'
   },
   BUILDING_PERMITS: {
     tier:2,
@@ -879,9 +888,11 @@ const INDICATORS = {
     fromFred:true,
     fredId:'PERMIT',
     current:null,
+    lastDate:null,
+    isStale:false,
     format:v => v.toFixed(1) + '%',
     desc:'6m % change. Sharp drops lead housing & broader weakness.',
-    tooltip: '6-month percent change in building permits. Sharp drops typically lead housing market weakness and broader economic slowdown.'
+    tooltip:'6-month percent change in building permits. Sharp drops typically lead housing market weakness and broader economic slowdown.'
   },
   INITIAL_CLAIMS: {
     tier:2,
@@ -893,9 +904,11 @@ const INDICATORS = {
     fromFred:true,
     fredId:'ICSA',
     current:null,
+    lastDate:null,
+    isStale:false,
     format:v => Math.round(v) + 'k',
     desc:'4-week avg in thousands. >325k consistent with labor market stress.',
-    tooltip: '4-week moving average of initial jobless claims in thousands. >325k is consistent with labor market stress.'
+    tooltip:'4-week moving average of initial jobless claims in thousands. >325k is consistent with labor market stress.'
   },
   SAHM_RULE: {
     tier:2,
@@ -907,9 +920,11 @@ const INDICATORS = {
     fromFred:true,
     fredId:'SAHMREALTIME',
     current:null,
+    lastDate:null,
+    isStale:false,
     format:v => v.toFixed(2),
     desc:'≥0.50 triggers real-time recession signal.',
-    tooltip: 'Sahm Rule Recession Indicator. A reading ≥0.50 percentage points triggers a real-time recession signal.'
+    tooltip:'Sahm Rule Recession Indicator. A reading ≥0.50 percentage points triggers a real-time recession signal.'
   }
 };
 
@@ -921,7 +936,7 @@ const VALUATIONS = {
     current:null,
     format:v => v.toFixed(1) + '%',
     desc:'>150% stretched; >200% historically extreme.',
-    tooltip: 'Total stock market capitalization to GDP ratio. >150% indicates stretched valuations; >200% is historically extreme.'
+    tooltip:'Total stock market capitalization to GDP ratio. >150% indicates stretched valuations; >200% is historically extreme.'
   },
   SHILLER_PE: {
     label:'Shiller CAPE',
@@ -930,88 +945,82 @@ const VALUATIONS = {
     current:null,
     format:v => v.toFixed(1),
     desc:'>25 elevated; >30 associated with poor long-run returns.',
-    tooltip: 'Cyclically Adjusted Price-to-Earnings ratio. >25 indicates elevated valuations; >30 is associated with poor long-term returns.'
+    tooltip:'Cyclically Adjusted Price-to-Earnings ratio. >25 indicates elevated valuations; >30 is associated with poor long-term returns.'
   }
 };
 
 let charts = { trend:null, radar:null };
 let compositeScore = null;
 
-// Show loading overlay
+/* ---------- Overlay ---------- */
 function showLoading(message = 'Loading data...') {
   const overlay = document.getElementById('loading-overlay');
   const text = document.getElementById('loading-text');
+  if (!overlay || !text) return;
   text.textContent = message;
   overlay.classList.add('active');
 }
 
-// Hide loading overlay
 function hideLoading() {
   const overlay = document.getElementById('loading-overlay');
+  if (!overlay) return;
   overlay.classList.remove('active');
 }
 
-// Show tooltip
+/* ---------- Tooltip ---------- */
 function showTooltip(content, x, y) {
   const tooltip = document.getElementById('indicator-tooltip');
+  if (!tooltip) return;
   tooltip.innerHTML = content;
   tooltip.style.left = x + 'px';
   tooltip.style.top = y + 'px';
   tooltip.classList.add('active');
 }
 
-// Hide tooltip
 function hideTooltip() {
   const tooltip = document.getElementById('indicator-tooltip');
+  if (!tooltip) return;
   tooltip.classList.remove('active');
 }
 
-// Data processing helper functions
+/* ---------- Time-series helpers ---------- */
 function calculateYoYGrowth(observations) {
   const result = [];
-  
+  if (!Array.isArray(observations)) return result;
+
   for (let i = 12; i < observations.length; i++) {
     const current = parseFloat(observations[i].value);
     const yearAgo = parseFloat(observations[i - 12].value);
-    
     if (!isNaN(current) && !isNaN(yearAgo) && yearAgo !== 0) {
       const growth = ((current - yearAgo) / yearAgo) * 100;
-      result.push({
-        date: observations[i].date,
-        value: growth
-      });
+      result.push({ date: observations[i].date, value: growth });
     }
   }
-  
   return result;
 }
 
 function calculateRollingPercentChange(observations, months) {
   const result = [];
-  
+  if (!Array.isArray(observations) || !Number.isFinite(months) || months <= 0) return result;
+
   for (let i = months; i < observations.length; i++) {
     const current = parseFloat(observations[i].value);
     const periodAgo = parseFloat(observations[i - months].value);
-    
     if (!isNaN(current) && !isNaN(periodAgo) && periodAgo !== 0) {
       const change = ((current - periodAgo) / periodAgo) * 100;
-      result.push({
-        date: observations[i].date,
-        value: change
-      });
+      result.push({ date: observations[i].date, value: change });
     }
   }
-  
   return result;
 }
 
 function calculateMovingAverage(observations, periods) {
   const result = [];
-  
+  if (!Array.isArray(observations) || !Number.isFinite(periods) || periods <= 0) return result;
+
   for (let i = periods - 1; i < observations.length; i++) {
     let sum = 0;
     let count = 0;
-    
     for (let j = 0; j < periods; j++) {
       const value = parseFloat(observations[i - j].value);
       if (!isNaN(value)) {
@@ -1019,672 +1028,608 @@ function calculateMovingAverage(observations, periods) {
         count++;
       }
     }
-    
     if (count === periods) {
-      result.push({
-        date: observations[i].date,
-        value: sum / periods / 1000 // Convert to thousands
-      });
+      result.push({ date: observations[i].date, value: sum / periods / 1000 }); // thousands
     }
   }
-  
   return result;
 }
 
-// Toggle indicator expansion
+/* ---------- Single pipeline for indicator series ---------- */
+function processSeriesForIndicator(indicator, seriesData) {
+  if (!seriesData || !Array.isArray(seriesData.observations)) return [];
+  const observations = seriesData.observations;
+
+  if (indicator.fredId === 'M2SL') {
+    return calculateYoYGrowth(observations);
+  } else if (indicator.fredId === 'INDPRO') {
+    return calculateYoYGrowth(observations);
+  } else if (indicator.fredId === 'PERMIT') {
+    return calculateRollingPercentChange(observations, 6);
+  } else if (indicator.fredId === 'ICSA') {
+    return calculateMovingAverage(observations, 4);
+  }
+  // Raw level
+  return observations
+    .map(obs => ({ date: obs.date, value: parseFloat(obs.value) }))
+    .filter(obs => !isNaN(obs.value));
+}
+
+/* ---------- Toggle expansion ---------- */
 function toggleIndicatorExpansion(key, type = 'indicator') {
-  const selector = type === 'valuation' ? `[data-val-card="${key}"]` : `[data-ind-card="${key}"]`;
+  const selector = type === 'valuation'
+    ? `[data-val-card="${key}"]`
+    : `[data-ind-card="${key}"]`;
   const element = document.querySelector(selector);
-  
   if (!element) return;
-  
-  // If clicking the same indicator, collapse it
+
   if (expandedIndicator === key) {
     element.classList.remove('expanded');
     expandedIndicator = null;
-    
-    // Destroy the chart if it exists
     if (indicatorCharts[key]) {
-      indicatorCharts[key].destroy();
+      try { indicatorCharts[key].destroy(); } catch(e) { console.warn('Chart destroy failed', e); }
       delete indicatorCharts[key];
     }
-  } else {
-    // If another indicator is expanded, collapse it first
-    if (expandedIndicator) {
-      const prevElement = document.querySelector(
-        type === 'valuation' ? `[data-val-card="${expandedIndicator}"]` : `[data-ind-card="${expandedIndicator}"]`
-      );
-      if (prevElement) {
-        prevElement.classList.remove('expanded');
-        
-        // Destroy the previous chart
-        if (indicatorCharts[expandedIndicator]) {
-          indicatorCharts[expandedIndicator].destroy();
-          delete indicatorCharts[expandedIndicator];
-        }
-      }
-    }
-    
-    // Expand the clicked indicator
-    element.classList.add('expanded');
-    expandedIndicator = key;
-    
-    // Load and render the history chart
-    loadAndRenderIndicatorHistory(key, type);
-  }
-}
-
-// Load and render indicator history
-async function loadAndRenderIndicatorHistory(key, type = 'indicator') {
-  const indicator = type === 'valuation' ? VALUATIONS[key] : INDICATORS[key];
-  
-  // For manual indicators, we can't load historical data from FRED
-  if (type === 'valuation' || !indicator.fromFred) {
-    renderNoHistoryMessage(key, type);
     return;
   }
-  
-  showLoading(`Loading historical data for ${indicator.label}...`);
-  
-  try {
-    // Load historical data from combined cache
-    const history = await loadHistoricalData(indicator.fredId, indicator);
-    if (history && history.length > 0) {
-      renderIndicatorHistory(key, type, history);
-      updateHistoryStats(key, type, history);
-    } else {
-      renderNoHistoryMessage(key, type);
+
+  // Collapse previous
+  if (expandedIndicator) {
+    const prevSelector = type === 'valuation'
+      ? `[data-val-card="${expandedIndicator}"]`
+      : `[data-ind-card="${expandedIndicator}"]`;
+    const prevElement = document.querySelector(prevSelector);
+    if (prevElement) prevElement.classList.remove('expanded');
+    if (indicatorCharts[expandedIndicator]) {
+      try { indicatorCharts[expandedIndicator].destroy(); } catch(e) {}
+      delete indicatorCharts[expandedIndicator];
     }
-  } catch (error) {
-    console.error(`Error loading historical data for ${key}:`, error);
-    renderNoHistoryMessage(key, type);
   }
-  
-  hideLoading();
+
+  element.classList.add('expanded');
+  expandedIndicator = key;
+  loadAndRenderIndicatorHistory(key, type, '12M');
 }
 
-// Load historical data from combined cache
+/* ---------- Load historical data ---------- */
 async function loadHistoricalData(fredId, indicator) {
-  // Check if we already have this data cached
+  if (!fredId || !indicator) return null;
+
   if (historicalData[fredId]) {
     return historicalData[fredId];
   }
-  
+
   try {
-    // Load the combined historical data file
     const response = await fetch('data/fred_cache.json');
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      console.error('Historical fetch error:', response.status);
+      return null;
     }
-    
     const data = await response.json();
+    if (!data || !data.series || !data.series[fredId]) {
+      console.error('Historical series missing for', fredId);
+      return null;
+    }
+
     const seriesData = data.series[fredId];
-    
-    if (!seriesData || !seriesData.observations) {
-      throw new Error(`No historical data found for ${fredId}`);
-    }
-    
-    // Process the historical data based on indicator type
-    let processedData = [];
-    
-    if (indicator.fredId === 'M2SL') {
-      // Calculate YoY growth for M2
-      processedData = calculateYoYGrowth(seriesData.observations);
-    } else if (indicator.fredId === 'INDPRO') {
-      // Calculate YoY growth for industrial production
-      processedData = calculateYoYGrowth(seriesData.observations);
-    } else if (indicator.fredId === 'PERMIT') {
-      // Calculate 6-month percent change for building permits
-      processedData = calculateRollingPercentChange(seriesData.observations, 6);
-    } else if (indicator.fredId === 'ICSA') {
-      // Calculate 4-week moving average for initial claims
-      processedData = calculateMovingAverage(seriesData.observations, 4);
-    } else {
-      // For other indicators, use the raw values
-      processedData = seriesData.observations.map(obs => ({
-        date: obs.date,
-        value: parseFloat(obs.value)
-      })).filter(obs => !isNaN(obs.value));
-    }
-    
-    // Cache the processed data
-    historicalData[fredId] = processedData;
-    return processedData;
-    
-  } catch (error) {
-    console.error(`Error loading historical data for ${fredId}:`, error);
+    const processed = processSeriesForIndicator(indicator, seriesData);
+    historicalData[fredId] = processed;
+    return processed;
+  } catch (err) {
+    console.error('loadHistoricalData error for', fredId, err);
     return null;
   }
 }
 
-// Render no history message
+/* ---------- No history message ---------- */
 function renderNoHistoryMessage(key, type) {
-  const selector = type === 'valuation' 
+  const chartSelector = type === 'valuation'
     ? `[data-val-card="${key}"] .history-chart-container`
     : `[data-ind-card="${key}"] .history-chart-container`;
-  
-  const container = document.querySelector(selector);
+  const statsSelector = type === 'valuation'
+    ? `[data-val-card="${key}"] .history-stats`
+    : `[data-ind-card="${key}"] .history-stats`;
+
+  const container = document.querySelector(chartSelector);
   if (container) {
     container.innerHTML = '<div class="no-data-message">Historical data not available</div>';
   }
-  
-  const statsContainer = type === 'valuation' 
-    ? `[data-val-card="${key}"] .history-stats`
-    : `[data-ind-card="${key}"] .history-stats`;
-  
-  const statsEl = document.querySelector(statsContainer);
+  const statsEl = document.querySelector(statsSelector);
   if (statsEl) {
     statsEl.innerHTML = '<div class="no-data-message">No historical statistics</div>';
   }
 }
 
-// // Render indicator history chart (with better y-axis scaling)
-function renderIndicatorHistory(key, type = 'indicator', historyData) {
+/* ---------- Render history chart with period filter ---------- */
+function renderIndicatorHistory(key, type = 'indicator', historyData, period = '12M') {
   const indicator = type === 'valuation' ? VALUATIONS[key] : INDICATORS[key];
-
-  const selector = type === 'valuation'
-    ? `[data-val-card="${key}"] .history-chart`
-    : `[data-ind-card="${key}"] .history-chart`;
-
-  const canvas = document.querySelector(selector);
-  if (!canvas) return;
-
-  const ctx = canvas.getContext('2d');
-
-  // Destroy existing chart if it exists
-  if (indicatorCharts[key]) {
-    indicatorCharts[key].destroy();
-  }
-
-  // Prepare data – last 12 observations, ending at the latest date in the cache
-  const recentData = historyData.slice(-12);
-  if (!recentData.length) {
+  if (!indicator || !historyData || !historyData.length) {
     renderNoHistoryMessage(key, type);
     return;
   }
 
-  const labels = recentData.map(item => {
-    const date = new Date(item.date);
-    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-  });
-  const data = recentData.map(item => item.value);
+  const selector = type === 'valuation'
+    ? `[data-val-card="${key}"] .history-chart`
+    : `[data-ind-card="${key}"] .history-chart`;
+  const canvas = document.querySelector(selector);
+  if (!canvas) {
+    console.warn('History canvas missing for', key);
+    return;
+  }
 
-  // Dynamic y-axis range with padding so the line isn’t glued to the edges
+  const ctx = canvas.getContext('2d');
+  if (!ctx || typeof Chart === 'undefined') {
+    console.warn('Chart.js not available or context missing');
+    return;
+  }
+
+  if (indicatorCharts[key]) {
+    try { indicatorCharts[key].destroy(); } catch(e) {}
+    delete indicatorCharts[key];
+  }
+
+  let filtered = historyData;
+  const latest = historyData[historyData.length - 1];
+  const latestDate = new Date(latest.date);
+  if (!isNaN(latestDate)) {
+    const cutoff = new Date(latestDate);
+    if (period === '12M') {
+      cutoff.setMonth(cutoff.getMonth() - 12);
+    } else if (period === '5Y') {
+      cutoff.setFullYear(cutoff.getFullYear() - 5);
+    }
+    if (period === '12M' || period === '5Y') {
+      filtered = historyData.filter(d => {
+        const dDate = new Date(d.date);
+        return !isNaN(dDate) && dDate >= cutoff;
+      });
+    }
+  }
+
+  if (!filtered.length) {
+    filtered = historyData.slice(-12);
+  }
+
+  const labels = filtered.map(item => {
+    const d = new Date(item.date);
+    if (isNaN(d)) return item.date;
+    return d.toLocaleDateString('en-US', { month:'short', year:'2-digit' });
+  });
+  const data = filtered.map(item => item.value).filter(v => Number.isFinite(v));
+
+  if (!data.length) {
+    renderNoHistoryMessage(key, type);
+    return;
+  }
+
   let minVal = Math.min(...data);
   let maxVal = Math.max(...data);
-
   if (!isFinite(minVal) || !isFinite(maxVal)) {
     renderNoHistoryMessage(key, type);
     return;
   }
 
-  // If series is (almost) flat, widen the band a bit
   if (Math.abs(maxVal - minVal) < 1e-6) {
     const center = minVal;
     minVal = center - 1;
     maxVal = center + 1;
   } else {
     const span = maxVal - minVal;
-    const pad = span * 0.15; // 15% padding above and below
+    const pad = span * 0.15;
     minVal -= pad;
     maxVal += pad;
   }
 
-  // Tidy rounding
   const roundTo = (value, step) => Math.round(value / step) * step;
   const step = (maxVal - minVal) > 10 ? 1 : 0.5;
   minVal = roundTo(minVal, step);
   maxVal = roundTo(maxVal, step);
 
-  // Determine line color based on current stress level
-  let lineColor = '#6b9eff'; // default blue
+  let lineColor = '#6b9eff';
   if (type === 'indicator') {
-    const stress = scaleIndicator(key, indicator.current);
-    if (stress >= 66) lineColor = '#ff6070';    // red = danger
-    else if (stress >= 33) lineColor = '#ffc247'; // amber = warning
-    else lineColor = '#1ec28b';                 // green = normal
+    const s = scaleIndicator(key, indicator.current);
+    if (s >= 66) lineColor = '#ff6070';
+    else if (s >= 33) lineColor = '#ffc247';
+    else if (s !== null) lineColor = '#1ec28b';
   } else {
-    const stress = valuationStress(key, indicator.current);
-    if (stress >= 66) lineColor = '#ff6070';
-    else if (stress >= 33) lineColor = '#ffc247';
-    else lineColor = '#1ec28b';
+    const s = valuationStress(key, indicator.current);
+    if (s >= 66) lineColor = '#ff6070';
+    else if (s >= 33) lineColor = '#ffc247';
+    else if (s !== null) lineColor = '#1ec28b';
   }
 
-  indicatorCharts[key] = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: indicator.label,
-        data,
-        borderColor: lineColor,
-        backgroundColor: lineColor + '20',
-        borderWidth: 2,
-        tension: 0.3,
-        fill: true,
-        pointRadius: 2,
-        pointBackgroundColor: lineColor,
-        pointBorderColor: '#12182b',
-        pointBorderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false
-        },
-        tooltip: {
-          backgroundColor: 'rgba(18, 24, 43, 0.9)',
-          titleColor: '#e8eeff',
-          bodyColor: '#e8eeff',
-          borderColor: 'rgba(255,255,255,0.1)',
-          borderWidth: 1,
-          cornerRadius: 4,
-          displayColors: false,
-          callbacks: {
-            label: function (context) {
-              const value = context.parsed.y;
-              return indicator.format ? indicator.format(value) : value;
+  try {
+    indicatorCharts[key] = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels,
+        datasets:[{
+          label:indicator.label,
+          data,
+          borderColor:lineColor,
+          backgroundColor:lineColor + '20',
+          borderWidth:2,
+          tension:0.3,
+          fill:true,
+          pointRadius:2,
+          pointBackgroundColor:lineColor,
+          pointBorderColor:'#12182b',
+          pointBorderWidth:1
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{ display:false },
+          tooltip:{
+            backgroundColor:'rgba(18,24,43,0.9)',
+            titleColor:'#e8eeff',
+            bodyColor:'#e8eeff',
+            borderColor:'rgba(255,255,255,0.1)',
+            borderWidth:1,
+            cornerRadius:4,
+            displayColors:false,
+            callbacks:{
+              label:function(ctx) {
+                const value = ctx.parsed.y;
+                return indicator.format ? indicator.format(value) : String(value);
+              }
             }
           }
-        }
-      },
-      scales: {
-        y: {
-          min: minVal,
-          max: maxVal,
-          grid: {
-            color: 'rgba(255,255,255,0.05)'
-          },
-          ticks: {
-            color: '#8b96b0',
-            font: { size: 9 }
-          }
         },
-        x: {
-          grid: {
-            color: 'rgba(255,255,255,0.03)'
+        scales:{
+          y:{
+            min:minVal,
+            max:maxVal,
+            grid:{ color:'rgba(255,255,255,0.05)' },
+            ticks:{ color:'#8b96b0', font:{ size:9 } }
           },
-          ticks: {
-            color: '#8b96b0',
-            font: { size: 9 }
+          x:{
+            grid:{ color:'rgba(255,255,255,0.03)' },
+            ticks:{ color:'#8b96b0', font:{ size:9 } }
           }
         }
       }
-    }
-  });
+    });
+  } catch (e) {
+    console.error('Chart render error for', key, e);
+    renderNoHistoryMessage(key, type);
+  }
 }
 
-// Update history statistics
+/* ---------- History stats ---------- */
 function updateHistoryStats(key, type = 'indicator', historyData) {
   const indicator = type === 'valuation' ? VALUATIONS[key] : INDICATORS[key];
-  if (!historyData || historyData.length === 0) return;
-  
-  const values = historyData.map(item => item.value);
+  if (!indicator || !historyData || !historyData.length) return;
+
+  const values = historyData.map(item => item.value).filter(v => Number.isFinite(v));
+  if (!values.length) return;
+
   const current = values[values.length - 1];
-  const threeMonthsAgo = values.length >= 4 ? values[values.length - 4] : null;
-  const sixMonthsAgo = values.length >= 7 ? values[values.length - 7] : null;
-  const twelveMonthsAgo = values.length >= 13 ? values[values.length - 13] : null;
-  
-  const threeMonthChange = threeMonthsAgo !== null ? ((current - threeMonthsAgo) / Math.abs(threeMonthsAgo) * 100) : null;
-  const sixMonthChange = sixMonthsAgo !== null ? ((current - sixMonthsAgo) / Math.abs(sixMonthsAgo) * 100) : null;
-  const twelveMonthChange = twelveMonthsAgo !== null ? ((current - twelveMonthsAgo) / Math.abs(twelveMonthsAgo) * 100) : null;
-  
-  const statsContainer = type === 'valuation' 
-    ? document.querySelector(`[data-val-card="${key}"] .history-stats`)
-    : document.querySelector(`[data-ind-card="${key}"] .history-stats`);
-  
+  const threeIdx = values.length - 4;
+  const sixIdx = values.length - 7;
+  const twelveIdx = values.length - 13;
+
+  const getChange = (idx) => {
+    if (idx < 0) return null;
+    const base = values[idx];
+    if (!Number.isFinite(base) || base === 0) return null;
+    return ((current - base) / Math.abs(base)) * 100;
+  };
+
+  const threeMonthChange = getChange(threeIdx);
+  const sixMonthChange = getChange(sixIdx);
+  const twelveMonthChange = getChange(twelveIdx);
+
+  const statsSelector = type === 'valuation'
+    ? `[data-val-card="${key}"] .history-stats`
+    : `[data-ind-card="${key}"] .history-stats`;
+  const statsContainer = document.querySelector(statsSelector);
   if (!statsContainer) return;
-  
+
+  const fmt = (val) => indicator.format ? indicator.format(val) : val.toFixed(2);
+
+  const colour = (chg) => {
+    if (chg === null) return '#8b96b0';
+    return chg >= 0 ? '#1ec28b' : '#ff6070';
+  };
+
   statsContainer.innerHTML = `
     <div class="history-stat">
       <div class="history-stat-label">Current</div>
-      <div class="history-stat-value">${indicator.format ? indicator.format(current) : current.toFixed(2)}</div>
+      <div class="history-stat-value">${fmt(current)}</div>
     </div>
     <div class="history-stat">
       <div class="history-stat-label">3M Change</div>
-      <div class="history-stat-value" style="color: ${threeMonthChange !== null && threeMonthChange >= 0 ? '#1ec28b' : '#ff6070'}">
+      <div class="history-stat-value" style="color:${colour(threeMonthChange)}">
         ${threeMonthChange !== null ? threeMonthChange.toFixed(1) + '%' : '--'}
       </div>
     </div>
     <div class="history-stat">
       <div class="history-stat-label">6M Change</div>
-      <div class="history-stat-value" style="color: ${sixMonthChange !== null && sixMonthChange >= 0 ? '#1ec28b' : '#ff6070'}">
+      <div class="history-stat-value" style="color:${colour(sixMonthChange)}">
         ${sixMonthChange !== null ? sixMonthChange.toFixed(1) + '%' : '--'}
       </div>
     </div>
     <div class="history-stat">
       <div class="history-stat-label">12M Change</div>
-      <div class="history-stat-value" style="color: ${twelveMonthChange !== null && twelveMonthChange >= 0 ? '#1ec28b' : '#ff6070'}">
+      <div class="history-stat-value" style="color:${colour(twelveMonthChange)}">
         ${twelveMonthChange !== null ? twelveMonthChange.toFixed(1) + '%' : '--'}
       </div>
     </div>
   `;
 }
 
-/** Load FRED cache (data/fred_cache.json). */
-async function loadFromFredCache(){
-  try{
+/* ---------- Load + render history orchestrator ---------- */
+async function loadAndRenderIndicatorHistory(key, type = 'indicator', period = '12M') {
+  const indicator = type === 'valuation' ? VALUATIONS[key] : INDICATORS[key];
+  if (!indicator) return;
+
+  if (type === 'valuation' || !indicator.fromFred || !indicator.fredId) {
+    renderNoHistoryMessage(key, type);
+    return;
+  }
+
+  showLoading(`Loading historical data for ${indicator.label}...`);
+  try {
+    const history = await loadHistoricalData(indicator.fredId, indicator);
+    if (history && history.length) {
+      renderIndicatorHistory(key, type, history, period);
+      updateHistoryStats(key, type, history);
+    } else {
+      renderNoHistoryMessage(key, type);
+    }
+  } catch (e) {
+    console.error('loadAndRenderIndicatorHistory error for', key, e);
+    renderNoHistoryMessage(key, type);
+  } finally {
+    hideLoading();
+  }
+}
+
+/* ---------- FRED cache loader (single pipeline) ---------- */
+async function loadFromFredCache() {
+  try {
     showLoading('Loading FRED data...');
     const res = await fetch('data/fred_cache.json', { cache:'no-store' });
-    if(!res.ok){
+    if (!res.ok) {
       console.error('FRED cache HTTP error', res.status);
-      document.getElementById('cache-badge').textContent = 'FRED cache: not found';
-      hideLoading();
+      const badge = document.getElementById('cache-badge');
+      if (badge) badge.textContent = 'FRED cache: not found';
       return;
     }
 
     const cache = await res.json();
-    const series = cache.series || {};
-    const gen = cache.generated_at || 'loaded';
-    document.getElementById('cache-badge').textContent = 'FRED cache: ' + gen;
+    const series = cache && cache.series ? cache.series : {};
+    const gen = cache && cache.generated_at ? cache.generated_at : 'loaded';
+    const badge = document.getElementById('cache-badge');
+    if (badge) badge.textContent = 'FRED cache: ' + gen;
     lastUpdateTime = new Date();
 
     const genDate = new Date(gen);
-    if(!isNaN(genDate)){
+    if (!isNaN(genDate)) {
       const now = new Date();
-      cacheAgeDays = (now - genDate) / (1000*60*60*24);
-      if(cacheAgeDays < 0) cacheAgeDays = null;
+      cacheAgeDays = (now - genDate) / (1000 * 60 * 60 * 24);
+      if (cacheAgeDays < 0) cacheAgeDays = null;
     }
 
-    function lastVal(id){
-      const s = series[id];
-      if(!s) return null;
-      if(Array.isArray(s.observations) && s.observations.length){
-        for(let i = s.observations.length - 1; i >= 0; i--){
-          const v = Number(s.observations[i].value);
-          if(Number.isFinite(v)) return v;
-        }
-        return null;
-      }
-      if(typeof s.value !== 'undefined'){
-        const v = Number(s.value);
-        return Number.isFinite(v) ? v : null;
-      }
-      return null;
-    }
-
-    function obsMonthsBack(id, months){
-      const s = series[id];
-      if(!s || !Array.isArray(s.observations) || !s.observations.length) return null;
-      const last = s.observations[s.observations.length - 1];
-      const lastDate = new Date(last.date);
-      if(isNaN(lastDate)) return null;
-      const target = new Date(lastDate);
-      target.setMonth(target.getMonth() - months);
-      let candidate = null;
-      for(let i=0;i<s.observations.length;i++){
-        const o = s.observations[i];
-        const d = new Date(o.date);
-        if(isNaN(d)) continue;
-        if(d <= target) candidate = o; else break;
-      }
-      return candidate;
-    }
-
-    function rollingAvgLastN(id, n){
-      const s = series[id];
-      if(!s || !Array.isArray(s.observations) || s.observations.length < n) return null;
-      const slice = s.observations.slice(-n);
-      const vals = slice.map(o => Number(o.value)).filter(v => Number.isFinite(v));
-      if(vals.length < n) return null;
-      const sum = vals.reduce((a,b)=>a+b,0);
-      return sum / n;
-    }
-
-    function pctChange(nv, ov){
-      const n = Number(nv), o = Number(ov);
-      if(!Number.isFinite(n) || !Number.isFinite(o) || o === 0) return null;
-      return ((n - o) / o) * 100;
-    }
-
-    // Populate indicators from FRED
     Object.keys(INDICATORS).forEach(key => {
       const ind = INDICATORS[key];
-      if(!ind.fromFred || !ind.fredId) return;
+      if (!ind.fromFred || !ind.fredId) return;
 
-      if(ind.fredId === 'M2SL'){
-        const lvlNow = lastVal('M2SL');
-        const back = obsMonthsBack('M2SL', 12);
-        if(lvlNow != null && back && back.value != null){
-          const pc = pctChange(lvlNow, back.value);
-          if(pc != null) ind.current = pc;
-        }
-      } else if(ind.fredId === 'INDPRO'){
-        const lvlNow = lastVal('INDPRO');
-        const back = obsMonthsBack('INDPRO', 12);
-        if(lvlNow != null && back && back.value != null){
-          const pc = pctChange(lvlNow, back.value);
-          if(pc != null) ind.current = pc;
-        }
-      } else if(ind.fredId === 'PERMIT'){
-        const now = lastVal('PERMIT');
-        const back = obsMonthsBack('PERMIT', 6);
-        if(now != null && back && back.value != null){
-          const pc = pctChange(now, back.value);
-          if(pc != null) ind.current = pc;
-        }
-      } else if(ind.fredId === 'ICSA'){
-        const avg = rollingAvgLastN('ICSA', 4);
-        if(avg != null) ind.current = avg / 1000; // thousands
-      } else {
-        const v = lastVal(ind.fredId);
-        if(v != null) ind.current = v;
+      const s = series[ind.fredId];
+      if (!s || !Array.isArray(s.observations) || !s.observations.length) {
+        ind.current = null;
+        ind.lastDate = null;
+        ind.isStale = false;
+        return;
       }
+
+      const processed = processSeriesForIndicator(ind, s);
+      if (!Array.isArray(processed) || !processed.length) {
+        ind.current = null;
+        ind.lastDate = null;
+        ind.isStale = false;
+        return;
+      }
+
+      historicalData[ind.fredId] = processed;
+      const lastPoint = processed[processed.length - 1];
+      ind.current = Number.isFinite(lastPoint.value) ? lastPoint.value : null;
+      ind.lastDate = lastPoint.date || null;
+
+      const lastDt = new Date(lastPoint.date);
+      const now = new Date();
+      let ageDays = null;
+      if (!isNaN(lastDt)) {
+        ageDays = (now - lastDt) / (1000 * 60 * 60 * 24);
+      }
+
+      let maxFreshDays = 60; // assume monthly-ish
+      if (ind.fredId === 'ICSA') maxFreshDays = 21; // weekly claims tighter
+      ind.isStale = (ageDays !== null && ageDays > maxFreshDays);
     });
 
+    // Debug logging (non-fatal)
     ['T10Y3M','BAMLH0A0HYM2','UMCSENT','M2SL','NFCI','ICSA','SAHMREALTIME','INDPRO','PERMIT']
       .forEach(id => {
-        const v = series[id]
-          ? (Array.isArray(series[id].observations) && series[id].observations.length
-              ? Number(series[id].observations[series[id].observations.length-1].value)
-              : Number(series[id].value))
-          : null;
-        if(Number.isFinite(v)){
-          console.log(`✅ ${id} loaded from fred_cache.json:`, v);
+        const history = historicalData[id];
+        if (history && history.length) {
+          const last = history[history.length - 1];
+          console.log(`✅ ${id} loaded:`, last.value, 'on', last.date);
         } else {
           console.warn(`⚠️ ${id} missing or invalid in fred_cache.json`);
         }
       });
 
-    hideLoading();
-  }catch(err){
+  } catch (err) {
     console.error('FRED cache error:', err);
-    document.getElementById('cache-badge').textContent = 'FRED cache: error';
+    const badge = document.getElementById('cache-badge');
+    if (badge) badge.textContent = 'FRED cache: error';
+  } finally {
     hideLoading();
   }
 }
 
-/** Smoothed macro indicator stress (0–100). */
-function scaleIndicator(key, value){
+/* ---------- Stress mapping ---------- */
+function scaleIndicator(key, value) {
   const ind = INDICATORS[key];
-  if(!ind || !Number.isFinite(value)) return null;
+  if (!ind || !Number.isFinite(value)) return null;
 
   const t = ind.threshold;
   const dir = ind.direction;
-  const span = (ind.span && ind.span > 0)
-    ? ind.span
-    : Math.max(1, Math.abs(t) * 0.5);
-  const buffer = (ind.buffer && ind.buffer > 0)
-    ? ind.buffer
-    : span * 0.5;
+  const span = (ind.span && ind.span > 0) ? ind.span : Math.max(1, Math.abs(t) * 0.5);
+  const buffer = (ind.buffer && ind.buffer > 0) ? ind.buffer : span * 0.5;
 
   let stress = 0;
 
-  if(dir === 'below'){
+  if (dir === 'below') {
     const safeCut = t + buffer;
-
-    if(value >= safeCut){
+    if (value >= safeCut) {
       stress = 0;
-    } else if(value >= t){
-      const frac = (safeCut - value) / buffer; // 0..1
+    } else if (value >= t) {
+      const frac = (safeCut - value) / buffer;
       stress = frac * WARN_MAX;
     } else {
       const frac = Math.max(0, Math.min(1, (t - value) / span));
       stress = WARN_MAX + frac * (100 - WARN_MAX);
     }
-
-  } else if(dir === 'above'){
+  } else if (dir === 'above') {
     const safeCut = t - buffer;
-
-    if(value <= safeCut){
+    if (value <= safeCut) {
       stress = 0;
-    } else if(value <= t){
-      const frac = (value - safeCut) / buffer; // 0..1
+    } else if (value <= t) {
+      const frac = (value - safeCut) / buffer;
       stress = frac * WARN_MAX;
     } else {
       const frac = Math.max(0, Math.min(1, (value - t) / span));
       stress = WARN_MAX + frac * (100 - WARN_MAX);
     }
-
   } else {
     return null;
   }
 
-  // Emphasis for key signals
-  if(key === 'YIELD_CURVE' && value <= 0){
+  if (key === 'YIELD_CURVE' && value <= 0) {
     stress = Math.min(100, stress * 1.2);
   }
-  if(key === 'SAHM_RULE' && value >= 0.5){
+  if (key === 'SAHM_RULE' && value >= 0.5) {
     stress = Math.min(100, stress * 1.3);
   }
 
-  if(!Number.isFinite(stress)) return null;
-  if(stress < 0) stress = 0;
-  if(stress > 100) stress = 100;
-
+  if (!Number.isFinite(stress)) return null;
+  if (stress < 0) stress = 0;
+  if (stress > 100) stress = 100;
   return stress;
 }
 
-/** Smoothed valuation stress mapping (0–100). */
-function valuationStress(key, val){
-  if(!Number.isFinite(val)) return null;
+function valuationStress(key, val) {
+  if (!Number.isFinite(val)) return null;
   let s = 0;
 
-  if(key === 'BUFFETT'){
-    if(val <= 120){
-      s = 0;
-    } else if(val <= 150){
-      const frac = (val - 120) / (150 - 120);
-      s = frac * 40;          // 0..40
-    } else if(val <= 200){
-      const frac = (val - 150) / (200 - 150);
-      s = 40 + frac * 60;     // 40..100
-    } else {
-      s = 100;
-    }
-  } else if(key === 'SHILLER_PE'){
-    if(val <= 22){
-      s = 0;
-    } else if(val <= 30){
-      const frac = (val - 22) / (30 - 22);
-      s = frac * 40;          // 0..40
-    } else if(val <= 40){
-      const frac = (val - 30) / (40 - 30);
-      s = 40 + frac * 60;     // 40..100
-    } else {
-      s = 100;
-    }
+  if (key === 'BUFFETT') {
+    if (val <= 120) s = 0;
+    else if (val <= 150) s = (val - 120) / (150 - 120) * 40;
+    else if (val <= 200) s = 40 + (val - 150) / (200 - 150) * 60;
+    else s = 100;
+  } else if (key === 'SHILLER_PE') {
+    if (val <= 22) s = 0;
+    else if (val <= 30) s = (val - 22) / (30 - 22) * 40;
+    else if (val <= 40) s = 40 + (val - 30) / (40 - 30) * 60;
+    else s = 100;
   } else {
     return null;
   }
 
-  if(s < 0) s = 0;
-  if(s > 100) s = 100;
+  if (s < 0) s = 0;
+  if (s > 100) s = 100;
   return s;
 }
 
-/** Composite: 70% macro, 30% valuations when both present. */
-function computeComposite(){
-  let macroStress = 0;
-  let macroTotalWeight = 0;
-
+function computeComposite() {
+  let macroStress = 0, macroTotalWeight = 0;
   Object.entries(INDICATORS).forEach(([k, ind]) => {
     const s = scaleIndicator(k, ind.current);
-    if(s !== null && Number.isFinite(s) && ind.weight){
+    if (s !== null && Number.isFinite(s) && ind.weight) {
       macroStress += s * ind.weight;
       macroTotalWeight += ind.weight;
     }
   });
 
-  let valStress = 0;
-  let valTotalWeight = 0;
-
+  let valStress = 0, valTotalWeight = 0;
   Object.entries(VALUATIONS).forEach(([k, v]) => {
     const s = valuationStress(k, v.current);
-    if(s !== null && Number.isFinite(s) && v.weight){
+    if (s !== null && Number.isFinite(s) && v.weight) {
       valStress += s * v.weight;
       valTotalWeight += v.weight;
     }
   });
 
-  if(macroTotalWeight === 0 && valTotalWeight === 0) return null;
+  if (macroTotalWeight === 0 && valTotalWeight === 0) return null;
 
   const macroComponent = macroTotalWeight > 0 ? (macroStress / macroTotalWeight) : null;
   const valComponent = valTotalWeight > 0 ? (valStress / valTotalWeight) : null;
 
   let composite = null;
-  if(macroComponent !== null && valComponent !== null){
+  if (macroComponent !== null && valComponent !== null) {
     composite = macroComponent * MACRO_BLOCK_WEIGHT + valComponent * VALUATION_BLOCK_WEIGHT;
-  } else if(macroComponent !== null){
+  } else if (macroComponent !== null) {
     composite = macroComponent;
   } else {
     composite = valComponent;
   }
 
-  if(!Number.isFinite(composite)) return null;
-  if(composite < 0) composite = 0;
-  if(composite > 100) composite = 100;
+  if (!Number.isFinite(composite)) return null;
+  if (composite < 0) composite = 0;
+  if (composite > 100) composite = 100;
   return composite;
 }
 
-function derivedRecessionRisk(c){
-  if(c == null) return '--';
-  if(c < 20) return '<10%';
-  if(c < 35) return '10–25%';
-  if(c < 50) return '25–40%';
-  if(c < 65) return '40–60%';
-  if(c < 80) return '60–75%';
+function derivedRecessionRisk(c) {
+  if (c == null) return '--';
+  if (c < 20) return '<10%';
+  if (c < 35) return '10–25%';
+  if (c < 50) return '25–40%';
+  if (c < 65) return '40–60%';
+  if (c < 80) return '60–75%';
   return '75–90%';
 }
 
-function derivedValuationRisk(){
+function derivedValuationRisk() {
   let sum = 0, w = 0;
-  Object.entries(VALUATIONS).forEach(([k,v]) => {
+  Object.entries(VALUATIONS).forEach(([k, v]) => {
     const s = valuationStress(k, v.current);
-    if(s != null && v.weight){
+    if (s != null && v.weight) {
       sum += s * v.weight;
-      w   += v.weight;
+      w += v.weight;
     }
   });
-  if(!w) return '--';
+  if (!w) return '--';
   const sc = Math.round(sum / w);
-  if(sc < 33) return 'Low';
-  if(sc < 66) return 'Moderate';
+  if (sc < 33) return 'Low';
+  if (sc < 66) return 'Moderate';
   return 'High';
 }
 
-function derivedLaborStress(){
+function derivedLaborStress() {
   const c = INDICATORS.INITIAL_CLAIMS.current;
   const s = INDICATORS.SAHM_RULE.current;
-  if(!Number.isFinite(c) || !Number.isFinite(s)) return '--';
+  if (!Number.isFinite(c) || !Number.isFinite(s)) return '--';
   const cs = Math.max(0, Math.min(100, (c - 250) * 0.5));
   const ss = Math.max(0, Math.min(100, s * 200));
   const avg = (cs + ss) / 2;
-  if(avg < 30) return 'Low';
-  if(avg < 60) return 'Moderate';
+  if (avg < 30) return 'Low';
+  if (avg < 60) return 'Moderate';
   return 'High';
 }
 
-/** Build indicator tiles. */
-function buildIndicatorElement(key, ind){
+/* ---------- Indicator tiles ---------- */
+function buildIndicatorElement(key, ind) {
   const s = scaleIndicator(key, ind.current);
   let cls = 'indicator';
-  if(s != null){
-    if(s >= 66) cls += ' danger';
-    else if(s >= 33) cls += ' warning';
+  if (s != null) {
+    if (s >= 66) cls += ' danger';
+    else if (s >= 33) cls += ' warning';
   }
 
   const hasVal = Number.isFinite(ind.current);
@@ -1699,11 +1644,21 @@ function buildIndicatorElement(key, ind){
     ? 'Stress: ' + Math.round(s) + '/100'
     : 'Stress: --';
 
-  const src = ind.fromFred ? 'Auto from FRED' : 'Manual input';
-  const srcClass = ind.fromFred ? 'data-source-auto' : 'data-source-manual';
+  const latestLabel = ind.lastDate ? ('Latest: ' + ind.lastDate) : '';
+
+  let src = ind.fromFred ? 'Auto from FRED' : 'Manual input';
+  let srcClass = ind.fromFred ? 'data-source-auto' : 'data-source-manual';
+
+  if (ind.fromFred && !hasVal) {
+    src = 'Missing / invalid data';
+    srcClass = 'data-source-missing';
+  } else if (ind.fromFred && ind.isStale) {
+    src = 'Auto from FRED (stale)';
+    srcClass = 'data-source-stale';
+  }
 
   let manual = '';
-  if(!ind.fromFred && key === 'LEI'){
+  if (!ind.fromFred && key === 'LEI') {
     manual =
       '<div class="manual-input-row">' +
         '<span>Set latest 6m %Δ for LEI:</span>' +
@@ -1712,8 +1667,7 @@ function buildIndicatorElement(key, ind){
       '</div>';
   }
 
-  // Only show history section for FRED-based indicators
-    const historySection = ind.fromFred ? `
+  const historySection = ind.fromFred ? `
     <div class="indicator-history" data-history-key="${key}">
       <div class="history-period-selector">
         <button class="period-btn active" data-period="12M">12M</button>
@@ -1737,53 +1691,76 @@ function buildIndicatorElement(key, ind){
     '</div>' +
     '<div class="indicator-threshold">'+thrText+'</div>' +
     '<div class="indicator-threshold" data-ind-stress="'+key+'">'+stressText+'</div>' +
+    (latestLabel ? '<div class="indicator-threshold">'+latestLabel+'</div>' : '') +
     '<div class="indicator-threshold">'+ind.desc+'</div>' +
     '<div class="data-source-indicator">' +
-      '<span class="data-source-dot ' + srcClass + '"></span>' +
+      '<span class="data-source-dot '+srcClass+'"></span>' +
       '<span class="source-tag">'+src+'</span>' +
     '</div>' +
     manual +
     historySection;
 
-  // Add click event for expansion (only for FRED-based indicators)
   if (ind.fromFred) {
     div.addEventListener('click', (e) => {
-      // Don't trigger expansion if clicking on input fields
-      if (!e.target.classList.contains('manual-input')) {
-        toggleIndicatorExpansion(key, 'indicator');
+      if (e.target.classList.contains('manual-input') ||
+          e.target.classList.contains('period-btn')) {
+        return;
       }
+      toggleIndicatorExpansion(key, 'indicator');
+    });
+
+    const periodButtons = div.querySelectorAll('.period-btn');
+    periodButtons.forEach(btn => {
+      btn.addEventListener('click', (evt) => {
+        evt.stopPropagation();
+        const period = btn.getAttribute('data-period') || '12M';
+        periodButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        loadHistoricalData(ind.fredId, ind)
+          .then(history => {
+            if (history && history.length) {
+              renderIndicatorHistory(key, 'indicator', history, period);
+              updateHistoryStats(key, 'indicator', history);
+            } else {
+              renderNoHistoryMessage(key, 'indicator');
+            }
+          })
+          .catch(err => {
+            console.error('History load error for', key, err);
+            renderNoHistoryMessage(key, 'indicator');
+          });
+      });
     });
   }
 
-  // Add tooltip functionality
-  div.addEventListener('mouseenter', (e) => {
-    if (ind.tooltip) {
+  if (ind.tooltip) {
+    div.addEventListener('mouseenter', (e) => {
       showTooltip(ind.tooltip, e.pageX + 10, e.pageY + 10);
-    }
-  });
-  
-  div.addEventListener('mousemove', (e) => {
-    if (ind.tooltip) {
+    });
+    div.addEventListener('mousemove', (e) => {
       showTooltip(ind.tooltip, e.pageX + 10, e.pageY + 10);
-    }
-  });
-  
-  div.addEventListener('mouseleave', () => {
-    hideTooltip();
-  });
+    });
+    div.addEventListener('mouseleave', () => {
+      hideTooltip();
+    });
+  }
 
   return div;
 }
 
-function renderIndicators(){
+function renderIndicators() {
   const t1 = document.getElementById('tier1-indicators');
   const t2 = document.getElementById('tier2-indicators');
+  if (!t1 || !t2) return;
+
   t1.innerHTML = '';
   t2.innerHTML = '';
 
-  Object.entries(INDICATORS).forEach(([k,ind]) => {
+  Object.entries(INDICATORS).forEach(([k, ind]) => {
     const el = buildIndicatorElement(k, ind);
-    if(ind.tier === 1) t1.appendChild(el);
+    if (!el) return;
+    if (ind.tier === 1) t1.appendChild(el);
     else t2.appendChild(el);
   });
 
@@ -1791,29 +1768,29 @@ function renderIndicators(){
     inp.addEventListener('input', () => {
       const key = inp.getAttribute('data-ind-key');
       const v = parseFloat(inp.value);
-      INDICATORS[key].current = Number.isFinite(v) ? v : null;
+      const val = Number.isFinite(v) ? v : null;
+      if (!INDICATORS[key]) return;
+      INDICATORS[key].current = val;
       const valEl = document.querySelector('[data-ind-value="'+key+'"]');
-      if(valEl){
-        valEl.textContent = Number.isFinite(v)
-          ? INDICATORS[key].format(v)
-          : '--';
-      }
+      if (valEl) valEl.textContent = Number.isFinite(v) ? INDICATORS[key].format(v) : '--';
+      persistManualValue(key, val);
       updateDynamic();
     });
   });
 }
 
-/** Valuation tiles. */
-function renderValuations(){
+/* ---------- Valuation tiles ---------- */
+function renderValuations() {
   const box = document.getElementById('valuation-indicators');
+  if (!box) return;
   box.innerHTML = '';
 
-  Object.entries(VALUATIONS).forEach(([k,v]) => {
+  Object.entries(VALUATIONS).forEach(([k, v]) => {
     const s = valuationStress(k, v.current);
     let cls = 'indicator';
-    if(s != null){
-      if(s >= 66) cls += ' danger';
-      else if(s >= 33) cls += ' warning';
+    if (s != null) {
+      if (s >= 66) cls += ' danger';
+      else if (s >= 33) cls += ' warning';
     }
 
     const hasVal = Number.isFinite(v.current);
@@ -1823,15 +1800,10 @@ function renderValuations(){
       : 'Stress: --';
 
     let dangerLabel = '';
-    if(k === 'BUFFETT'){
-      dangerLabel = 'Danger band: > 200%';
-    } else if(k === 'SHILLER_PE'){
-      dangerLabel = 'Danger band: > 30';
-    } else {
-      dangerLabel = 'Danger band: ' + v.danger;
-    }
+    if (k === 'BUFFETT') dangerLabel = 'Danger band: > 200%';
+    else if (k === 'SHILLER_PE') dangerLabel = 'Danger band: > 30';
+    else dangerLabel = 'Danger band: ' + v.danger;
 
-    // No history section for valuation indicators (manual inputs)
     const div = document.createElement('div');
     div.className = cls;
     div.setAttribute('data-val-card', k);
@@ -1853,22 +1825,17 @@ function renderValuations(){
         'data-val-key="'+k+'" value="'+(hasVal ? v.current : '')+'">' +
       '</div>';
 
-    // Add tooltip functionality
-    div.addEventListener('mouseenter', (e) => {
-      if (v.tooltip) {
+    if (v.tooltip) {
+      div.addEventListener('mouseenter', (e) => {
         showTooltip(v.tooltip, e.pageX + 10, e.pageY + 10);
-      }
-    });
-    
-    div.addEventListener('mousemove', (e) => {
-      if (v.tooltip) {
+      });
+      div.addEventListener('mousemove', (e) => {
         showTooltip(v.tooltip, e.pageX + 10, e.pageY + 10);
-      }
-    });
-    
-    div.addEventListener('mouseleave', () => {
-      hideTooltip();
-    });
+      });
+      div.addEventListener('mouseleave', () => {
+        hideTooltip();
+      });
+    }
 
     box.appendChild(div);
   });
@@ -1877,38 +1844,78 @@ function renderValuations(){
     inp.addEventListener('input', () => {
       const key = inp.getAttribute('data-val-key');
       const v = parseFloat(inp.value);
-      VALUATIONS[key].current = Number.isFinite(v) ? v : null;
+      const val = Number.isFinite(v) ? v : null;
+      if (!VALUATIONS[key]) return;
+      VALUATIONS[key].current = val;
+
       const valEl = document.querySelector('[data-val-value="'+key+'"]');
-      if(valEl){
-        valEl.textContent = Number.isFinite(v)
-          ? VALUATIONS[key].format(v)
-          : '--';
-      }
+      if (valEl) valEl.textContent = Number.isFinite(v) ? VALUATIONS[key].format(v) : '--';
+
+      persistManualValue(key, val);
       updateDynamic();
     });
   });
 }
 
-function syncValuationCurrentBox(){
+/* ---------- LocalStorage persistence ---------- */
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem('crashRadarManual');
+    if (!raw) return;
+    const stored = JSON.parse(raw);
+    if (!stored || typeof stored !== 'object') return;
+
+    Object.entries(stored).forEach(([key, val]) => {
+      const num = parseFloat(val);
+      if (!Number.isFinite(num)) return;
+      if (INDICATORS[key] && !INDICATORS[key].fromFred) {
+        INDICATORS[key].current = num;
+      } else if (VALUATIONS[key]) {
+        VALUATIONS[key].current = num;
+      }
+    });
+  } catch (e) {
+    console.warn('Failed to load manual inputs from localStorage', e);
+  }
+}
+
+function persistManualValue(key, value) {
+  try {
+    const raw = localStorage.getItem('crashRadarManual');
+    const stored = raw ? JSON.parse(raw) : {};
+    if (!stored || typeof stored !== 'object') return;
+    if (value === null || value === undefined || !Number.isFinite(value)) {
+      delete stored[key];
+    } else {
+      stored[key] = value;
+    }
+    localStorage.setItem('crashRadarManual', JSON.stringify(stored));
+  } catch (e) {
+    console.warn('Failed to persist manual value', key, e);
+  }
+}
+
+/* ---------- Valuation summary box ---------- */
+function syncValuationCurrentBox() {
   const b = VALUATIONS.BUFFETT.current;
   const c = VALUATIONS.SHILLER_PE.current;
   const bEl = document.getElementById('current-buffett-label');
   const cEl = document.getElementById('current-cape-label');
 
-  if(bEl){
+  if (bEl) {
     bEl.textContent = Number.isFinite(b)
       ? ('Buffett: ' + b.toFixed(1) + '%')
       : 'Buffett: --';
   }
-  if(cEl){
+  if (cEl) {
     cEl.textContent = Number.isFinite(c)
       ? ('CAPE: ' + c.toFixed(1))
       : 'CAPE: --';
   }
 }
 
-/** Gauge & statuses. */
-function renderGaugeAndStatus(){
+/* ---------- Gauge & status ---------- */
+function renderGaugeAndStatus() {
   compositeScore = computeComposite();
 
   const scoreEl = document.getElementById('composite-score');
@@ -1916,6 +1923,8 @@ function renderGaugeAndStatus(){
   const fill = document.getElementById('risk-fill');
   const regimeEl = document.getElementById('regime-label');
   const alert = document.getElementById('alert-banner');
+  const inputsBadge = document.getElementById('inputs-badge');
+  const qualityDisplay = document.getElementById('quality-display');
 
   const total = Object.keys(INDICATORS).length + Object.keys(VALUATIONS).length;
   const used =
@@ -1923,22 +1932,25 @@ function renderGaugeAndStatus(){
     Object.keys(VALUATIONS).filter(k => Number.isFinite(VALUATIONS[k].current)).length;
 
   const coverage = total ? (used / total) : 0;
-  document.getElementById('inputs-badge').textContent =
-    'Inputs: ' + used + '/' + total + ' populated';
-  document.getElementById('quality-display').textContent =
-    total ? Math.round(coverage * 100) + '%' : '--';
+  if (inputsBadge) inputsBadge.textContent = 'Inputs: ' + used + '/' + total + ' populated';
+  if (qualityDisplay) qualityDisplay.textContent = total ? Math.round(coverage * 100) + '%' : '--';
 
-  if(compositeScore == null){
+  if (!scoreEl || !needle || !fill || !regimeEl || !alert) return;
+
+  if (compositeScore == null) {
     scoreEl.textContent = '--';
     fill.style.width = '0%';
     needle.style.transform = 'translateX(-50%) rotate(0deg)';
     regimeEl.textContent = 'COMPOSITE STRESS — insufficient data';
-    document.getElementById('recession-risk-display').textContent = '--';
-    document.getElementById('valuation-risk-display').textContent = '--';
-    document.getElementById('labor-risk-display').textContent = '--';
+    const rr = document.getElementById('recession-risk-display');
+    const vr = document.getElementById('valuation-risk-display');
+    const lr = document.getElementById('labor-risk-display');
+    if (rr) rr.textContent = '--';
+    if (vr) vr.textContent = '--';
+    if (lr) lr.textContent = '--';
 
     let msg = 'No composite yet. Check FRED cache and manual LEI / valuation inputs.';
-    if(cacheAgeDays != null && cacheAgeDays > 7){
+    if (cacheAgeDays != null && cacheAgeDays > 7) {
       msg = 'Data warning: FRED cache is ' + cacheAgeDays.toFixed(1) +
             ' days old. Update fred_cache.json. ' + msg;
     }
@@ -1953,400 +1965,424 @@ function renderGaugeAndStatus(){
   needle.style.transform = 'translateX(-50%) rotate(' + angle + 'deg)';
 
   let regime;
-  if(v <= 30) regime = 'Low stress regime';
-  else if(v <= 50) regime = 'Elevated — monitor';
-  else if(v <= 70) regime = 'High — defensive bias';
+  if (v <= 30) regime = 'Low stress regime';
+  else if (v <= 50) regime = 'Elevated — monitor';
+  else if (v <= 70) regime = 'High — defensive bias';
   else regime = 'Critical regime';
 
   regimeEl.textContent = 'COMPOSITE STRESS — ' + regime;
-  document.getElementById('recession-risk-display').textContent = derivedRecessionRisk(v);
-  document.getElementById('valuation-risk-display').textContent = derivedValuationRisk();
-  document.getElementById('labor-risk-display').textContent = derivedLaborStress();
+  const rr = document.getElementById('recession-risk-display');
+  const vr = document.getElementById('valuation-risk-display');
+  const lr = document.getElementById('labor-risk-display');
+  if (rr) rr.textContent = derivedRecessionRisk(v);
+  if (vr) vr.textContent = derivedValuationRisk();
+  if (lr) lr.textContent = derivedLaborStress();
 
   let prefix = '';
-  if(cacheAgeDays != null && cacheAgeDays > 7){
-    prefix += 'Data warning: FRED cache is ' + cacheAgeDays.toFixed(1) +
-              ' days old. Update fred_cache.json. ';
+  if (cacheAgeDays != null && cacheAgeDays > 7) {
+    prefix += 'Data warning: FRED cache is ' + cacheAgeDays.toFixed(1) + ' days old. Update fred_cache.json. ';
   }
-  if(coverage < 0.8){
+  if (coverage < 0.8) {
     prefix += 'Coverage below 80%. Treat composite as tentative. ';
   }
 
-  if(v >= 70){
+  if (v >= 70) {
     alert.innerHTML = prefix + '<strong>Critical:</strong> Composite = ' + v +
       '. Macro + valuations in historical danger cluster.';
-  }else if(v >= 50){
+  } else if (v >= 50) {
     alert.innerHTML = prefix + '<strong>Warning:</strong> Composite = ' + v +
       '. Elevated risk — inspect indicator tiles.';
-  }else{
-    alert.textContent = prefix +
-      'Composite = ' + v +
+  } else {
+    alert.textContent = prefix + 'Composite = ' + v +
       '. No classic crash cluster on this configuration; still consider exogenous shocks.';
   }
 }
 
-/** Charts. */
-function renderMarketTrendChart(){
-  const ctx = document.getElementById('market-trend').getContext('2d');
-  if(charts.trend) charts.trend.destroy();
+/* ---------- Charts ---------- */
+function renderMarketTrendChart() {
+  const canvas = document.getElementById('market-trend');
+  if (!canvas || typeof Chart === 'undefined') return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  if (charts.trend) {
+    try { charts.trend.destroy(); } catch (e) {}
+    charts.trend = null;
+  }
 
   const base = compositeScore != null ? compositeScore : 40;
   const labels = ['T-10','T-8','T-6','T-4','T-2','Now'];
 
   const compData = [0.7,0.8,0.9,0.95,0.98,1].map(f => {
     let x = base * f;
-    if(x < 0) x = 0;
-    if(x > 100) x = 100;
+    if (x < 0) x = 0;
+    if (x > 100) x = 100;
     return Math.round(x);
   });
 
   let vSum = 0, vW = 0;
-  Object.entries(VALUATIONS).forEach(([k,v]) => {
+  Object.entries(VALUATIONS).forEach(([k, v]) => {
     const s = valuationStress(k, v.current);
-    if(s != null && v.weight){
+    if (s != null && v.weight) {
       vSum += s * v.weight;
-      vW   += v.weight;
+      vW += v.weight;
     }
   });
   const valBase = vW ? (vSum / vW) : 30;
   const valData = [0.75,0.85,0.92,0.96,0.99,1].map(f => {
     let x = valBase * f;
-    if(x < 0) x = 0;
-    if(x > 100) x = 100;
+    if (x < 0) x = 0;
+    if (x > 100) x = 100;
     return Math.round(x);
   });
 
-  charts.trend = new Chart(ctx, {
-    type:'line',
-    data:{
-      labels,
-      datasets:[
-        {
-          label:'Composite Stress',
-          data:compData,
-          borderColor:'#6b9eff',
-          backgroundColor:'rgba(107,158,255,0.14)',
-          tension:0.32,
-          fill:true,
-          pointRadius:2
-        },
-        {
-          label:'Valuation Stress',
-          data:valData,
-          borderColor:'#ff6070',
-          backgroundColor:'rgba(255,96,112,0.12)',
-          tension:0.32,
-          fill:true,
-          pointRadius:2
-        }
-      ]
-    },
-    options:{
-      responsive:true,
-      plugins:{
-        legend:{labels:{color:'#e8eeff',font:{size:9}}},
-        title:{
-          display:true,
-          text:'Stress & Valuation Trajectory (illustrative)',
-          color:'#e8eeff',
-          font:{size:11}
-        }
+  try {
+    charts.trend = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels,
+        datasets:[
+          {
+            label:'Composite Stress',
+            data:compData,
+            borderColor:'#6b9eff',
+            backgroundColor:'rgba(107,158,255,0.14)',
+            tension:0.32,
+            fill:true,
+            pointRadius:2
+          },
+          {
+            label:'Valuation Stress',
+            data:valData,
+            borderColor:'#ff6070',
+            backgroundColor:'rgba(255,96,112,0.12)',
+            tension:0.32,
+            fill:true,
+            pointRadius:2
+          }
+        ]
       },
-      scales:{
-        y:{
-          min:0,
-          max:100,
-          ticks:{color:'#8b96b0',font:{size:8}},
-          grid:{color:'rgba(255,255,255,0.08)'}
+      options:{
+        responsive:true,
+        plugins:{
+          legend:{ labels:{ color:'#e8eeff', font:{ size:9 } } },
+          title:{
+            display:true,
+            text:'Stress & Valuation Trajectory (illustrative)',
+            color:'#e8eeff',
+            font:{ size:11 }
+          }
         },
-        x:{
-          ticks:{color:'#8b96b0',font:{size:8}},
-          grid:{color:'rgba(255,255,255,0.06)'}
+        scales:{
+          y:{
+            min:0,
+            max:100,
+            ticks:{ color:'#8b96b0', font:{ size:8 } },
+            grid:{ color:'rgba(255,255,255,0.08)' }
+          },
+          x:{
+            ticks:{ color:'#8b96b0', font:{ size:8 } },
+            grid:{ color:'rgba(255,255,255,0.06)' }
+          }
         }
       }
-    }
-  });
+    });
+  } catch (e) {
+    console.error('Market trend chart error', e);
+  }
 }
 
-function renderRiskRadarChart(){
-  const ctx = document.getElementById('risk-radar').getContext('2d');
-  if(charts.radar) charts.radar.destroy();
+function renderRiskRadarChart() {
+  const canvas = document.getElementById('risk-radar');
+  if (!canvas || typeof Chart === 'undefined') return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  if (charts.radar) {
+    try { charts.radar.destroy(); } catch (e) {}
+    charts.radar = null;
+  }
 
   const labels = [];
   const data = [];
 
-  Object.entries(INDICATORS).forEach(([k,ind]) => {
+  Object.entries(INDICATORS).forEach(([k, ind]) => {
     const s = scaleIndicator(k, ind.current);
-    if(s != null){
+    if (s != null) {
       labels.push(ind.label);
       data.push(Math.round(s));
     }
   });
 
   let vSum = 0, vW = 0;
-  Object.entries(VALUATIONS).forEach(([k,v]) => {
+  Object.entries(VALUATIONS).forEach(([k, v]) => {
     const s = valuationStress(k, v.current);
-    if(s != null && v.weight){
+    if (s != null && v.weight) {
       vSum += s * v.weight;
-      vW   += v.weight;
+      vW += v.weight;
     }
   });
-  if(vW){
+  if (vW) {
     labels.push('Valuations (Buffett + CAPE)');
     data.push(Math.round(vSum / vW));
   }
 
-  if(!labels.length) return;
+  if (!labels.length) return;
 
-  charts.radar = new Chart(ctx, {
-    type:'radar',
-    data:{
-      labels,
-      datasets:[{
-        label:'Normalized Stress (0–100)',
-        data,
-        borderColor:'#6b9eff',
-        backgroundColor:'rgba(107,158,255,0.18)',
-        pointRadius:2
-      }]
-    },
-    options:{
-      responsive:true,
-      plugins:{legend:{display:false}},
-      scales:{
-        r:{
-          angleLines:{color:'rgba(255,255,255,0.05)'},
-          grid:{color:'rgba(255,255,255,0.09)'},
-          suggestedMin:0,
-          suggestedMax:100,
-          ticks:{display:false},
-          pointLabels:{color:'#8b96b0',font:{size:7}}
+  try {
+    charts.radar = new Chart(ctx, {
+      type:'radar',
+      data:{
+        labels,
+        datasets:[{
+          label:'Normalized Stress (0–100)',
+          data,
+          borderColor:'#6b9eff',
+          backgroundColor:'rgba(107,158,255,0.18)',
+          pointRadius:2
+        }]
+      },
+      options:{
+        responsive:true,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          r:{
+            angleLines:{ color:'rgba(255,255,255,0.05)' },
+            grid:{ color:'rgba(255,255,255,0.09)' },
+            suggestedMin:0,
+            suggestedMax:100,
+            ticks:{ display:false },
+            pointLabels:{ color:'#8b96b0', font:{ size:7 } }
+          }
         }
       }
-    }
-  });
+    });
+  } catch (e) {
+    console.error('Radar chart error', e);
+  }
 }
 
-/** Insight text. */
-function updateInsight(){
+/* ---------- Insight text ---------- */
+function updateInsight() {
   const el = document.getElementById('insight-text');
-  if(!el) return;
+  if (!el) return;
+
   const c = compositeScore;
   const vRisk = derivedValuationRisk();
 
-  if(c == null){
+  if (c == null) {
     el.textContent = 'No composite yet. Ensure fred_cache.json is fresh and LEI / Buffett / CAPE are populated.';
-  } else if(c >= 70 && vRisk === 'High'){
+  } else if (c >= 70 && vRisk === 'High') {
     el.textContent = 'Macro + valuations both extreme: configuration consistent with major drawdown regimes.';
-  } else if(c >= 50 && vRisk !== 'Low'){
+  } else if (c >= 50 && vRisk !== 'Low') {
     el.textContent = 'Elevated macro stress with stretched valuations: risk-reward skewed left.';
-  } else if(c < 40 && vRisk === 'High'){
+  } else if (c < 40 && vRisk === 'High') {
     el.textContent = 'Macro relatively okay but valuations rich: vulnerable to shocks or policy error.';
-  } else if(c < 40 && vRisk === 'Low'){
+  } else if (c < 40 && vRisk === 'Low') {
     el.textContent = 'Macro and valuations both moderate vs history: no classic crash cluster here.';
   } else {
     el.textContent = 'Mixed configuration. Use radar and tiles to see what drives the score.';
   }
 }
 
-/** Export functionality */
+/* ---------- Export / share ---------- */
 function exportToCSV() {
-  let csvContent = "Indicator,Current Value,Stress Score,Threshold\n";
-  
-  // Add macro indicators
-  Object.entries(INDICATORS).forEach(([key, ind]) => {
-    const stress = scaleIndicator(key, ind.current);
-    const stressText = stress !== null ? stress.toFixed(1) : 'N/A';
-    const valueText = ind.current !== null ? ind.current : 'N/A';
-    const thresholdText = ind.threshold !== null ? ind.threshold : 'N/A';
-    
-    csvContent += `"${ind.label}","${valueText}","${stressText}","${thresholdText}"\n`;
-  });
-  
-  // Add valuation indicators
-  Object.entries(VALUATIONS).forEach(([key, val]) => {
-    const stress = valuationStress(key, val.current);
-    const stressText = stress !== null ? stress.toFixed(1) : 'N/A';
-    const valueText = val.current !== null ? val.current : 'N/A';
-    const thresholdText = val.danger !== null ? val.danger : 'N/A';
-    
-    csvContent += `"${val.label}","${valueText}","${stressText}","${thresholdText}"\n`;
-  });
-  
-  // Add composite score
-  csvContent += `"Composite Score","${compositeScore !== null ? compositeScore.toFixed(1) : 'N/A'}","",""\n`;
-  
-  // Create and download the file
-  const blob = new Blob([csvContent], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `economic_crash_radar_${new Date().toISOString().split('T')[0]}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  try {
+    let csvContent = "Indicator,Current Value,Stress Score,Threshold\n";
+    Object.entries(INDICATORS).forEach(([key, ind]) => {
+      const stress = scaleIndicator(key, ind.current);
+      const stressText = stress !== null ? stress.toFixed(1) : 'N/A';
+      const valueText = ind.current !== null ? ind.current : 'N/A';
+      const thresholdText = ind.threshold !== null ? ind.threshold : 'N/A';
+      csvContent += `"${ind.label}","${valueText}","${stressText}","${thresholdText}"\n`;
+    });
+    Object.entries(VALUATIONS).forEach(([key, val]) => {
+      const stress = valuationStress(key, val.current);
+      const stressText = stress !== null ? stress.toFixed(1) : 'N/A';
+      const valueText = val.current !== null ? val.current : 'N/A';
+      const thresholdText = val.danger !== null ? val.danger : 'N/A';
+      csvContent += `"${val.label}","${valueText}","${stressText}","${thresholdText}"\n`;
+    });
+    csvContent += `"Composite Score","${compositeScore !== null ? compositeScore.toFixed(1) : 'N/A'}","",""\n`;
+
+    const blob = new Blob([csvContent], { type:'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `economic_crash_radar_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error('CSV export error', e);
+    alert('CSV export failed. See console for details.');
+  }
 }
 
 function exportToPDF() {
   showLoading('Generating PDF report...');
-  
-  // In a real implementation, you would use a library like jsPDF
-  // For this example, we'll simulate the process
   setTimeout(() => {
-    alert('PDF export functionality would be implemented with a library like jsPDF in a production environment.');
+    alert('PDF export placeholder. Implement with jsPDF or similar in production.');
     hideLoading();
-  }, 1000);
+  }, 700);
 }
 
 function saveSnapshot() {
-  const snapshot = {
-    timestamp: new Date().toISOString(),
-    compositeScore: compositeScore,
-    indicators: {},
-    valuations: {}
-  };
-  
-  // Save indicator values
-  Object.entries(INDICATORS).forEach(([key, ind]) => {
-    snapshot.indicators[key] = ind.current;
-  });
-  
-  // Save valuation values
-  Object.entries(VALUATIONS).forEach(([key, val]) => {
-    snapshot.valuations[key] = val.current;
-  });
-  
-  // Store in localStorage
-  const snapshots = JSON.parse(localStorage.getItem('crashRadarSnapshots') || '[]');
-  snapshots.push(snapshot);
-  localStorage.setItem('crashRadarSnapshots', JSON.stringify(snapshots));
-  
-  alert('Snapshot saved! You can compare it with future readings.');
+  try {
+    const snapshot = {
+      timestamp:new Date().toISOString(),
+      compositeScore:compositeScore,
+      indicators:{},
+      valuations:{}
+    };
+    Object.entries(INDICATORS).forEach(([key, ind]) => {
+      snapshot.indicators[key] = ind.current;
+    });
+    Object.entries(VALUATIONS).forEach(([key, val]) => {
+      snapshot.valuations[key] = val.current;
+    });
+
+    const raw = localStorage.getItem('crashRadarSnapshots');
+    const snapshots = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(snapshots)) {
+      console.warn('Snapshots storage invalid, resetting');
+      localStorage.setItem('crashRadarSnapshots', JSON.stringify([snapshot]));
+    } else {
+      snapshots.push(snapshot);
+      localStorage.setItem('crashRadarSnapshots', JSON.stringify(snapshots));
+    }
+    alert('Snapshot saved. (Comparison UI still to be implemented.)');
+  } catch (e) {
+    console.error('Snapshot error', e);
+    alert('Snapshot save failed. See console for details.');
+  }
 }
 
 function shareLink() {
-  // Create a shareable URL with current data
-  const params = new URLSearchParams();
-  
-  // Add indicator values
-  Object.entries(INDICATORS).forEach(([key, ind]) => {
-    if (ind.current !== null) {
-      params.set(`i_${key}`, ind.current.toString());
+  try {
+    const params = new URLSearchParams();
+    Object.entries(INDICATORS).forEach(([key, ind]) => {
+      if (ind.current !== null && Number.isFinite(ind.current)) {
+        params.set(`i_${key}`, ind.current.toString());
+      }
+    });
+    Object.entries(VALUATIONS).forEach(([key, val]) => {
+      if (val.current !== null && Number.isFinite(val.current)) {
+        params.set(`v_${key}`, val.current.toString());
+      }
+    });
+
+    const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+
+    if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareUrl)
+        .then(() => alert('Shareable link copied to clipboard!'))
+        .catch(() => {
+          fallbackCopyToClipboard(shareUrl);
+        });
+    } else {
+      fallbackCopyToClipboard(shareUrl);
     }
-  });
-  
-  // Add valuation values
-  Object.entries(VALUATIONS).forEach(([key, val]) => {
-    if (val.current !== null) {
-      params.set(`v_${key}`, val.current.toString());
-    }
-  });
-  
-  const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-  
-  // Copy to clipboard
-  navigator.clipboard.writeText(shareUrl).then(() => {
-    alert('Shareable link copied to clipboard!');
-  }).catch(() => {
-    // Fallback for older browsers
+  } catch (e) {
+    console.error('Share link error', e);
+    alert('Failed to build share link. See console for details.');
+  }
+}
+
+function fallbackCopyToClipboard(text) {
+  try {
     const textArea = document.createElement('textarea');
-    textArea.value = shareUrl;
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
     document.body.appendChild(textArea);
+    textArea.focus();
     textArea.select();
     document.execCommand('copy');
     document.body.removeChild(textArea);
     alert('Shareable link copied to clipboard!');
-  });
+  } catch (e) {
+    console.error('Clipboard fallback error', e);
+    alert('Copy to clipboard failed. Copy the URL from the address bar.');
+  }
 }
 
+/* ---------- Reset & help ---------- */
 function resetInputs() {
-  if (confirm('Are you sure you want to reset all inputs? This will clear all manual entries.')) {
-    // Reset indicator values
-    Object.entries(INDICATORS).forEach(([key, ind]) => {
-      if (!ind.fromFred) {
-        ind.current = null;
-      }
-    });
-    
-    // Reset valuation values
-    Object.entries(VALUATIONS).forEach(([key, val]) => {
-      val.current = null;
-    });
-    
-    // Update the UI
-    updateAll();
+  if (!confirm('Are you sure you want to reset all inputs? This will clear all manual entries.')) return;
+
+  Object.entries(INDICATORS).forEach(([key, ind]) => {
+    if (!ind.fromFred) ind.current = null;
+  });
+  Object.entries(VALUATIONS).forEach(([key, val]) => {
+    val.current = null;
+  });
+
+  try {
+    localStorage.removeItem('crashRadarManual');
+  } catch (e) {
+    console.warn('Failed to clear manual inputs from localStorage', e);
   }
+
+  updateAll();
 }
 
 function showHelp() {
   const helpContent = `
-    <h2>Economic Crash Radar Pro v7 - Help</h2>
-    <p>This tool monitors 12 economic indicators to assess recession risk:</p>
-    
-    <h3>Macro Indicators (10)</h3>
-    <ul>
-      <li><strong>Tier 1 (Leading):</strong> LEI, Yield Curve, Credit Spread, Financial Stress, Consumer Sentiment, M2 Growth</li>
-      <li><strong>Tier 2 (Confirming):</strong> Industrial Production, Building Permits, Initial Claims, Sahm Rule</li>
-    </ul>
-    
-    <h3>Valuation Indicators (2)</h3>
-    <ul>
-      <li><strong>Buffett Indicator:</strong> Stock Market Cap / GDP</li>
-      <li><strong>Shiller CAPE:</strong> Cyclically Adjusted P/E Ratio</li>
-    </ul>
-    
-    <h3>How to Use</h3>
-    <ol>
-      <li>Ensure FRED data is loaded (automatic for most indicators)</li>
-      <li>Manually input LEI 6m %Δ, Buffett Indicator, and CAPE values</li>
-      <li>Monitor the composite score and individual indicator stress levels</li>
-      <li>Use charts to visualize trends and risk distribution</li>
-      <li>Click on any FRED-based indicator to view its historical trend</li>
-    </ol>
-    
-    <h3>Interpreting Results</h3>
-    <ul>
-      <li><strong>0-30:</strong> Low stress regime</li>
-      <li><strong>30-50:</strong> Elevated - monitor closely</li>
-      <li><strong>50-70:</strong> High - defensive bias recommended</li>
-      <li><strong>70-100:</strong> Critical - historical danger zone</li>
-    </ul>
+Economic Crash Radar Pro v7
+
+This tool monitors 12 economic indicators to assess recession risk.
+
+Macro Indicators (10)
+- Tier 1 (Leading): LEI, Yield Curve, Credit Spread, Financial Stress, Consumer Sentiment, M2 Growth
+- Tier 2 (Confirming): Industrial Production, Building Permits, Initial Claims, Sahm Rule
+
+Valuation Indicators (2)
+- Buffett Indicator: Stock Market Cap / GDP
+- Shiller CAPE: Cyclically Adjusted P/E Ratio
+
+How to Use
+1. Ensure FRED data is loaded (auto for most indicators).
+2. Manually input LEI 6m %Δ, Buffett Indicator, and CAPE values.
+3. Watch the composite score and individual indicator stress.
+4. Click any FRED-based indicator to see its history; use 12M / 5Y / MAX.
+5. Use Export / Snapshot / Share to document and compare regimes.
+
+Interpreting Composite
+- 0–30: Low stress regime
+- 30–50: Elevated – monitor closely
+- 50–70: High – defensive bias
+- 70–100: Critical – historical danger zone
   `;
-  
-  // Create a modal or use alert for simplicity
-  alert(helpContent.replace(/<[^>]*>/g, ''));
+  alert(helpContent);
 }
 
-/** Load data from URL parameters */
+/* ---------- URL param loader ---------- */
 function loadFromURL() {
-  const urlParams = new URLSearchParams(window.location.search);
-  
-  // Load indicator values
-  Object.entries(INDICATORS).forEach(([key, ind]) => {
-    const paramValue = urlParams.get(`i_${key}`);
-    if (paramValue !== null) {
-      const value = parseFloat(paramValue);
-      if (!isNaN(value)) {
-        ind.current = value;
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    Object.entries(INDICATORS).forEach(([key, ind]) => {
+      const paramValue = urlParams.get(`i_${key}`);
+      if (paramValue !== null) {
+        const value = parseFloat(paramValue);
+        if (!isNaN(value)) ind.current = value;
       }
-    }
-  });
-  
-  // Load valuation values
-  Object.entries(VALUATIONS).forEach(([key, val]) => {
-    const paramValue = urlParams.get(`v_${key}`);
-    if (paramValue !== null) {
-      const value = parseFloat(paramValue);
-      if (!isNaN(value)) {
-        val.current = value;
+    });
+    Object.entries(VALUATIONS).forEach(([key, val]) => {
+      const paramValue = urlParams.get(`v_${key}`);
+      if (paramValue !== null) {
+        const value = parseFloat(paramValue);
+        if (!isNaN(value)) val.current = value;
       }
-    }
-  });
+    });
+  } catch (e) {
+    console.warn('Failed to parse URL params', e);
+  }
 }
 
-/** Orchestration. */
-function updateDynamic(){
+/* ---------- Orchestration ---------- */
+function updateDynamic() {
   renderGaugeAndStatus();
   renderMarketTrendChart();
   renderRiskRadarChart();
@@ -2354,40 +2390,56 @@ function updateDynamic(){
   updateInsight();
 }
 
-function updateAll(){
+function updateAll() {
   renderIndicators();
   renderValuations();
   updateDynamic();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Load data from URL first (if any)
+  // 1) LocalStorage manual values
+  loadFromLocalStorage();
+
+  // 2) URL query overrides
   loadFromURL();
-  
-  // Then load FRED data and update
+
+  // 3) Load FRED + render
   loadFromFredCache()
     .then(updateAll)
     .catch(err => {
       console.error('Init error:', err);
       updateAll();
     });
-  
-  // Add event listeners for new buttons
-  document.getElementById('refresh-data').addEventListener('click', () => {
-    loadFromFredCache()
-      .then(updateAll)
-      .catch(err => {
-        console.error('Refresh error:', err);
-        updateAll();
-      });
-  });
-  
-  document.getElementById('reset-inputs').addEventListener('click', resetInputs);
-  document.getElementById('show-help').addEventListener('click', showHelp);
-  document.getElementById('export-csv').addEventListener('click', exportToCSV);
-  document.getElementById('export-pdf').addEventListener('click', exportToPDF);
-  document.getElementById('export-snapshot').addEventListener('click', saveSnapshot);
-  document.getElementById('share-link').addEventListener('click', shareLink);
+
+  const refreshBtn = document.getElementById('refresh-data');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => {
+      loadFromFredCache()
+        .then(updateAll)
+        .catch(err => {
+          console.error('Refresh error:', err);
+          updateAll();
+        });
+    });
+  }
+
+  const resetBtn = document.getElementById('reset-inputs');
+  if (resetBtn) resetBtn.addEventListener('click', resetInputs);
+
+  const helpBtn = document.getElementById('show-help');
+  if (helpBtn) helpBtn.addEventListener('click', showHelp);
+
+  const csvBtn = document.getElementById('export-csv');
+  if (csvBtn) csvBtn.addEventListener('click', exportToCSV);
+
+  const pdfBtn = document.getElementById('export-pdf');
+  if (pdfBtn) pdfBtn.addEventListener('click', exportToPDF);
+
+  const snapBtn = document.getElementById('export-snapshot');
+  if (snapBtn) snapBtn.addEventListener('click', saveSnapshot);
+
+  const shareBtn = document.getElementById('share-link');
+  if (shareBtn) shareBtn.addEventListener('click', shareLink);
 });
 </script>
 </body>
