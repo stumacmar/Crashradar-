@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Economic Crash Radar Pro v7</title>
+  <title>Economic Crash Radar Pro</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root {
@@ -32,7 +32,12 @@
     }
 
     .container{max-width:1440px;margin:0 auto;}
-    .header{text-align:center;margin-bottom:18px;}
+    .header{
+      text-align:center;
+      margin-bottom:18px;
+      padding-bottom:10px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+    }
 
     h1{
       font-size:clamp(30px,6vw,46px);
@@ -352,7 +357,6 @@
       font-size:0.7rem;
     }
 
-    /* New styles for enhancements */
     .data-source-indicator {
       display:flex;
       align-items:center;
@@ -464,7 +468,6 @@
     }
     .indicator-tooltip.active{opacity:1;}
 
-    /* History chart styles */
     .indicator-history{
       margin-top:10px;
       display:none;
@@ -541,7 +544,7 @@
 <body>
 <div class="container">
   <div class="header">
-    <h1>⚡ Economic Crash Radar Pro v7</h1>
+    <h1>⚡ Economic Crash Radar Pro</h1>
     <div class="subtitle">
       10 macro indicators (9 auto via FRED, 1 manual) + 2 valuations. Composite with smoothed stress bands (no binary cliffs).
     </div>
@@ -667,7 +670,7 @@
       <div class="card">
         <div class="card-title"><span class="icon">🕒</span>History, Radar & Prior Recessions</div>
         <div class="chart-container">
-          <canvas id="market-trend" height="130"></canvas>
+          <canvas id="composite-history" height="130"></canvas>
         </div>
         <div class="chart-container">
           <canvas id="risk-radar" height="140"></canvas>
@@ -717,12 +720,15 @@ const MACRO_BLOCK_WEIGHT = 0.70;
 const VALUATION_BLOCK_WEIGHT = 0.30;
 const WARN_MAX = 30;
 const LOCAL_STORAGE_KEY = 'crashRadarManualInputs_v1';
+const COMPOSITE_HISTORY_KEY = 'crashRadarCompositeHistory_v1';
 
 let cacheAgeDays = null;
 let lastUpdateTime = null;
 let expandedIndicator = null;
 let historicalData = {};     // fredId -> processed history
 let indicatorCharts = {};    // key -> Chart instance
+let compositeHistory = [];   // { date: 'YYYY-MM-DD', score: number }
+let fredCache = null;
 
 const INDICATORS = {
   LEI: {
@@ -888,7 +894,7 @@ const VALUATIONS = {
   }
 };
 
-let charts = { trend:null, radar:null };
+let charts = { compositeHistory:null, radar:null };
 let compositeScore = null;
 
 /* ---------- Loading overlay ---------- */
@@ -942,6 +948,158 @@ function persistManualInputs(){
   }
 }
 
+/* ---------- Composite history (localStorage) ---------- */
+function loadCompositeHistory(){
+  try{
+    const raw = localStorage.getItem(COMPOSITE_HISTORY_KEY);
+    if(!raw) return [];
+    const data = JSON.parse(raw);
+    if(!Array.isArray(data)) return [];
+    return data
+      .filter(d => d && typeof d.date === 'string' && Number.isFinite(d.score))
+      .sort((a,b)=>a.date.localeCompare(b.date));
+  }catch(err){
+    console.error('Error loading composite history:',err);
+    return [];
+  }
+}
+
+function saveCompositeHistory(){
+  try{
+    localStorage.setItem(COMPOSITE_HISTORY_KEY, JSON.stringify(compositeHistory));
+  }catch(err){
+    console.error('Error saving composite history:',err);
+  }
+}
+
+function recordCompositeHistory(){
+  if(!Number.isFinite(compositeScore)) return;
+  const today = new Date();
+  const dateStr = today.toISOString().slice(0,10);
+  let changed=false;
+
+  const idx = compositeHistory.findIndex(d=>d.date===dateStr);
+  if(idx>=0){
+    if(compositeHistory[idx].score !== compositeScore){
+      compositeHistory[idx].score = compositeScore;
+      changed=true;
+    }
+  }else{
+    compositeHistory.push({date:dateStr,score:compositeScore});
+    changed=true;
+  }
+
+  compositeHistory = compositeHistory
+    .filter(d=>d && typeof d.date==='string' && Number.isFinite(d.score))
+    .sort((a,b)=>a.date.localeCompare(b.date));
+
+  const MAX_POINTS = 730; // ~2 years of daily points
+  if(compositeHistory.length>MAX_POINTS){
+    compositeHistory = compositeHistory.slice(compositeHistory.length-MAX_POINTS);
+    changed=true;
+  }
+
+  if(changed) saveCompositeHistory();
+}
+
+function renderCompositeHistoryChart(){
+  const canvas = document.getElementById('composite-history');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  if(charts.compositeHistory){
+    charts.compositeHistory.destroy();
+    charts.compositeHistory = null;
+  }
+
+  let data = compositeHistory.slice();
+  if((!data || !data.length) && Number.isFinite(compositeScore)){
+    const today = new Date().toISOString().slice(0,10);
+    data = [{date:today,score:compositeScore}];
+  }
+
+  if(!data || !data.length){
+    charts.compositeHistory = new Chart(ctx,{
+      type:'line',
+      data:{labels:[],datasets:[]},
+      options:{
+        responsive:true,
+        plugins:{
+          legend:{display:false},
+          title:{
+            display:true,
+            text:'Composite Stress History (no data yet)',
+            color:'#e8eeff',
+            font:{size:11}
+          }
+        }
+      }
+    });
+    return;
+  }
+
+  const labels = data.map(d=>{
+    const dt = new Date(d.date);
+    if(isNaN(dt)) return d.date;
+    return dt.toLocaleDateString('en-GB',{month:'short',year:'2-digit'});
+  });
+  const values = data.map(d=>d.score);
+
+  charts.compositeHistory = new Chart(ctx,{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'Composite Stress',
+          data:values,
+          borderColor:'#6b9eff',
+          backgroundColor:'rgba(107,158,255,0.14)',
+          tension:0.32,
+          fill:true,
+          pointRadius:2
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{labels:{color:'#e8eeff',font:{size:9}}},
+        title:{
+          display:true,
+          text:'Composite Stress History',
+          color:'#e8eeff',
+          font:{size:11}
+        },
+        tooltip:{
+          backgroundColor:'rgba(18,24,43,0.9)',
+          titleColor:'#e8eeff',
+          bodyColor:'#e8eeff',
+          borderColor:'rgba(255,255,255,0.1)',
+          borderWidth:1,
+          cornerRadius:4,
+          displayColors:false,
+          callbacks:{
+            label:(ctx)=>`Composite: ${ctx.parsed.y.toFixed(1)} / 100`
+          }
+        }
+      },
+      scales:{
+        y:{
+          min:0,
+          max:100,
+          ticks:{color:'#8b96b0',font:{size:8}},
+          grid:{color:'rgba(255,255,255,0.08)'}
+        },
+        x:{
+          ticks:{color:'#8b96b0',font:{size:8}},
+          grid:{color:'rgba(255,255,255,0.06)'}
+        }
+      }
+    }
+  });
+}
+
 /* ---------- Data processing helpers for history ---------- */
 function calculateYoYGrowth(observations){
   const result=[];
@@ -986,6 +1144,15 @@ function calculateMovingAverage(observations,periods){
     }
   }
   return result;
+}
+
+/* ---------- FRED cache (shared loader) ---------- */
+async function getFredCache(){
+  if(fredCache) return fredCache;
+  const res = await fetch('data/fred_cache.json',{cache:'no-store'});
+  if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  fredCache = await res.json();
+  return fredCache;
 }
 
 /* ---------- Indicator expansion / history ---------- */
@@ -1051,10 +1218,8 @@ async function loadHistoricalData(fredId,indicator){
   if(historicalData[fredId]) return historicalData[fredId];
 
   try{
-    const response = await fetch('data/fred_cache.json',{cache:'no-store'});
-    if(!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const data = await response.json();
-    const seriesData = data.series[fredId];
+    const data = await getFredCache();
+    const seriesData = data.series && data.series[fredId];
 
     if(!seriesData || !Array.isArray(seriesData.observations)){
       throw new Error(`No historical data found for ${fredId}`);
@@ -1313,14 +1478,7 @@ function updateHistoryStats(key,type='indicator',historyData){
 async function loadFromFredCache(){
   try{
     showLoading('Loading FRED data...');
-    const res = await fetch('data/fred_cache.json',{cache:'no-store'});
-    if(!res.ok){
-      console.error('FRED cache HTTP error',res.status);
-      document.getElementById('cache-badge').textContent='FRED cache: not found';
-      hideLoading();
-      return;
-    }
-    const cache = await res.json();
+    const cache = await getFredCache();
     const series = cache.series || {};
     const gen = cache.generated_at || 'loaded';
     document.getElementById('cache-badge').textContent='FRED cache: '+gen;
@@ -1420,11 +1578,15 @@ async function loadFromFredCache(){
 
     ['T10Y3M','BAMLH0A0HYM2','UMCSENT','M2SL','NFCI','ICSA','SAHMREALTIME','INDPRO','PERMIT']
       .forEach(id=>{
-        const v=series[id]
-          ? (Array.isArray(series[id].observations) && series[id].observations.length
-              ? Number(series[id].observations[series[id].observations.length-1].value)
-              : Number(series[id].value))
-          : null;
+        const s=series[id];
+        let v=null;
+        if(s){
+          if(Array.isArray(s.observations) && s.observations.length){
+            v=Number(s.observations[s.observations.length-1].value);
+          }else if(typeof s.value!=='undefined'){
+            v=Number(s.value);
+          }
+        }
         if(Number.isFinite(v)){
           console.log(`✅ ${id} loaded from fred_cache.json:`,v);
         }else{
@@ -1621,7 +1783,7 @@ function buildIndicatorElement(key,ind){
     ? 'Stress: ' + Math.round(s) + '/100'
     : 'Stress: --';
 
-  const src = ind.fromFred ? 'Auto from FRED' : 'Manual input';
+  const src = ind.fromFred ? 'Auto from FRED cache' : 'Manual input';
   const srcClass = ind.fromFred ? 'data-source-auto' : 'data-source-manual';
 
   let manual='';
@@ -1817,7 +1979,7 @@ function syncValuationCurrentBox(){
   }
 }
 
-/* ---------- Gauge, charts, insight ---------- */
+/* ---------- Gauge, radar, insight ---------- */
 function renderGaugeAndStatus(){
   compositeScore=computeComposite();
   const scoreEl=document.getElementById('composite-score');
@@ -1845,7 +2007,7 @@ function renderGaugeAndStatus(){
     document.getElementById('labor-risk-display').textContent='--';
 
     let msg='No composite yet. Check FRED cache and manual LEI / valuation inputs.';
-    if(cacheAgeDays!=null && cacheAgeDays>7){
+    if(cacheAgeDays!=null && cacheAgeDays>10){
       msg='Data warning: FRED cache is '+cacheAgeDays.toFixed(1)+' days old. Update fred_cache.json. '+msg;
     }
     alert.textContent=msg;
@@ -1870,7 +2032,7 @@ function renderGaugeAndStatus(){
   document.getElementById('labor-risk-display').textContent=derivedLaborStress();
 
   let prefix='';
-  if(cacheAgeDays!=null && cacheAgeDays>7){
+  if(cacheAgeDays!=null && cacheAgeDays>10){
     prefix+='Data warning: FRED cache is '+cacheAgeDays.toFixed(1)+' days old. Update fred_cache.json. ';
   }
   if(coverage<0.8){
@@ -1886,88 +2048,10 @@ function renderGaugeAndStatus(){
   }
 }
 
-function renderMarketTrendChart(){
-  const ctx=document.getElementById('market-trend').getContext('2d');
-  if(charts.trend) charts.trend.destroy();
-
-  const base=compositeScore!=null ? compositeScore : 40;
-  const labels=['T-10','T-8','T-6','T-4','T-2','Now'];
-  const compData=[0.7,0.8,0.9,0.95,0.98,1].map(f=>{
-    let x=base*f;
-    if(x<0) x=0;
-    if(x>100) x=100;
-    return Math.round(x);
-  });
-
-  let vSum=0,vW=0;
-  Object.entries(VALUATIONS).forEach(([k,v])=>{
-    const s=valuationStress(k,v.current);
-    if(s!=null && v.weight){
-      vSum+=s*v.weight;
-      vW+=v.weight;
-    }
-  });
-  const valBase = vW ? (vSum/vW) : 30;
-  const valData=[0.75,0.85,0.92,0.96,0.99,1].map(f=>{
-    let x=valBase*f;
-    if(x<0) x=0;
-    if(x>100) x=100;
-    return Math.round(x);
-  });
-
-  charts.trend=new Chart(ctx,{
-    type:'line',
-    data:{
-      labels,
-      datasets:[
-        {
-          label:'Composite Stress',
-          data:compData,
-          borderColor:'#6b9eff',
-          backgroundColor:'rgba(107,158,255,0.14)',
-          tension:0.32,
-          fill:true,
-          pointRadius:2
-        },
-        {
-          label:'Valuation Stress',
-          data:valData,
-          borderColor:'#ff6070',
-          backgroundColor:'rgba(255,96,112,0.12)',
-          tension:0.32,
-          fill:true,
-          pointRadius:2
-        }
-      ]
-    },
-    options:{
-      responsive:true,
-      plugins:{
-        legend:{labels:{color:'#e8eeff',font:{size:9}}},
-        title:{
-          display:true,
-          text:'Stress & Valuation Trajectory (illustrative)',
-          color:'#e8eeff',
-          font:{size:11}
-        }
-      },
-      scales:{
-        y:{
-          min:0,max:100,
-          ticks:{color:'#8b96b0',font:{size:8}},
-          grid:{color:'rgba(255,255,255,0.08)'}
-        },
-        x:{
-          ticks:{color:'#8b96b0',font:{size:8}},
-          grid:{color:'rgba(255,255,255,0.06)'}
-        }
-      }
-    }
-  });
-}
-
 function renderRiskRadarChart(){
-  const ctx=document.getElementById('risk-radar').getContext('2d');
+  const canvas=document.getElementById('risk-radar');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
   if(charts.radar) charts.radar.destroy();
 
   const labels=[];
@@ -2143,7 +2227,7 @@ function resetInputs(){
 
 function showHelp(){
   const helpContent = `
-Economic Crash Radar Pro v7
+Economic Crash Radar Pro
 
 Macro indicators (10):
 - Tier 1 (Leading): LEI, Yield Curve, Credit Spread, Financial Stress, Consumer Sentiment, M2 Growth
@@ -2191,7 +2275,8 @@ function loadFromURL(){
 /* ---------- Orchestration ---------- */
 function updateDynamic(){
   renderGaugeAndStatus();
-  renderMarketTrendChart();
+  recordCompositeHistory();
+  renderCompositeHistoryChart();
   renderRiskRadarChart();
   syncValuationCurrentBox();
   updateInsight();
@@ -2228,6 +2313,7 @@ document.addEventListener('click',e=>{
 
 /* ---------- DOMContentLoaded ---------- */
 document.addEventListener('DOMContentLoaded',()=>{
+  compositeHistory = loadCompositeHistory();
   loadManualInputs();   // local storage first
   loadFromURL();        // URL overrides
 
@@ -2239,6 +2325,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     });
 
   document.getElementById('refresh-data').addEventListener('click',()=>{
+    fredCache = null;   // force refetch
     loadFromFredCache()
       .then(updateAll)
       .catch(err=>{
