@@ -1,9 +1,9 @@
 {
-  "generated_at": "2025-11-20T06:00:58.070Z",
+  "generated_at": "2025-11-21T06:01:00.035Z",
   "series": {
     "T10Y3M": {
       "id": "T10Y3M",
-      "last_updated": "2025-11-20T06:00:58.549Z",
+      "last_updated": "2025-11-21T06:01:00.394Z",
       "observations": [
         {
           "date": "1982-01-04",
@@ -45796,13 +45796,17 @@
         {
           "date": "2025-11-19",
           "value": 0.18
+        },
+        {
+          "date": "2025-11-20",
+          "value": 0.16
         }
       ],
-      "value": 0.18
+      "value": 0.16
     },
     "BAMLH0A0HYM2": {
       "id": "BAMLH0A0HYM2",
-      "last_updated": "2025-11-20T06:00:58.744Z",
+      "last_updated": "2025-11-21T06:01:00.647Z",
       "observations": [
         {
           "date": "1996-12-31",
@@ -76335,13 +76339,17 @@
         {
           "date": "2025-11-18",
           "value": 3.2
+        },
+        {
+          "date": "2025-11-19",
+          "value": 3.17
         }
       ],
-      "value": 3.2
+      "value": 3.17
     },
     "UMCSENT": {
       "id": "UMCSENT",
-      "last_updated": "2025-11-20T06:00:58.864Z",
+      "last_updated": "2025-11-21T06:01:00.757Z",
       "observations": [
         {
           "date": "1952-11-01",
@@ -79848,7 +79856,7 @@
     },
     "M2SL": {
       "id": "M2SL",
-      "last_updated": "2025-11-20T06:00:59.066Z",
+      "last_updated": "2025-11-21T06:01:00.837Z",
       "observations": [
         {
           "date": "1959-01-01",
@@ -83059,7 +83067,7 @@
     },
     "NFCI": {
       "id": "NFCI",
-      "last_updated": "2025-11-20T06:00:59.209Z",
+      "last_updated": "2025-11-21T06:01:00.991Z",
       "observations": [
         {
           "date": "1971-01-08",
@@ -94518,7 +94526,7 @@
     },
     "ICSA": {
       "id": "ICSA",
-      "last_updated": "2025-11-20T06:00:59.423Z",
+      "last_updated": "2025-11-21T06:01:01.170Z",
       "observations": [
         {
           "date": "1967-01-07",
@@ -106774,14 +106782,46 @@
         },
         {
           "date": "2025-09-20",
-          "value": 218000
+          "value": 219000
+        },
+        {
+          "date": "2025-09-27",
+          "value": 224000
+        },
+        {
+          "date": "2025-10-04",
+          "value": 235000
+        },
+        {
+          "date": "2025-10-11",
+          "value": 220000
+        },
+        {
+          "date": "2025-10-18",
+          "value": 232000
+        },
+        {
+          "date": "2025-10-25",
+          "value": 220000
+        },
+        {
+          "date": "2025-11-01",
+          "value": 229000
+        },
+        {
+          "date": "2025-11-08",
+          "value": 228000
+        },
+        {
+          "date": "2025-11-15",
+          "value": 220000
         }
       ],
-      "value": 218000
+      "value": 220000
     },
     "SAHMREALTIME": {
       "id": "SAHMREALTIME",
-      "last_updated": "2025-11-20T06:00:59.533Z",
+      "last_updated": "2025-11-21T06:01:01.332Z",
       "observations": [
         {
           "date": "1959-12-01",
@@ -109938,13 +109978,17 @@
         {
           "date": "2025-08-01",
           "value": 0.13
+        },
+        {
+          "date": "2025-09-01",
+          "value": 0.23
         }
       ],
-      "value": 0.13
+      "value": 0.23
     },
     "INDPRO": {
       "id": "INDPRO",
-      "last_updated": "2025-11-20T06:00:59.677Z",
+      "last_updated": "2025-11-21T06:01:01.417Z",
       "observations": [
         {
           "date": "1950-01-01",
@@ -113583,7 +113627,7 @@
     },
     "PERMIT": {
       "id": "PERMIT",
-      "last_updated": "2025-11-20T06:00:59.814Z",
+      "last_updated": "2025-11-21T06:01:01.646Z",
       "observations": [
         {
           "date": "1960-01-01",
