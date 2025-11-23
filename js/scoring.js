@@ -1,6 +1,8 @@
-/* ------------------------------------------------------------
-   scoring.js — COMPLETE + WORKING
------------------------------------------------------------- */
+///////////////////////////////////////////////////////////////
+// scoring.js — V22
+// Pure scoring logic for Economic Crash Radar Pro.
+// Fully consistent with config.js — exports guaranteed.
+///////////////////////////////////////////////////////////////
 
 import {
   MACRO_BLOCK_WEIGHT,
@@ -10,23 +12,17 @@ import {
   VALUATION_CONFIG,
 } from './config.js';
 
-/* ------------------------------------------------------------
-   SCALE INDICATOR (CRITICAL)
------------------------------------------------------------- */
+///////////////////////////////////////////////////////////////
+// 1. SCALE INDICATOR (0–100)
+///////////////////////////////////////////////////////////////
 
 export function scaleIndicator(key, value, cfg = INDICATOR_CONFIG[key]) {
   if (!cfg || !Number.isFinite(value)) return null;
 
   const t = cfg.threshold;
   const dir = cfg.direction;
-
-  const span = (cfg.span && cfg.span > 0)
-    ? cfg.span
-    : Math.max(1, Math.abs(t) * 0.5);
-
-  const buffer = (cfg.buffer && cfg.buffer > 0)
-    ? cfg.buffer
-    : span * 0.5;
+  const span = cfg.span || Math.max(1, Math.abs(t) * 0.5);
+  const buffer = cfg.buffer || span * 0.5;
 
   let stress = 0;
 
@@ -35,10 +31,9 @@ export function scaleIndicator(key, value, cfg = INDICATOR_CONFIG[key]) {
     if (value >= safeCut) {
       stress = 0;
     } else if (value >= t) {
-      const frac = (safeCut - value) / buffer;
-      stress = frac * WARN_MAX;
+      stress = ((safeCut - value) / buffer) * WARN_MAX;
     } else {
-      const frac = Math.max(0, Math.min(1, (t - value) / span));
+      const frac = Math.min(1, Math.max(0, (t - value) / span));
       stress = WARN_MAX + frac * (100 - WARN_MAX);
     }
   }
@@ -48,17 +43,14 @@ export function scaleIndicator(key, value, cfg = INDICATOR_CONFIG[key]) {
     if (value <= safeCut) {
       stress = 0;
     } else if (value <= t) {
-      const frac = (value - safeCut) / buffer;
-      stress = frac * WARN_MAX;
+      stress = ((value - safeCut) / buffer) * WARN_MAX;
     } else {
-      const frac = Math.max(0, Math.min(1, (value - t) / span));
+      const frac = Math.min(1, Math.max(0, (value - t) / span));
       stress = WARN_MAX + frac * (100 - WARN_MAX);
     }
   }
 
-  else return null;
-
-  // amplifiers
+  // Amplifiers
   if (key === 'YIELD_CURVE' && value <= 0) {
     stress = Math.min(100, stress * 1.2);
   }
@@ -66,12 +58,12 @@ export function scaleIndicator(key, value, cfg = INDICATOR_CONFIG[key]) {
     stress = Math.min(100, stress * 1.3);
   }
 
-  return Math.max(0, Math.min(100, stress));
+  return Math.min(100, Math.max(0, stress));
 }
 
-/* ------------------------------------------------------------
-   VALUATIONS
------------------------------------------------------------- */
+///////////////////////////////////////////////////////////////
+// 2. VALUATION STRESS
+///////////////////////////////////////////////////////////////
 
 export function valuationStress(key, val) {
   if (!Number.isFinite(val)) return null;
@@ -85,103 +77,27 @@ export function valuationStress(key, val) {
     else s = 100;
   }
 
-  else if (key === 'SHILLER_PE') {
+  if (key === 'SHILLER_PE') {
     if (val <= 22) s = 0;
     else if (val <= 30) s = ((val - 22) / 8) * 40;
     else if (val <= 40) s = 40 + ((val - 30) / 10) * 60;
     else s = 100;
   }
 
-  return Math.max(0, Math.min(100, s));
+  return Math.min(100, Math.max(0, s));
 }
 
-/* ------------------------------------------------------------
-   LABOUR STRESS (CRITICAL MISSING FUNCTION)
------------------------------------------------------------- */
+///////////////////////////////////////////////////////////////
+// 3. DERIVED LABELS
+///////////////////////////////////////////////////////////////
 
-export function derivedLaborStress(indicatorValuesByKey) {
-  const claims = indicatorValuesByKey.INITIAL_CLAIMS;
-  const sahm = indicatorValuesByKey.SAHM_RULE;
-
-  if (!Number.isFinite(claims) || !Number.isFinite(sahm)) return '--';
-
-  const cs = Math.max(0, Math.min(100, (claims - 250) * 0.5));
-  const ss = Math.max(0, Math.min(100, sahm * 200));
-
-  const avg = (cs + ss) / 2;
-
-  if (avg < 30) return 'Low';
-  if (avg < 60) return 'Moderate';
-  return 'High';
+export function stressVerdictLabel(s) {
+  if (!Number.isFinite(s)) return '--';
+  if (s < 20) return 'Calm';
+  if (s < 40) return 'Watch';
+  if (s < 70) return 'Stressed';
+  return 'Critical';
 }
-
-/* ------------------------------------------------------------
-   COMPOSITE CALCULATION
------------------------------------------------------------- */
-
-function computeCompositeParts(indicatorValuesByKey, valuationValuesByKey) {
-  let macroStress = 0;
-  let macroTotalWeight = 0;
-  const macroDetails = [];
-
-  for (const [key, cfg] of Object.entries(INDICATOR_CONFIG)) {
-    const val = indicatorValuesByKey[key];
-    const s = scaleIndicator(key, val, cfg);
-    if (s !== null && Number.isFinite(s) && cfg.weight) {
-      macroStress += s * cfg.weight;
-      macroTotalWeight += cfg.weight;
-      macroDetails.push({ key, label: cfg.label, stress: s, weight: cfg.weight });
-    }
-  }
-
-  let valStress = 0;
-  let valTotalWeight = 0;
-  const valDetails = [];
-
-  for (const [key, cfg] of Object.entries(VALUATION_CONFIG)) {
-    const val = valuationValuesByKey[key];
-    const s = valuationStress(key, val);
-    if (s !== null && Number.isFinite(s) && cfg.weight) {
-      valStress += s * cfg.weight;
-      valTotalWeight += cfg.weight;
-      valDetails.push({ key, label: cfg.label, stress: s, weight: cfg.weight });
-    }
-  }
-
-  return {
-    macroStress, macroTotalWeight, macroDetails,
-    valStress, valTotalWeight, valDetails
-  };
-}
-
-export function computeComposite(indicatorValuesByKey, valuationValuesByKey) {
-  const parts = computeCompositeParts(indicatorValuesByKey, valuationValuesByKey);
-
-  const macroComponent = parts.macroTotalWeight
-    ? parts.macroStress / parts.macroTotalWeight
-    : null;
-
-  const valComponent = parts.valTotalWeight
-    ? parts.valStress / parts.valTotalWeight
-    : null;
-
-  let composite = null;
-
-  if (macroComponent !== null && valComponent !== null) {
-    composite = macroComponent * MACRO_BLOCK_WEIGHT +
-                valComponent * VALUATION_BLOCK_WEIGHT;
-  } else {
-    composite = macroComponent ?? valComponent;
-  }
-
-  return Number.isFinite(composite)
-    ? Math.max(0, Math.min(100, composite))
-    : null;
-}
-
-/* ------------------------------------------------------------
-   RECESSION RISK LABEL
------------------------------------------------------------- */
 
 export function derivedRecessionRisk(c) {
   if (c == null) return '--';
@@ -191,4 +107,139 @@ export function derivedRecessionRisk(c) {
   if (c < 65) return '40–60%';
   if (c < 80) return '60–75%';
   return '75–90%';
+}
+
+export function derivedValuationRisk(valuationValuesByKey) {
+  let sum = 0, w = 0;
+  for (const [key, cfg] of Object.entries(VALUATION_CONFIG)) {
+    const v = valuationValuesByKey[key];
+    const s = valuationStress(key, v);
+    if (Number.isFinite(s) && cfg.weight) {
+      sum += s * cfg.weight;
+      w += cfg.weight;
+    }
+  }
+  if (!w) return '--';
+  const v = Math.round(sum / w);
+  if (v < 33) return 'Low';
+  if (v < 66) return 'Moderate';
+  return 'High';
+}
+
+export function derivedLaborStress(indicatorValuesByKey) {
+  const claims = indicatorValuesByKey.INITIAL_CLAIMS;
+  const sahm = indicatorValuesByKey.SAHM_RULE;
+
+  if (!Number.isFinite(claims) || !Number.isFinite(sahm)) return '--';
+
+  const cs = Math.min(100, Math.max(0, (claims - 250) * 0.5));
+  const ss = Math.min(100, Math.max(0, sahm * 200));
+  const avg = (cs + ss) / 2;
+
+  if (avg < 30) return 'Low';
+  if (avg < 60) return 'Moderate';
+  return 'High';
+}
+
+///////////////////////////////////////////////////////////////
+// 4. COMPOSITE SCORE
+///////////////////////////////////////////////////////////////
+
+export function computeCompositeParts(indicatorValuesByKey, valuationValuesByKey) {
+  let macroStress = 0, macroW = 0;
+  let valStress = 0, valW = 0;
+
+  const macroDetails = [];
+  const valDetails = [];
+
+  for (const [key, cfg] of Object.entries(INDICATOR_CONFIG)) {
+    const v = indicatorValuesByKey[key];
+    const s = scaleIndicator(key, v, cfg);
+    if (Number.isFinite(s) && cfg.weight) {
+      macroStress += s * cfg.weight;
+      macroW += cfg.weight;
+      macroDetails.push({ key, label: cfg.label, stress: s, weight: cfg.weight, tier: cfg.tier });
+    }
+  }
+
+  for (const [key, cfg] of Object.entries(VALUATION_CONFIG)) {
+    const v = valuationValuesByKey[key];
+    const s = valuationStress(key, v);
+    if (Number.isFinite(s) && cfg.weight) {
+      valStress += s * cfg.weight;
+      valW += cfg.weight;
+      valDetails.push({ key, label: cfg.label, stress: s, weight: cfg.weight });
+    }
+  }
+
+  return { macroStress, macroW, macroDetails, valStress, valW, valDetails };
+}
+
+export function computeComposite(indicatorValuesByKey, valuationValuesByKey) {
+  const { macroStress, macroW, valStress, valW } =
+    computeCompositeParts(indicatorValuesByKey, valuationValuesByKey);
+
+  if (!macroW && !valW) return null;
+
+  const macroComponent = macroW ? (macroStress / macroW) : null;
+  const valComponent = valW ? (valStress / valW) : null;
+
+  let composite;
+  if (macroComponent !== null && valComponent !== null) {
+    composite = macroComponent * MACRO_BLOCK_WEIGHT +
+                valComponent * VALUATION_BLOCK_WEIGHT;
+  } else if (macroComponent !== null) {
+    composite = macroComponent;
+  } else {
+    composite = valComponent;
+  }
+
+  return Math.min(100, Math.max(0, composite));
+}
+
+///////////////////////////////////////////////////////////////
+// 5. CONTRIBUTIONS LIST
+///////////////////////////////////////////////////////////////
+
+export function computeContributions(indicatorValuesByKey, valuationValuesByKey, compositeScore) {
+  if (!Number.isFinite(compositeScore) || compositeScore <= 0) return [];
+
+  const { macroW, macroDetails, valW, valDetails } =
+    computeCompositeParts(indicatorValuesByKey, valuationValuesByKey);
+
+  const items = [];
+
+  if (macroW) {
+    for (const d of macroDetails) {
+      const contrib = (d.stress * d.weight / macroW) * MACRO_BLOCK_WEIGHT;
+      if (contrib > 0) {
+        items.push({
+          label: d.label,
+          contrib,
+          block: 'Macro',
+          tier: d.tier === 1 ? 'Tier 1' : 'Tier 2',
+          stress: d.stress,
+          pctOfComposite: (contrib / compositeScore) * 100,
+        });
+      }
+    }
+  }
+
+  if (valW) {
+    for (const d of valDetails) {
+      const contrib = (d.stress * d.weight / valW) * VALUATION_BLOCK_WEIGHT;
+      if (contrib > 0) {
+        items.push({
+          label: d.label,
+          contrib,
+          block: 'Valuation',
+          tier: '',
+          stress: d.stress,
+          pctOfComposite: (contrib / compositeScore) * 100,
+        });
+      }
+    }
+  }
+
+  return items.sort((a, b) => b.contrib - a.contrib);
 }
