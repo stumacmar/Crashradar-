@@ -1,5 +1,11 @@
 // js/dataService.js
 // FRED cache loader + current value computation for indicators.
+//
+// This is the ONLY place that touches data/fred_cache.json.
+// Other modules call into this via:
+//   - loadFredCache()
+//   - getSeries()
+//   - loadCurrentIndicatorValues()
 
 import { INDICATOR_CONFIG } from './config.js';
 
@@ -36,7 +42,9 @@ function lastVal(seriesObj) {
  * Mirrors original obsMonthsBack behaviour.
  */
 function obsMonthsBack(seriesObj, months) {
-  if (!seriesObj || !Array.isArray(seriesObj.observations) || !seriesObj.observations.length) return null;
+  if (!seriesObj || !Array.isArray(seriesObj.observations) || !seriesObj.observations.length) {
+    return null;
+  }
 
   const obs = seriesObj.observations;
   const last = obs[obs.length - 1];
@@ -61,7 +69,9 @@ function obsMonthsBack(seriesObj, months) {
  * Internal: rolling average of last N observations.
  */
 function rollingAvgLastN(seriesObj, n) {
-  if (!seriesObj || !Array.isArray(seriesObj.observations) || seriesObj.observations.length < n) return null;
+  if (!seriesObj || !Array.isArray(seriesObj.observations) || seriesObj.observations.length < n) {
+    return null;
+  }
   const obs = seriesObj.observations.slice(-n);
   const vals = obs.map(o => Number(o.value)).filter(v => Number.isFinite(v));
   if (vals.length < n) return null;
@@ -81,7 +91,7 @@ function pctChange(nv, ov) {
 
 /**
  * Load fred_cache.json once and cache it.
- * Computes cacheAgeDays as in the original implementation.
+ * Computes cacheAgeDays exactly as in the original implementation.
  */
 export async function loadFredCache() {
   if (fredCache) return fredCache;
@@ -109,6 +119,12 @@ export async function loadFredCache() {
   } else {
     cacheAgeDays = null;
   }
+
+  // Debug: log how many series were loaded.
+  const count = fredCache && fredCache.series
+    ? Object.keys(fredCache.series).length
+    : 0;
+  console.log('[dataService] FRED cache loaded. series count =', count, 'generated_at =', cacheGeneratedAtText);
 
   return fredCache;
 }
@@ -152,11 +168,11 @@ export function getLatestNumeric(fredId) {
  * Compute the "current" value for a configured indicator, using the same
  * transformation rules as the monolithic version.
  *
- * - transform === 'raw'          → last raw value
- * - transform === 'yoy_percent'  → YoY % using 12-month look-back
- * - transform === 'pct_change_6m'→ 6-month % change
- * - transform === 'ma4_thousands'→ 4-week MA, scaled to thousands
- * - transform === 'manual'       → never computed from FRED (null here)
+ * - transform === 'raw'           → last raw value
+ * - transform === 'yoy_percent'   → YoY % using 12-month look-back
+ * - transform === 'pct_change_6m' → 6-month % change
+ * - transform === 'ma4_thousands' → 4-week MA, scaled to thousands
+ * - transform === 'manual'        → never computed from FRED (null here)
  */
 export function computeCurrentForIndicator(indCfg) {
   if (!indCfg || !indCfg.fromFred || !indCfg.fredId) return null;
@@ -222,6 +238,10 @@ export async function loadCurrentIndicatorValues() {
     const val = computeCurrentForIndicator(cfg);
     valuesByKey[key] = Number.isFinite(val) ? val : null;
   });
+
+  console.log('[dataService] loadCurrentIndicatorValues -> non-null count =',
+    Object.values(valuesByKey).filter(v => Number.isFinite(v)).length
+  );
 
   return {
     valuesByKey,
