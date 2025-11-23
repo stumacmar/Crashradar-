@@ -7,9 +7,6 @@
 // -----------------------------
 // Global scoring weights
 // -----------------------------
-// NOTE: These values are reasonable defaults. I cannot confirm they
-// match your original monolithic version, but they will make the
-// composite work correctly. You can tweak them if needed.
 export const MACRO_BLOCK_WEIGHT = 0.7;
 export const VALUATION_BLOCK_WEIGHT = 0.3;
 export const WARN_MAX = 60;
@@ -26,16 +23,16 @@ export const INDICATOR_CONFIG = {
     tier: 1,
     label: 'Leading Economic Index (6m %Δ)',
     description: 'Six-month percentage change in the Conference Board LEI.',
-    fromFred: false,         // you type this manually
+    fromFred: false,         // manual
     fredId: null,
     transform: 'manual',
-    direction: 'below',      // more negative = worse
-    threshold: -4.1,         // classic US recession trigger level
-    span: 3,                 // ±3pp around the threshold
+    direction: 'below',
+    threshold: -4.1,
+    span: 3,
     weight: 1.4,
     format: 'pct1',
     tooltip:
-      'LEI six-month change. Sustained readings below about –4% have preceded every post-war US recession.'
+      'LEI six-month change. Sustained readings below about –4% have preceded every post-war US recession.',
   },
 
   YIELD_CURVE: {
@@ -46,13 +43,13 @@ export const INDICATOR_CONFIG = {
     fromFred: true,
     fredId: 'T10Y3M',
     transform: 'raw',
-    direction: 'below',      // more negative spread = worse
-    threshold: 0.0,          // inversion line
-    span: 1.0,               // around 1pp either side
+    direction: 'below',
+    threshold: 0.0,
+    span: 1.0,
     weight: 1.3,
     format: 'pct1',
     tooltip:
-      '10-year minus 3-month Treasury spread. Deep, persistent inversion has preceded every modern US recession.'
+      '10-year minus 3-month Treasury spread. Deep, persistent inversion has preceded every modern US recession.',
   },
 
   CREDIT_SPREAD: {
@@ -63,13 +60,13 @@ export const INDICATOR_CONFIG = {
     fromFred: true,
     fredId: 'BAMLH0A0HYM2',
     transform: 'raw',
-    direction: 'above',      // wider spread = worse
-    threshold: 5.0,          // ~5% is typical danger line
+    direction: 'above',
+    threshold: 5.0,
     span: 3.0,
     weight: 1.2,
     format: 'pct1',
     tooltip:
-      'Option-adjusted spread between high-yield corporates and Treasuries. Spikes above ~5–6% have coincided with stress episodes.'
+      'Option-adjusted spread between high-yield corporates and Treasuries. Spikes above ~5–6% have coincided with stress episodes.',
   },
 
   FIN_STRESS: {
@@ -80,13 +77,13 @@ export const INDICATOR_CONFIG = {
     fromFred: true,
     fredId: 'NFCI',
     transform: 'raw',
-    direction: 'above',      // more positive = tighter / worse
-    threshold: 0.0,          // 0 ≈ historical average
+    direction: 'above',
+    threshold: 0.0,
     span: 0.5,
     weight: 1.0,
     format: 'plain2',
     tooltip:
-      'Chicago Fed NFCI. Positive values indicate tighter-than-average financial conditions; negatives are easier-than-average.'
+      'Chicago Fed NFCI. Positive values indicate tighter-than-average financial conditions; negatives are easier-than-average.',
   },
 
   SENTIMENT: {
@@ -97,13 +94,13 @@ export const INDICATOR_CONFIG = {
     fromFred: true,
     fredId: 'UMCSENT',
     transform: 'raw',
-    direction: 'below',      // lower sentiment = worse
-    threshold: 80,           // long-run “ok” zone
-    span: 20,                // 20-point band
+    direction: 'below',
+    threshold: 80,
+    span: 20,
     weight: 0.9,
     format: 'plain0',
     tooltip:
-      'UMichigan consumer sentiment. Deep, persistent lows have aligned with recessions and severe slowdowns.'
+      'UMichigan consumer sentiment. Deep, persistent lows have aligned with recessions and severe slowdowns.',
   },
 
   M2_GROWTH: {
@@ -114,13 +111,13 @@ export const INDICATOR_CONFIG = {
     fromFred: true,
     fredId: 'M2SL',
     transform: 'yoy_percent',
-    direction: 'below',      // sharp slowdowns / contraction = worse
+    direction: 'below',
     threshold: 0.0,
     span: 5.0,
     weight: 1.0,
     format: 'pct1',
     tooltip:
-      'Approximate broad money growth. Very weak or negative real money growth often coincides with tight liquidity and rising crash risk.'
+      'Approximate broad money growth. Very weak or negative real money growth often coincides with tight liquidity and rising crash risk.',
   },
 
   // -----------------------------
@@ -140,7 +137,7 @@ export const INDICATOR_CONFIG = {
     weight: 0.9,
     format: 'pct1',
     tooltip:
-      'Industrial production growth. Sustained contractions have historically coincided with recession phases.'
+      'Industrial production growth. Sustained contractions have historically coincided with recession phases.',
   },
 
   BUILDING_PERMITS: {
@@ -157,7 +154,7 @@ export const INDICATOR_CONFIG = {
     weight: 0.8,
     format: 'pct1',
     tooltip:
-      'Residential building permits. Housing turns are classic early-cycle indicators; sustained declines often precede downturns.'
+      'Residential building permits. Housing turns are classic early-cycle indicators; sustained declines often precede downturns.',
   },
 
   INITIAL_CLAIMS: {
@@ -169,12 +166,12 @@ export const INDICATOR_CONFIG = {
     fredId: 'ICSA',
     transform: 'ma4_thousands',
     direction: 'above',
-    threshold: 300,          // thousands
+    threshold: 300,
     span: 80,
     weight: 0.8,
     format: 'plain0',
     tooltip:
-      'Weekly initial unemployment claims smoothed over four weeks. Sustained climbs from cycle lows are a classic labour stress signal.'
+      'Weekly initial unemployment claims smoothed over four weeks. Sustained climbs from cycle lows are a classic labour stress signal.',
   },
 
   SAHM_RULE: {
@@ -186,12 +183,12 @@ export const INDICATOR_CONFIG = {
     fredId: 'SAHMREALTIME',
     transform: 'raw',
     direction: 'above',
-    threshold: 0.5,          // 0.5–0.7% is early warning; 0.5+ is meaningful
+    threshold: 0.5,
     span: 0.7,
     weight: 1.0,
     format: 'pct1',
     tooltip:
-      'Sahm Rule recession indicator. Increases of ~0.5–0.8pp above the recent low have historically coincided with recession onset.'
+      'Sahm Rule recession indicator. Increases of ~0.5–0.8pp above the recent low have historically coincided with recession onset.',
   },
 };
 
@@ -208,10 +205,10 @@ export const VALUATION_CONFIG = {
     format: 'pct0',
     transform: 'manual',
     direction: 'above',
-    threshold: 180,       // 180%+ historically very rich
+    threshold: 180,
     span: 40,
     tooltip:
-      'Market cap-to-GDP ratio. Levels above ~180–200% have corresponded to some of the most expensive markets in history.'
+      'Market cap-to-GDP ratio. Levels above ~180–200% have corresponded to some of the most expensive markets in history.',
   },
 
   SHILLER_PE: {
@@ -223,9 +220,9 @@ export const VALUATION_CONFIG = {
     format: 'plain1',
     transform: 'manual',
     direction: 'above',
-    threshold: 30,        // 30+ is rich vs. history
+    threshold: 30,
     span: 8,
     tooltip:
-      'Shiller CAPE. Elevated CAPE doesn’t time crashes by itself, but it raises downside severity when macro stress appears.'
+      'Shiller CAPE. Elevated CAPE doesn’t time crashes by itself, but it raises downside severity when macro stress appears.',
   },
 };
