@@ -1,216 +1,169 @@
 // js/historyService.js
-// ------------------------------------------------------------
-// Historical data processor for indicators + valuations.
-// Converts raw FRED observations → transformed series
-// according to config.transform / historyTransform.
-// Supports:
-//   - raw
-//   - yoy_percent
-//   - pct_change_6m
-//   - ma4_thousands
-//
-// Provides:
-//   getHistoryForIndicator(key, lookback)
-//   getHistoryForSeries(fredId, transform, lookback)
-//
-// Output format:
-//   [
-//     { date: 'YYYY-MM-DD', value: Number|null },
-//     ...
-//   ]
-// ------------------------------------------------------------
+// Loads historical series from fred_cache.json and produces:
+// - Normalised indicator histories
+// - Period subsets (3M, 6M, 12M, Max)
+// - Summary statistics (current, 3M/6M/12M % change)
 
 import { INDICATOR_CONFIG } from './config.js';
-import { getSeries, loadFredCache } from './dataService.js';
 
-/* ------------------------------------------------------------
-   Helpers
------------------------------------------------------------- */
+// Path to cache
+const CACHE_PATH = './data/fred_cache.json';
 
-function parseDateSafe(d) {
-  const dt = new Date(d);
-  return isNaN(dt) ? null : dt;
+// ------------------------------------------------------------
+// Internal utility: load the entire cache.JSON as an object
+// ------------------------------------------------------------
+async function loadCache() {
+  const res = await fetch(CACHE_PATH);
+  if (!res.ok) throw new Error(`Failed to load ${CACHE_PATH}`);
+  return res.json();
 }
 
-function pctChange(nv, ov) {
-  const n = Number(nv);
-  const o = Number(ov);
-  if (!Number.isFinite(n) || !Number.isFinite(o) || o === 0) return null;
-  return ((n - o) / o) * 100;
+// ------------------------------------------------------------
+// Find the key inside fred_cache.json that matches a FRED ID
+// ------------------------------------------------------------
+function findSeries(cache, fredId) {
+  if (!cache) return null;
+
+  // Exact match first
+  if (cache[fredId]) return cache[fredId];
+
+  // Some IDs inside your cache are stored under slightly different names
+  // → try case-insensitive / loose match
+  const lower = fredId.toLowerCase();
+  for (const key of Object.keys(cache)) {
+    if (key.toLowerCase() === lower) return cache[key];
+  }
+  return null;
 }
 
-function rollingMA(arr, n) {
-  if (!Array.isArray(arr) || arr.length < n) return null;
-  const slice = arr.slice(-n);
-  const nums = slice.map(o => Number(o.value)).filter(v => Number.isFinite(v));
-  if (nums.length < n) return null;
-  const sum = nums.reduce((a, b) => a + b, 0);
-  return sum / n;
-}
+// ------------------------------------------------------------
+// Transform raw series into the correct format
+// Supported transforms:
+//   raw
+//   yoy_percent
+//   ma4_thousands
+// ------------------------------------------------------------
+function applyTransform(series, cfg) {
+  const transform = cfg.transform || 'raw';
 
-/* ------------------------------------------------------------
-   Transform functions
------------------------------------------------------------- */
+  // Convert to [{date, value}]
+  const base = series.map(d => ({
+    date: d.date,
+    value: Number(d.value)
+  })).filter(d => Number.isFinite(d.value));
 
-function transformRaw(obs) {
-  const v = Number(obs.value);
-  return Number.isFinite(v) ? v : null;
-}
+  if (transform === 'raw') {
+    return base;
+  }
 
-function transformYoY(allObs, idx) {
-  const now = allObs[idx];
-  if (!now) return null;
-
-  const nowDate = parseDateSafe(now.date);
-  if (!nowDate) return null;
-
-  const target = new Date(nowDate);
-  target.setMonth(target.getMonth() - 12);
-
-  let back = null;
-  for (let i = idx - 1; i >= 0; i--) {
-    const d = parseDateSafe(allObs[i].date);
-    if (!d) continue;
-    if (d <= target) {
-      back = allObs[i];
-      break;
+  if (transform === 'yoy_percent') {
+    const map = [];
+    for (let i = 12; i < base.length; i++) {
+      const prev = base[i - 12].value;
+      const cur = base[i].value;
+      if (prev > 0 && isFinite(cur)) {
+        map.push({
+          date: base[i].date,
+          value: ((cur - prev) / prev) * 100
+        });
+      }
     }
+    return map;
   }
 
-  if (!back) return null;
-  return pctChange(now.value, back.value);
-}
-
-function transformPct6m(allObs, idx) {
-  const now = allObs[idx];
-  if (!now) return null;
-
-  const nowDate = parseDateSafe(now.date);
-  if (!nowDate) return null;
-
-  const target = new Date(nowDate);
-  target.setMonth(target.getMonth() - 6);
-
-  let back = null;
-  for (let i = idx - 1; i >= 0; i--) {
-    const d = parseDateSafe(allObs[i].date);
-    if (!d) continue;
-    if (d <= target) {
-      back = allObs[i];
-      break;
+  if (transform === 'ma4_thousands') {
+    const out = [];
+    for (let i = 3; i < base.length; i++) {
+      const avg = (
+        base[i].value +
+        base[i - 1].value +
+        base[i - 2].value +
+        base[i - 3].value
+      ) / 4;
+      out.push({
+        date: base[i].date,
+        value: avg / 1000
+      });
     }
+    return out;
   }
 
-  if (!back) return null;
-  return pctChange(now.value, back.value);
+  return base;
 }
 
-function transformMA4k(allObs, idx) {
-  if (idx < 3) return null;
-  const slice = allObs.slice(idx - 3, idx + 1);
-  const avg = rollingMA(slice, 4);
-  return avg != null ? avg / 1000 : null;
-}
-
-/* ------------------------------------------------------------
-   Core transformer
------------------------------------------------------------- */
-
-function applyTransform(allObs, transform) {
-  if (!Array.isArray(allObs) || !allObs.length) return [];
-
-  return allObs.map((obs, idx) => {
-    let value = null;
-
-    switch (transform) {
-      case 'raw':
-        value = transformRaw(obs);
-        break;
-
-      case 'yoy_percent':
-        value = transformYoY(allObs, idx);
-        break;
-
-      case 'pct_change_6m':
-        value = transformPct6m(allObs, idx);
-        break;
-
-      case 'ma4_thousands':
-        value = transformMA4k(allObs, idx);
-        break;
-
-      default:
-        value = null;
-    }
-
-    return {
-      date: obs.date,
-      value: Number.isFinite(value) ? value : null,
-    };
-  });
-}
-
-/* ------------------------------------------------------------
-   Lookback slicing
------------------------------------------------------------- */
-
-function sliceLookback(data, months) {
-  if (!months || !Array.isArray(data) || !data.length) return data;
-
-  const last = data[data.length - 1];
-  const lastDate = parseDateSafe(last.date);
-  if (!lastDate) return data;
-
-  const minDate = new Date(lastDate);
-  minDate.setMonth(minDate.getMonth() - months);
-
-  return data.filter(d => {
-    const dt = parseDateSafe(d.date);
-    return dt && dt >= minDate;
-  });
-}
-
-/* ------------------------------------------------------------
-   Public API
------------------------------------------------------------- */
-
-/**
- * getHistoryForSeries
- * Apply transform to a raw series from FRED.
- */
-export async function getHistoryForSeries(fredId, transform, lookbackMonths) {
-  await loadFredCache();
-  const series = getSeries(fredId);
-  if (!series || !Array.isArray(series.observations)) {
-    return [];
-  }
-
-  const obs = series.observations;
-
-  const transformed = applyTransform(obs, transform);
-
-  if (lookbackMonths) {
-    return sliceLookback(transformed, lookbackMonths);
-  }
-
-  return transformed;
-}
-
-/**
- * getHistoryForIndicator(key, lookbackMonths)
- * Uses INDICATOR_CONFIG to pick:
- * - fredId
- * - historyTransform
- */
-export async function getHistoryForIndicator(key, lookbackMonths) {
-  const cfg = INDICATOR_CONFIG[key];
+// ------------------------------------------------------------
+// MAIN: loadProcessedHistory(cfg)
+// Returns [{date,value}...]
+// ------------------------------------------------------------
+export async function loadProcessedHistory(cfg) {
   if (!cfg || !cfg.fromFred || !cfg.fredId) return [];
 
-  const transform = cfg.historyTransform || cfg.transform || 'raw';
+  const cache = await loadCache();
+  const series = findSeries(cache, cfg.fredId);
+  if (!series || !Array.isArray(series)) return [];
 
-  return await getHistoryForSeries(
-    cfg.fredId,
-    transform,
-    lookbackMonths,
-  );
+  return applyTransform(series, cfg);
+}
+
+// ------------------------------------------------------------
+// Filter history by period: "3M", "6M", "12M", "MAX"
+// ------------------------------------------------------------
+export function getPeriodSubset(history, period = '12M') {
+  if (!history || !history.length) return [];
+
+  if (period === 'MAX') return history;
+
+  const months = {
+    '3M': 3,
+    '6M': 6,
+    '12M': 12
+  }[period];
+
+  if (!months) return history;
+
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - months);
+
+  return history.filter(d => {
+    const dt = new Date(d.date);
+    return dt >= cutoff;
+  });
+}
+
+// ------------------------------------------------------------
+// computeHistoryStats(history)
+// Returns:
+//   current
+//   threeChangePct
+//   sixChangePct
+//   twelveChangePct
+// ------------------------------------------------------------
+export function computeHistoryStats(history) {
+  if (!history || history.length < 2) return null;
+
+  const last = history[history.length - 1];
+  const current = last.value;
+
+  function pctChange(months) {
+    const cutoff = new Date(last.date);
+    cutoff.setMonth(cutoff.getMonth() - months);
+
+    let closest = null;
+    for (let i = history.length - 1; i >= 0; i--) {
+      const dt = new Date(history[i].date);
+      if (dt <= cutoff) {
+        closest = history[i].value;
+        break;
+      }
+    }
+    if (closest === null || closest === 0) return null;
+    return ((current - closest) / closest) * 100;
+  }
+
+  return {
+    current,
+    threeChangePct: pctChange(3),
+    sixChangePct: pctChange(6),
+    twelveChangePct: pctChange(12)
+  };
 }
