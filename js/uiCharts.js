@@ -31,19 +31,13 @@ const charts = {
 const indicatorCharts = Object.create(null);
 let expandedIndicator = null;
 
-/* ---------- Value formatting helper ---------- */
-/**
- * Format a numeric value according to a simple format key.
- * Supported:
- *  - 'pct1'   → 1 decimal + '%'
- *  - 'pct0'   → 0 decimals + '%'
- *  - 'plain0' → 0 decimals
- *  - 'plain1' → 1 decimal
- *  - 'plain2' → 2 decimals
- */
-function formatValue(value, formatKey) {
+/* ---------- Formatting helper (same as in uiIndicators) ---------- */
+
+function formatByConfig(value, cfg) {
   if (!Number.isFinite(value)) return '--';
-  switch (formatKey) {
+  const f = cfg && cfg.format;
+
+  switch (f) {
     case 'pct1':
       return value.toFixed(1) + '%';
     case 'pct0':
@@ -451,7 +445,7 @@ function renderIndicatorHistory(key, cfg, historyData, period) {
           callbacks: {
             label(context) {
               const value = context.parsed.y;
-              return formatValue(value, cfg.format);
+              return formatByConfig(value, cfg);
             },
           },
         },
@@ -503,7 +497,7 @@ function updateHistoryStatsUI(key, cfg, historyData) {
   statsContainer.innerHTML = `
     <div class="history-stat">
       <div class="history-stat-label">Current</div>
-      <div class="history-stat-value">${formatValue(current, cfg.format)}</div>
+      <div class="history-stat-value">${formatByConfig(current, cfg)}</div>
     </div>
     <div class="history-stat">
       <div class="history-stat-label">3M Change</div>
@@ -561,17 +555,18 @@ export async function toggleIndicatorExpansion(key) {
   element.classList.add('expanded');
   expandedIndicator = key;
 
-  if (!cfg.fromFred || !cfg.fredId) {
+  const cfg2 = INDICATOR_CONFIG[key];
+  if (!cfg2 || !cfg2.fromFred || !cfg2.fredId) {
     renderNoHistoryMessage(key);
     return;
   }
 
-  showLoading(`Loading historical data for ${cfg.label}...`);
+  showLoading(`Loading historical data for ${cfg2.label}...`);
   try {
-    const history = await loadProcessedHistory(cfg);
+    const history = await loadProcessedHistory(cfg2);
     if (history && history.length > 0) {
-      renderIndicatorHistory(key, cfg, history, '12M');
-      updateHistoryStatsUI(key, cfg, history);
+      renderIndicatorHistory(key, cfg2, history, '12M');
+      updateHistoryStatsUI(key, cfg2, history);
 
       const selector = `[data-ind-card="${key}"] .history-period-selector`;
       const selectorEl = document.querySelector(selector);
