@@ -1,6 +1,14 @@
 // js/scoring.js
+// ------------------------------------------------------------
 // Pure scoring logic for Economic Crash Radar Pro.
-// Mirrors the original index.html maths with no behavioural changes.
+// All maths mirror the original model:
+//
+// - scaleIndicator:    0–100 stress from raw indicator reading
+// - valuationStress:   0–100 stress from valuations
+// - computeComposite:  macro + valuation blend
+// - derived*():        human-readable labels
+// - computeContributions: "What's driving the score?" list
+// ------------------------------------------------------------
 
 import {
   MACRO_BLOCK_WEIGHT,
@@ -12,7 +20,6 @@ import {
 
 /**
  * Map a single indicator reading into a 0–100 stress score.
- * This is a direct lift of the original scaleIndicator, but parameterised.
  *
  * @param {string} key - indicator key (e.g. 'YIELD_CURVE')
  * @param {number} value - current indicator value
@@ -60,7 +67,7 @@ export function scaleIndicator(key, value, cfg = INDICATOR_CONFIG[key]) {
     return null;
   }
 
-  // Special-case amplifiers (identical to original):
+  // Amplifiers (unchanged from your original spec)
   if (key === 'YIELD_CURVE' && value <= 0) {
     stress = Math.min(100, stress * 1.2);
   }
@@ -76,7 +83,6 @@ export function scaleIndicator(key, value, cfg = INDICATOR_CONFIG[key]) {
 
 /**
  * Valuation stress curve (Buffett + Shiller).
- * Mirrors original valuationStress.
  *
  * @param {string} key - 'BUFFETT' or 'SHILLER_PE'
  * @param {number} val - current value
@@ -121,7 +127,6 @@ export function valuationStress(key, val) {
 
 /**
  * Map a 0–100 stress score to a qualitative label.
- * Mirrors original stressVerdictLabel.
  */
 export function stressVerdictLabel(s) {
   if (!Number.isFinite(s)) return '--';
@@ -133,7 +138,6 @@ export function stressVerdictLabel(s) {
 
 /**
  * Compute macro & valuation block stats and per-indicator details.
- * Directly based on original computeCompositeParts.
  *
  * @param {Object<string, number|null>} indicatorValuesByKey
  * @param {Object<string, number|null>} valuationValuesByKey
@@ -194,7 +198,6 @@ export function computeCompositeParts(
 
 /**
  * Compute composite stress (0–100) from current values.
- * Mirrors original computeComposite logic.
  */
 export function computeComposite(
   indicatorValuesByKey,
@@ -236,7 +239,6 @@ export function computeComposite(
 
 /**
  * Bucket composite into 12–18m recession probability band.
- * Mirrors original derivedRecessionRisk.
  */
 export function derivedRecessionRisk(c) {
   if (c == null) return '--';
@@ -250,7 +252,6 @@ export function derivedRecessionRisk(c) {
 
 /**
  * Compute valuation risk label from current valuations.
- * Mirrors original derivedValuationRisk.
  */
 export function derivedValuationRisk(valuationValuesByKey) {
   let sum = 0;
@@ -273,10 +274,7 @@ export function derivedValuationRisk(valuationValuesByKey) {
 }
 
 /**
- * Labour market stress label.
- * Mirrors original derivedLaborStress:
- * - cs = max(0,min(100,(claims - 250)*0.5))
- * - ss = max(0,min(100, sahm * 200))
+ * Labour market stress label using Initial Claims + Sahm Rule.
  */
 export function derivedLaborStress(indicatorValuesByKey) {
   const claimsK = indicatorValuesByKey.INITIAL_CLAIMS;
@@ -294,8 +292,7 @@ export function derivedLaborStress(indicatorValuesByKey) {
 }
 
 /**
- * Compute contribution breakdown for sidebar "What's Driving the Score?"
- * Returns sorted list of contribution items, leaving DOM to uiGauge.js.
+ * Compute contribution breakdown for "What's Driving the Score?".
  *
  * Each item:
  * {
@@ -304,7 +301,7 @@ export function derivedLaborStress(indicatorValuesByKey) {
  *   block,            // 'Macro' | 'Valuation'
  *   tier,             // 'Tier 1' | 'Tier 2' | ''
  *   stress,           // 0–100
- *   pctOfComposite,   // % share of composite, calculated later
+ *   pctOfComposite,   // % share of composite
  * }
  */
 export function computeContributions(
@@ -371,7 +368,6 @@ export function computeContributions(
     });
   }
 
-  // Decorate with % share and sort by contribution descending.
   const withShares = items.map(item => ({
     ...item,
     pctOfComposite: (item.contrib / compositeScore) * 100,
