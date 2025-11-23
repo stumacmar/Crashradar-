@@ -1,4 +1,11 @@
 // js/uiIndicators.js
+// Builds Tier 1 / Tier 2 indicator tiles and valuation tiles,
+// including manual input wiring and indicator hover tooltips.
+//
+// It does NOT mutate global state. Instead:
+// - It reads values from indicatorValuesByKey / valuationValuesByKey.
+// - It calls onManualChange(key, newValue|null) when LEI/BUFFETT/SHILLER_PE inputs change.
+// - It calls onExpandIndicator(key) when a FRED-based indicator tile is clicked.
 
 import {
   INDICATOR_CONFIG,
@@ -11,18 +18,26 @@ import {
   stressVerdictLabel,
 } from './scoring.js';
 
-/* ---------- Formatting helper ---------- */
+/* ---------- Formatting helper (CRITICAL FIX) ---------- */
 
-function formatByKey(formatKey, value) {
+function formatByConfig(value, cfg) {
   if (!Number.isFinite(value)) return '--';
-  switch (formatKey) {
-    case 'pct0': return value.toFixed(0) + '%';
-    case 'pct1': return value.toFixed(1) + '%';
-    case 'pct2': return value.toFixed(2) + '%';
-    case 'plain0': return value.toFixed(0);
-    case 'plain1': return value.toFixed(1);
-    case 'plain2': return value.toFixed(2);
-    default: return String(value);
+  const f = cfg && cfg.format;
+
+  switch (f) {
+    case 'pct1':
+      return value.toFixed(1) + '%';
+    case 'pct0':
+      return value.toFixed(0) + '%';
+    case 'plain0':
+      return value.toFixed(0);
+    case 'plain1':
+      return value.toFixed(1);
+    case 'plain2':
+      return value.toFixed(2);
+    default:
+      // Fallback: just stringify
+      return String(value);
   }
 }
 
@@ -61,12 +76,12 @@ function buildIndicatorElement(
 
   const hasVal = Number.isFinite(currentValue);
   const valText = hasVal
-    ? formatByKey(cfg.format, currentValue)
+    ? formatByConfig(currentValue, cfg)
     : '--';
 
   const thrText = (cfg.threshold != null)
     ? 'Threshold pivot: ' +
-        formatByKey(cfg.format, cfg.threshold) +
+        formatByConfig(cfg.threshold, cfg) +
         (cfg.direction === 'below'
           ? ' (worse below)'
           : ' (worse above)')
@@ -196,7 +211,7 @@ function buildValuationElement(
 
   const hasVal = Number.isFinite(currentValue);
   const valText = hasVal
-    ? formatByKey(cfg.format, currentValue)
+    ? formatByConfig(currentValue, cfg)
     : '--';
 
   const stressText = (s != null)
