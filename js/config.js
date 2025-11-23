@@ -1,213 +1,217 @@
 // js/config.js
-// Global configuration for Economic Crash Radar Pro.
-// - Indicator & valuation definitions
-// - Thresholds, directions, weights
-// - Formatting helpers
-//
-// These are the single source of truth for:
-// - dataService (FRED IDs + transforms)
-// - scoring (thresholds, spans, weights)
-// - UI modules (labels, tooltips, formatting)
-
-/* ---------------------------------------------------------
-   GLOBAL WEIGHTS / CONSTANTS
---------------------------------------------------------- */
-
-export const WARN_MAX = 40;          // Hand-off from "watch" to "danger"
-export const MACRO_BLOCK_WEIGHT = 0.7;
-export const VALUATION_BLOCK_WEIGHT = 0.3;
-
-/* ---------------------------------------------------------
-   FORMAT HELPERS
---------------------------------------------------------- */
-
-const fmtPct1 = v =>
-  (v == null || !Number.isFinite(v)) ? '--' : v.toFixed(1) + '%';
-
-const fmtPct1Signed = v =>
-  (v == null || !Number.isFinite(v))
-    ? '--'
-    : (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
-
-const fmtPlain1 = v =>
-  (v == null || !Number.isFinite(v)) ? '--' : v.toFixed(1);
-
-const fmtPlain2 = v =>
-  (v == null || !Number.isFinite(v)) ? '--' : v.toFixed(2);
-
-const fmtK = v =>
-  (v == null || !Number.isFinite(v)) ? '--' : v.toFixed(0) + 'k';
-
-const fmtIdx = v =>
-  (v == null || !Number.isFinite(v)) ? '--' : v.toFixed(1);
-
-/* ---------------------------------------------------------
-   INDICATOR CONFIG (MACRO BLOCK)
---------------------------------------------------------- */
-/*
-Fields:
-- label          UI name
-- desc           Short micro-copy for tile
-- fromFred       true = auto FRED-backed; false = manual
-- fredId         FRED series id (if fromFred)
-- transform      'raw' | 'yoy_percent' | 'pct_change_6m' | 'ma4_thousands' | 'manual'
-- historyTransform same options as transform; how historyService processes it
-- threshold      Pivot level for stress scaling
-- direction      'above' | 'below' (which side is worse)
-- span           How far beyond threshold to reach max stress (approx)
-- buffer         Neutral buffer around threshold before full warning
-- tier           1 (leading) | 2 (confirming)
-- weight         Composite weight (relative within macro block)
-- tooltip        Rich explanation shown on hover
-- format         Value formatter
-*/
+// Central configuration for Economic Crash Radar Pro:
+// - Indicator definitions (tier, FRED mapping, thresholds, weights, tooltips)
+// - Valuation definitions
 
 export const INDICATOR_CONFIG = {
-  /* ---------------- Tier 1: Leading ------------------- */
-
+  // -----------------------------
+  // TIER 1 – LEADING
+  // -----------------------------
   LEI: {
-    label: 'Conference Board LEI (6m %Δ)',
-    desc: 'Manual input: 6-month percentage change in the US Leading Economic Index.',
-    fromFred: false,
+    key: 'LEI',
+    tier: 1,
+    label: 'Leading Economic Index (6m %Δ)',
+    description: 'Six-month percentage change in the Conference Board LEI.',
+    fromFred: false,         // you type this manually
     fredId: null,
     transform: 'manual',
-    historyTransform: 'raw',
-    threshold: -4.1,          // recession-type drag zone
-    direction: 'below',
-    span: 3,
-    buffer: 1.0,
-    tier: 1,
-    weight: 1.6,
+    direction: 'below',      // more negative = worse
+    threshold: -4.1,         // classic US recession trigger level
+    span: 3,                 // ±3pp around the threshold
+    weight: 1.4,
+    format: 'pct1',
     tooltip:
-      'Leading Economic Index, 6-month rate of change. Historically, values below about –4% have lined up with recession regimes.\n\n' +
-      'Input the current 6-month %Δ from the latest LEI release.',
-    format: fmtPct1Signed,
+      'LEI six-month change. Sustained readings below about –4% have preceded every post-war US recession.'
   },
 
   YIELD_CURVE: {
-    label: 'Yield Curve (10y–3m)',
-    desc: '10-year minus 3-month Treasury spread (inverted when negative).',
+    key: 'YIELD_CURVE',
+    tier: 1,
+    label: 'Yield Curve (10Y–3M, %)',
+    description: 'Treasury 10-year minus 3-month spread.',
     fromFred: true,
     fredId: 'T10Y3M',
     transform: 'raw',
-    historyTransform: 'raw',
-    threshold: 0.0,
-    direction: 'below',
-    span: 1.5,
-    buffer: 0.35,
-    tier: 1,
-    weight: 1.5,
+    direction: 'below',      // more negative spread = worse
+    threshold: 0.0,          // inversion line
+    span: 1.0,               // around 1pp either side
+    weight: 1.3,
+    format: 'pct1',
     tooltip:
-      '10-year Treasury yield minus 3-month Treasury yield. Deep and persistent inversions have preceded most post-war US recessions.\n\n' +
-      'Stress rises as the curve goes more negative, with extra amplification when inverted.',
-    format: fmtPlain2,
+      '10-year minus 3-month Treasury spread. Deep, persistent inversion has preceded every modern US recession.'
   },
 
   CREDIT_SPREAD: {
-    label: 'HY Credit Spread',
-    desc: 'ICE BofA US High Yield OAS (%).',
+    key: 'CREDIT_SPREAD',
+    tier: 1,
+    label: 'High Yield Credit Spread (%)',
+    description: 'BAML US High Yield OAS.',
     fromFred: true,
     fredId: 'BAMLH0A0HYM2',
     transform: 'raw',
-    historyTransform: 'raw',
-    threshold: 5.0,
-    direction: 'above',
+    direction: 'above',      // wider spread = worse
+    threshold: 5.0,          // ~5% is typical danger line
     span: 3.0,
-    buffer: 1.0,
-    tier: 1,
-    weight: 1.3,
+    weight: 1.2,
+    format: 'pct1',
     tooltip:
-      'High-yield credit spread (ICE BofA US HY OAS). Spreads tend to blow out into the 6–8%+ region in classic risk-off / recession regimes.\n\n' +
-      'Stress accelerates as spreads move above ~5%.',
-    format: fmtPct1,
+      'Option-adjusted spread between high-yield corporates and Treasuries. Spikes above ~5–6% have coincided with stress episodes.'
   },
 
-  FINANCIAL_STRESS: {
-    label: 'Financial Conditions (NFCI)',
-    desc: 'Chicago Fed National Financial Conditions Index.',
+  FIN_STRESS: {
+    key: 'FIN_STRESS',
+    tier: 1,
+    label: 'Financial Stress (NFCI)',
+    description: 'Chicago Fed National Financial Conditions Index.',
     fromFred: true,
     fredId: 'NFCI',
     transform: 'raw',
-    historyTransform: 'raw',
-    threshold: 0.0,
-    direction: 'above',
-    span: 0.7,
-    buffer: 0.15,
-    tier: 1,
-    weight: 1.1,
+    direction: 'above',      // more positive = tighter / worse
+    threshold: 0.0,          // 0 ≈ historical average
+    span: 0.5,
+    weight: 1.0,
+    format: 'plain2',
     tooltip:
-      'Chicago Fed National Financial Conditions Index (NFCI). Positive values indicate tighter-than-average financial conditions.\n\n' +
-      'Stress ramps up as NFCI moves materially above zero.',
-    format: fmtPlain2,
+      'Chicago Fed NFCI. Positive values indicate tighter-than-average financial conditions; negatives are easier-than-average.'
   },
 
-  CONSUMER_SENTIMENT: {
+  SENTIMENT: {
+    key: 'SENTIMENT',
+    tier: 1,
     label: 'Consumer Sentiment (UMich)',
-    desc: 'University of Michigan sentiment index (level).',
+    description: 'University of Michigan consumer sentiment index.',
     fromFred: true,
     fredId: 'UMCSENT',
     transform: 'raw',
-    historyTransform: 'raw',
-    threshold: 70,
-    direction: 'below',
-    span: 20,
-    buffer: 7,
-    tier: 1,
-    weight: 1.0,
+    direction: 'below',      // lower sentiment = worse
+    threshold: 80,           // long-run “ok” zone
+    span: 20,                // 20-point band
+    weight: 0.9,
+    format: 'plain0',
     tooltip:
-      'University of Michigan Consumer Sentiment Index. Deep troughs in sentiment have often accompanied or preceded recessions and bear markets.\n\n' +
-      'Stress rises as sentiment falls well below typical cycle ranges.',
-    format: fmtIdx,
+      'UMichigan consumer sentiment. Deep, persistent lows have aligned with recessions and severe slowdowns.'
   },
 
   M2_GROWTH: {
-    label: 'M2 Money Supply (YoY%)',
-    desc: 'Year-on-year % change in M2 (real liquidity backdrop).',
+    key: 'M2_GROWTH',
+    tier: 1,
+    label: 'Real Money Growth (M2 YoY, %)',
+    description: 'Year-on-year change in broad money, proxying liquidity.',
     fromFred: true,
     fredId: 'M2SL',
     transform: 'yoy_percent',
-    historyTransform: 'yoy_percent',
+    direction: 'below',      // sharp slowdowns / contraction = worse
     threshold: 0.0,
-    direction: 'below',
-    span: 10,
-    buffer: 3,
-    tier: 1,
-    weight: 0.9,
+    span: 5.0,
+    weight: 1.0,
+    format: 'pct1',
     tooltip:
-      'M2 money supply, year-on-year % change. Rapid decelerations or outright contraction in liquidity have tended to coincide with tighter regimes.\n\n' +
-      'Stress picks up as M2 growth drops through zero and deeper into negative territory.',
-    format: fmtPct1Signed,
+      'Approximate broad money growth. Very weak or negative real money growth often coincides with tight liquidity and rising crash risk.'
   },
 
-  /* ---------------- Tier 2: Confirming ------------------- */
-
-  INDUSTRIAL_PRODUCTION: {
-    label: 'Industrial Production (YoY%)',
-    desc: 'Year-on-year % change in US industrial production.',
+  // -----------------------------
+  // TIER 2 – CONFIRMING
+  // -----------------------------
+  INDUSTRIAL_PROD: {
+    key: 'INDUSTRIAL_PROD',
+    tier: 2,
+    label: 'Industrial Production YoY (%)',
+    description: 'Year-on-year growth in real industrial output.',
     fromFred: true,
     fredId: 'INDPRO',
     transform: 'yoy_percent',
-    historyTransform: 'yoy_percent',
-    threshold: 0.0,
     direction: 'below',
-    span: 6,
-    buffer: 2,
-    tier: 2,
-    weight: 0.8,
+    threshold: 0.0,
+    span: 4.0,
+    weight: 0.9,
+    format: 'pct1',
     tooltip:
-      'Industrial Production Index, year-on-year % change. Sustained negative readings typically occur in recessionary or near-recession conditions.',
-    format: fmtPct1Signed,
+      'Industrial production growth. Sustained contractions have historically coincided with recession phases.'
   },
 
   BUILDING_PERMITS: {
-    label: 'Building Permits (YoY%)',
-    desc: 'Private housing units authorized, YoY % change.',
-    fromFred: true,
-    fredId: 'PERMIT1',
-    transform: 'yoy_percent',
-    historyTransform: 'yoy_percent',
-    threshold: -5.0,
-    direction: 'below',
-    span: 20,
-    buffer: 5,
+    key: 'BUILDING_PERMITS',
     tier: 2,
+    label: 'Building Permits YoY (%)',
+    description: 'Total US building permits, year-on-year percent.',
+    fromFred: true,
+    fredId: 'PERMIT',
+    transform: 'yoy_percent',
+    direction: 'below',
+    threshold: 0.0,
+    span: 20.0,
+    weight: 0.8,
+    format: 'pct1',
+    tooltip:
+      'Residential building permits. Housing turns are classic early-cycle indicators; sustained declines often precede downturns.'
+  },
+
+  INITIAL_CLAIMS: {
+    key: 'INITIAL_CLAIMS',
+    tier: 2,
+    label: 'Initial Claims (4-wk MA, k)',
+    description: '4-week moving average of initial jobless claims.',
+    fromFred: true,
+    fredId: 'ICSA',
+    transform: 'ma4_thousands',
+    direction: 'above',
+    threshold: 300,          // thousands
+    span: 80,
+    weight: 0.8,
+    format: 'plain0',
+    tooltip:
+      'Weekly initial unemployment claims smoothed over four weeks. Sustained climbs from cycle lows are a classic labour stress signal.'
+  },
+
+  SAHM_RULE: {
+    key: 'SAHM_RULE',
+    tier: 2,
+    label: 'Sahm Rule (%)',
+    description: 'Increase in unemployment over its 12-month low.',
+    fromFred: true,
+    fredId: 'SAHMREALTIME',
+    transform: 'raw',
+    direction: 'above',
+    threshold: 0.5,          // 0.5–0.7% is early warning; 0.5+ is meaningful
+    span: 0.7,
+    weight: 1.0,
+    format: 'pct1',
+    tooltip:
+      'Sahm Rule recession indicator. Increases of ~0.5–0.8pp above the recent low have historically coincided with recession onset.'
+  },
+};
+
+// -----------------------------
+// Valuation indicators
+// -----------------------------
+export const VALUATION_CONFIG = {
+  BUFFETT: {
+    key: 'BUFFETT',
+    label: 'Buffett Indicator (Mkt Cap / GDP, %)',
+    description:
+      'Total US market capitalisation vs. GDP – very high readings imply rich valuations.',
+    weight: 0.6,
+    format: 'pct0',
+    transform: 'manual',
+    direction: 'above',
+    threshold: 180,       // 180%+ historically very rich
+    span: 40,
+    tooltip:
+      'Market cap-to-GDP ratio. Levels above ~180–200% have corresponded to some of the most expensive markets in history.'
+  },
+
+  SHILLER_PE: {
+    key: 'SHILLER_PE',
+    label: 'Shiller CAPE (x)',
+    description:
+      'Cyclically adjusted P/E for US equities vs. long-run norms.',
+    weight: 0.6,
+    format: 'plain1',
+    transform: 'manual',
+    direction: 'above',
+    threshold: 30,        // 30+ is rich vs. history
+    span: 8,
+    tooltip:
+      'Shiller CAPE. Elevated CAPE doesn’t time crashes by itself, but it raises downside severity when macro stress appears.'
+  },
+};
