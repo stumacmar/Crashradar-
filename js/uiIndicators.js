@@ -18,6 +18,34 @@ import {
   stressVerdictLabel,
 } from './scoring.js';
 
+/* ---------- Value formatting helper ---------- */
+/**
+ * Format a numeric value according to a simple format key.
+ * Supported:
+ *  - 'pct1'   → 1 decimal + '%'
+ *  - 'pct0'   → 0 decimals + '%'
+ *  - 'plain0' → 0 decimals
+ *  - 'plain1' → 1 decimal
+ *  - 'plain2' → 2 decimals
+ */
+function formatValue(value, formatKey) {
+  if (!Number.isFinite(value)) return '--';
+  switch (formatKey) {
+    case 'pct1':
+      return value.toFixed(1) + '%';
+    case 'pct0':
+      return value.toFixed(0) + '%';
+    case 'plain0':
+      return value.toFixed(0);
+    case 'plain1':
+      return value.toFixed(1);
+    case 'plain2':
+      return value.toFixed(2);
+    default:
+      return String(value);
+  }
+}
+
 /* ---------- Tooltip helpers ---------- */
 
 function showTooltip(content, x, y) {
@@ -52,25 +80,28 @@ function buildIndicatorElement(
   }
 
   const hasVal = Number.isFinite(currentValue);
-  const valText = hasVal && cfg.format
-    ? cfg.format(currentValue)
+  const valText = hasVal
+    ? formatValue(currentValue, cfg.format)
     : '--';
 
-  const thrText = (cfg.threshold != null && cfg.format)
-    ? 'Threshold pivot: ' +
-        cfg.format(cfg.threshold) +
+  const thrText =
+    cfg.threshold != null
+      ? 'Threshold pivot: ' +
+        formatValue(cfg.threshold, cfg.format) +
         (cfg.direction === 'below'
           ? ' (worse below)'
           : ' (worse above)')
-    : '';
+      : '';
 
-  const stressText = (s != null)
-    ? 'Stress: ' + Math.round(s) + '/100'
-    : 'Stress: --';
+  const stressText =
+    s != null
+      ? 'Stress: ' + Math.round(s) + '/100'
+      : 'Stress: --';
 
-  const verdictText = (s != null)
-    ? 'Verdict: ' + stressVerdictLabel(s)
-    : 'Verdict: --';
+  const verdictText =
+    s != null
+      ? 'Verdict: ' + stressVerdictLabel(s)
+      : 'Verdict: --';
 
   const src = cfg.fromFred ? 'Auto from FRED cache' : 'Manual input';
   const srcClass = cfg.fromFred ? 'data-source-auto' : 'data-source-manual';
@@ -95,7 +126,8 @@ function buildIndicatorElement(
       '</div>';
   }
 
-  const historySection = cfg.fromFred ? `
+  const historySection = cfg.fromFred
+    ? `
     <div class="indicator-history" data-history-key="${key}">
       <div class="history-period-selector">
         <button class="period-btn active" data-period="12M">12M</button>
@@ -107,7 +139,8 @@ function buildIndicatorElement(
       </div>
       <div class="history-stats"></div>
     </div>
-  ` : '';
+  `
+    : '';
 
   const div = document.createElement('div');
   div.className = cls;
@@ -121,7 +154,7 @@ function buildIndicatorElement(
     `<div class="indicator-threshold">${thrText}</div>` +
     `<div class="indicator-threshold" data-ind-stress="${key}">${stressText}</div>` +
     `<div class="indicator-threshold" data-ind-verdict="${key}">${verdictText}</div>` +
-    `<div class="indicator-threshold">${cfg.desc || ''}</div>` +
+    `<div class="indicator-threshold">${cfg.description || ''}</div>` +
     '<div class="data-source-indicator">' +
       `<span class="data-source-dot ${srcClass}"></span>` +
       `<span class="source-tag">${src}</span>` +
@@ -187,17 +220,19 @@ function buildValuationElement(
   }
 
   const hasVal = Number.isFinite(currentValue);
-  const valText = hasVal && cfg.format
-    ? cfg.format(currentValue)
+  const valText = hasVal
+    ? formatValue(currentValue, cfg.format)
     : '--';
 
-  const stressText = (s != null)
-    ? 'Stress: ' + Math.round(s) + '/100'
-    : 'Stress: --';
+  const stressText =
+    s != null
+      ? 'Stress: ' + Math.round(s) + '/100'
+      : 'Stress: --';
 
-  const verdictText = (s != null)
-    ? 'Verdict: ' + stressVerdictLabel(s)
-    : 'Verdict: --';
+  const verdictText =
+    s != null
+      ? 'Verdict: ' + stressVerdictLabel(s)
+      : 'Verdict: --';
 
   let dangerLabel = '';
   if (key === 'BUFFETT') {
@@ -225,7 +260,7 @@ function buildValuationElement(
     `<div class="indicator-threshold">${dangerLabel}</div>` +
     `<div class="indicator-threshold" data-val-stress="${key}">${stressText}</div>` +
     `<div class="indicator-threshold" data-val-verdict="${key}">${verdictText}</div>` +
-    `<div class="indicator-threshold">${cfg.desc || ''}</div>` +
+    `<div class="indicator-threshold">${cfg.description || ''}</div>` +
     '<div class="data-source-indicator">' +
       '<span class="data-source-dot data-source-manual"></span>' +
       '<span class="source-tag">Manual input</span>' +
