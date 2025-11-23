@@ -42,7 +42,32 @@
 
     <!-- SIDEBAR -->
     <div class="sidebar">
-      <div id="gauge-mount"></div>
+
+      <!-- Gauge mount with all required IDs -->
+      <div id="gauge-mount">
+        <div class="gauge-container">
+          <div class="gauge">
+            <div class="gauge-background"></div>
+            <div class="gauge-needle" id="needle"></div>
+            <div class="gauge-center">
+              <div class="gauge-score" id="composite-score">--</div>
+              <div class="gauge-label" id="regime-label">
+                COMPOSITE STRESS — waiting for data
+              </div>
+            </div>
+          </div>
+          <div class="risk-meter">
+            <div class="risk-bar">
+              <div class="risk-fill" id="risk-fill"></div>
+            </div>
+            <div class="risk-labels">
+              <span>Calm</span>
+              <span>Stressed</span>
+              <span>Critical</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div class="status-grid">
         <div class="status-item">
@@ -63,7 +88,17 @@
         </div>
       </div>
 
-      <div id="contrib-mount"></div>
+      <!-- Contributions card mount with contrib-list id -->
+      <div id="contrib-mount">
+        <div class="contrib-card">
+          <div class="contrib-title">What’s Driving the Score?</div>
+          <div class="contrib-list" id="contrib-list">
+            <div class="contrib-placeholder">
+              Populate indicators and valuations to see which ones drive the composite.
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div class="export-section">
         <h3>Export & Share</h3>
@@ -92,11 +127,26 @@
       <div class="card">
         <div class="card-title"><span class="icon">💰</span>Valuation Indicators</div>
         <div class="indicator-grid" id="valuation-indicators"></div>
-        <div id="valuation-current-box"></div>
+
+        <!-- Valuation current box with the two labels the JS updates -->
+        <div id="valuation-current-box" class="valuation-comparison">
+          <div class="valuation-item current">
+            <div class="valuation-title">Current (your inputs)</div>
+            <div class="valuation-metric" id="current-buffett-label">Buffett: --</div>
+            <div class="valuation-metric" id="current-cape-label">CAPE: --</div>
+            <div class="valuation-outcome">Live vs historical danger bands.</div>
+          </div>
+        </div>
       </div>
 
       <div class="card">
         <div class="card-title"><span class="icon">🕒</span>Trend & Risk Map</div>
+
+        <!-- Insight text used by uiGauge.updateInsightText -->
+        <div class="insight-card" id="insight-text">
+          No composite yet. Ensure fred_cache.json is fresh and LEI / Buffett / CAPE are populated.
+        </div>
+
         <canvas id="composite-history" height="130"></canvas>
         <canvas id="risk-radar" height="140"></canvas>
       </div>
