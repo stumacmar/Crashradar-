@@ -1,379 +1,234 @@
-// js/scoring.js
+// js/config.js
+// Central configuration for Economic Crash Radar Pro:
+// - Global scoring weights and thresholds
+// - Indicator definitions (tier, FRED mapping, thresholds, weights, tooltips)
+// - Valuation definitions
+
 // ------------------------------------------------------------
-// Pure scoring logic for Economic Crash Radar Pro.
-// All maths mirror the original model:
-//
-// - scaleIndicator:    0–100 stress from raw indicator reading
-// - valuationStress:   0–100 stress from valuations
-// - computeComposite:  macro + valuation blend
-// - derived*():        human-readable labels
-// - computeContributions: "What's driving the score?" list
+// Global scoring constants
 // ------------------------------------------------------------
 
-import {
-  MACRO_BLOCK_WEIGHT,
-  VALUATION_BLOCK_WEIGHT,
-  WARN_MAX,
-  INDICATOR_CONFIG,
-  VALUATION_CONFIG,
-} from './config.js';
+// Relative weight of the macro block vs the valuation block in the final composite.
+// Adjust these if you want valuations to matter more or less.
+export const MACRO_BLOCK_WEIGHT = 0.7;
+export const VALUATION_BLOCK_WEIGHT = 0.3;
 
-/**
- * Map a single indicator reading into a 0–100 stress score.
- *
- * @param {string} key - indicator key (e.g. 'YIELD_CURVE')
- * @param {number} value - current indicator value
- * @param {object} cfg - indicator config from INDICATOR_CONFIG[key]
- * @returns {number|null} 0–100 stress or null if not computable
- */
-export function scaleIndicator(key, value, cfg = INDICATOR_CONFIG[key]) {
-  if (!cfg || !Number.isFinite(value)) return null;
+// Upper bound of the "warning" band in scaleIndicator (0–WARN_MAX is calm→watch→stressed,
+// above that moves into the high/critical regime).
+export const WARN_MAX = 60;
 
-  const t = cfg.threshold;
-  const dir = cfg.direction;
-  const span = (cfg.span && cfg.span > 0)
-    ? cfg.span
-    : Math.max(1, Math.abs(t) * 0.5);
+// ------------------------------------------------------------
+// Macro indicator configuration
+// ------------------------------------------------------------
+export const INDICATOR_CONFIG = {
+  // -----------------------------
+  // TIER 1 – LEADING
+  // -----------------------------
+  LEI: {
+    key: 'LEI',
+    tier: 1,
+    label: 'Leading Economic Index (6m %Δ)',
+    description: 'Six-month percentage change in the Conference Board LEI.',
+    fromFred: false,         // you type this manually
+    fredId: null,
+    transform: 'manual',
+    direction: 'below',      // more negative = worse
+    threshold: -4.1,         // classic US recession trigger level
+    span: 3,                 // ±3pp around the threshold
+    weight: 1.4,
+    format: 'pct1',
+    tooltip:
+      'LEI six-month change. Sustained readings below about –4% have preceded every post-war US recession.'
+  },
 
-  const buffer = (cfg.buffer && cfg.buffer > 0)
-    ? cfg.buffer
-    : span * 0.5;
+  YIELD_CURVE: {
+    key: 'YIELD_CURVE',
+    tier: 1,
+    label: 'Yield Curve (10Y–3M, %)',
+    description: 'Treasury 10-year minus 3-month spread.',
+    fromFred: true,
+    fredId: 'T10Y3M',
+    transform: 'raw',
+    direction: 'below',      // more negative spread = worse
+    threshold: 0.0,          // inversion line
+    span: 1.0,               // around 1pp either side
+    weight: 1.3,
+    format: 'pct1',
+    tooltip:
+      '10-year minus 3-month Treasury spread. Deep, persistent inversion has preceded every modern US recession.'
+  },
 
-  let stress = 0;
+  CREDIT_SPREAD: {
+    key: 'CREDIT_SPREAD',
+    tier: 1,
+    label: 'High Yield Credit Spread (%)',
+    description: 'BAML US High Yield OAS.',
+    fromFred: true,
+    fredId: 'BAMLH0A0HYM2',
+    transform: 'raw',
+    direction: 'above',      // wider spread = worse
+    threshold: 5.0,          // ~5% is typical danger line
+    span: 3.0,
+    weight: 1.2,
+    format: 'pct1',
+    tooltip:
+      'Option-adjusted spread between high-yield corporates and Treasuries. Spikes above ~5–6% have coincided with stress episodes.'
+  },
 
-  if (dir === 'below') {
-    const safeCut = t + buffer;
-    if (value >= safeCut) {
-      stress = 0;
-    } else if (value >= t) {
-      const frac = (safeCut - value) / buffer;
-      stress = frac * WARN_MAX;
-    } else {
-      const frac = Math.max(0, Math.min(1, (t - value) / span));
-      stress = WARN_MAX + frac * (100 - WARN_MAX);
-    }
-  } else if (dir === 'above') {
-    const safeCut = t - buffer;
-    if (value <= safeCut) {
-      stress = 0;
-    } else if (value <= t) {
-      const frac = (value - safeCut) / buffer;
-      stress = frac * WARN_MAX;
-    } else {
-      const frac = Math.max(0, Math.min(1, (value - t) / span));
-      stress = WARN_MAX + frac * (100 - WARN_MAX);
-    }
-  } else {
-    return null;
-  }
+  FIN_STRESS: {
+    key: 'FIN_STRESS',
+    tier: 1,
+    label: 'Financial Stress (NFCI)',
+    description: 'Chicago Fed National Financial Conditions Index.',
+    fromFred: true,
+    fredId: 'NFCI',
+    transform: 'raw',
+    direction: 'above',      // more positive = tighter / worse
+    threshold: 0.0,          // 0 ≈ historical average
+    span: 0.5,
+    weight: 1.0,
+    format: 'plain2',
+    tooltip:
+      'Chicago Fed NFCI. Positive values indicate tighter-than-average financial conditions; negatives are easier-than-average.'
+  },
 
-  // Amplifiers (unchanged from your original spec)
-  if (key === 'YIELD_CURVE' && value <= 0) {
-    stress = Math.min(100, stress * 1.2);
-  }
-  if (key === 'SAHM_RULE' && value >= 0.5) {
-    stress = Math.min(100, stress * 1.3);
-  }
+  SENTIMENT: {
+    key: 'SENTIMENT',
+    tier: 1,
+    label: 'Consumer Sentiment (UMich)',
+    description: 'University of Michigan consumer sentiment index.',
+    fromFred: true,
+    fredId: 'UMCSENT',
+    transform: 'raw',
+    direction: 'below',      // lower sentiment = worse
+    threshold: 80,           // long-run “ok” zone
+    span: 20,                // 20-point band
+    weight: 0.9,
+    format: 'plain0',
+    tooltip:
+      'UMichigan consumer sentiment. Deep, persistent lows have aligned with recessions and severe slowdowns.'
+  },
 
-  if (!Number.isFinite(stress)) return null;
-  if (stress < 0) stress = 0;
-  if (stress > 100) stress = 100;
-  return stress;
-}
+  M2_GROWTH: {
+    key: 'M2_GROWTH',
+    tier: 1,
+    label: 'Real Money Growth (M2 YoY, %)',
+    description: 'Year-on-year change in broad money, proxying liquidity.',
+    fromFred: true,
+    fredId: 'M2SL',
+    transform: 'yoy_percent',
+    direction: 'below',      // sharp slowdowns / contraction = worse
+    threshold: 0.0,
+    span: 5.0,
+    weight: 1.0,
+    format: 'pct1',
+    tooltip:
+      'Approximate broad money growth. Very weak or negative real money growth often coincides with tight liquidity and rising crash risk.'
+  },
 
-/**
- * Valuation stress curve (Buffett + Shiller).
- *
- * @param {string} key - 'BUFFETT' or 'SHILLER_PE'
- * @param {number} val - current value
- * @returns {number|null} 0–100 stress
- */
-export function valuationStress(key, val) {
-  if (!Number.isFinite(val)) return null;
-  let s = 0;
+  // -----------------------------
+  // TIER 2 – CONFIRMING
+  // -----------------------------
+  INDUSTRIAL_PROD: {
+    key: 'INDUSTRIAL_PROD',
+    tier: 2,
+    label: 'Industrial Production YoY (%)',
+    description: 'Year-on-year growth in real industrial output.',
+    fromFred: true,
+    fredId: 'INDPRO',
+    transform: 'yoy_percent',
+    direction: 'below',
+    threshold: 0.0,
+    span: 4.0,
+    weight: 0.9,
+    format: 'pct1',
+    tooltip:
+      'Industrial production growth. Sustained contractions have historically coincided with recession phases.'
+  },
 
-  if (key === 'BUFFETT') {
-    if (val <= 120) {
-      s = 0;
-    } else if (val <= 150) {
-      const frac = (val - 120) / (150 - 120);
-      s = frac * 40;
-    } else if (val <= 200) {
-      const frac = (val - 150) / (200 - 150);
-      s = 40 + frac * 60;
-    } else {
-      s = 100;
-    }
-  } else if (key === 'SHILLER_PE') {
-    if (val <= 22) {
-      s = 0;
-    } else if (val <= 30) {
-      const frac = (val - 22) / (30 - 22);
-      s = frac * 40;
-    } else if (val <= 40) {
-      const frac = (val - 30) / (40 - 30);
-      s = 40 + frac * 60;
-    } else {
-      s = 100;
-    }
-  } else {
-    return null;
-  }
+  BUILDING_PERMITS: {
+    key: 'BUILDING_PERMITS',
+    tier: 2,
+    label: 'Building Permits YoY (%)',
+    description: 'Total US building permits, year-on-year percent.',
+    fromFred: true,
+    fredId: 'PERMIT',
+    transform: 'yoy_percent',
+    direction: 'below',
+    threshold: 0.0,
+    span: 20.0,
+    weight: 0.8,
+    format: 'pct1',
+    tooltip:
+      'Residential building permits. Housing turns are classic early-cycle indicators; sustained declines often precede downturns.'
+  },
 
-  if (s < 0) s = 0;
-  if (s > 100) s = 100;
-  return s;
-}
+  INITIAL_CLAIMS: {
+    key: 'INITIAL_CLAIMS',
+    tier: 2,
+    label: 'Initial Claims (4-wk MA, k)',
+    description: '4-week moving average of initial jobless claims.',
+    fromFred: true,
+    fredId: 'ICSA',
+    transform: 'ma4_thousands',
+    direction: 'above',
+    threshold: 300,          // thousands
+    span: 80,
+    weight: 0.8,
+    format: 'plain0',
+    tooltip:
+      'Weekly initial unemployment claims smoothed over four weeks. Sustained climbs from cycle lows are a classic labour stress signal.'
+  },
 
-/**
- * Map a 0–100 stress score to a qualitative label.
- */
-export function stressVerdictLabel(s) {
-  if (!Number.isFinite(s)) return '--';
-  if (s < 20) return 'Calm';
-  if (s < 40) return 'Watch';
-  if (s < 70) return 'Stressed';
-  return 'Critical';
-}
+  SAHM_RULE: {
+    key: 'SAHM_RULE',
+    tier: 2,
+    label: 'Sahm Rule (%)',
+    description: 'Increase in unemployment over its 12-month low.',
+    fromFred: true,
+    fredId: 'SAHMREALTIME',
+    transform: 'raw',
+    direction: 'above',
+    threshold: 0.5,          // 0.5–0.7% is early warning; 0.5+ is meaningful
+    span: 0.7,
+    weight: 1.0,
+    format: 'pct1',
+    tooltip:
+      'Sahm Rule recession indicator. Increases of ~0.5–0.8pp above the recent low have historically coincided with recession onset.'
+  },
+};
 
-/**
- * Compute macro & valuation block stats and per-indicator details.
- *
- * @param {Object<string, number|null>} indicatorValuesByKey
- * @param {Object<string, number|null>} valuationValuesByKey
- */
-export function computeCompositeParts(
-  indicatorValuesByKey,
-  valuationValuesByKey,
-) {
-  let macroStress = 0;
-  let macroTotalWeight = 0;
-  const macroDetails = [];
+// -----------------------------
+// Valuation indicators
+// -----------------------------
+export const VALUATION_CONFIG = {
+  BUFFETT: {
+    key: 'BUFFETT',
+    label: 'Buffett Indicator (Mkt Cap / GDP, %)',
+    description:
+      'Total US market capitalisation vs. GDP – very high readings imply rich valuations.',
+    weight: 0.6,
+    format: 'pct0',
+    transform: 'manual',
+    direction: 'above',
+    threshold: 180,       // 180%+ historically very rich
+    span: 40,
+    tooltip:
+      'Market cap-to-GDP ratio. Levels above ~180–200% have corresponded to some of the most expensive markets in history.'
+  },
 
-  Object.entries(INDICATOR_CONFIG).forEach(([key, cfg]) => {
-    const current = indicatorValuesByKey[key];
-    const s = scaleIndicator(key, current, cfg);
-    if (s !== null && Number.isFinite(s) && cfg.weight) {
-      macroStress += s * cfg.weight;
-      macroTotalWeight += cfg.weight;
-      macroDetails.push({
-        key,
-        label: cfg.label,
-        stress: s,
-        weight: cfg.weight,
-        tier: cfg.tier,
-      });
-    }
-  });
-
-  let valStress = 0;
-  let valTotalWeight = 0;
-  const valDetails = [];
-
-  Object.entries(VALUATION_CONFIG).forEach(([key, cfg]) => {
-    const current = valuationValuesByKey[key];
-    const s = valuationStress(key, current);
-    if (s !== null && Number.isFinite(s) && cfg.weight) {
-      valStress += s * cfg.weight;
-      valTotalWeight += cfg.weight;
-      valDetails.push({
-        key,
-        label: cfg.label,
-        stress: s,
-        weight: cfg.weight,
-        tier: null,
-      });
-    }
-  });
-
-  return {
-    macroStress,
-    macroTotalWeight,
-    macroDetails,
-    valStress,
-    valTotalWeight,
-    valDetails,
-  };
-}
-
-/**
- * Compute composite stress (0–100) from current values.
- */
-export function computeComposite(
-  indicatorValuesByKey,
-  valuationValuesByKey,
-) {
-  const parts = computeCompositeParts(indicatorValuesByKey, valuationValuesByKey);
-  const {
-    macroStress,
-    macroTotalWeight,
-    valStress,
-    valTotalWeight,
-  } = parts;
-
-  if (macroTotalWeight === 0 && valTotalWeight === 0) return null;
-
-  const macroComponent = macroTotalWeight > 0
-    ? (macroStress / macroTotalWeight)
-    : null;
-
-  const valComponent = valTotalWeight > 0
-    ? (valStress / valTotalWeight)
-    : null;
-
-  let composite = null;
-  if (macroComponent !== null && valComponent !== null) {
-    composite = macroComponent * MACRO_BLOCK_WEIGHT +
-                valComponent * VALUATION_BLOCK_WEIGHT;
-  } else if (macroComponent !== null) {
-    composite = macroComponent;
-  } else {
-    composite = valComponent;
-  }
-
-  if (!Number.isFinite(composite)) return null;
-  if (composite < 0) composite = 0;
-  if (composite > 100) composite = 100;
-  return composite;
-}
-
-/**
- * Bucket composite into 12–18m recession probability band.
- */
-export function derivedRecessionRisk(c) {
-  if (c == null) return '--';
-  if (c < 20) return '<10%';
-  if (c < 35) return '10–25%';
-  if (c < 50) return '25–40%';
-  if (c < 65) return '40–60%';
-  if (c < 80) return '60–75%';
-  return '75–90%';
-}
-
-/**
- * Compute valuation risk label from current valuations.
- */
-export function derivedValuationRisk(valuationValuesByKey) {
-  let sum = 0;
-  let w = 0;
-
-  Object.entries(VALUATION_CONFIG).forEach(([key, cfg]) => {
-    const current = valuationValuesByKey[key];
-    const s = valuationStress(key, current);
-    if (s != null && cfg.weight) {
-      sum += s * cfg.weight;
-      w += cfg.weight;
-    }
-  });
-
-  if (!w) return '--';
-  const sc = Math.round(sum / w);
-  if (sc < 33) return 'Low';
-  if (sc < 66) return 'Moderate';
-  return 'High';
-}
-
-/**
- * Labour market stress label using Initial Claims + Sahm Rule.
- */
-export function derivedLaborStress(indicatorValuesByKey) {
-  const claimsK = indicatorValuesByKey.INITIAL_CLAIMS;
-  const sahm = indicatorValuesByKey.SAHM_RULE;
-
-  if (!Number.isFinite(claimsK) || !Number.isFinite(sahm)) return '--';
-
-  const cs = Math.max(0, Math.min(100, (claimsK - 250) * 0.5));
-  const ss = Math.max(0, Math.min(100, sahm * 200));
-  const avg = (cs + ss) / 2;
-
-  if (avg < 30) return 'Low';
-  if (avg < 60) return 'Moderate';
-  return 'High';
-}
-
-/**
- * Compute contribution breakdown for "What's Driving the Score?".
- *
- * Each item:
- * {
- *   label,
- *   contrib,          // points contribution to composite (0–100 scale)
- *   block,            // 'Macro' | 'Valuation'
- *   tier,             // 'Tier 1' | 'Tier 2' | ''
- *   stress,           // 0–100
- *   pctOfComposite,   // % share of composite
- * }
- */
-export function computeContributions(
-  indicatorValuesByKey,
-  valuationValuesByKey,
-  compositeScore,
-) {
-  if (!Number.isFinite(compositeScore) || compositeScore <= 0) return [];
-
-  const parts = computeCompositeParts(indicatorValuesByKey, valuationValuesByKey);
-  const {
-    macroTotalWeight,
-    macroDetails,
-    valTotalWeight,
-    valDetails,
-  } = parts;
-
-  const hasMacro = macroTotalWeight > 0;
-  const hasVal = valTotalWeight > 0;
-
-  let macroBlockWeight = 0;
-  let valBlockWeight = 0;
-
-  if (hasMacro && hasVal) {
-    macroBlockWeight = MACRO_BLOCK_WEIGHT;
-    valBlockWeight = VALUATION_BLOCK_WEIGHT;
-  } else if (hasMacro) {
-    macroBlockWeight = 1;
-  } else if (hasVal) {
-    valBlockWeight = 1;
-  }
-
-  const items = [];
-
-  if (hasMacro && macroBlockWeight > 0) {
-    macroDetails.forEach(d => {
-      if (!Number.isFinite(d.stress) || !d.weight) return;
-      const contribPoints = (d.stress * d.weight / macroTotalWeight) * macroBlockWeight;
-      if (!Number.isFinite(contribPoints) || contribPoints <= 0) return;
-
-      items.push({
-        label: d.label,
-        contrib: contribPoints,
-        block: 'Macro',
-        tier: d.tier === 1 ? 'Tier 1' : (d.tier === 2 ? 'Tier 2' : ''),
-        stress: d.stress,
-      });
-    });
-  }
-
-  if (hasVal && valBlockWeight > 0) {
-    valDetails.forEach(d => {
-      if (!Number.isFinite(d.stress) || !d.weight) return;
-      const contribPoints = (d.stress * d.weight / valTotalWeight) * valBlockWeight;
-      if (!Number.isFinite(contribPoints) || contribPoints <= 0) return;
-
-      items.push({
-        label: d.label,
-        contrib: contribPoints,
-        block: 'Valuation',
-        tier: '',
-        stress: d.stress,
-      });
-    });
-  }
-
-  const withShares = items.map(item => ({
-    ...item,
-    pctOfComposite: (item.contrib / compositeScore) * 100,
-  }));
-
-  withShares.sort((a, b) => b.contrib - a.contrib);
-
-  return withShares;
-}
+  SHILLER_PE: {
+    key: 'SHILLER_PE',
+    label: 'Shiller CAPE (x)',
+    description:
+      'Cyclically adjusted P/E for US equities vs. long-run norms.',
+    weight: 0.6,
+    format: 'plain1',
+    transform: 'manual',
+    direction: 'above',
+    threshold: 30,        // 30+ is rich vs. history
+    span: 8,
+    tooltip:
+      'Shiller CAPE. Elevated CAPE doesn’t time crashes by itself, but it raises downside severity when macro stress appears.'
+  },
+};
