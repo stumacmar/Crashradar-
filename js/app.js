@@ -3,13 +3,11 @@
 //
 // Responsibilities:
 // - Runtime state for indicators, valuations, composite score, cacheMeta.
-// - Load FRED cache and compute auto indicator values (same transforms as original).
+// - Load FRED cache (via dataService) and compute auto indicator values.
 // - Apply manual inputs (LEI, Buffett, CAPE) with localStorage persistence.
 // - Maintain composite history in localStorage.
 // - Read URL params for i_KEY / v_KEY overrides.
 // - Wire all UI modules and button handlers.
-//
-// NOTE: All business logic (thresholds, spans, scoring, wording) follows the original index.html.
 
 // -----------------------------------------------------------------------------
 // Imports
@@ -54,6 +52,10 @@ import {
   shareLink,
 } from './exports.js';
 
+import {
+  loadCurrentIndicatorValues,
+} from './dataService.js';
+
 // -----------------------------------------------------------------------------
 // Constants / keys
 // -----------------------------------------------------------------------------
@@ -74,8 +76,7 @@ const valuationValuesByKey = {};
 let compositeScore = null;
 let compositeHistory = [];
 
-// FRED cache + metadata
-let fredCache = null;
+// FRED cache metadata (actual cache lives in dataService)
 const cacheMeta = {
   generatedAt: null,   // string or null
   cacheAgeDays: null,  // number or null
@@ -248,25 +249,300 @@ function applyUrlParams() {
 }
 
 // -----------------------------------------------------------------------------
-// FRED cache loader (same transforms as original loadFromFredCache)
+// FRED: apply current cache values to indicators (via dataService)
 // -----------------------------------------------------------------------------
 
-async function loadFredCache(forceReload = false) {
-  if (fredCache && !forceReload) return fredCache;
+async function applyFredToIndicators() {
+  const { valuesByKey, cacheMeta: meta } =
+    await loadCurrentIndicatorValues();
 
-  const res = await fetch('data/fred_cache.json', {
-    cache: 'no-store',
+  // Merge FRED-backed values into indicatorValuesByKey.
+  Object.keys(valuesByKey).forEach(key => {
+    indicatorValuesByKey[key] = valuesByKey[key];
   });
-  if (!res.ok) {
-    throw new Error(`HTTP error! status: ${res.status}`);
+
+  // Update cache metadata.
+  if (meta) {
+    cacheMeta.generatedAt =
+      typeof meta.generatedAt === 'string'
+        ? meta.generatedAt
+        : cacheMeta.generatedAt;
+    cacheMeta.cacheAgeDays =
+      Number.isFinite(meta.cacheAgeDays)
+        ? meta.cacheAgeDays
+        : cacheMeta.cacheAgeDays;
   }
-  const json = await res.json();
-  fredCache = json;
 
-  const series = fredCache.series || {};
-  const gen = fredCache.generated_at || 'loaded';
+  // Update header badge.
+  const cacheBadge = document.getElementById('cache-badge');
+  if (cacheBadge && cacheMeta.generatedAt) {
+    cacheBadge.textContent = 'FRED cache: ' + cacheMeta.generatedAt;
+  }
+}
 
-  cacheMeta.generatedAt = gen;
+// -----------------------------------------------------------------------------
+// Core recompute + render pipeline
+// -----------------------------------------------------------------------------
 
-  const genDate = new Date(gen);
-  if (!isNaN(genDate
+function recomputeComposite() {
+  compositeScore = computeComposite(
+    indicatorValuesByKey,
+    valuationValuesByKey,
+  );
+}
+
+function refreshAllUI() {
+  // 1) Composite score + history
+  recomputeComposite();
+  recordCompositeHistory();
+
+  // 2) Gauge + sidebar tiles + insight + contributions
+  updateGaugeAndStatus({
+    compositeScore,
+    indicatorValuesByKey,
+    valuationValuesByKey,
+    cacheMeta,
+  });
+
+  syncValuationSummary(valuationValuesByKey);
+  updateInsightText({
+    compositeScore,
+    valuationValuesByKey,
+  });
+
+  updateContributions({
+    compositeScore,
+    indicatorValuesByKey,
+    valuationValuesByKey,
+  });
+
+  // 3) Charts
+  updateCompositeHistoryChart(compositeHistory, compositeScore);
+  updateRiskRadarChart(
+    indicatorValuesByKey,
+    valuationValuesByKey,
+  );
+
+  // 4) Audit / data quality
+  updateDataAudit({
+    indicatorValuesByKey,
+    valuationValuesByKey,
+    cacheMeta,
+  });
+}
+
+function renderAllTiles() {
+  renderMacroIndicators({
+    indicatorValuesByKey,
+    onManualChange: (key, value) => {
+      indicatorValuesByKey[key] =
+        Number.isFinite(value) ? value : null;
+      saveManualInputsToStorage();
+      refreshAllUI();
+    },
+    onExpandIndicator: key => {
+      toggleIndicatorExpansion(key);
+    },
+  });
+
+  renderValuationIndicators({
+    valuationValuesByKey,
+    onManualChange: (key, value) => {
+      valuationValuesByKey[key] =
+        Number.isFinite(value) ? value : null;
+      saveManualInputsToStorage();
+      refreshAllUI();
+    },
+  });
+}
+
+// -----------------------------------------------------------------------------
+// Button handlers
+// -----------------------------------------------------------------------------
+
+function handleRefreshData() {
+  showLoading('Loading FRED data...');
+  applyFredToIndicators()
+    .then(() => {
+      renderAllTiles();
+      refreshAllUI();
+    })
+    .catch(err => {
+      console.error('Refresh error:', err);
+      renderAllTiles();
+      refreshAllUI();
+    })
+    .finally(() => {
+      hideLoading();
+    });
+}
+
+function handleResetInputs() {
+  if (
+    !confirm(
+      'Reset all manual inputs (LEI / Buffett / CAPE)?',
+    )
+  ) {
+    return;
+  }
+
+  // Clear only manual indicators and valuations.
+  Object.entries(INDICATOR_CONFIG).forEach(([key, cfg]) => {
+    if (!cfg.fromFred) {
+      indicatorValuesByKey[key] = null;
+    }
+  });
+
+  Object.keys(VALUATION_CONFIG).forEach(key => {
+    valuationValuesByKey[key] = null;
+  });
+
+  try {
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+  } catch (err) {
+    console.error('Error clearing manual inputs:', err);
+  }
+
+  renderAllTiles();
+  refreshAllUI();
+}
+
+function handleShowHelp() {
+  const helpContent = `
+Economic Crash Radar Pro
+
+Macro indicators (10):
+- Tier 1 (Leading): LEI, Yield Curve, Credit Spread, Financial Stress, Consumer Sentiment, M2 Growth
+- Tier 2 (Confirming): Industrial Production, Building Permits, Initial Claims, Sahm Rule
+
+Valuation indicators (2):
+- Buffett Indicator (Market Cap / GDP)
+- Shiller CAPE (cyclically adjusted P/E)
+
+How to use:
+1. Ensure FRED data is loaded (most tiles auto).
+2. Manually input LEI 6m %Δ, Buffett, and CAPE.
+3. Monitor the composite score and tile stress levels.
+4. Click any FRED-based tile to expand history.
+5. Use 12M / 5Y / MAX buttons to change lookback.
+
+Interpretation:
+- 0–30: Low stress
+- 30–50: Elevated – monitor
+- 50–70: High – defensive bias
+- 70–100: Critical – historical danger zone
+`;
+  alert(helpContent);
+}
+
+function wireButtons() {
+  const refreshBtn = document.getElementById('refresh-data');
+  const resetBtn = document.getElementById('reset-inputs');
+  const helpBtn = document.getElementById('show-help');
+  const csvBtn = document.getElementById('export-csv');
+  const pdfBtn = document.getElementById('export-pdf');
+  const snapshotBtn = document.getElementById('export-snapshot');
+  const shareBtn = document.getElementById('share-link');
+
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', handleRefreshData);
+  }
+  if (resetBtn) {
+    resetBtn.addEventListener('click', handleResetInputs);
+  }
+  if (helpBtn) {
+    helpBtn.addEventListener('click', handleShowHelp);
+  }
+  if (csvBtn) {
+    csvBtn.addEventListener('click', () => {
+      exportToCSV({
+        indicatorValuesByKey,
+        valuationValuesByKey,
+        compositeScore,
+      });
+    });
+  }
+  if (pdfBtn) {
+    pdfBtn.addEventListener('click', () => {
+      exportToPDF();
+    });
+  }
+  if (snapshotBtn) {
+    snapshotBtn.addEventListener('click', () => {
+      saveSnapshot({
+        indicatorValuesByKey,
+        valuationValuesByKey,
+        compositeScore,
+      });
+    });
+  }
+  if (shareBtn) {
+    shareBtn.addEventListener('click', () => {
+      shareLink({
+        indicatorValuesByKey,
+        valuationValuesByKey,
+      });
+    });
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Global event wiring
+// -----------------------------------------------------------------------------
+
+function wireGlobalEvents() {
+  // History period buttons (12M / 5Y / MAX)
+  document.addEventListener('click', e => {
+    handleHistoryPeriodClick(e);
+  });
+}
+
+// -----------------------------------------------------------------------------
+// Init
+// -----------------------------------------------------------------------------
+
+document.addEventListener('DOMContentLoaded', () => {
+  // 1) Initialise indicatorValuesByKey / valuationValuesByKey with nulls.
+  Object.keys(INDICATOR_CONFIG).forEach(key => {
+    if (!(key in indicatorValuesByKey)) {
+      indicatorValuesByKey[key] = null;
+    }
+  });
+  Object.keys(VALUATION_CONFIG).forEach(key => {
+    if (!(key in valuationValuesByKey)) {
+      valuationValuesByKey[key] = null;
+    }
+  });
+
+  // 2) Load composite history.
+  compositeHistory = loadCompositeHistoryFromStorage();
+
+  // 3) Local manual inputs (LEI, Buffett, CAPE).
+  loadManualInputsFromStorage();
+
+  // 4) URL params override.
+  applyUrlParams();
+
+  // 5) First render of tiles with whatever we have so far.
+  renderAllTiles();
+
+  // 6) Initial FRED load and full refresh.
+  showLoading('Loading FRED data...');
+  applyFredToIndicators()
+    .then(() => {
+      renderAllTiles();
+      refreshAllUI();
+    })
+    .catch(err => {
+      console.error('Init error:', err);
+      // Fall back to whatever we have (manual + URL).
+      refreshAllUI();
+    })
+    .finally(() => {
+      hideLoading();
+    });
+
+  // 7) Wire buttons + global events.
+  wireButtons();
+  wireGlobalEvents();
+});
