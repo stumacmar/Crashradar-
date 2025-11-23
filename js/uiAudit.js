@@ -1,5 +1,13 @@
 // js/uiAudit.js
 // Data quality & staleness card ("Data Quality & Staleness").
+//
+// Expects a container with id="data-audit" in the DOM.
+// Shows coverage for:
+//  - Auto (FRED) indicators
+//  - Manual macro inputs
+//  - Valuation inputs
+//  - FRED cache age / freshness badge
+// And lists missing auto + missing manual/valuation signals.
 
 import {
   INDICATOR_CONFIG,
@@ -75,6 +83,7 @@ export function updateDataAudit({
     .filter(v => !Number.isFinite(v.current))
     .map(v => v.label);
 
+  // Freshness badge
   let freshnessLabel = 'Unknown';
   let freshnessVerdict = 'unknown';
 
@@ -140,4 +149,12 @@ export function updateDataAudit({
         <div class="audit-list-title">Missing manual / valuation</div>
         ${
           (missingManual.length || missingValuations.length)
-            ? [...missingManual, ...missingVal
+            ? [...missingManual, ...missingValuations]
+                .map(name => `<span class="audit-tag">${name}</span>`)
+                .join('')
+            : '<span class="audit-tag audit-tag-ok">None</span>'
+        }
+      </div>
+    </div>
+  `;
+}
