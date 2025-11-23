@@ -4,18 +4,8 @@
 // - Risk radar chart
 // - Indicator history charts + stats
 //
-// This is a modular extraction of:
-// - compositeRegimeBands
-// - renderCompositeHistoryChart
-// - renderRiskRadarChart
-// - loadAndRenderIndicatorHistory
-// - renderIndicatorHistory
-// - updateHistoryStats
-// - getPeriodSubset
-// - renderNoHistoryMessage
-//
 // Business logic (transforms, stats) is delegated to historyService.js
-// and scoring.js. Visual behaviour and thresholds mirror the original.
+// and scoring.js.
 
 import {
   INDICATOR_CONFIG,
@@ -41,7 +31,7 @@ const charts = {
 const indicatorCharts = Object.create(null);
 let expandedIndicator = null;
 
-/* ---------- Loading overlay (same UX as original) ---------- */
+/* ---------- Loading overlay ---------- */
 
 function showLoading(message = 'Loading data...') {
   const overlay = document.getElementById('loading-overlay');
@@ -57,7 +47,7 @@ function hideLoading() {
   overlay.classList.remove('active');
 }
 
-/* ---------- Composite regime bands plugin (unchanged) ---------- */
+/* ---------- Composite regime bands plugin ---------- */
 
 const compositeRegimeBands = {
   id: 'compositeRegimeBands',
@@ -67,10 +57,10 @@ const compositeRegimeBands = {
     const yScale = scales.y;
 
     const ranges = [
-      { min: 0,  max: 30, color: 'rgba(30,194,139,0.10)' },   // low
-      { min: 30, max: 50, color: 'rgba(255,194,71,0.10)' },   // elevated
-      { min: 50, max: 70, color: 'rgba(255,96,112,0.10)' },   // high
-      { min: 70, max: 100, color: 'rgba(255,96,112,0.18)' },  // critical
+      { min: 0,  max: 30, color: 'rgba(30,194,139,0.10)' },
+      { min: 30, max: 50, color: 'rgba(255,194,71,0.10)' },
+      { min: 50, max: 70, color: 'rgba(255,96,112,0.10)' },
+      { min: 70, max: 100, color: 'rgba(255,96,112,0.18)' },
     ];
 
     ctx.save();
@@ -91,12 +81,6 @@ const compositeRegimeBands = {
 
 /* ---------- Composite history chart ---------- */
 
-/**
- * Render/update the composite history chart.
- *
- * @param {Array<{date:string, score:number}>} compositeHistory
- * @param {number|null} compositeScore
- */
 export function updateCompositeHistoryChart(compositeHistory, compositeScore) {
   const canvas = document.getElementById('composite-history');
   if (!canvas) return;
@@ -219,12 +203,6 @@ export function updateCompositeHistoryChart(compositeHistory, compositeScore) {
 
 /* ---------- Risk radar chart ---------- */
 
-/**
- * Render/update the radar chart using current stresses.
- *
- * @param {Object<string, number|null>} indicatorValuesByKey
- * @param {Object<string, number|null>} valuationValuesByKey
- */
 export function updateRiskRadarChart(
   indicatorValuesByKey = {},
   valuationValuesByKey = {},
@@ -242,7 +220,6 @@ export function updateRiskRadarChart(
   const labels = [];
   const data = [];
 
-  // Per-indicator stresses
   Object.entries(INDICATOR_CONFIG).forEach(([key, cfg]) => {
     const current = indicatorValuesByKey[key];
     const s = scaleIndicator(key, current, cfg);
@@ -252,7 +229,6 @@ export function updateRiskRadarChart(
     }
   });
 
-  // Combined valuation stress
   let vSum = 0;
   let vW = 0;
   Object.entries(VALUATION_CONFIG).forEach(([key, cfg]) => {
@@ -269,7 +245,6 @@ export function updateRiskRadarChart(
   }
 
   if (!labels.length) {
-    // No data yet: draw a simple message
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#8b96b0';
     ctx.font = '10px -apple-system, system-ui, sans-serif';
@@ -337,14 +312,6 @@ function renderNoHistoryMessage(key) {
   }
 }
 
-/**
- * Render a single indicator history chart for a given subset and period.
- *
- * @param {string} key - indicator key
- * @param {object} cfg - INDICATOR_CONFIG[key]
- * @param {Array<{date:string, value:number}>} historyData
- * @param {string} period - '12M'|'5Y'|'MAX'
- */
 function renderIndicatorHistory(key, cfg, historyData, period) {
   if (!historyData || !historyData.length) {
     renderNoHistoryMessage(key);
@@ -364,7 +331,6 @@ function renderIndicatorHistory(key, cfg, historyData, period) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  // Destroy previous chart if any.
   if (indicatorCharts[key]) {
     indicatorCharts[key].destroy();
     delete indicatorCharts[key];
@@ -396,7 +362,6 @@ function renderIndicatorHistory(key, cfg, historyData, period) {
     return;
   }
 
-  // Autoscale with padding, like original.
   if (Math.abs(maxVal - minVal) < 1e-6) {
     const center = minVal;
     minVal = center - 1;
@@ -413,7 +378,6 @@ function renderIndicatorHistory(key, cfg, historyData, period) {
   minVal = roundTo(minVal, step);
   maxVal = roundTo(maxVal, step);
 
-  // Line colour based on stress at latest subset point.
   let lineColor = '#6b9eff';
   const latestVal = subset[subset.length - 1].value;
   const approxStress = scaleIndicator(key, latestVal, cfg);
@@ -486,13 +450,6 @@ function renderIndicatorHistory(key, cfg, historyData, period) {
   });
 }
 
-/**
- * Update the history stats box for a given indicator.
- *
- * @param {string} key
- * @param {object} cfg
- * @param {Array<{date:string, value:number}>} historyData
- */
 function updateHistoryStatsUI(key, cfg, historyData) {
   const stats = computeHistoryStats(historyData);
   if (!stats) {
@@ -542,12 +499,8 @@ function updateHistoryStatsUI(key, cfg, historyData) {
   `;
 }
 
-/**
- * Expand/collapse an indicator tile and load its history.
- * Called from app.js when uiIndicators signals a tile click.
- *
- * @param {string} key - indicator key
- */
+/* ---------- Expansion + period switching ---------- */
+
 export async function toggleIndicatorExpansion(key) {
   const cfg = INDICATOR_CONFIG[key];
   if (!cfg) return;
@@ -557,7 +510,6 @@ export async function toggleIndicatorExpansion(key) {
   );
   if (!element) return;
 
-  // Collapse same tile → reset.
   if (expandedIndicator === key) {
     element.classList.remove('expanded');
     expandedIndicator = null;
@@ -568,7 +520,6 @@ export async function toggleIndicatorExpansion(key) {
     return;
   }
 
-  // Collapse previous expanded, if any.
   if (expandedIndicator) {
     const prev = document.querySelector(
       `[data-ind-card="${expandedIndicator}"]`,
@@ -595,7 +546,6 @@ export async function toggleIndicatorExpansion(key) {
       renderIndicatorHistory(key, cfg, history, '12M');
       updateHistoryStatsUI(key, cfg, history);
 
-      // Set default active button to 12M
       const selector = `[data-ind-card="${key}"] .history-period-selector`;
       const selectorEl = document.querySelector(selector);
       if (selectorEl) {
@@ -617,14 +567,6 @@ export async function toggleIndicatorExpansion(key) {
   }
 }
 
-/**
- * Handle clicks on history period buttons (event delegation).
- * To be wired from app.js:
- *
- * document.addEventListener('click', (e) => {
- *   uiCharts.handleHistoryPeriodClick(e);
- * });
- */
 export async function handleHistoryPeriodClick(event) {
   const btn = event.target.closest('.period-btn');
   if (!btn) return;
@@ -645,7 +587,6 @@ export async function handleHistoryPeriodClick(event) {
       return;
     }
 
-    // Update button active states
     const group = btn.parentElement;
     if (group) {
       group.querySelectorAll('.period-btn').forEach(b =>
