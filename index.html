@@ -1,68 +1,139 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>CrashRadar ERROR DIAGNOSTIC</title>
-  <style>
-    body { background:#0d0f18; color:#fff; font-family: monospace; padding:20px; }
-    h1 { font-size: 26px; margin-bottom:10px; }
-    .log { white-space: pre-wrap; background:#1b1e2b; padding:15px; border-radius:8px; }
-    .ok { color:#1ec28b; }
-    .err { color:#ff6070; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Economic Crash Radar Pro</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/main.css?v=22" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Cache-buster base -->
+  <script> window.__APP_BASE = "/"; </script>
 </head>
 
 <body>
+  <main id="appRoot">
 
-<h1>CrashRadar MODULE DIAGNOSTIC</h1>
-<p>This tool checks every JS file, loads it, and prints all errors.</p>
+    <!-- HEADER -->
+    <div class="header">
+      <h1>Economic Crash Radar Pro</h1>
+      <div class="meta">
+        <span id="modelLabel">Model v7 • Modular Architecture</span>
+        <span id="cache-badge">FRED cache: not loaded</span>
+        <span id="inputs-badge">Inputs: 0/12 populated</span>
+      </div>
 
-<div id="output" class="log">Running diagnostics…</div>
+      <div class="buttons">
+        <button id="refresh-data">Refresh Data</button>
+        <button id="reset-inputs">Reset Inputs</button>
+        <button id="show-help">Help</button>
 
-<script>
-async function testModule(path) {
-  const out = document.getElementById("output");
+        <button id="export-csv">CSV</button>
+        <button id="export-pdf">PDF</button>
+        <button id="export-snapshot">Snapshot</button>
+        <button id="share-link">Share</button>
+      </div>
+    </div>
 
-  out.innerHTML += "\nChecking: " + path + "\n";
+    <!-- GAUGE SECTION -->
+    <section id="gaugeSection">
+      <h2>Composite Stress Gauge</h2>
 
-  try {
-    await import(path + "?t=" + Date.now());
-    out.innerHTML += "  ✔ OK: Loaded successfully\n";
-  } catch (err) {
-    out.innerHTML += "  ✘ ERROR:\n";
-    out.innerHTML += "    " + (err.message || err.toString()) + "\n";
-    if (err.stack) out.innerHTML += "    STACK: " + err.stack + "\n";
-  }
-  out.innerHTML += "----------------------------------------\n";
-}
+      <div class="gauge-wrapper">
+        <div id="gauge-container">
+          <div id="risk-fill"></div>
+          <div id="needle"></div>
+          <div id="composite-score">--</div>
+        </div>
+      </div>
 
-async function runDiagnostics() {
-  const out = document.getElementById("output");
-  out.innerHTML = "";
+      <div id="regime-label">COMPOSITE STRESS — awaiting data</div>
 
-  const files = [
-    "/js/config.js",
-    "/js/dataService.js",
-    "/js/historyService.js",
-    "/js/scoring.js",
-    "/js/uiGauge.js",
-    "/js/uiIndicators.js",
-    "/js/uiCharts.js",
-    "/js/uiAudit.js",
-    "/js/exports.js",
-    "/js/app.js",
-    "/data/fred_cache.json"
-  ];
+      <div id="alert-banner"></div>
 
-  for (const f of files) {
-    await testModule(f);
-  }
+      <div class="sidebar-tiles">
+        <div class="sidebar-tile">
+          <div class="tile-label">Recession Risk</div>
+          <div id="recession-risk-display">--</div>
+        </div>
+        <div class="sidebar-tile">
+          <div class="tile-label">Valuation Risk</div>
+          <div id="valuation-risk-display">--</div>
+        </div>
+        <div class="sidebar-tile">
+          <div class="tile-label">Labour Stress</div>
+          <div id="labor-risk-display">--</div>
+        </div>
+        <div class="sidebar-tile">
+          <div class="tile-label">Data Coverage</div>
+          <div id="quality-display">--</div>
+        </div>
+      </div>
 
-  out.innerHTML += "\nDONE.\n";
-}
+      <div id="valuation-summary">
+        <div id="current-buffett-label">Buffett: --</div>
+        <div id="current-cape-label">CAPE: --</div>
+      </div>
 
-runDiagnostics();
-</script>
+      <div id="insight-text"></div>
+      <div id="contrib-list"></div>
+    </section>
 
+    <!-- MACRO INDICATORS -->
+    <section id="macroSection">
+      <h2>Macro Indicators</h2>
+
+      <h3>Tier 1 – Leading</h3>
+      <div id="tier1-indicators"></div>
+
+      <h3>Tier 2 – Confirming</h3>
+      <div id="tier2-indicators"></div>
+    </section>
+
+    <!-- VALUATIONS -->
+    <section id="valuationSection">
+      <h2>Valuation Indicators</h2>
+      <div id="valuation-indicators"></div>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="chartsSection">
+      <h2>History</h2>
+      <canvas id="composite-history"></canvas>
+      <canvas id="risk-radar"></canvas>
+    </section>
+
+    <!-- DATA AUDIT -->
+    <section id="auditSection">
+      <h2>Data Audit</h2>
+      <div id="data-audit"></div>
+    </section>
+
+    <div id="indicator-tooltip"></div>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loading-overlay">
+      <div id="loading-text">Loading...</div>
+    </div>
+
+    <!-- MODULE SCRIPTS (cache-busted v22) -->
+    <script type="module" src="/js/config.js?v=22"></script>
+    <script type="module" src="/js/dataService.js?v=22"></script>
+    <script type="module" src="/js/scoring.js?v=22"></script>
+    <script type="module" src="/js/historyService.js?v=22"></script>
+    <script type="module" src="/js/uiGauge.js?v=22"></script>
+    <script type="module" src="/js/uiIndicators.js?v=22"></script>
+    <script type="module" src="/js/uiCharts.js?v=22"></script>
+    <script type="module" src="/js/uiAudit.js?v=22"></script>
+    <script type="module" src="/js/exports.js?v=22"></script>
+
+    <!-- MAIN APP -->
+    <script type="module" src="/js/app.js?v=22"></script>
+
+  </main>
 </body>
 </html>
