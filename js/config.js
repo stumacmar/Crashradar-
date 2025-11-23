@@ -1,8 +1,18 @@
 // js/config.js
 // Central configuration for Economic Crash Radar Pro:
-// - Indicator definitions (tier, FRED mapping, thresholds, weights, tooltips)
+// - Global scoring weights
+// - Indicator definitions
 // - Valuation definitions
-// - Global weights for macro vs. valuations
+
+// -----------------------------
+// Global scoring weights
+// -----------------------------
+// NOTE: These values are reasonable defaults. I cannot confirm they
+// match your original monolithic version, but they will make the
+// composite work correctly. You can tweak them if needed.
+export const MACRO_BLOCK_WEIGHT = 0.7;
+export const VALUATION_BLOCK_WEIGHT = 0.3;
+export const WARN_MAX = 60;
 
 // -----------------------------
 // Macro indicators
@@ -219,10 +229,3 @@ export const VALUATION_CONFIG = {
       'Shiller CAPE. Elevated CAPE doesn’t time crashes by itself, but it raises downside severity when macro stress appears.'
   },
 };
-
-// -----------------------------
-// Global scoring weights
-// -----------------------------
-export const MACRO_BLOCK_WEIGHT = 0.7;       // macro vs valuation blend
-export const VALUATION_BLOCK_WEIGHT = 0.3;
-export const WARN_MAX = 60;                  // boundary between "watch" and "critical" bands
