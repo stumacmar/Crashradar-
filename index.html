@@ -6,13 +6,10 @@
   <title>Economic Crash Radar Pro</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="/css/main.css?v=22" />
+  <link rel="stylesheet" href="css/main.css" />
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <!-- Cache-buster base -->
-  <script> window.__APP_BASE = "/"; </script>
 </head>
 
 <body>
@@ -31,7 +28,6 @@
         <button id="refresh-data">Refresh Data</button>
         <button id="reset-inputs">Reset Inputs</button>
         <button id="show-help">Help</button>
-
         <button id="export-csv">CSV</button>
         <button id="export-pdf">PDF</button>
         <button id="export-snapshot">Snapshot</button>
@@ -52,26 +48,13 @@
       </div>
 
       <div id="regime-label">COMPOSITE STRESS — awaiting data</div>
-
       <div id="alert-banner"></div>
 
       <div class="sidebar-tiles">
-        <div class="sidebar-tile">
-          <div class="tile-label">Recession Risk</div>
-          <div id="recession-risk-display">--</div>
-        </div>
-        <div class="sidebar-tile">
-          <div class="tile-label">Valuation Risk</div>
-          <div id="valuation-risk-display">--</div>
-        </div>
-        <div class="sidebar-tile">
-          <div class="tile-label">Labour Stress</div>
-          <div id="labor-risk-display">--</div>
-        </div>
-        <div class="sidebar-tile">
-          <div class="tile-label">Data Coverage</div>
-          <div id="quality-display">--</div>
-        </div>
+        <div class="sidebar-tile"><div class="tile-label">Recession Risk</div><div id="recession-risk-display">--</div></div>
+        <div class="sidebar-tile"><div class="tile-label">Valuation Risk</div><div id="valuation-risk-display">--</div></div>
+        <div class="sidebar-tile"><div class="tile-label">Labour Stress</div><div id="labor-risk-display">--</div></div>
+        <div class="sidebar-tile"><div class="tile-label">Data Coverage</div><div id="quality-display">--</div></div>
       </div>
 
       <div id="valuation-summary">
@@ -86,7 +69,6 @@
     <!-- MACRO INDICATORS -->
     <section id="macroSection">
       <h2>Macro Indicators</h2>
-
       <h3>Tier 1 – Leading</h3>
       <div id="tier1-indicators"></div>
 
@@ -107,7 +89,7 @@
       <canvas id="risk-radar"></canvas>
     </section>
 
-    <!-- DATA AUDIT -->
+    <!-- AUDIT -->
     <section id="auditSection">
       <h2>Data Audit</h2>
       <div id="data-audit"></div>
@@ -115,24 +97,21 @@
 
     <div id="indicator-tooltip"></div>
 
-    <!-- LOADING OVERLAY -->
     <div id="loading-overlay">
       <div id="loading-text">Loading...</div>
     </div>
 
-    <!-- MODULE SCRIPTS (cache-busted v22) -->
-    <script type="module" src="/js/config.js?v=22"></script>
-    <script type="module" src="/js/dataService.js?v=22"></script>
-    <script type="module" src="/js/scoring.js?v=22"></script>
-    <script type="module" src="/js/historyService.js?v=22"></script>
-    <script type="module" src="/js/uiGauge.js?v=22"></script>
-    <script type="module" src="/js/uiIndicators.js?v=22"></script>
-    <script type="module" src="/js/uiCharts.js?v=22"></script>
-    <script type="module" src="/js/uiAudit.js?v=22"></script>
-    <script type="module" src="/js/exports.js?v=22"></script>
-
-    <!-- MAIN APP -->
-    <script type="module" src="/js/app.js?v=22"></script>
+    <!-- MODULE SCRIPTS (ALL CORRECT PATHS) -->
+    <script type="module" src="js/config.js"></script>
+    <script type="module" src="js/dataService.js"></script>
+    <script type="module" src="js/scoring.js"></script>
+    <script type="module" src="js/historyService.js"></script>
+    <script type="module" src="js/uiGauge.js"></script>
+    <script type="module" src="js/uiIndicators.js"></script>
+    <script type="module" src="js/uiCharts.js"></script>
+    <script type="module" src="js/uiAudit.js"></script>
+    <script type="module" src="js/exports.js"></script>
+    <script type="module" src="js/app.js"></script>
 
   </main>
 </body>
