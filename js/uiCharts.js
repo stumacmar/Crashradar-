@@ -31,6 +31,34 @@ const charts = {
 const indicatorCharts = Object.create(null);
 let expandedIndicator = null;
 
+/* ---------- Value formatting helper ---------- */
+/**
+ * Format a numeric value according to a simple format key.
+ * Supported:
+ *  - 'pct1'   → 1 decimal + '%'
+ *  - 'pct0'   → 0 decimals + '%'
+ *  - 'plain0' → 0 decimals
+ *  - 'plain1' → 1 decimal
+ *  - 'plain2' → 2 decimals
+ */
+function formatValue(value, formatKey) {
+  if (!Number.isFinite(value)) return '--';
+  switch (formatKey) {
+    case 'pct1':
+      return value.toFixed(1) + '%';
+    case 'pct0':
+      return value.toFixed(0) + '%';
+    case 'plain0':
+      return value.toFixed(0);
+    case 'plain1':
+      return value.toFixed(1);
+    case 'plain2':
+      return value.toFixed(2);
+    default:
+      return String(value);
+  }
+}
+
 /* ---------- Loading overlay ---------- */
 
 function showLoading(message = 'Loading data...') {
@@ -423,7 +451,7 @@ function renderIndicatorHistory(key, cfg, historyData, period) {
           callbacks: {
             label(context) {
               const value = context.parsed.y;
-              return cfg.format ? cfg.format(value) : value;
+              return formatValue(value, cfg.format);
             },
           },
         },
@@ -470,13 +498,12 @@ function updateHistoryStatsUI(key, cfg, historyData) {
   );
   if (!statsContainer) return;
 
-  const formatVal = (v) => (cfg.format ? cfg.format(v) : v.toFixed(2));
   const col = (val) => (val !== null && val >= 0 ? '#1ec28b' : '#ff6070');
 
   statsContainer.innerHTML = `
     <div class="history-stat">
       <div class="history-stat-label">Current</div>
-      <div class="history-stat-value">${formatVal(current)}</div>
+      <div class="history-stat-value">${formatValue(current, cfg.format)}</div>
     </div>
     <div class="history-stat">
       <div class="history-stat-label">3M Change</div>
