@@ -1,198 +1,216 @@
 // js/historyService.js
-// Historical series processing for indicators (YoY, 6m%, MA4, etc.)
+// ------------------------------------------------------------
+// Historical data processor for indicators + valuations.
+// Converts raw FRED observations → transformed series
+// according to config.transform / historyTransform.
+// Supports:
+//   - raw
+//   - yoy_percent
+//   - pct_change_6m
+//   - ma4_thousands
+//
+// Provides:
+//   getHistoryForIndicator(key, lookback)
+//   getHistoryForSeries(fredId, transform, lookback)
+//
+// Output format:
+//   [
+//     { date: 'YYYY-MM-DD', value: Number|null },
+//     ...
+//   ]
+// ------------------------------------------------------------
 
-import { loadFredCache, getSeries } from './dataService.js';
+import { INDICATOR_CONFIG } from './config.js';
+import { getSeries, loadFredCache } from './dataService.js';
 
-/**
- * YoY % growth from a level series (12-month look-back).
- * Mirrors original calculateYoYGrowth.
- */
-function calculateYoYGrowth(observations) {
-  const result = [];
-  for (let i = 12; i < observations.length; i++) {
-    const current = parseFloat(observations[i].value);
-    const yearAgo = parseFloat(observations[i - 12].value);
-    if (!isNaN(current) && !isNaN(yearAgo) && yearAgo !== 0) {
-      const growth = ((current - yearAgo) / yearAgo) * 100;
-      result.push({ date: observations[i].date, value: growth });
-    }
-  }
-  return result;
+/* ------------------------------------------------------------
+   Helpers
+------------------------------------------------------------ */
+
+function parseDateSafe(d) {
+  const dt = new Date(d);
+  return isNaN(dt) ? null : dt;
 }
 
-/**
- * Rolling % change over N months.
- * Mirrors original calculateRollingPercentChange.
- */
-function calculateRollingPercentChange(observations, months) {
-  const result = [];
-  for (let i = months; i < observations.length; i++) {
-    const current = parseFloat(observations[i].value);
-    const periodAgo = parseFloat(observations[i - months].value);
-    if (!isNaN(current) && !isNaN(periodAgo) && periodAgo !== 0) {
-      const change = ((current - periodAgo) / periodAgo) * 100;
-      result.push({ date: observations[i].date, value: change });
-    }
-  }
-  return result;
+function pctChange(nv, ov) {
+  const n = Number(nv);
+  const o = Number(ov);
+  if (!Number.isFinite(n) || !Number.isFinite(o) || o === 0) return null;
+  return ((n - o) / o) * 100;
 }
 
-/**
- * Moving average over N periods, expressed in thousands.
- * Mirrors original calculateMovingAverage (ICSA).
- */
-function calculateMovingAverage(observations, periods) {
-  const result = [];
-  for (let i = periods - 1; i < observations.length; i++) {
-    let sum = 0, count = 0;
-    for (let j = 0; j < periods; j++) {
-      const value = parseFloat(observations[i - j].value);
-      if (!isNaN(value)) {
-        sum += value;
-        count++;
-      }
-    }
-    if (count === periods) {
-      result.push({
-        date: observations[i].date,
-        value: sum / periods / 1000, // thousands
-      });
-    }
-  }
-  return result;
+function rollingMA(arr, n) {
+  if (!Array.isArray(arr) || arr.length < n) return null;
+  const slice = arr.slice(-n);
+  const nums = slice.map(o => Number(o.value)).filter(v => Number.isFinite(v));
+  if (nums.length < n) return null;
+  const sum = nums.reduce((a, b) => a + b, 0);
+  return sum / n;
 }
 
-// Internal cache: fredId -> processed history [{ date, value }]
-const historyCache = Object.create(null);
+/* ------------------------------------------------------------
+   Transform functions
+------------------------------------------------------------ */
 
-/**
- * Core processor: apply indicator.historyTransform to a FRED series.
- * This is a direct generalisation of the old loadHistoricalData switch.
- */
-function processHistoryForIndicator(indicatorCfg, seriesObj) {
-  if (!seriesObj || !Array.isArray(seriesObj.observations)) return null;
-
-  const obs = seriesObj.observations;
-  if (!obs.length) return [];
-
-  const transform = indicatorCfg.historyTransform || 'raw';
-
-  if (transform === 'yoy_percent') {
-    return calculateYoYGrowth(obs);
-  }
-
-  if (transform === 'pct_change_6m') {
-    return calculateRollingPercentChange(obs, 6);
-  }
-
-  if (transform === 'ma4_thousands') {
-    return calculateMovingAverage(obs, 4);
-  }
-
-  // 'raw' or unknown: just map numeric values with defensive filtering.
-  return obs
-    .map(o => ({ date: o.date, value: parseFloat(o.value) }))
-    .filter(o => !isNaN(o.value));
+function transformRaw(obs) {
+  const v = Number(obs.value);
+  return Number.isFinite(v) ? v : null;
 }
 
-/**
- * Load and cache processed historical data for a FRED-backed indicator.
- *
- * Returns: [{ date: 'YYYY-MM-DD', value: number }, ...] or null on error.
- */
-export async function loadProcessedHistory(indicatorCfg) {
-  if (!indicatorCfg || !indicatorCfg.fromFred || !indicatorCfg.fredId) return null;
+function transformYoY(allObs, idx) {
+  const now = allObs[idx];
+  if (!now) return null;
 
-  const fredId = indicatorCfg.fredId;
+  const nowDate = parseDateSafe(now.date);
+  if (!nowDate) return null;
 
-  if (historyCache[fredId]) return historyCache[fredId];
+  const target = new Date(nowDate);
+  target.setMonth(target.getMonth() - 12);
 
-  try {
-    await loadFredCache();
-    const seriesObj = getSeries(fredId);
-    if (!seriesObj || !Array.isArray(seriesObj.observations)) {
-      console.warn(`No historical data found for ${fredId}`);
-      historyCache[fredId] = [];
-      return historyCache[fredId];
+  let back = null;
+  for (let i = idx - 1; i >= 0; i--) {
+    const d = parseDateSafe(allObs[i].date);
+    if (!d) continue;
+    if (d <= target) {
+      back = allObs[i];
+      break;
+    }
+  }
+
+  if (!back) return null;
+  return pctChange(now.value, back.value);
+}
+
+function transformPct6m(allObs, idx) {
+  const now = allObs[idx];
+  if (!now) return null;
+
+  const nowDate = parseDateSafe(now.date);
+  if (!nowDate) return null;
+
+  const target = new Date(nowDate);
+  target.setMonth(target.getMonth() - 6);
+
+  let back = null;
+  for (let i = idx - 1; i >= 0; i--) {
+    const d = parseDateSafe(allObs[i].date);
+    if (!d) continue;
+    if (d <= target) {
+      back = allObs[i];
+      break;
+    }
+  }
+
+  if (!back) return null;
+  return pctChange(now.value, back.value);
+}
+
+function transformMA4k(allObs, idx) {
+  if (idx < 3) return null;
+  const slice = allObs.slice(idx - 3, idx + 1);
+  const avg = rollingMA(slice, 4);
+  return avg != null ? avg / 1000 : null;
+}
+
+/* ------------------------------------------------------------
+   Core transformer
+------------------------------------------------------------ */
+
+function applyTransform(allObs, transform) {
+  if (!Array.isArray(allObs) || !allObs.length) return [];
+
+  return allObs.map((obs, idx) => {
+    let value = null;
+
+    switch (transform) {
+      case 'raw':
+        value = transformRaw(obs);
+        break;
+
+      case 'yoy_percent':
+        value = transformYoY(allObs, idx);
+        break;
+
+      case 'pct_change_6m':
+        value = transformPct6m(allObs, idx);
+        break;
+
+      case 'ma4_thousands':
+        value = transformMA4k(allObs, idx);
+        break;
+
+      default:
+        value = null;
     }
 
-    const processed = processHistoryForIndicator(indicatorCfg, seriesObj) || [];
-    historyCache[fredId] = processed;
-    return processed;
-  } catch (err) {
-    console.error(`Error loading historical data for ${fredId}:`, err);
-    historyCache[fredId] = null;
-    return null;
-  }
-}
-
-/**
- * Period subset logic: '12M', '5Y', 'MAX'.
- * Identical semantics to original getPeriodSubset implementation.
- */
-export function getPeriodSubset(historyData, period) {
-  if (!Array.isArray(historyData) || historyData.length === 0) return [];
-
-  if (period === 'MAX') return historyData.slice();
-
-  const lastEntry = historyData[historyData.length - 1];
-  const lastDate = new Date(lastEntry.date);
-  if (isNaN(lastDate)) {
-    // Fallback: last 12 points
-    return historyData.slice(-12);
-  }
-
-  const yearsBack = period === '5Y' ? 5 : 1;
-  const cutoff = new Date(lastDate);
-  cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
-
-  const subset = historyData.filter(d => {
-    const dt = new Date(d.date);
-    return !isNaN(dt) && dt >= cutoff;
+    return {
+      date: obs.date,
+      value: Number.isFinite(value) ? value : null,
+    };
   });
+}
 
-  if (subset.length >= 3) return subset;
+/* ------------------------------------------------------------
+   Lookback slicing
+------------------------------------------------------------ */
 
-  const fallbackCount = Math.min(12, historyData.length);
-  return historyData.slice(-fallbackCount);
+function sliceLookback(data, months) {
+  if (!months || !Array.isArray(data) || !data.length) return data;
+
+  const last = data[data.length - 1];
+  const lastDate = parseDateSafe(last.date);
+  if (!lastDate) return data;
+
+  const minDate = new Date(lastDate);
+  minDate.setMonth(minDate.getMonth() - months);
+
+  return data.filter(d => {
+    const dt = parseDateSafe(d.date);
+    return dt && dt >= minDate;
+  });
+}
+
+/* ------------------------------------------------------------
+   Public API
+------------------------------------------------------------ */
+
+/**
+ * getHistoryForSeries
+ * Apply transform to a raw series from FRED.
+ */
+export async function getHistoryForSeries(fredId, transform, lookbackMonths) {
+  await loadFredCache();
+  const series = getSeries(fredId);
+  if (!series || !Array.isArray(series.observations)) {
+    return [];
+  }
+
+  const obs = series.observations;
+
+  const transformed = applyTransform(obs, transform);
+
+  if (lookbackMonths) {
+    return sliceLookback(transformed, lookbackMonths);
+  }
+
+  return transformed;
 }
 
 /**
- * Compute history stats exactly like your original updateHistoryStats:
- * - current
- * - 3-step change (%)
- * - 6-step change (%)
- * - 12-step change (%)
- *
- * NOTE: "3M/6M/12M" here are *index steps* as before, not calendar-aware.
+ * getHistoryForIndicator(key, lookbackMonths)
+ * Uses INDICATOR_CONFIG to pick:
+ * - fredId
+ * - historyTransform
  */
-export function computeHistoryStats(historyData) {
-  if (!Array.isArray(historyData) || historyData.length === 0) return null;
+export async function getHistoryForIndicator(key, lookbackMonths) {
+  const cfg = INDICATOR_CONFIG[key];
+  if (!cfg || !cfg.fromFred || !cfg.fredId) return [];
 
-  const values = historyData
-    .map(item => item.value)
-    .filter(v => Number.isFinite(v));
+  const transform = cfg.historyTransform || cfg.transform || 'raw';
 
-  if (!values.length) return null;
-
-  const current = values[values.length - 1];
-  const threeAgo = values.length >= 4 ? values[values.length - 4] : null;
-  const sixAgo = values.length >= 7 ? values[values.length - 7] : null;
-  const twelveAgo = values.length >= 13 ? values[values.length - 13] : null;
-
-  const pct = (now, then) => {
-    if (then === null || !Number.isFinite(now) || !Number.isFinite(then) || then === 0) return null;
-    return ((now - then) / Math.abs(then)) * 100;
-  };
-
-  const threeChangePct = pct(current, threeAgo);
-  const sixChangePct = pct(current, sixAgo);
-  const twelveChangePct = pct(current, twelveAgo);
-
-  return {
-    current,
-    threeChangePct,
-    sixChangePct,
-    twelveChangePct,
-  };
+  return await getHistoryForSeries(
+    cfg.fredId,
+    transform,
+    lookbackMonths,
+  );
 }
