@@ -11,10 +11,6 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Make module imports work on GitHub Pages -->
-  <script>
-    window.__APP_BASE = "";
-  </script>
 </head>
 
 <body>
@@ -28,8 +24,8 @@
       </div>
 
       <div class="buttons">
-        <button id="refreshBtn">Refresh Data</button>
-        <button id="resetBtn">Reset Inputs</button>
+        <button id="refresh-data">Refresh Data</button>
+        <button id="reset-inputs">Reset Inputs</button>
       </div>
     </div>
 
@@ -61,17 +57,10 @@
     </section>
   </main>
 
-  <!-- JS MODULES (ORDER MATTERS) -->
-  <script type="module" src="js/config.js"></script>
-  <script type="module" src="js/dataService.js"></script>
-  <script type="module" src="js/scoring.js"></script>
-  <script type="module" src="js/historyService.js"></script>
-  <script type="module" src="js/uiGauge.js"></script>
-  <script type="module" src="js/uiIndicators.js"></script>
-  <script type="module" src="js/uiCharts.js"></script>
-  <script type="module" src="js/uiAudit.js"></script>
+  <!-- MAIN APP ENTRY POINT -->
+  <script type="module">
+    import './js/app.js';
+  </script>
 
-  <!-- MAIN APP ORCHESTRATOR -->
-  <script type="module" src="js/app.js"></script>
 </body>
 </html>
