@@ -5,19 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Economic Crash Radar Pro</title>
 
-  <link rel="stylesheet" href="css/main.css" />
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/main.css" />
+
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <script> window.__APP_BASE = ""; </script>
+  <!-- Module import base (CRITICAL FIX) -->
+  <script> window.__APP_BASE = "/"; </script>
 </head>
 
 <body>
   <main id="appRoot">
 
+    <!-- =============================== -->
     <!-- HEADER -->
+    <!-- =============================== -->
     <div class="header">
       <h1>Economic Crash Radar Pro</h1>
-
       <div class="meta">
         <span id="modelLabel">Model v7 • Modular Architecture</span>
         <span id="cache-badge">FRED cache: not loaded</span>
@@ -28,6 +33,7 @@
         <button id="refresh-data">Refresh Data</button>
         <button id="reset-inputs">Reset Inputs</button>
         <button id="show-help">Help</button>
+
         <button id="export-csv">CSV</button>
         <button id="export-pdf">PDF</button>
         <button id="export-snapshot">Snapshot</button>
@@ -35,48 +41,63 @@
       </div>
     </div>
 
-    <!-- GAUGE -->
+    <!-- =============================== -->
+    <!-- GAUGE SECTION -->
+    <!-- =============================== -->
     <section id="gaugeSection">
       <h2>Composite Stress Gauge</h2>
 
-      <div id="gauge-container">
-        <div id="risk-fill"></div>
-        <div id="needle"></div>
-        <div id="composite-score">--</div>
+      <div class="gauge-wrapper">
+        <div id="gauge-container">
+          <div id="risk-fill"></div>
+          <div id="needle"></div>
+          <div id="composite-score">--</div>
+        </div>
       </div>
 
       <div id="regime-label">COMPOSITE STRESS — awaiting data</div>
+
       <div id="alert-banner"></div>
 
+      <!-- Sidebar tiles -->
       <div class="sidebar-tiles">
         <div class="sidebar-tile">
           <div class="tile-label">Recession Risk</div>
           <div id="recession-risk-display">--</div>
         </div>
+
         <div class="sidebar-tile">
           <div class="tile-label">Valuation Risk</div>
           <div id="valuation-risk-display">--</div>
         </div>
+
         <div class="sidebar-tile">
           <div class="tile-label">Labour Stress</div>
           <div id="labor-risk-display">--</div>
         </div>
+
         <div class="sidebar-tile">
           <div class="tile-label">Data Coverage</div>
           <div id="quality-display">--</div>
         </div>
       </div>
 
+      <!-- Valuation Summary -->
       <div id="valuation-summary">
         <div id="current-buffett-label">Buffett: --</div>
         <div id="current-cape-label">CAPE: --</div>
       </div>
 
+      <!-- Insight -->
       <div id="insight-text"></div>
+
+      <!-- Contributions -->
       <div id="contrib-list"></div>
     </section>
 
+    <!-- =============================== -->
     <!-- MACRO INDICATORS -->
+    <!-- =============================== -->
     <section id="macroSection">
       <h2>Macro Indicators</h2>
 
@@ -87,42 +108,54 @@
       <div id="tier2-indicators"></div>
     </section>
 
+    <!-- =============================== -->
     <!-- VALUATIONS -->
+    <!-- =============================== -->
     <section id="valuationSection">
       <h2>Valuation Indicators</h2>
       <div id="valuation-indicators"></div>
     </section>
 
-    <!-- HISTORY -->
+    <!-- =============================== -->
+    <!-- HISTORY SECTION -->
+    <!-- =============================== -->
     <section id="chartsSection">
       <h2>History</h2>
       <canvas id="composite-history"></canvas>
       <canvas id="risk-radar"></canvas>
     </section>
 
+    <!-- =============================== -->
     <!-- DATA AUDIT -->
+    <!-- =============================== -->
     <section id="auditSection">
       <h2>Data Audit</h2>
       <div id="data-audit"></div>
     </section>
 
+    <!-- TOOLTIP -->
     <div id="indicator-tooltip"></div>
 
+    <!-- LOADING OVERLAY -->
     <div id="loading-overlay">
       <div id="loading-text">Loading...</div>
     </div>
 
+    <!-- =============================== -->
     <!-- MODULE SCRIPTS -->
-    <script type="module" src="js/config.js"></script>
-    <script type="module" src="js/dataService.js"></script>
-    <script type="module" src="js/scoring.js"></script>
-    <script type="module" src="js/historyService.js"></script>
-    <script type="module" src="js/uiGauge.js"></script>
-    <script type="module" src="js/uiIndicators.js"></script>
-    <script type="module" src="js/uiCharts.js"></script>
-    <script type="module" src="js/uiAudit.js"></script>
-    <script type="module" src="js/exports.js"></script>
-    <script type="module" src="js/app.js"></script>
+    <!-- =============================== -->
+    <script type="module" src="/js/config.js"></script>
+    <script type="module" src="/js/dataService.js"></script>
+    <script type="module" src="/js/scoring.js"></script>
+    <script type="module" src="/js/historyService.js"></script>
+    <script type="module" src="/js/uiGauge.js"></script>
+    <script type="module" src="/js/uiIndicators.js"></script>
+    <script type="module" src="/js/uiCharts.js"></script>
+    <script type="module" src="/js/uiAudit.js"></script>
+    <script type="module" src="/js/exports.js"></script>
+
+    <!-- MAIN APP -->
+    <script type="module" src="/js/app.js"></script>
 
   </main>
 </body>
