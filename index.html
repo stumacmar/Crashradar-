@@ -12,190 +12,251 @@
   <link rel="stylesheet" href="css/main.css" />
 </head>
 
-<body>
-<div class="container">
+<body class="app-body">
+  <div class="app-shell">
 
-  <!-- HEADER -->
-  <div class="header">
-    <h1>⚡ Economic Crash Radar Pro</h1>
-    <div class="subtitle">
-      Single 0–100 composite of macro stress + valuations.
-    </div>
-    <div class="meta-badges">
-      <div class="badge">Model v7 · Modular Architecture</div>
-      <div class="badge" id="cache-badge">FRED cache: not loaded</div>
-      <div class="badge" id="inputs-badge">Inputs: 0/12 populated</div>
-    </div>
-    <div class="refresh-controls">
-      <button class="btn btn-primary" id="refresh-data">Refresh Data</button>
-      <button class="btn" id="reset-inputs">Reset Inputs</button>
-      <button class="btn" id="show-help">Help & Documentation</button>
-    </div>
-  </div>
+    <!-- TOP NAV / HEADER -->
+    <header class="app-header glass-row">
+      <div class="app-brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-text">
+          <h1 class="brand-title">Economic Crash Radar Pro</h1>
+          <p class="brand-subtitle">
+            Single 0–100 composite of macro stress + valuations.
+          </p>
+        </div>
+      </div>
 
-  <!-- ALERT -->
-  <div class="alert-banner" id="alert-banner">
-    Composite = macro + valuations (0–100).
-  </div>
+      <div class="header-right">
+        <div class="meta-badges">
+          <div class="badge">Model v7 · Modular Architecture</div>
+          <div class="badge" id="cache-badge">FRED cache: not loaded</div>
+          <div class="badge" id="inputs-badge">Inputs: 0/12 populated</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary" id="refresh-data">Refresh Data</button>
+          <button class="btn" id="reset-inputs">Reset Inputs</button>
+          <button class="btn" id="show-help">Help &amp; Documentation</button>
+        </div>
+      </div>
+    </header>
 
-  <div class="dashboard">
+    <!-- GLOBAL ALERT -->
+    <section class="alert-row glass-row">
+      <div class="alert-banner" id="alert-banner">
+        Composite = macro + valuations (0–100).
+      </div>
+    </section>
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
+    <!-- MAIN LAYOUT -->
+    <main class="app-main">
+      <div class="layout-grid">
 
-      <!-- GAUGE -->
-      <div id="gauge-mount">
-        <div class="gauge-container">
-          <div class="gauge">
-            <div class="gauge-background"></div>
-            <div class="gauge-needle" id="needle"></div>
-            <div class="gauge-center">
-              <div class="gauge-score" id="composite-score">--</div>
-              <div class="gauge-label" id="regime-label">
-                COMPOSITE STRESS — waiting for data
+        <!-- SIDEBAR -->
+        <aside class="sidebar-column">
+
+          <!-- Gauge block -->
+          <section class="glass-card gauge-card">
+            <div class="card-header compact">
+              <div class="card-title-main">
+                <span class="icon">🧭</span>
+                <span>Composite Stress Gauge</span>
               </div>
             </div>
-          </div>
-          <div class="risk-meter">
-            <div class="risk-bar">
-              <div class="risk-fill" id="risk-fill"></div>
+
+            <div id="gauge-mount">
+              <div class="gauge-container">
+                <div class="gauge">
+                  <div class="gauge-background"></div>
+                  <div class="gauge-needle" id="needle"></div>
+                  <div class="gauge-center">
+                    <div class="gauge-score" id="composite-score">--</div>
+                    <div class="gauge-label" id="regime-label">
+                      COMPOSITE STRESS — waiting for data
+                    </div>
+                  </div>
+                </div>
+                <div class="risk-meter">
+                  <div class="risk-bar">
+                    <div class="risk-fill" id="risk-fill"></div>
+                  </div>
+                  <div class="risk-labels">
+                    <span>Calm</span>
+                    <span>Stressed</span>
+                    <span>Critical</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="risk-labels">
-              <span>Calm</span>
-              <span>Stressed</span>
-              <span>Critical</span>
+
+            <!-- Status tiles under gauge -->
+            <div class="status-grid">
+              <div class="status-item">
+                <div class="status-label">Recession Probability (12–18m)</div>
+                <div class="status-value" id="recession-risk-display">--</div>
+              </div>
+              <div class="status-item">
+                <div class="status-label">Valuation Risk</div>
+                <div class="status-value" id="valuation-risk-display">--</div>
+              </div>
+              <div class="status-item">
+                <div class="status-label">Labor Market Stress</div>
+                <div class="status-value" id="labor-risk-display">--</div>
+              </div>
+              <div class="status-item">
+                <div class="status-label">Data Coverage</div>
+                <div class="status-value" id="quality-display">--</div>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </section>
 
-      <!-- STATUS GRID -->
-      <div class="status-grid">
-        <div class="status-item">
-          <div class="status-label">Recession Probability (12–18m)</div>
-          <div class="status-value" id="recession-risk-display">--</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">Valuation Risk</div>
-          <div class="status-value" id="valuation-risk-display">--</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">Labor Market Stress</div>
-          <div class="status-value" id="labor-risk-display">--</div>
-        </div>
-        <div class="status-item">
-          <div class="status-label">Data Coverage</div>
-          <div class="status-value" id="quality-display">--</div>
-        </div>
-      </div>
-
-      <!-- CONTRIBUTIONS -->
-      <div id="contrib-mount">
-        <div class="contrib-card">
-          <div class="contrib-title">What’s Driving the Score?</div>
-          <div class="contrib-list" id="contrib-list">
-            <div class="contrib-placeholder">
-              Populate indicators and valuations to see which ones drive the composite.
+          <!-- Contributions -->
+          <section class="glass-card contrib-card" id="contrib-mount">
+            <div class="card-header compact">
+              <div class="card-title-main">
+                <span class="icon">🔍</span>
+                <span>What’s Driving the Score?</span>
+              </div>
             </div>
-          </div>
-        </div>
+            <div class="contrib-list" id="contrib-list">
+              <div class="contrib-placeholder">
+                Populate indicators and valuations to see which ones drive the composite.
+              </div>
+            </div>
+          </section>
+
+          <!-- Export / Share -->
+          <section class="glass-card export-card">
+            <div class="card-header compact">
+              <div class="card-title-main">
+                <span class="icon">📤</span>
+                <span>Export &amp; Share</span>
+              </div>
+            </div>
+            <div class="export-options">
+              <button class="btn export-btn" id="export-pdf">PDF</button>
+              <button class="btn export-btn" id="export-csv">CSV</button>
+              <button class="btn export-btn" id="export-snapshot">Snapshot</button>
+              <button class="btn export-btn" id="share-link">Share Link</button>
+            </div>
+          </section>
+
+        </aside>
+
+        <!-- MAIN CONTENT COLUMN -->
+        <section class="main-column">
+
+          <!-- Tier 1 -->
+          <section class="glass-card">
+            <div class="card-header">
+              <div class="card-title-main">
+                <span class="icon">📊</span>
+                <span>Tier 1 Leading Indicators</span>
+              </div>
+              <div class="card-subtitle">
+                Early-cycle stress: curve, money, credit, sentiment.
+              </div>
+            </div>
+            <div class="indicator-grid" id="tier1-indicators"></div>
+          </section>
+
+          <!-- Tier 2 -->
+          <section class="glass-card">
+            <div class="card-header">
+              <div class="card-title-main">
+                <span class="icon">📈</span>
+                <span>Tier 2 Confirming Indicators</span>
+              </div>
+              <div class="card-subtitle">
+                Real activity &amp; labour market confirmation.
+              </div>
+            </div>
+            <div class="indicator-grid" id="tier2-indicators"></div>
+          </section>
+
+          <!-- Valuations -->
+          <section class="glass-card">
+            <div class="card-header">
+              <div class="card-title-main">
+                <span class="icon">💰</span>
+                <span>Valuation Indicators</span>
+              </div>
+              <div class="card-subtitle">
+                Buffett Indicator &amp; Shiller CAPE vs historical danger zones.
+              </div>
+            </div>
+
+            <div class="indicator-grid" id="valuation-indicators"></div>
+
+            <div id="valuation-current-box" class="valuation-comparison">
+              <div class="valuation-item current">
+                <div class="valuation-title">Current (your inputs)</div>
+                <div class="valuation-metric" id="current-buffett-label">Buffett: --</div>
+                <div class="valuation-metric" id="current-cape-label">CAPE: --</div>
+                <div class="valuation-outcome">
+                  Live vs historical danger bands.
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Trend & Risk Map -->
+          <section class="glass-card trend-card">
+            <div class="card-header">
+              <div class="card-title-main">
+                <span class="icon">🕒</span>
+                <span>Trend &amp; Risk Map</span>
+              </div>
+              <div class="card-subtitle">
+                Composite history, regime bands, and cross-section of macro stress.
+              </div>
+            </div>
+
+            <div class="insight-card" id="insight-text">
+              No composite yet. Ensure fred_cache.json is fresh and LEI / Buffett / CAPE are populated.
+            </div>
+
+            <div class="trend-layout">
+              <div class="trend-panel">
+                <div class="panel-label">Composite Stress History</div>
+                <canvas id="composite-history" height="140"></canvas>
+              </div>
+              <div class="trend-panel">
+                <div class="panel-label">Macro &amp; Valuation Radar</div>
+                <canvas id="risk-radar" height="160"></canvas>
+              </div>
+            </div>
+          </section>
+
+          <!-- Data Quality -->
+          <section class="glass-card">
+            <div class="card-header">
+              <div class="card-title-main">
+                <span class="icon">🧪</span>
+                <span>Data Quality &amp; Staleness</span>
+              </div>
+              <div class="card-subtitle">
+                Coverage of auto FRED series, manual inputs, and valuations.
+              </div>
+            </div>
+            <div id="data-audit"></div>
+          </section>
+
+        </section>
       </div>
-
-      <!-- EXPORT -->
-      <div class="export-section">
-        <h3>Export & Share</h3>
-        <div class="export-options">
-          <button class="btn export-btn" id="export-pdf">PDF</button>
-          <button class="btn export-btn" id="export-csv">CSV</button>
-          <button class="btn export-btn" id="export-snapshot">Snapshot</button>
-          <button class="btn export-btn" id="share-link">Share Link</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <div class="main-content">
-
-      <!-- TIER 1 -->
-      <div class="card">
-        <div class="card-title">
-          <span class="icon">📊</span>Tier 1 Leading Indicators
-        </div>
-        <div class="indicator-grid" id="tier1-indicators"></div>
-      </div>
-
-      <!-- TIER 2 -->
-      <div class="card">
-        <div class="card-title">
-          <span class="icon">📈</span>Tier 2 Confirming Indicators
-        </div>
-        <div class="indicator-grid" id="tier2-indicators"></div>
-      </div>
-
-      <!-- VALUATIONS -->
-      <div class="card">
-        <div class="card-title">
-          <span class="icon">💰</span>Valuation Indicators
-        </div>
-        <div class="indicator-grid" id="valuation-indicators"></div>
-
-        <div id="valuation-current-box" class="valuation-comparison">
-          <div class="valuation-item current">
-            <div class="valuation-title">Current (your inputs)</div>
-            <div class="valuation-metric" id="current-buffett-label">Buffett: --</div>
-            <div class="valuation-metric" id="current-cape-label">CAPE: --</div>
-            <div class="valuation-outcome">Live vs historical danger bands.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- HISTORY & RADAR -->
-      <div class="card">
-        <div class="card-title">
-          <span class="icon">🕒</span>Trend & Risk Map
-        </div>
-
-        <div class="insight-card" id="insight-text">
-          No composite yet. Ensure fred_cache.json is fresh and LEI / Buffett / CAPE are populated.
-        </div>
-
-        <canvas id="composite-history" height="130"></canvas>
-        <canvas id="risk-radar" height="140"></canvas>
-      </div>
-
-      <!-- DATA AUDIT -->
-      <div class="card">
-        <div class="card-title">
-          <span class="icon">🧪</span>Data Quality & Staleness
-        </div>
-        <div id="data-audit"></div>
-      </div>
-
-    </div>
+    </main>
   </div>
-</div>
 
-<!-- Loading Overlay -->
-<div class="loading-overlay" id="loading-overlay">
-  <div class="loading-spinner"></div>
-  <div class="loading-text" id="loading-text">Loading…</div>
-</div>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loading-text">Loading…</div>
+  </div>
 
-<!-- Tooltip -->
-<div class="indicator-tooltip" id="indicator-tooltip"></div>
+  <!-- Tooltip -->
+  <div class="indicator-tooltip" id="indicator-tooltip"></div>
 
-<!-- MODULE IMPORT CHAIN (REQUIRED) -->
-<script type="module" src="js/config.js"></script>
-<script type="module" src="js/scoring.js"></script>
-<script type="module" src="js/dataService.js"></script>
-<script type="module" src="js/uiIndicators.js"></script>
-<script type="module" src="js/uiGauge.js"></script>
-<script type="module" src="js/uiCharts.js"></script>
-<script type="module" src="js/uiAudit.js"></script>
-<script type="module" src="js/exports.js"></script>
-
-<!-- MAIN APP -->
-<script type="module" src="js/app.js"></script>
-
+  <!-- Main App Entry -->
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
