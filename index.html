@@ -43,7 +43,7 @@
     <!-- SIDEBAR -->
     <div class="sidebar">
 
-      <!-- Gauge mount with all required IDs -->
+      <!-- GAUGE -->
       <div id="gauge-mount">
         <div class="gauge-container">
           <div class="gauge">
@@ -69,6 +69,7 @@
         </div>
       </div>
 
+      <!-- STATUS GRID -->
       <div class="status-grid">
         <div class="status-item">
           <div class="status-label">Recession Probability (12–18m)</div>
@@ -88,7 +89,7 @@
         </div>
       </div>
 
-      <!-- Contributions card mount with contrib-list id -->
+      <!-- CONTRIBUTIONS -->
       <div id="contrib-mount">
         <div class="contrib-card">
           <div class="contrib-title">What’s Driving the Score?</div>
@@ -100,6 +101,7 @@
         </div>
       </div>
 
+      <!-- EXPORT -->
       <div class="export-section">
         <h3>Export & Share</h3>
         <div class="export-options">
@@ -114,21 +116,29 @@
     <!-- MAIN CONTENT -->
     <div class="main-content">
 
+      <!-- TIER 1 -->
       <div class="card">
-        <div class="card-title"><span class="icon">📊</span>Tier 1 Leading Indicators</div>
+        <div class="card-title">
+          <span class="icon">📊</span>Tier 1 Leading Indicators
+        </div>
         <div class="indicator-grid" id="tier1-indicators"></div>
       </div>
 
+      <!-- TIER 2 -->
       <div class="card">
-        <div class="card-title"><span class="icon">📈</span>Tier 2 Confirming Indicators</div>
+        <div class="card-title">
+          <span class="icon">📈</span>Tier 2 Confirming Indicators
+        </div>
         <div class="indicator-grid" id="tier2-indicators"></div>
       </div>
 
+      <!-- VALUATIONS -->
       <div class="card">
-        <div class="card-title"><span class="icon">💰</span>Valuation Indicators</div>
+        <div class="card-title">
+          <span class="icon">💰</span>Valuation Indicators
+        </div>
         <div class="indicator-grid" id="valuation-indicators"></div>
 
-        <!-- Valuation current box with the two labels the JS updates -->
         <div id="valuation-current-box" class="valuation-comparison">
           <div class="valuation-item current">
             <div class="valuation-title">Current (your inputs)</div>
@@ -139,10 +149,12 @@
         </div>
       </div>
 
+      <!-- HISTORY & RADAR -->
       <div class="card">
-        <div class="card-title"><span class="icon">🕒</span>Trend & Risk Map</div>
+        <div class="card-title">
+          <span class="icon">🕒</span>Trend & Risk Map
+        </div>
 
-        <!-- Insight text used by uiGauge.updateInsightText -->
         <div class="insight-card" id="insight-text">
           No composite yet. Ensure fred_cache.json is fresh and LEI / Buffett / CAPE are populated.
         </div>
@@ -151,8 +163,11 @@
         <canvas id="risk-radar" height="140"></canvas>
       </div>
 
+      <!-- DATA AUDIT -->
       <div class="card">
-        <div class="card-title"><span class="icon">🧪</span>Data Quality & Staleness</div>
+        <div class="card-title">
+          <span class="icon">🧪</span>Data Quality & Staleness
+        </div>
         <div id="data-audit"></div>
       </div>
 
@@ -169,7 +184,17 @@
 <!-- Tooltip -->
 <div class="indicator-tooltip" id="indicator-tooltip"></div>
 
-<!-- Main App Entry -->
+<!-- MODULE IMPORT CHAIN (REQUIRED) -->
+<script type="module" src="js/config.js"></script>
+<script type="module" src="js/scoring.js"></script>
+<script type="module" src="js/dataService.js"></script>
+<script type="module" src="js/uiIndicators.js"></script>
+<script type="module" src="js/uiGauge.js"></script>
+<script type="module" src="js/uiCharts.js"></script>
+<script type="module" src="js/uiAudit.js"></script>
+<script type="module" src="js/exports.js"></script>
+
+<!-- MAIN APP -->
 <script type="module" src="js/app.js"></script>
 
 </body>
