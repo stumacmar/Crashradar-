@@ -1,11 +1,5 @@
 // js/uiAudit.js
 // Data quality & staleness card ("Data Quality & Staleness").
-//
-// This is a modular extraction of the original renderDataAudit function.
-// It uses:
-// - INDICATOR_CONFIG to distinguish FRED-backed vs manual indicators.
-// - VALUATION_CONFIG for the valuation inputs.
-// - cacheAgeDays from cacheMeta to show freshness badges.
 
 import {
   INDICATOR_CONFIG,
@@ -30,7 +24,6 @@ export function updateDataAudit({
 
   const { cacheAgeDays = null } = cacheMeta;
 
-  // Split indicators into auto (FRED) vs manual.
   const autoIndicators = Object.entries(INDICATOR_CONFIG)
     .filter(([, cfg]) => cfg.fromFred)
     .map(([key, cfg]) => ({
@@ -82,7 +75,6 @@ export function updateDataAudit({
     .filter(v => !Number.isFinite(v.current))
     .map(v => v.label);
 
-  // Freshness badge logic (identical thresholds to original).
   let freshnessLabel = 'Unknown';
   let freshnessVerdict = 'unknown';
 
@@ -148,12 +140,4 @@ export function updateDataAudit({
         <div class="audit-list-title">Missing manual / valuation</div>
         ${
           (missingManual.length || missingValuations.length)
-            ? [...missingManual, ...missingValuations]
-                .map(name => `<span class="audit-tag">${name}</span>`)
-                .join('')
-            : '<span class="audit-tag audit-tag-ok">None</span>'
-        }
-      </div>
-    </div>
-  `;
-}
+            ? [...missingManual, ...missingVal
