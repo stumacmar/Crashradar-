@@ -2,11 +2,6 @@
 // Builds Tier 1 / Tier 2 indicator tiles and valuation tiles,
 // including manual input wiring and indicator hover tooltips.
 //
-// This is a modular extraction of the original:
-// - buildIndicatorElement
-// - renderIndicators
-// - renderValuations
-//
 // It does NOT mutate global state. Instead:
 // - It reads values from indicatorValuesByKey / valuationValuesByKey.
 // - It calls onManualChange(key, newValue|null) when LEI/BUFFETT/SHILLER_PE inputs change.
@@ -23,7 +18,7 @@ import {
   stressVerdictLabel,
 } from './scoring.js';
 
-/* ---------- Tooltip helpers (same behaviour as original) ---------- */
+/* ---------- Tooltip helpers ---------- */
 
 function showTooltip(content, x, y) {
   const tooltip = document.getElementById('indicator-tooltip');
@@ -42,16 +37,6 @@ function hideTooltip() {
 
 /* ---------- Indicator tile builder ---------- */
 
-/**
- * Build a single macro indicator tile DOM element.
- *
- * @param {string} key - indicator key, e.g. 'YIELD_CURVE'
- * @param {object} cfg - INDICATOR_CONFIG[key]
- * @param {number|null} currentValue - current numeric value
- * @param {function} onManualChange - (key, newValue|null) => void
- * @param {function} onExpandIndicator - (key) => void
- * @returns {HTMLElement}
- */
 function buildIndicatorElement(
   key,
   cfg,
@@ -110,7 +95,6 @@ function buildIndicatorElement(
       '</div>';
   }
 
-  // History section (only for FRED-backed)
   const historySection = cfg.fromFred ? `
     <div class="indicator-history" data-history-key="${key}">
       <div class="history-period-selector">
@@ -145,10 +129,8 @@ function buildIndicatorElement(
     manual +
     historySection;
 
-  // Click-to-expand only for FRED-backed indicators.
   if (cfg.fromFred) {
     div.addEventListener('click', e => {
-      // Ignore clicks inside manual input or history controls.
       if (
         e.target.closest('.manual-input') ||
         e.target.closest('.history-period-selector') ||
@@ -162,7 +144,6 @@ function buildIndicatorElement(
     });
   }
 
-  // Hover tooltip.
   if (tooltipHtml) {
     div.addEventListener('mouseenter', e => {
       showTooltip(tooltipHtml, e.pageX + 10, e.pageY + 10);
@@ -175,7 +156,6 @@ function buildIndicatorElement(
     });
   }
 
-  // Manual LEI input, if present.
   if (!cfg.fromFred && key === 'LEI') {
     const input = div.querySelector('.manual-input[data-ind-key]');
     if (input && typeof onManualChange === 'function') {
@@ -193,15 +173,6 @@ function buildIndicatorElement(
 
 /* ---------- Valuation tile builder ---------- */
 
-/**
- * Build a single valuation tile DOM element.
- *
- * @param {string} key - valuation key ('BUFFETT'|'SHILLER_PE')
- * @param {object} cfg - VALUATION_CONFIG[key]
- * @param {number|null} currentValue
- * @param {function} onManualChange - (key, newValue|null) => void
- * @returns {HTMLElement}
- */
 function buildValuationElement(
   key,
   cfg,
@@ -278,7 +249,6 @@ function buildValuationElement(
     });
   }
 
-  // Manual valuation input.
   const input = div.querySelector('.manual-input[data-val-key]');
   if (input && typeof onManualChange === 'function') {
     input.addEventListener('input', () => {
@@ -294,14 +264,6 @@ function buildValuationElement(
 
 /* ---------- Public API ---------- */
 
-/**
- * Render Tier 1 + Tier 2 macro indicators.
- *
- * @param {Object} params
- *  - indicatorValuesByKey: { [key:string]: number|null }
- *  - onManualChange: (key, newValue|null) => void
- *  - onExpandIndicator: (key) => void
- */
 export function renderMacroIndicators({
   indicatorValuesByKey = {},
   onManualChange,
@@ -330,13 +292,6 @@ export function renderMacroIndicators({
   });
 }
 
-/**
- * Render valuation indicators (Buffett + Shiller).
- *
- * @param {Object} params
- *  - valuationValuesByKey: { [key:string]: number|null }
- *  - onManualChange: (key, newValue|null) => void
- */
 export function renderValuationIndicators({
   valuationValuesByKey = {},
   onManualChange,
