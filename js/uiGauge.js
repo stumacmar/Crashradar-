@@ -1,14 +1,14 @@
 // js/uiGauge.js
-// Gauge, sidebar status tiles, alert banner, insight text, and contribution list.
+// ------------------------------------------------------------
+// Gauge, sidebar status tiles, alert banner, valuation summary,
+// insight text, and "What's Driving the Score?" list.
 //
-// This is a direct modularisation of:
-// - renderGaugeAndStatus
-// - renderContributions
-// - updateInsight
-// - syncValuationCurrentBox
-//
-// No business logic has been changed: thresholds, wording, and behaviours
-// match the original index.html implementation.
+// DOM is wired to the IDs in index.html:
+// - composite-score, regime-label, needle, risk-fill
+// - recession-risk-display, valuation-risk-display, labor-risk-display
+// - quality-display, inputs-badge
+// - insight-text, contrib-list
+// ------------------------------------------------------------
 
 import {
   INDICATOR_CONFIG,
@@ -23,9 +23,10 @@ import {
   stressVerdictLabel,
 } from './scoring.js';
 
-/**
- * Internal: compute coverage (used / total) from current values.
- */
+/* ------------------------------------------------------------
+   Internal: coverage computation
+------------------------------------------------------------ */
+
 function computeCoverage(indicatorValuesByKey, valuationValuesByKey) {
   const total =
     Object.keys(INDICATOR_CONFIG).length +
@@ -58,15 +59,12 @@ function computeCoverage(indicatorValuesByKey, valuationValuesByKey) {
   };
 }
 
+/* ------------------------------------------------------------
+   Gauge + tiles + alert
+------------------------------------------------------------ */
+
 /**
- * Update the main composite gauge, sidebar status tiles, inputs/data coverage
- * badge, and alert banner.
- *
- * @param {Object} params
- *  - compositeScore: number|null
- *  - indicatorValuesByKey: { [key:string]: number|null }
- *  - valuationValuesByKey: { [key:string]: number|null }
- *  - cacheMeta: { cacheAgeDays?: number|null }
+ * Update main composite gauge, sidebar status tiles, coverage badge, and alert.
  */
 export function updateGaugeAndStatus({
   compositeScore,
@@ -90,7 +88,6 @@ export function updateGaugeAndStatus({
   if (!scoreEl || !needle || !fill || !regimeEl || !alert ||
       !recessionRiskEl || !valuationRiskEl || !laborRiskEl ||
       !inputsBadge || !qualityDisplay) {
-    // DOM not ready or structure changed; fail quietly.
     return;
   }
 
@@ -105,7 +102,7 @@ export function updateGaugeAndStatus({
   inputsBadge.textContent = `Inputs: ${used}/${total} populated`;
   qualityDisplay.textContent = total ? `${coveragePct}%` : '--';
 
-  // No composite yet: reset gauge and show guidance message
+  // No composite yet
   if (compositeScore == null || !Number.isFinite(compositeScore)) {
     scoreEl.textContent = '--';
     fill.style.width = '0%';
@@ -142,7 +139,6 @@ export function updateGaugeAndStatus({
 
   regimeEl.textContent = 'COMPOSITE STRESS — ' + regime;
 
-  // Derived labels from scoring.js
   const recessionLabel = derivedRecessionRisk(v);
   const valuationLabel = derivedValuationRisk(valuationValuesByKey);
   const laborLabel = derivedLaborStress(indicatorValuesByKey);
@@ -151,7 +147,6 @@ export function updateGaugeAndStatus({
   valuationRiskEl.textContent = valuationLabel;
   laborRiskEl.textContent = laborLabel;
 
-  // Alert banner logic (unchanged from original)
   let prefix = '';
   if (cacheAgeDays != null && cacheAgeDays > 10) {
     prefix += 'Data warning: FRED cache is ' +
@@ -177,9 +172,12 @@ export function updateGaugeAndStatus({
   }
 }
 
+/* ------------------------------------------------------------
+   Valuation current box
+------------------------------------------------------------ */
+
 /**
  * Update the "Current (your inputs)" valuation comparison box.
- * Mirrors original syncValuationCurrentBox.
  */
 export function syncValuationSummary(valuationValuesByKey = {}) {
   const buffett = valuationValuesByKey.BUFFETT;
@@ -201,13 +199,12 @@ export function syncValuationSummary(valuationValuesByKey = {}) {
   }
 }
 
+/* ------------------------------------------------------------
+   Insight microcopy
+------------------------------------------------------------ */
+
 /**
  * Update the insight micro-copy above the composite-history chart.
- * Mirrors original updateInsight behaviour and wording.
- *
- * @param {Object} params
- *  - compositeScore: number|null
- *  - valuationValuesByKey: { [key:string]: number|null }
  */
 export function updateInsightText({
   compositeScore,
@@ -240,14 +237,12 @@ export function updateInsightText({
   }
 }
 
+/* ------------------------------------------------------------
+   Contributions sidebar
+------------------------------------------------------------ */
+
 /**
- * Render the "What’s Driving the Score?" contribution list in the sidebar.
- * Mirrors original renderContributions, but uses computeContributions from scoring.js.
- *
- * @param {Object} params
- *  - compositeScore: number|null
- *  - indicatorValuesByKey: { [key:string]: number|null }
- *  - valuationValuesByKey: { [key:string]: number|null }
+ * Render the "What’s Driving the Score?" contribution list.
  */
 export function updateContributions({
   compositeScore,
