@@ -12,8 +12,10 @@ export const LOCAL_STORAGE_KEYS = {
   snapshots: 'crashRadarSnapshots',
 };
 
-// Indicator configuration (no mutable state).
-// Keys and semantics are identical to the original INDICATORS object.
+// -----------------------------------------------------------------------------
+// INDICATOR CONFIGURATION
+// -----------------------------------------------------------------------------
+
 export const INDICATOR_CONFIG = {
   LEI: {
     key: 'LEI',
@@ -25,13 +27,12 @@ export const INDICATOR_CONFIG = {
     span: 3.0,
     fromFred: false,
     fredId: null,
-    // For current value: manual only.
     transform: 'manual',
-    // For history: not available (no FRED series).
     historyTransform: null,
     format: v => v.toFixed(1) + '%',
     desc: 'Manual. 6m % change in LEI. ≤ -3.5% has preceded most post-1960 recessions.',
-    tooltip: 'The Conference Board Leading Economic Index (LEI) 6-month percent change. A value ≤ -3.5% has historically preceded most recessions since 1960.',
+    tooltip:
+      'The Conference Board Leading Economic Index (LEI) 6-month percent change. A value ≤ -3.5% has historically preceded most recessions since 1960.',
   },
 
   YIELD_CURVE: {
@@ -44,11 +45,12 @@ export const INDICATOR_CONFIG = {
     span: 1.0,
     fromFred: true,
     fredId: 'T10Y3M',
-    transform: 'raw',          // current value = latest spread
+    transform: 'raw',
     historyTransform: 'raw',
     format: v => v.toFixed(2) + ' pp',
     desc: '10y–3m spread. Inversions (≤0) are classic recession leads.',
-    tooltip: '10-year minus 3-month Treasury yield spread. Inversions (≤0) have preceded most US recessions since 1950.',
+    tooltip:
+      '10-year minus 3-month Treasury yield spread. Inversions (≤0) have preceded most US recessions since 1950.',
   },
 
   CREDIT_SPREAD: {
@@ -65,7 +67,8 @@ export const INDICATOR_CONFIG = {
     historyTransform: 'raw',
     format: v => v.toFixed(2) + ' pp',
     desc: 'US HY OAS. >5% = stress, >8% = crisis-like conditions.',
-    tooltip: 'High-yield corporate bond option-adjusted spread. >5% indicates financial stress; >8% signals crisis-like conditions.',
+    tooltip:
+      'High-yield corporate bond option-adjusted spread. >5% indicates financial stress; >8% signals crisis-like conditions.',
   },
 
   FIN_STRESS: {
@@ -82,7 +85,8 @@ export const INDICATOR_CONFIG = {
     historyTransform: 'raw',
     format: v => v.toFixed(2),
     desc: 'Chicago Fed NFCI. >0 indicates tighter-than-average conditions.',
-    tooltip: 'Chicago Fed National Financial Conditions Index. Positive values indicate tighter-than-average financial conditions.',
+    tooltip:
+      'Chicago Fed National Financial Conditions Index. Positive values indicate tighter-than-average financial conditions.',
   },
 
   CONSUMER_SENTIMENT: {
@@ -99,7 +103,8 @@ export const INDICATOR_CONFIG = {
     historyTransform: 'raw',
     format: v => v.toFixed(1),
     desc: 'Deep pessimism. Sustained <60 readings cluster around recessions.',
-    tooltip: 'University of Michigan Consumer Sentiment Index. Sustained readings <60 typically cluster around recessions.',
+    tooltip:
+      'University of Michigan Consumer Sentiment Index. Sustained readings <60 typically cluster around recessions.',
   },
 
   M2_GROWTH: {
@@ -112,13 +117,12 @@ export const INDICATOR_CONFIG = {
     span: 6.0,
     fromFred: true,
     fredId: 'M2SL',
-    // Current value: YoY % change from level series.
     transform: 'yoy_percent',
-    // History: YoY % series.
     historyTransform: 'yoy_percent',
     format: v => v.toFixed(1) + '%',
     desc: 'YoY growth from M2SL. ≤0% is historically rare and restrictive.',
-    tooltip: 'Year-over-year M2 money supply growth. ≤0% is historically rare and indicates restrictive monetary conditions.',
+    tooltip:
+      'Year-over-year M2 money supply growth. ≤0% is historically rare and indicates restrictive monetary conditions.',
   },
 
   INDUSTRIAL_PRODUCTION: {
@@ -135,7 +139,8 @@ export const INDICATOR_CONFIG = {
     historyTransform: 'yoy_percent',
     format: v => v.toFixed(1) + '%',
     desc: 'YoY change. Sustained contraction confirms downturn.',
-    tooltip: 'Year-over-year industrial production growth. Sustained contraction confirms broader economic downturn.',
+    tooltip:
+      'Year-over-year industrial production growth. Sustained contraction confirms broader economic downturn.',
   },
 
   BUILDING_PERMITS: {
@@ -148,12 +153,12 @@ export const INDICATOR_CONFIG = {
     span: 10.0,
     fromFred: true,
     fredId: 'PERMIT',
-    // Current value: 6m % change from level.
     transform: 'pct_change_6m',
     historyTransform: 'pct_change_6m',
     format: v => v.toFixed(1) + '%',
     desc: '6m % change. Sharp drops lead housing & broader weakness.',
-    tooltip: '6-month percent change in building permits. Sharp drops typically lead housing market weakness and broader economic slowdown.',
+    tooltip:
+      '6-month percent change in building permits. Sharp drops typically lead housing weakness and broader economic slowdown.',
   },
 
   INITIAL_CLAIMS: {
@@ -166,12 +171,13 @@ export const INDICATOR_CONFIG = {
     span: 150,
     fromFred: true,
     fredId: 'ICSA',
-    // Current value: 4-week moving average, expressed in thousands.
     transform: 'ma4_thousands',
     historyTransform: 'ma4_thousands',
     format: v => Math.round(v) + 'k',
-    desc: '4-week avg in thousands. >325k consistent with labor market stress.',
-    tooltip: '4-week moving average of initial jobless claims in thousands. >325k is consistent with labor market stress.',
+    desc:
+      '4-week avg in thousands. >325k consistent with labor market stress.',
+    tooltip:
+      '4-week moving average of initial jobless claims in thousands. >325k indicates labor market stress.',
   },
 
   SAHM_RULE: {
@@ -188,12 +194,15 @@ export const INDICATOR_CONFIG = {
     historyTransform: 'raw',
     format: v => v.toFixed(2),
     desc: '≥0.50 triggers real-time recession signal.',
-    tooltip: 'Sahm Rule Recession Indicator. A reading ≥0.50 percentage points triggers a real-time recession signal.',
+    tooltip:
+      'Sahm Rule Recession Indicator. ≥0.50 percentage points triggers a real-time recession signal.',
   },
 };
 
-// Valuation configuration (no mutable state).
-// Matches original VALUATIONS object.
+// -----------------------------------------------------------------------------
+// VALUATION CONFIGURATION
+// -----------------------------------------------------------------------------
+
 export const VALUATION_CONFIG = {
   BUFFETT: {
     key: 'BUFFETT',
@@ -202,7 +211,8 @@ export const VALUATION_CONFIG = {
     danger: 200,
     format: v => v.toFixed(1) + '%',
     desc: '>150% stretched; >200% historically extreme.',
-    tooltip: 'Total stock market capitalization to GDP ratio. >150% indicates stretched valuations; >200% is historically extreme.',
+    tooltip:
+      'Total stock market capitalization to GDP ratio. >150% = stretched; >200% = historically extreme.',
   },
 
   SHILLER_PE: {
@@ -212,4 +222,7 @@ export const VALUATION_CONFIG = {
     danger: 30,
     format: v => v.toFixed(1),
     desc: '>25 elevated; >30 associated with poor long-run returns.',
-    tooltip: 'Cyclically Adjusted Price-to-Earnings ratio. >
+    tooltip:
+      'Cyclically Adjusted Price-to-Earnings ratio (CAPE). >25 = elevated; >30 = historically associated with weak forward returns.',
+  },
+};
