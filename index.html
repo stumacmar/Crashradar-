@@ -5,230 +5,165 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Economic Crash Radar Pro</title>
 
-  <!-- Main stylesheet (all the beauty lives here) -->
+  <!-- CSS -->
   <link rel="stylesheet" href="css/main.css" />
 
-  <!-- Chart.js for charts -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Base path fix for GitHub Pages -->
+  <script>
+    window.__APP_BASE = "";
+  </script>
 </head>
 
 <body>
-  <!-- Global loading overlay -->
-  <div id="loading-overlay">
-    <div class="loading-panel">
-      <div class="loading-spinner"></div>
-      <div id="loading-text">Loading data…</div>
-    </div>
-  </div>
+  <div class="container">
 
-  <!-- App shell -->
-  <div class="app-shell">
+    <!-- ============================================================
+         HEADER
+    ============================================================ -->
+    <header class="card" style="margin-top: 24px;">
+      <h1>Economic Crash Radar Pro</h1>
 
-    <!-- HEADER -------------------------------------------------------- -->
-    <header class="app-header">
-      <div class="app-header-main">
-        <div class="app-title-block">
-          <h1 class="app-title">Economic Crash Radar Pro</h1>
-          <p class="app-subtitle">Macro stress, valuations & recession risk on one dashboard</p>
+      <div class="header-row">
+        <span id="cache-badge" class="contrib-tag">FRED cache: --</span>
+
+        <div class="button-group">
+          <button id="refresh-data" class="btn">Refresh Data</button>
+          <button id="reset-inputs" class="btn-secondary">Reset Inputs</button>
+          <button id="show-help" class="btn-secondary">Help</button>
         </div>
-
-        <div class="app-header-meta">
-          <span id="cache-badge" class="meta-pill">FRED cache: —</span>
-          <span id="inputs-badge" class="meta-pill meta-pill-soft">Inputs: 0/0 populated</span>
-        </div>
-      </div>
-
-      <div class="app-header-actions">
-        <button id="refresh-data" class="btn btn-primary">Refresh data</button>
-        <button id="reset-inputs" class="btn btn-ghost">Reset manual inputs</button>
-        <button id="show-help" class="btn btn-ghost">Help / how to use</button>
-
-        <div class="app-header-divider"></div>
-
-        <button id="export-csv" class="btn btn-ghost">Export CSV</button>
-        <button id="export-pdf" class="btn btn-ghost">Export PDF</button>
-        <button id="export-snapshot" class="btn btn-ghost">Save snapshot</button>
-        <button id="share-link" class="btn btn-ghost">Share config link</button>
       </div>
     </header>
 
-    <!-- MAIN LAYOUT --------------------------------------------------- -->
-    <main class="app-main">
+    <!-- ============================================================
+         GAUGE + SUMMARY
+    ============================================================ -->
+    <section class="card">
+      <h2>Composite Stress</h2>
 
-      <!-- TOP ROW: Gauge + status / insight -->
-      <section class="layout-top">
+      <div id="gauge-container">
+        <div id="needle"></div>
+      </div>
 
-        <!-- Composite gauge + alert -->
-        <section class="panel panel-gauge">
-          <header class="panel-header">
-            <h2>Composite Stress Gauge</h2>
-            <span class="panel-kpi-label">Data coverage</span>
-            <span id="quality-display" class="panel-kpi-value">--</span>
-          </header>
+      <div id="risk-fill"></div>
 
-          <div class="gauge-wrapper">
-            <div class="gauge-dial">
-              <div class="gauge-ring">
-                <div id="needle" class="gauge-needle"></div>
-                <div class="gauge-center">
-                  <div id="composite-score" class="gauge-score">--</div>
-                  <div id="regime-label" class="gauge-regime">COMPOSITE STRESS —</div>
-                </div>
-              </div>
-              <div class="gauge-bar">
-                <div id="risk-fill" class="gauge-bar-fill"></div>
-              </div>
-            </div>
+      <div id="regime-label" class="regime-label">
+        COMPOSITE STRESS — --
+      </div>
 
-            <aside class="status-grid">
-              <div class="status-card">
-                <div class="status-label">Recession risk (12–18m)</div>
-                <div id="recession-risk-display" class="status-value">--</div>
-              </div>
-              <div class="status-card">
-                <div class="status-label">Valuation risk</div>
-                <div id="valuation-risk-display" class="status-value">--</div>
-              </div>
-              <div class="status-card">
-                <div class="status-label">Labour market stress</div>
-                <div id="labor-risk-display" class="status-value">--</div>
-              </div>
-            </aside>
-          </div>
+      <div class="risk-row">
+        <div>
+          <div class="contrib-tag">Recession Risk</div>
+          <div id="recession-risk-display" class="risk-value">--</div>
+        </div>
+        <div>
+          <div class="contrib-tag">Valuation Risk</div>
+          <div id="valuation-risk-display" class="risk-value">--</div>
+        </div>
+        <div>
+          <div class="contrib-tag">Labour Stress</div>
+          <div id="labor-risk-display" class="risk-value">--</div>
+        </div>
+      </div>
+    </section>
 
-          <div id="alert-banner" class="alert-banner">
-            Composite not yet calculated. Load FRED data and set manual inputs.
-          </div>
-        </section>
+    <!-- ============================================================
+         INSIGHT MICROCOPY
+    ============================================================ -->
+    <section class="card">
+      <h2>Interpretation</h2>
+      <p id="insight-text" class="insight">Loading…</p>
+    </section>
 
-        <!-- Insight + contributions -->
-        <section class="panel panel-insight">
-          <header class="panel-header">
-            <h2>Insight & Drivers</h2>
-          </header>
+    <!-- ============================================================
+         MACRO INDICATORS
+    ============================================================ -->
+    <section class="card">
+      <h2>Macro Indicators</h2>
 
-          <p id="insight-text" class="insight-text">
-            No composite yet. Ensure fred_cache.json is fresh and LEI / Buffett / CAPE are populated.
-          </p>
+      <h3>Tier 1 — Leading</h3>
+      <div id="tier1-indicators"></div>
 
-          <div class="contrib-header">
-            <h3>What’s driving the score?</h3>
-          </div>
-          <div id="contrib-list" class="contrib-list">
-            <div class="contrib-placeholder">
-              Populate indicators and valuations to see which ones drive the composite.
-            </div>
-          </div>
-        </section>
+      <h3 style="margin-top:24px;">Tier 2 — Confirming</h3>
+      <div id="tier2-indicators"></div>
+    </section>
 
-      </section>
+    <!-- ============================================================
+         VALUATIONS
+    ============================================================ -->
+    <section class="card">
+      <h2>Valuation Indicators</h2>
 
-      <!-- MIDDLE ROW: Indicators + Valuations/Audit ------------------- -->
-      <section class="layout-middle">
+      <div id="valuation-indicators"></div>
 
-        <!-- Macro indicators -->
-        <section class="panel panel-indicators">
-          <header class="panel-header">
-            <h2>Macro Indicators</h2>
-            <p class="panel-header-note">
-              Tier 1 = leading, Tier 2 = confirming. Click any auto tile for history.
-            </p>
-          </header>
+      <div class="valuation-summary">
+        <div id="current-buffett-label">Buffett: --</div>
+        <div id="current-cape-label">CAPE: --</div>
+      </div>
+    </section>
 
-          <div class="indicator-section">
-            <div class="indicator-section-header">
-              <h3>Tier 1 — Leading</h3>
-            </div>
-            <div id="tier1-indicators" class="indicator-grid">
-              <!-- Populated by uiIndicators.js -->
-            </div>
-          </div>
+    <!-- ============================================================
+         CONTRIBUTIONS
+    ============================================================ -->
+    <section class="card">
+      <h2>What’s Driving the Score?</h2>
+      <div id="contrib-list" class="contrib-list"></div>
+    </section>
 
-          <div class="indicator-section">
-            <div class="indicator-section-header">
-              <h3>Tier 2 — Confirming</h3>
-            </div>
-            <div id="tier2-indicators" class="indicator-grid">
-              <!-- Populated by uiIndicators.js -->
-            </div>
-          </div>
-        </section>
+    <!-- ============================================================
+         COMPOSITE HISTORY
+    ============================================================ -->
+    <section class="card">
+      <h2>Composite Stress History</h2>
+      <canvas id="composite-history" height="200"></canvas>
+    </section>
 
-        <!-- Valuations + audit -->
-        <section class="panel panel-valuations">
-          <header class="panel-header">
-            <h2>Valuations & Data Quality</h2>
-          </header>
+    <!-- ============================================================
+         RISK RADAR
+    ============================================================ -->
+    <section class="card">
+      <h2>Radar — Normalised Stress</h2>
+      <canvas id="risk-radar" height="180"></canvas>
+    </section>
 
-          <div class="valuations-layout">
+    <!-- ============================================================
+         DATA AUDIT
+    ============================================================ -->
+    <section class="card" id="data-audit">
+      <h2>Data Quality & Staleness</h2>
+      <!-- JS injects audit content -->
+    </section>
 
-            <div class="valuation-block">
-              <h3>Valuation inputs</h3>
-              <p class="panel-header-note">
-                Set current Buffett Indicator and Shiller CAPE from your sources.
-              </p>
-              <div id="valuation-indicators" class="valuation-grid">
-                <!-- Populated by uiIndicators.js -->
-              </div>
+    <!-- ============================================================
+         EXPORTS
+    ============================================================ -->
+    <section class="card">
+      <h2>Exports</h2>
 
-              <div class="valuation-current-box">
-                <div class="valuation-current-title">Current (your inputs)</div>
-                <div class="valuation-current-row">
-                  <span id="current-buffett-label">Buffett: --</span>
-                  <span id="current-cape-label">CAPE: --</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="audit-block">
-              <h3>Data quality & staleness</h3>
-              <div id="data-audit" class="audit-card">
-                <!-- Populated by uiAudit.js -->
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-      </section>
-
-      <!-- BOTTOM ROW: Composite history + radar ----------------------- -->
-      <section class="layout-bottom">
-
-        <section class="panel panel-history">
-          <header class="panel-header">
-            <h2>Composite history</h2>
-            <p class="panel-header-note">
-              Composite stress through time with regime bands.
-            </p>
-          </header>
-          <div class="chart-wrapper">
-            <canvas id="composite-history"></canvas>
-          </div>
-        </section>
-
-        <section class="panel panel-radar">
-          <header class="panel-header">
-            <h2>Risk radar</h2>
-            <p class="panel-header-note">
-              Normalised stress (0–100) across all indicators and valuations.
-            </p>
-          </header>
-          <div class="chart-wrapper chart-wrapper-square">
-            <canvas id="risk-radar"></canvas>
-          </div>
-        </section>
-
-      </section>
-
-    </main>
-
-    <!-- Global indicator tooltip (filled by uiIndicators) -->
-    <div id="indicator-tooltip" class="indicator-tooltip"></div>
+      <div class="button-group" style="margin-top:12px;">
+        <button id="export-csv" class="btn-secondary">Export CSV</button>
+        <button id="export-pdf" class="btn-secondary">PDF</button>
+        <button id="export-snapshot" class="btn-secondary">Snapshot</button>
+        <button id="share-link" class="btn-secondary">Share</button>
+      </div>
+    </section>
 
   </div>
 
-  <!-- App bootstrap (modules) -->
-  <script type="module" src="./js/app.js"></script>
+  <!-- ============================================================
+       LOADING OVERLAY
+  ============================================================ -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div id="loading-text" class="loading-text">Loading…</div>
+  </div>
+
+  <!-- Tooltip -->
+  <div id="indicator-tooltip"></div>
+
+  <!-- JS entrypoint -->
+  <script type="module" src="js/app.js"></script>
+
 </body>
 </html>
