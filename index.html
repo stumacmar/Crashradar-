@@ -5,16 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Economic Crash Radar Pro</title>
 
-  <!-- CSS -->
+  <!-- Main CSS -->
   <link rel="stylesheet" href="css/main.css" />
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Base path fix for GitHub Pages -->
-  <script>
-    window.__APP_BASE = "";
-  </script>
+  <!-- GitHub Pages base fix -->
+  <script> window.__APP_BASE = ""; </script>
 </head>
 
 <body>
@@ -23,25 +21,27 @@
     <!-- ============================================================
          HEADER
     ============================================================ -->
-    <header class="card" style="margin-top: 24px;">
-      <h1>Economic Crash Radar Pro</h1>
+    <header class="card header-card">
+      <div class="header-top">
+        <h1>Economic Crash Radar Pro</h1>
+        <span id="cache-badge" class="cache-badge">FRED cache: --</span>
+      </div>
 
-      <div class="header-row">
-        <span id="cache-badge" class="contrib-tag">FRED cache: --</span>
-
-        <div class="button-group">
-          <button id="refresh-data" class="btn">Refresh Data</button>
-          <button id="reset-inputs" class="btn-secondary">Reset Inputs</button>
-          <button id="show-help" class="btn-secondary">Help</button>
-        </div>
+      <div class="button-group">
+        <button id="refresh-data" class="btn">Refresh Data</button>
+        <button id="reset-inputs" class="btn-secondary">Reset Inputs</button>
+        <button id="show-help" class="btn-secondary">Help</button>
       </div>
     </header>
 
     <!-- ============================================================
-         GAUGE + SUMMARY
+         COMPOSITE STRESS
     ============================================================ -->
     <section class="card">
       <h2>Composite Stress</h2>
+
+      <!-- REQUIRED ELEMENT (was missing!!) -->
+      <div id="composite-score" class="composite-score">--</div>
 
       <div id="gauge-container">
         <div id="needle"></div>
@@ -49,9 +49,7 @@
 
       <div id="risk-fill"></div>
 
-      <div id="regime-label" class="regime-label">
-        COMPOSITE STRESS — --
-      </div>
+      <div id="regime-label" class="regime-label">COMPOSITE STRESS — --</div>
 
       <div class="risk-row">
         <div>
@@ -70,7 +68,7 @@
     </section>
 
     <!-- ============================================================
-         INSIGHT MICROCOPY
+         INTERPRETATION
     ============================================================ -->
     <section class="card">
       <h2>Interpretation</h2>
@@ -117,7 +115,7 @@
     ============================================================ -->
     <section class="card">
       <h2>Composite Stress History</h2>
-      <canvas id="composite-history" height="200"></canvas>
+      <canvas id="composite-history" height="220"></canvas>
     </section>
 
     <!-- ============================================================
@@ -125,7 +123,7 @@
     ============================================================ -->
     <section class="card">
       <h2>Radar — Normalised Stress</h2>
-      <canvas id="risk-radar" height="180"></canvas>
+      <canvas id="risk-radar" height="200"></canvas>
     </section>
 
     <!-- ============================================================
@@ -133,7 +131,7 @@
     ============================================================ -->
     <section class="card" id="data-audit">
       <h2>Data Quality & Staleness</h2>
-      <!-- JS injects audit content -->
+      <!-- JS injects list -->
     </section>
 
     <!-- ============================================================
@@ -142,7 +140,7 @@
     <section class="card">
       <h2>Exports</h2>
 
-      <div class="button-group" style="margin-top:12px;">
+      <div class="button-group export-group">
         <button id="export-csv" class="btn-secondary">Export CSV</button>
         <button id="export-pdf" class="btn-secondary">PDF</button>
         <button id="export-snapshot" class="btn-secondary">Snapshot</button>
@@ -154,7 +152,7 @@
 
   <!-- ============================================================
        LOADING OVERLAY
-  ============================================================ -->
+    ============================================================ -->
   <div id="loading-overlay" class="loading-overlay">
     <div id="loading-text" class="loading-text">Loading…</div>
   </div>
@@ -162,7 +160,7 @@
   <!-- Tooltip -->
   <div id="indicator-tooltip"></div>
 
-  <!-- JS entrypoint -->
+  <!-- JS entry -->
   <script type="module" src="js/app.js"></script>
 
 </body>
