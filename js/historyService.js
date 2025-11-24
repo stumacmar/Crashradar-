@@ -1,201 +1,133 @@
-// js/historyService.js — FIXED FOR CRASHRADAR V7
-// ------------------------------------------------------------
-// Corrected to match the REAL fred_cache.json structure:
-//
-// {
-//   "generated_at": "...",
-//   "series": {
-//       "T10Y3M": {
-//           "id": "T10Y3M",
-//           "last_updated": "...",
-//           "observations": [
-//               { "date": "YYYY-MM-DD", "value": "0.52" },
-//               ...
-//           ]
-//       },
-//       ...
-//   }
-// }
-//
-// This version:
-//  - Reads cache.series[fid].observations correctly
-//  - Normalises to [{date, value}]
-//  - Supports: raw, yoy_percent, ma4_thousands
-//  - Provides: loadProcessedHistory, getPeriodSubset, computeHistoryStats
-// ------------------------------------------------------------
-
 import { INDICATOR_CONFIG } from './config.js';
 
-const CACHE_PATH = './data/fred_cache.json';
+const CACHE_PATH = 'data/fred_cache.json';
 
-// ------------------------------------------------------------
-// Helper: Load entire cache
-// ------------------------------------------------------------
+/**
+ * Load entire FRED cache.
+ */
 async function loadCache() {
-  const res = await fetch(CACHE_PATH, { cache: 'no-store' });
+  const res = await fetch(CACHE_PATH);
   if (!res.ok) throw new Error(`Failed to load ${CACHE_PATH}`);
-  const json = await res.json();
-
-  // Must have json.series as object
-  if (!json || typeof json !== 'object' || !json.series) {
-    console.error('Invalid fred_cache.json format:', json);
-    throw new Error('fred_cache.json missing "series" object');
-  }
-
-  return json.series;       // key → { observations:[] }
+  return res.json();
 }
 
-// ------------------------------------------------------------
-// Find the correct series and normalise to [{date, value}, …]
-// ------------------------------------------------------------
-function findSeriesAsArray(seriesMap, fredId) {
-  if (!seriesMap || !fredId) return null;
+/**
+ * Get a FRED series from cache.series
+ */
+export function findSeries(cache, fredId) {
+  if (!cache?.series) return null;
 
-  // 1. Exact match
-  if (seriesMap[fredId]) {
-    const obj = seriesMap[fredId];
-    if (obj && Array.isArray(obj.observations)) {
-      return obj.observations
-        .map(o => ({
-          date: o.date,
-          value: Number(o.value)
-        }))
-        .filter(d => d.date && Number.isFinite(d.value));
-    }
-  }
+  if (cache.series[fredId]) return cache.series[fredId];
 
-  // 2. Case-insensitive fallback
   const lower = fredId.toLowerCase();
-  for (const key of Object.keys(seriesMap)) {
-    if (key.toLowerCase() === lower) {
-      const obj = seriesMap[key];
-      if (obj && Array.isArray(obj.observations)) {
-        return obj.observations
-          .map(o => ({
-            date: o.date,
-            value: Number(o.value)
-          }))
-          .filter(d => d.date && Number.isFinite(d.value));
-      }
-    }
+  for (const key of Object.keys(cache.series)) {
+    if (key.toLowerCase() === lower) return cache.series[key];
   }
-
   return null;
 }
 
-// ------------------------------------------------------------
-// Transform logic (raw, yoy_percent, ma4_thousands)
-// ------------------------------------------------------------
-function applyTransform(history, cfg) {
-  if (!history || !history.length) return [];
+/**
+ * Apply transforms to raw observation array.
+ */
+function applyTransform(seriesObj, cfg) {
+  const obs = seriesObj?.observations || [];
+  const base = obs
+    .map(o => ({ date: o.date, value: Number(o.value) }))
+    .filter(o => Number.isFinite(o.value));
 
-  const t = cfg.transform || 'raw';
+  switch (cfg.transform) {
+    case 'raw':
+      return base;
 
-  if (t === 'raw') return history.slice();
-
-  if (t === 'yoy_percent') {
-    const out = [];
-    for (let i = 12; i < history.length; i++) {
-      const prev = history[i - 12].value;
-      const cur = history[i].value;
-      if (prev !== 0 && Number.isFinite(prev) && Number.isFinite(cur)) {
-        out.push({
-          date: history[i].date,
-          value: ((cur - prev) / prev) * 100
-        });
+    case 'yoy_percent': {
+      const out = [];
+      for (let i = 12; i < base.length; i++) {
+        const prev = base[i - 12].value;
+        if (prev === 0) continue;
+        const v = ((base[i].value - prev) / prev) * 100;
+        out.push({ date: base[i].date, value: v });
       }
+      return out;
     }
-    return out;
-  }
 
-  if (t === 'ma4_thousands') {
-    const out = [];
-    for (let i = 3; i < history.length; i++) {
-      const a = history[i].value;
-      const b = history[i - 1].value;
-      const c = history[i - 2].value;
-      const d = history[i - 3].value;
-      if ([a,b,c,d].every(Number.isFinite)) {
-        out.push({
-          date: history[i].date,
-          value: (a + b + c + d) / 4 / 1000
-        });
+    case 'ma4_thousands': {
+      const out = [];
+      for (let i = 3; i < base.length; i++) {
+        const avg =
+          (base[i].value +
+            base[i - 1].value +
+            base[i - 2].value +
+            base[i - 3].value) /
+          4;
+        out.push({ date: base[i].date, value: avg / 1000 });
       }
+      return out;
     }
-    return out;
-  }
 
-  return history.slice();
+    default:
+      return base;
+  }
 }
 
-// ------------------------------------------------------------
-// Public: loadProcessedHistory(cfg)
-// ------------------------------------------------------------
+/**
+ * Main: processed history
+ */
 export async function loadProcessedHistory(cfg) {
-  if (!cfg || !cfg.fromFred || !cfg.fredId) return [];
+  if (!cfg.fromFred || !cfg.fredId) return [];
 
-  const seriesMap = await loadCache();
-  const rawSeries = findSeriesAsArray(seriesMap, cfg.fredId);
-  if (!rawSeries || !rawSeries.length) return [];
+  const cache = await loadCache();
+  const series = findSeries(cache, cfg.fredId);
+  if (!series) return [];
 
-  return applyTransform(rawSeries, cfg);
+  return applyTransform(series, cfg);
 }
 
-// ------------------------------------------------------------
-// Public: getPeriodSubset(history, "12M"/"5Y"/"MAX")
-// ------------------------------------------------------------
-export function getPeriodSubset(history, period = '12M') {
-  if (!history || !history.length) return [];
+/**
+ * Get period subset (3M, 6M, 12M, MAX)
+ */
+export function getPeriodSubset(history, period) {
+  if (!history.length) return [];
 
-  if (period === 'MAX') return history.slice();
+  if (period === 'MAX') return history;
 
-  const months = {
-    '12M': 12,
-    '5Y': 60,
-    '6M': 6,
-    '3M': 3,
-  }[period];
-
-  if (!months) return history.slice();
+  const months = period === '3M' ? 3 : period === '6M' ? 6 : 12;
 
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - months);
 
-  return history.filter(d => {
-    const dt = new Date(d.date);
-    return !isNaN(dt) && dt >= cutoff;
-  });
+  return history.filter(h => new Date(h.date) >= cutoff);
 }
 
-// ------------------------------------------------------------
-// Public: computeHistoryStats(history)
-// ------------------------------------------------------------
+/**
+ * Stats on transformed data
+ */
 export function computeHistoryStats(history) {
-  if (!history || history.length < 2) return null;
+  if (history.length < 2) return null;
 
   const last = history[history.length - 1];
-  const current = last.value;
+  const lastVal = last.value;
 
   function pctChange(months) {
     const cutoff = new Date(last.date);
     cutoff.setMonth(cutoff.getMonth() - months);
 
-    let closest = null;
+    let baseline = null;
     for (let i = history.length - 1; i >= 0; i--) {
-      const dt = new Date(history[i].date);
-      if (!isNaN(dt) && dt <= cutoff) {
-        closest = history[i].value;
+      const d = new Date(history[i].date);
+      if (d <= cutoff) {
+        baseline = history[i].value;
         break;
       }
     }
-    if (closest === null || closest === 0) return null;
-    return ((current - closest) / closest) * 100;
+    if (!Number.isFinite(baseline) || baseline === 0) return null;
+
+    return ((lastVal - baseline) / baseline) * 100;
   }
 
   return {
-    current,
+    current: lastVal,
     threeChangePct: pctChange(3),
     sixChangePct: pctChange(6),
-    twelveChangePct: pctChange(12),
+    twelveChangePct: pctChange(12)
   };
 }
