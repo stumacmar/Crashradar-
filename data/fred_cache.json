@@ -1,9 +1,9 @@
 {
-  "generated_at": "2025-11-23T20:14:33.920Z",
+  "generated_at": "2025-11-24T06:01:11.754Z",
   "series": {
     "T10Y3M": {
       "id": "T10Y3M",
-      "last_updated": "2025-11-23T20:14:35.198Z",
+      "last_updated": "2025-11-24T06:01:12.552Z",
       "observations": [
         {
           "date": "1982-01-04",
@@ -45810,7 +45810,7 @@
     },
     "BAMLH0A0HYM2": {
       "id": "BAMLH0A0HYM2",
-      "last_updated": "2025-11-23T20:14:35.706Z",
+      "last_updated": "2025-11-24T06:01:12.839Z",
       "observations": [
         {
           "date": "1996-12-31",
@@ -76357,7 +76357,7 @@
     },
     "UMCSENT": {
       "id": "UMCSENT",
-      "last_updated": "2025-11-23T20:14:35.869Z",
+      "last_updated": "2025-11-24T06:01:12.980Z",
       "observations": [
         {
           "date": "1952-11-01",
@@ -79868,7 +79868,7 @@
     },
     "M2SL": {
       "id": "M2SL",
-      "last_updated": "2025-11-23T20:14:36.105Z",
+      "last_updated": "2025-11-24T06:01:13.134Z",
       "observations": [
         {
           "date": "1959-01-01",
@@ -83079,7 +83079,7 @@
     },
     "NFCI": {
       "id": "NFCI",
-      "last_updated": "2025-11-23T20:14:40.098Z",
+      "last_updated": "2025-11-24T06:01:16.883Z",
       "observations": [
         {
           "date": "1971-01-08",
@@ -94538,7 +94538,7 @@
     },
     "ICSA": {
       "id": "ICSA",
-      "last_updated": "2025-11-23T20:14:40.428Z",
+      "last_updated": "2025-11-24T06:01:17.146Z",
       "observations": [
         {
           "date": "1967-01-07",
@@ -106833,7 +106833,7 @@
     },
     "SAHMREALTIME": {
       "id": "SAHMREALTIME",
-      "last_updated": "2025-11-23T20:14:40.696Z",
+      "last_updated": "2025-11-24T06:01:17.302Z",
       "observations": [
         {
           "date": "1959-12-01",
@@ -110000,7 +110000,7 @@
     },
     "INDPRO": {
       "id": "INDPRO",
-      "last_updated": "2025-11-23T20:14:40.846Z",
+      "last_updated": "2025-11-24T06:01:17.482Z",
       "observations": [
         {
           "date": "1950-01-01",
@@ -113639,7 +113639,7 @@
     },
     "PERMIT": {
       "id": "PERMIT",
-      "last_updated": "2025-11-23T20:14:40.999Z",
+      "last_updated": "2025-11-24T06:01:17.661Z",
       "observations": [
         {
           "date": "1960-01-01",
