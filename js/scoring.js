@@ -1,115 +1,98 @@
-// js/scoring.js
-// Complete scoring + stress system compatible with your UI and app.js
+// scoring.js
+// Restores the missing exports required by uiIndicators.js, app.js, and uiCharts.js
 
 import {
-  MACRO_BLOCK_WEIGHT,
-  VALUATION_BLOCK_WEIGHT,
   INDICATOR_CONFIG,
-  VALUATION_CONFIG
+  VALUATION_CONFIG,
+  MACRO_BLOCK_WEIGHT,
+  VALUATION_BLOCK_WEIGHT
 } from './config.js';
 
-/* -----------------------------------------------------------
-   1. Indicator stress scoring (Tier 1 & Tier 2)
-   ----------------------------------------------------------- */
-
-/**
- * Converts an indicator value into a 0–100 stress score.
- * Direction:
- *   - "below"  → lower values = worse (more stress)
- *   - "above"  → higher values = worse
- */
+/* -------------------------------------------------------
+   1. scaleIndicator (CRITICAL – REQUIRED BY uiIndicators/app)
+--------------------------------------------------------- */
 export function scaleIndicator(key, value, cfg) {
-  if (!cfg || !Number.isFinite(value)) return null;
+  if (!Number.isFinite(value)) return null;
 
   const thr = cfg.threshold;
   const span = cfg.span || 1;
 
-  if (!Number.isFinite(thr) || !Number.isFinite(span)) return null;
+  if (thr == null) return null;
 
-  const direction = cfg.direction || "above";
+  // Direction: is lower worse, or higher worse?
+  let raw;
 
-  let s;
-
-  if (direction === "below") {
-    // worse when below threshold
-    if (value >= thr) return 0;
-    s = ((thr - value) / span) * 100;
+  if (cfg.direction === 'below') {
+    raw = ((thr - value) / span) * 100;
   } else {
-    // worse when above threshold
-    if (value <= thr) return 0;
-    s = ((value - thr) / span) * 100;
+    raw = ((value - thr) / span) * 100;
   }
 
-  return Math.min(100, Math.max(0, s));
+  return Math.max(0, Math.min(100, raw));
 }
 
-/* -----------------------------------------------------------
-   2. Valuation stress scoring (Buffett / Shiller)
-   ----------------------------------------------------------- */
+/* -------------------------------------------------------
+   2. valuationStress (REQUIRED BY valuation tiles)
+--------------------------------------------------------- */
+export function valuationStress(key, v) {
+  if (!Number.isFinite(v)) return null;
 
-export function valuationStress(key, value) {
-  if (!Number.isFinite(value)) return null;
-
-  if (key === "BUFFETT") {
-    // 100 stress at 200%
-    return Math.max(0, Math.min(100, (value / 200) * 100));
+  if (key === 'BUFFETT') {
+    return Math.max(0, Math.min(100, ((v - 100) / 100) * 100));
   }
 
-  if (key === "SHILLER_PE") {
-    // 100 stress at PE=30
-    return Math.max(0, Math.min(100, (value / 30) * 100));
+  if (key === 'SHILLER_PE') {
+    return Math.max(0, Math.min(100, ((v - 20) / 20) * 100));
   }
 
-  return null;
+  return Math.max(0, Math.min(100, v));
 }
 
-/* -----------------------------------------------------------
-   3. Verdict labels
-   ----------------------------------------------------------- */
-
-export function stressVerdictLabel(score) {
-  if (!Number.isFinite(score)) return "--";
-  if (score >= 75) return "Critical";
-  if (score >= 55) return "High";
-  if (score >= 35) return "Elevated";
-  if (score >= 15) return "Watch";
-  return "Calm";
+/* -------------------------------------------------------
+   3. Stress Verdict Label
+--------------------------------------------------------- */
+export function stressVerdictLabel(s) {
+  if (!Number.isFinite(s)) return '--';
+  if (s < 33) return 'Low';
+  if (s < 66) return 'Elevated';
+  return 'High';
 }
 
-/* -----------------------------------------------------------
-   4. Composite calculation (your original logic)
-   ----------------------------------------------------------- */
+/* -------------------------------------------------------
+   4. Composite Calculator (uses block weights)
+--------------------------------------------------------- */
+export function computeComposite(indVals, valVals) {
+  let macroSum = 0, macroW = 0;
+  let valSum = 0, valW = 0;
 
-export function computeComposite(indicatorValuesByKey, valuationValuesByKey) {
-  let macroStress = 0, macroW = 0;
-  let valStress = 0, valW = 0;
-
-  // Macro indicators
   for (const [key, cfg] of Object.entries(INDICATOR_CONFIG)) {
-    const v = indicatorValuesByKey[key];
+    const v = indVals[key];
     if (!Number.isFinite(v) || !cfg.weight) continue;
 
-    const s = Math.max(0, Math.min(100, v));
-    macroStress += s * cfg.weight;
+    const s = scaleIndicator(key, v, cfg);
+    if (s == null) continue;
+
+    macroSum += s * cfg.weight;
     macroW += cfg.weight;
   }
 
-  // Valuation indicators
   for (const [key, cfg] of Object.entries(VALUATION_CONFIG)) {
-    const v = valuationValuesByKey[key];
+    const v = valVals[key];
     if (!Number.isFinite(v) || !cfg.weight) continue;
 
-    const s = Math.max(0, Math.min(100, v));
-    valStress += s * cfg.weight;
+    const s = valuationStress(key, v);
+    if (s == null) continue;
+
+    valSum += s * cfg.weight;
     valW += cfg.weight;
   }
 
-  const macroComponent = macroW ? macroStress / macroW : 0;
-  const valComponent = valW ? valStress / valW : 0;
+  const macroComponent = macroW ? macroSum / macroW : 0;
+  const valComponent = valW ? valSum / valW : 0;
 
   const composite =
     macroComponent * MACRO_BLOCK_WEIGHT +
     valComponent * VALUATION_BLOCK_WEIGHT;
 
-  return Math.min(100, Math.max(0, composite));
+  return Math.max(0, Math.min(100, composite));
 }
