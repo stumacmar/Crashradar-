@@ -1,115 +1,215 @@
 // js/scoring.js
-// Core scoring logic used by uiIndicators.js, uiGauge.js, uiCharts.js, and app.js.
-// Every export below is REQUIRED by the app. There are NO missing bindings.
+// -----------------------------------------------------------------------------
+// All stress scoring, composite calculation, valuation scoring, risk labels,
+// and contributions — unified and exported consistently for all UI modules.
+// -----------------------------------------------------------------------------
 
 import {
   INDICATOR_CONFIG,
   VALUATION_CONFIG,
   MACRO_BLOCK_WEIGHT,
-  VALUATION_BLOCK_WEIGHT
+  VALUATION_BLOCK_WEIGHT,
 } from './config.js';
 
-/* ------------------------------------------------------------
-   scaleIndicator (REQUIRED BY: uiIndicators.js, app.js)
-   Normalises an indicator reading into a 0–100 stress score.
-------------------------------------------------------------- */
+// -----------------------------------------------------------------------------
+// 1. SCALE INDICATORS  (used by uiIndicators.js)
+// -----------------------------------------------------------------------------
+
+/**
+ * Convert raw indicator values into a 0–100 stress score.
+ * Threshold logic based on indicator direction and pivot.
+ */
 export function scaleIndicator(key, value, cfg) {
-  if (!cfg || !Number.isFinite(value)) return null;
+  if (!Number.isFinite(value) || !cfg) return null;
 
   const thr = cfg.threshold;
-  const dir = cfg.direction;      // "above" or "below"
-  const span = Number(cfg.span) || 1;
-
   if (!Number.isFinite(thr)) return null;
 
-  // distance from threshold
-  let d = value - thr;
+  // Direction:
+  // - "above": values ABOVE threshold are worse
+  // - "below": values BELOW threshold are worse
+  const direction = cfg.direction || 'above';
 
-  // if stress worsens below threshold, invert sign
-  if (dir === 'below') d = -d;
+  let stress;
 
-  // scale proportionally into 0–100
-  const raw = (d / span) * 100;
+  if (direction === 'above') {
+    if (value <= thr) stress = 0;
+    else stress = Math.min(100, ((value - thr) / Math.abs(thr)) * 100);
+  } else {
+    if (value >= thr) stress = 0;
+    else stress = Math.min(100, ((thr - value) / Math.abs(thr)) * 100);
+  }
 
-  return Math.max(0, Math.min(100, raw));
+  return Math.max(0, Math.min(100, stress));
 }
 
-/* ------------------------------------------------------------
-   valuationStress (REQUIRED BY: uiIndicators.js, uiGauge.js)
-------------------------------------------------------------- */
+// -----------------------------------------------------------------------------
+// 2. VALUATION STRESS (used by uiIndicators + uiGauge)
+// -----------------------------------------------------------------------------
+
 export function valuationStress(key, value) {
   if (!Number.isFinite(value)) return null;
 
   if (key === 'BUFFETT') {
-    // 100% → 0 stress, 200% → 100 stress
-    const s = ((value - 100) / 100) * 100;
-    return Math.max(0, Math.min(100, s));
+    // Danger zone > 200%
+    return Math.max(0, Math.min(100, (value / 2)));
   }
 
   if (key === 'SHILLER_PE') {
-    // CAPE: 20 → 0 stress, 30 → 100 stress
-    const s = ((value - 20) / 10) * 100;
-    return Math.max(0, Math.min(100, s));
+    // Approx stress = CAPE * 3
+    return Math.max(0, Math.min(100, value * 3));
   }
 
-  return null;
+  // Generic fallback
+  return Math.max(0, Math.min(100, value));
 }
 
-/* ------------------------------------------------------------
-   stressVerdictLabel (REQUIRED BY: uiIndicators.js, uiGauge.js)
-------------------------------------------------------------- */
-export function stressVerdictLabel(s) {
-  if (!Number.isFinite(s)) return '--';
-  if (s >= 80) return 'CRITICAL';
-  if (s >= 60) return 'HIGH';
-  if (s >= 40) return 'ELEVATED';
-  if (s >= 20) return 'LOW';
-  return 'CALM';
+// -----------------------------------------------------------------------------
+// 3. RISK LABELS (used by uiGauge)
+// -----------------------------------------------------------------------------
+
+export function stressVerdictLabel(stress) {
+  if (stress == null || !Number.isFinite(stress)) return '--';
+  if (stress >= 70) return 'High';
+  if (stress >= 40) return 'Medium';
+  return 'Low';
 }
 
-/* ------------------------------------------------------------
-   computeComposite (REQUIRED BY: app.js, uiGauge.js)
-   Uses actual stress scores (not raw values).
-------------------------------------------------------------- */
+export function derivedRecessionRisk(compositeScore) {
+  if (!Number.isFinite(compositeScore)) return '--';
+  if (compositeScore >= 70) return 'High';
+  if (compositeScore >= 50) return 'Elevated';
+  if (compositeScore >= 30) return 'Moderate';
+  return 'Low';
+}
+
+export function derivedValuationRisk(valuationValuesByKey = {}) {
+  const b = valuationValuesByKey.BUFFETT;
+  const c = valuationValuesByKey.SHILLER_PE;
+
+  const arr = [];
+  if (Number.isFinite(b)) arr.push(valuationStress('BUFFETT', b));
+  if (Number.isFinite(c)) arr.push(valuationStress('SHILLER_PE', c));
+
+  if (!arr.length) return '--';
+
+  const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+
+  if (avg >= 70) return 'High';
+  if (avg >= 40) return 'Moderate';
+  return 'Low';
+}
+
+export function derivedLaborStress(indicatorValuesByKey = {}) {
+  const ic = indicatorValuesByKey.ICSA;
+  const sahm = indicatorValuesByKey.SAHMREALTIME;
+
+  const arr = [];
+
+  if (Number.isFinite(ic)) {
+    const s = Math.min(100, Math.max(0, (ic / 400) * 100));
+    arr.push(s);
+  }
+
+  if (Number.isFinite(sahm)) {
+    const s = Math.min(100, Math.max(0, sahm * 30));
+    arr.push(s);
+  }
+
+  if (!arr.length) return '--';
+
+  const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+
+  if (avg >= 70) return 'High';
+  if (avg >= 40) return 'Moderate';
+  return 'Low';
+}
+
+// -----------------------------------------------------------------------------
+// 4. COMPOSITE SCORE (used by app.js)
+// -----------------------------------------------------------------------------
+
 export function computeComposite(indicatorValuesByKey, valuationValuesByKey) {
-  let macroStress = 0;
-  let macroW = 0;
+  let macroStress = 0, macroW = 0;
+  let valStress = 0, valW = 0;
 
-  let valStress = 0;
-  let valW = 0;
-
-  // MACRO indicators
   for (const [key, cfg] of Object.entries(INDICATOR_CONFIG)) {
     const v = indicatorValuesByKey[key];
-    if (!Number.isFinite(v)) continue;
+    if (!Number.isFinite(v) || !cfg.weight) continue;
 
-    const s = scaleIndicator(key, v, cfg);
-    if (!Number.isFinite(s)) continue;
-
-    const w = Number(cfg.weight) || 1;
-    macroStress += s * w;
-    macroW += w;
+    const s = Math.max(0, Math.min(100, v));
+    macroStress += s * cfg.weight;
+    macroW += cfg.weight;
   }
 
-  // VALUATION indicators
   for (const [key, cfg] of Object.entries(VALUATION_CONFIG)) {
     const v = valuationValuesByKey[key];
-    if (!Number.isFinite(v)) continue;
+    if (!Number.isFinite(v) || !cfg.weight) continue;
 
-    const s = valuationStress(key, v);
-    if (!Number.isFinite(s)) continue;
-
-    const w = Number(cfg.weight) || 1;
-    valStress += s * w;
-    valW += w;
+    const s = Math.max(0, Math.min(100, v));
+    valStress += s * cfg.weight;
+    valW += cfg.weight;
   }
 
-  const macroScore = macroW ? macroStress / macroW : 0;
-  const valScore = valW ? valStress / valW : 0;
+  const macroComponent = macroW ? macroStress / macroW : 0;
+  const valComponent = valW ? valStress / valW : 0;
 
   const composite =
-    macroScore * MACRO_BLOCK_WEIGHT +
-    valScore * VALUATION_BLOCK_WEIGHT;
+    macroComponent * MACRO_BLOCK_WEIGHT +
+    valComponent * VALUATION_BLOCK_WEIGHT;
 
-  return Math.max(0, Math.min(100, composite));
+  return Math.min(100, Math.max(0, composite));
+}
+
+// -----------------------------------------------------------------------------
+// 5. CONTRIBUTION DECOMPOSITION (used by uiGauge)
+// -----------------------------------------------------------------------------
+
+export function computeContributions(
+  indicatorValuesByKey,
+  valuationValuesByKey,
+  compositeScore
+) {
+  if (!Number.isFinite(compositeScore) || compositeScore <= 0) return [];
+
+  const items = [];
+
+  // Macro indicators
+  for (const [key, cfg] of Object.entries(INDICATOR_CONFIG)) {
+    const v = indicatorValuesByKey[key];
+    if (!Number.isFinite(v) || !cfg.weight) continue;
+
+    const contrib = (v * cfg.weight) * MACRO_BLOCK_WEIGHT / compositeScore;
+
+    items.push({
+      key,
+      label: cfg.label,
+      block: 'Macro',
+      tier: cfg.tier,
+      stress: v,
+      contrib,
+      pctOfComposite: contrib * 100,
+    });
+  }
+
+  // Valuations
+  for (const [key, cfg] of Object.entries(VALUATION_CONFIG)) {
+    const v = valuationValuesByKey[key];
+    if (!Number.isFinite(v) || !cfg.weight) continue;
+
+    const contrib = (v * cfg.weight) * VALUATION_BLOCK_WEIGHT / compositeScore;
+
+    items.push({
+      key,
+      label: cfg.label,
+      block: 'Valuation',
+      tier: null,
+      stress: v,
+      contrib,
+      pctOfComposite: contrib * 100,
+    });
+  }
+
+  items.sort((a, b) => b.contrib - a.contrib);
+  return items;
 }
