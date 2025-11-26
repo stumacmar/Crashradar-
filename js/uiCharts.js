@@ -4,6 +4,7 @@
 // 1. Composite History Line Chart
 // 2. Risk Radar Chart
 // 3. Handles indicator tile expansion + history charts
+// 4. Handles history-period click events
 // ------------------------------------------------------------
 
 import { INDICATOR_CONFIG } from './config.js';
