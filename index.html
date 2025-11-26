@@ -3,275 +3,332 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Economic Crash Radar Pro – DEBUG MODE</title>
+  <title>CrashRadar – Deep Diagnostics</title>
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="css/main.css" />
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <!-- GitHub Pages base path fix -->
-  <script>
-    window.__APP_BASE = "";
-  </script>
+  <style>
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #050712;
+      color: #e8eeff;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #8b96b0;
+      margin-bottom: 16px;
+    }
+    button {
+      background: #6b9eff;
+      color: #000;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+    button.secondary {
+      background: #22283b;
+      color: #e8eeff;
+      border: 1px solid #3a415b;
+    }
+    #log {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #0e1220;
+      border: 1px solid #262c44;
+      white-space: pre-wrap;
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .panel {
+      padding: 12px;
+      background: #0e1220;
+      border-radius: 8px;
+      border: 1px solid #262c44;
+      font-size: 12px;
+    }
+    .panel h2 {
+      margin: 0 0 6px;
+      font-size: 14px;
+    }
+    #tier1-indicators,
+    #tier2-indicators,
+    #valuation-indicators {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .indicator {
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: #181d32;
+      border: 1px solid #303854;
+      font-size: 11px;
+      min-width: 120px;
+    }
+    .indicator-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+    }
+    .indicator-name {
+      font-weight: 600;
+    }
+    .indicator-value {
+      color: #8fb4ff;
+    }
+    #indicator-tooltip {
+      position: fixed;
+      background: rgba(10,12,25,0.95);
+      border: 1px solid #3c4666;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #e8eeff;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity 0.1s ease, transform 0.1s ease;
+      z-index: 9999;
+      max-width: 260px;
+    }
+    #indicator-tooltip.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    @media (max-width: 800px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 
 <body>
+  <h1>CrashRadar – Deep Diagnostics</h1>
+  <div class="subtitle">
+    This page does not render the app. It only loads modules (config, dataService, scoring,
+    <strong>uiIndicators</strong>, uiGauge, uiCharts, uiAudit) and logs exactly what fails.
+  </div>
 
-<!-- ============================================================
-     DEBUG DIAGNOSTICS PANEL (full version)
-============================================================ -->
-<div id="debug-panel" style="
-  background:#111;
-  color:#f0f0f0;
-  font-family: monospace;
-  padding:16px;
-  border-bottom:2px solid #444;
-  line-height:1.5;
-  white-space:pre-line;
-">
-  <h2 style="margin:0 0 12px;font-size:22px;">CrashRadar Diagnostics</h2>
-  <div id="debug-output">Running diagnostics…</div>
-</div>
+  <div>
+    <button id="run-diag">Run Full Diagnostics</button>
+    <button id="clear-log" class="secondary">Clear Log</button>
+  </div>
 
-<script type="module">
-async function runDiagnostics() {
-  const out = document.getElementById('debug-output');
-  const log = msg => out.innerHTML += msg + "\n";
+  <div class="grid">
+    <div class="panel">
+      <h2>Macro tiles (from uiIndicators)</h2>
+      <div id="tier1-indicators"></div>
+      <hr />
+      <div id="tier2-indicators"></div>
+    </div>
 
-  out.innerHTML = "";
+    <div class="panel">
+      <h2>Valuation tiles (from uiIndicators)</h2>
+      <div id="valuation-indicators"></div>
+    </div>
+  </div>
 
-  /* -----------------------------------------------------
-     1. DOM CHECKS
-  ----------------------------------------------------- */
-  log("1. Checking required DOM IDs…");
+  <!-- Tooltip for uiIndicators -->
+  <div id="indicator-tooltip"></div>
 
-  const requiredIDs = [
-    "gauge-container","needle","risk-fill","regime-label",
-    "tier1-indicators","tier2-indicators",
-    "valuation-indicators","contrib-list",
-    "composite-history","risk-radar","data-audit"
-  ];
+  <pre id="log"></pre>
 
-  for (const id of requiredIDs) {
-    const ok = document.getElementById(id);
-    if (ok) log("✔️ " + id);
-    else log("❌ MISSING: " + id);
-  }
+  <script type="module">
+    const logEl = document.getElementById('log');
 
-  /* -----------------------------------------------------
-     2. CONFIG
-  ----------------------------------------------------- */
-  log("\n2. Loading config.js…");
-
-  try {
-    const cfg = await import('./js/config.js');
-    if (!cfg.INDICATOR_CONFIG) log("❌ INDICATOR_CONFIG missing");
-    else log("✔️ Loaded INDICATOR_CONFIG (" + Object.keys(cfg.INDICATOR_CONFIG).length + " items)");
-
-    if (!cfg.VALUATION_CONFIG) log("❌ VALUATION_CONFIG missing");
-    else log("✔️ Loaded VALUATION_CONFIG (" + Object.keys(cfg.VALUATION_CONFIG).length + " items)");
-
-  } catch(e) {
-    log("❌ Error loading config.js → " + e.message);
-  }
-
-  /* -----------------------------------------------------
-     3. dataService + fred_cache.json
-  ----------------------------------------------------- */
-  log("\n3. Checking dataService.js + fred_cache.json…");
-
-  try {
-    const ds = await import('./js/dataService.js');
-    log("✔️ dataService.js loaded");
-
-    const resp = await fetch('data/fred_cache.json', {cache:'no-store'});
-
-    if (!resp.ok) {
-      log("❌ Cannot load data/fred_cache.json (HTTP " + resp.status + ")");
-    } else {
-      const json = await resp.json();
-      const series = json.series ? Object.keys(json.series).length : 0;
-      log("✔️ fred_cache.json loaded (" + series + " series)");
-
-      const requiredSeries = [
-        "T10Y3M","BAMLH0A0HYM2","UMCSENT","NFCI",
-        "ICSA","SAHMREALTIME","INDPRO","PERMIT","M2SL"
-      ];
-
-      requiredSeries.forEach(id => {
-        if (json.series && json.series[id]) log("✔️ FRED OK: " + id);
-        else log("❌ MISSING series: " + id);
-      });
+    function log(msg) {
+      const time = new Date().toISOString().split('T')[1].replace('Z','');
+      logEl.textContent += '[' + time + '] ' + msg + '\\n';
+      logEl.scrollTop = logEl.scrollHeight;
     }
 
-  } catch (e) {
-    log("❌ dataService or JSON load failed → " + e.message);
-  }
+    function logError(prefix, err) {
+      if (!err) {
+        log(prefix + ' (no error object)');
+        return;
+      }
+      log(prefix + ' ' + (err.message || String(err)));
+      if (err.stack) {
+        log('  stack: ' + err.stack.split('\\n')[0]);
+      }
+    }
 
-  /* -----------------------------------------------------
-     4. scoring.js
-  ----------------------------------------------------- */
-  log("\n4. Checking scoring.js…");
+    async function runDiagnostics() {
+      log('=== CrashRadar Deep Diagnostics START ===');
+      log('Location: ' + window.location.href);
+      log('UserAgent: ' + navigator.userAgent);
 
-  try {
-    const scoring = await import('./js/scoring.js');
-    if (!scoring.computeComposite) log("❌ computeComposite missing");
-    else log("✔️ scoring.js OK");
-  } catch(e) {
-    log("❌ scoring.js load failed → " + e.message);
-  }
+      // Step 1: CONFIG
+      let cfgModule;
+      try {
+        cfgModule = await import('./js/config.js');
+        const indCount = cfgModule.INDICATOR_CONFIG
+          ? Object.keys(cfgModule.INDICATOR_CONFIG).length
+          : 0;
+        const valCount = cfgModule.VALUATION_CONFIG
+          ? Object.keys(cfgModule.VALUATION_CONFIG).length
+          : 0;
+        log('✔ config.js loaded. Indicators=' + indCount + ', Valuations=' + valCount);
+      } catch (err) {
+        logError('✖ config.js FAILED:', err);
+        log('HARD STOP: if config.js fails, everything else will cascade.');
+        return;
+      }
 
-  /* -----------------------------------------------------
-     5. uiIndicators.js
-  ----------------------------------------------------- */
-  log("\n5. Checking uiIndicators.js…");
+      // Step 2: dataService
+      let dataModule;
+      try {
+        dataModule = await import('./js/dataService.js');
+        log('✔ dataService.js loaded. Exports: ' + Object.keys(dataModule).join(', '));
+      } catch (err) {
+        logError('✖ dataService.js FAILED:', err);
+      }
 
-  try {
-    const ui = await import('./js/uiIndicators.js');
-    log(ui.renderMacroIndicators ? "✔️ renderMacroIndicators" : "❌ renderMacroIndicators missing");
-    log(ui.renderValuationIndicators ? "✔️ renderValuationIndicators" : "❌ renderValuationIndicators missing");
-  } catch(e) {
-    log("❌ uiIndicators load failed → " + e.message);
-  }
+      // Step 3: scoring
+      let scoringModule;
+      try {
+        scoringModule = await import('./js/scoring.js');
+        log('✔ scoring.js loaded. Exports: ' + Object.keys(scoringModule).join(', '));
+      } catch (err) {
+        logError('✖ scoring.js FAILED:', err);
+      }
 
-  /* -----------------------------------------------------
-     6. uiCharts.js
-  ----------------------------------------------------- */
-  log("\n6. Checking uiCharts.js…");
+      // Step 4: uiIndicators (the one you said is failing)
+      let uiIndicators;
+      try {
+        uiIndicators = await import('./js/uiIndicators.js');
+        log('✔ uiIndicators.js loaded. Exports: ' + Object.keys(uiIndicators).join(', '));
+      } catch (err) {
+        logError('✖ uiIndicators.js FAILED TO LOAD:', err);
+        log('If message contains "Unexpected token \'<\'", you are getting an HTML error page instead of JS (likely 404).');
+      }
 
-  try {
-    const charts = await import('./js/uiCharts.js');
-    log(charts.updateCompositeHistoryChart ? "✔️ composite history OK" : "❌ updateCompositeHistoryChart missing");
-    log(charts.updateRiskRadarChart ? "✔️ radar OK" : "❌ updateRiskRadarChart missing");
-  } catch(e) {
-    log("❌ uiCharts.js load failed → " + e.message);
-  }
+      // Step 5: uiGauge, uiCharts, uiAudit – just load status
+      try {
+        const uiGauge = await import('./js/uiGauge.js');
+        log('✔ uiGauge.js loaded. Exports: ' + Object.keys(uiGauge).join(', '));
+      } catch (err) {
+        logError('✖ uiGauge.js FAILED:', err);
+      }
 
-  /* -----------------------------------------------------
-     7. uiAudit.js
-  ----------------------------------------------------- */
-  log("\n7. Checking uiAudit.js…");
+      try {
+        const uiCharts = await import('./js/uiCharts.js');
+        log('✔ uiCharts.js loaded. Exports: ' + Object.keys(uiCharts).join(', '));
+      } catch (err) {
+        logError('✖ uiCharts.js FAILED:', err);
+      }
 
-  try {
-    const audit = await import('./js/uiAudit.js');
-    log(audit.updateDataAudit ? "✔️ updateDataAudit present" : "❌ updateDataAudit missing");
-  } catch(e) {
-    log("❌ uiAudit.js load failed → " + e.message);
-  }
+      try {
+        const uiAudit = await import('./js/uiAudit.js');
+        log('✔ uiAudit.js loaded. Exports: ' + Object.keys(uiAudit).join(', '));
+      } catch (err) {
+        logError('✖ uiAudit.js FAILED:', err);
+      }
 
-  /* -----------------------------------------------------
-     8. Chart.js
-  ----------------------------------------------------- */
-  log("\n8. Checking Chart.js…");
+      // Step 6: test FRED cache load (if dataService is present)
+      if (dataModule && typeof dataModule.loadCurrentIndicatorValues === 'function') {
+        try {
+          log('… calling loadCurrentIndicatorValues() …');
+          const { valuesByKey, cacheMeta } = await dataModule.loadCurrentIndicatorValues();
+          const nonNull = Object.values(valuesByKey || {}).filter(v => Number.isFinite(v)).length;
+          log('✔ loadCurrentIndicatorValues OK. Non-null indicators: ' + nonNull);
+          log('   cacheMeta: ' + JSON.stringify(cacheMeta));
+        } catch (err) {
+          logError('✖ loadCurrentIndicatorValues THREW:', err);
+        }
+      } else {
+        log('⚠ dataService.loadCurrentIndicatorValues not available – cannot test FRED layer.');
+      }
 
-  if (window.Chart) log("✔️ Chart.js available");
-  else log("❌ Chart.js NOT loaded");
+      // Step 7: test computeComposite if scoring is present
+      if (scoringModule && typeof scoringModule.computeComposite === 'function') {
+        try {
+          const indicatorValuesByKey = {};
+          const valuationValuesByKey = {};
 
-  /* -----------------------------------------------------
-     9. app.js load test
-  ----------------------------------------------------- */
-  log("\n9. Checking app.js…");
+          for (const key of Object.keys(cfgModule.INDICATOR_CONFIG || {})) {
+            indicatorValuesByKey[key] = 50; // dummy mid-stress
+          }
+          for (const key of Object.keys(cfgModule.VALUATION_CONFIG || {})) {
+            valuationValuesByKey[key] = 50;
+          }
 
-  try {
-    await import('./js/app.js');
-    log("✔️ app.js loaded successfully");
-  } catch(e) {
-    log("❌ app.js load failed → " + e.message);
-  }
+          const comp = scoringModule.computeComposite(
+            indicatorValuesByKey,
+            valuationValuesByKey
+          );
+          log('✔ computeComposite() returned: ' + comp);
+        } catch (err) {
+          logError('✖ computeComposite() THREW:', err);
+        }
+      } else {
+        log('⚠ scoring.computeComposite not available – skip composite test.');
+      }
 
-  log("\nDiagnostics complete.");
-}
+      // Step 8: test uiIndicators rendering (this is the key part)
+      if (uiIndicators && typeof uiIndicators.renderMacroIndicators === 'function') {
+        try {
+          const indicatorValuesByKey = {};
+          const valuationValuesByKey = {};
 
-runDiagnostics();
-</script>
+          for (const key of Object.keys(cfgModule.INDICATOR_CONFIG || {})) {
+            indicatorValuesByKey[key] = 0;
+          }
+          for (const key of Object.keys(cfgModule.VALUATION_CONFIG || {})) {
+            valuationValuesByKey[key] = 0;
+          }
 
-<!-- ============================================================
-     YOUR NORMAL APP
-============================================================ -->
+          log('… calling uiIndicators.renderMacroIndicators() …');
+          uiIndicators.renderMacroIndicators({
+            indicatorValuesByKey,
+            onManualChange: () => {},
+            onExpandIndicator: () => {}
+          });
 
-<div class="container">
+          log('… calling uiIndicators.renderValuationIndicators() …');
+          uiIndicators.renderValuationIndicators({
+            valuationValuesByKey,
+            onManualChange: () => {}
+          });
 
-  <header class="card" style="margin-top: 24px;">
-    <h1>Economic Crash Radar Pro</h1>
+          const tier1Count = document.querySelectorAll('#tier1-indicators .indicator').length;
+          const tier2Count = document.querySelectorAll('#tier2-indicators .indicator').length;
+          const valCount = document.querySelectorAll('#valuation-indicators .indicator').length;
 
-    <div class="header-row">
-      <span id="cache-badge" class="contrib-tag">FRED cache: --</span>
+          log('✔ uiIndicators rendered tiles. Tier1=' + tier1Count +
+              ', Tier2=' + tier2Count + ', Valuation=' + valCount);
+        } catch (err) {
+          logError('✖ uiIndicators render THREW:', err);
+        }
+      } else {
+        log('⚠ uiIndicators.renderMacroIndicators not available – import failed or wrong export name.');
+      }
 
-      <div class="button-group">
-        <button id="refresh-data" class="btn">Refresh Data</button>
-        <button id="reset-inputs" class="btn-secondary">Reset Inputs</button>
-        <button id="show-help" class="btn-secondary">Help</button>
-      </div>
-    </div>
-  </header>
+      log('=== Diagnostics COMPLETE ===');
+    }
 
-  <section class="card">
-    <h2>Composite Stress</h2>
-
-    <div id="gauge-container"></div>
-    <div id="needle"></div>
-    <div id="risk-fill"></div>
-    <div id="regime-label">COMPOSITE STRESS — --</div>
-
-    <div class="risk-row">
-      <div><div class="contrib-tag">Recession</div><div id="recession-risk-display">--</div></div>
-      <div><div class="contrib-tag">Valuation</div><div id="valuation-risk-display">--</div></div>
-      <div><div class="contrib-tag">Labor</div><div id="labor-risk-display">--</div></div>
-    </div>
-  </section>
-
-  <section class="card">
-    <h2>Interpretation</h2>
-    <p id="insight-text">Loading…</p>
-  </section>
-
-  <section class="card">
-    <h2>Macro Indicators</h2>
-    <h3>Tier 1</h3>
-    <div id="tier1-indicators"></div>
-    <h3 style="margin-top:24px;">Tier 2</h3>
-    <div id="tier2-indicators"></div>
-  </section>
-
-  <section class="card">
-    <h2>Valuation Indicators</h2>
-    <div id="valuation-indicators"></div>
-    <div class="valuation-summary">
-      <div id="current-buffett-label">Buffett: --</div>
-      <div id="current-cape-label">CAPE: --</div>
-    </div>
-  </section>
-
-  <section class="card">
-    <h2>What's Driving the Score?</h2>
-    <div id="contrib-list"></div>
-  </section>
-
-  <section class="card">
-    <h2>Composite Stress History</h2>
-    <canvas id="composite-history" height="200"></canvas>
-  </section>
-
-  <section class="card">
-    <h2>Radar — Normalised Stress</h2>
-    <canvas id="risk-radar" height="180"></canvas>
-  </section>
-
-  <section class="card" id="data-audit">
-    <h2>Data Quality & Staleness</h2>
-  </section>
-
-</div>
-
-<div id="loading-overlay" class="loading-overlay">
-  <div id="loading-text" class="loading-text">Loading…</div>
-</div>
-
-<div id="indicator-tooltip"></div>
-
-<script type="module" src="js/app.js"></script>
-
+    document.getElementById('run-diag').addEventListener('click', runDiagnostics);
+    document.getElementById('clear-log').addEventListener('click', () => {
+      logEl.textContent = '';
+    });
+  </script>
 </body>
 </html>
