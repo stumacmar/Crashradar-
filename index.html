@@ -1,334 +1,134 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CrashRadar – Deep Diagnostics</title>
-
-  <style>
-    body {
-      margin: 0;
-      padding: 16px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-      background: #050712;
-      color: #e8eeff;
-    }
-    h1 {
-      margin: 0 0 8px;
-      font-size: 20px;
-    }
-    .subtitle {
-      font-size: 13px;
-      color: #8b96b0;
-      margin-bottom: 16px;
-    }
-    button {
-      background: #6b9eff;
-      color: #000;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 13px;
-      cursor: pointer;
-      margin-right: 8px;
-    }
-    button.secondary {
-      background: #22283b;
-      color: #e8eeff;
-      border: 1px solid #3a415b;
-    }
-    #log {
-      margin-top: 16px;
-      padding: 12px;
-      border-radius: 8px;
-      background: #0e1220;
-      border: 1px solid #262c44;
-      white-space: pre-wrap;
-      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 12px;
-      max-height: 70vh;
-      overflow-y: auto;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-top: 16px;
-    }
-    .panel {
-      padding: 12px;
-      background: #0e1220;
-      border-radius: 8px;
-      border: 1px solid #262c44;
-      font-size: 12px;
-    }
-    .panel h2 {
-      margin: 0 0 6px;
-      font-size: 14px;
-    }
-    #tier1-indicators,
-    #tier2-indicators,
-    #valuation-indicators {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 6px;
-    }
-    .indicator {
-      padding: 6px 8px;
-      border-radius: 6px;
-      background: #181d32;
-      border: 1px solid #303854;
-      font-size: 11px;
-      min-width: 120px;
-    }
-    .indicator-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 4px;
-    }
-    .indicator-name {
-      font-weight: 600;
-    }
-    .indicator-value {
-      color: #8fb4ff;
-    }
-    #indicator-tooltip {
-      position: fixed;
-      background: rgba(10,12,25,0.95);
-      border: 1px solid #3c4666;
-      padding: 6px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      color: #e8eeff;
-      pointer-events: none;
-      opacity: 0;
-      transform: translateY(-4px);
-      transition: opacity 0.1s ease, transform 0.1s ease;
-      z-index: 9999;
-      max-width: 260px;
-    }
-    #indicator-tooltip.active {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    @media (max-width: 800px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<title>CrashRadar Deep Diagnostic</title>
+<style>
+  body { background:#000;color:#0f0;font-family:monospace;padding:20px; }
+  .err { color:#f55; }
+  .ok { color:#5f5; }
+  h2 { color:#6bf; }
+</style>
 </head>
 
 <body>
-  <h1>CrashRadar – Deep Diagnostics</h1>
-  <div class="subtitle">
-    This page does not render the app. It only loads modules (config, dataService, scoring,
-    <strong>uiIndicators</strong>, uiGauge, uiCharts, uiAudit) and logs exactly what fails.
-  </div>
+<h2>CrashRadar Deep Diagnostic</h2>
+<pre id="log">Starting…</pre>
 
-  <div>
-    <button id="run-diag">Run Full Diagnostics</button>
-    <button id="clear-log" class="secondary">Clear Log</button>
-  </div>
+<script>
+// Utility to log to screen
+function out(msg, cls="") {
+  const log = document.getElementById("log");
+  log.innerHTML += (cls ? `<span class="${cls}">${msg}</span>` : msg) + "\n";
+}
 
-  <div class="grid">
-    <div class="panel">
-      <h2>Macro tiles (from uiIndicators)</h2>
-      <div id="tier1-indicators"></div>
-      <hr />
-      <div id="tier2-indicators"></div>
-    </div>
+// Wrapper to load modules and inspect exports
+async function loadModule(path) {
+  try {
+    const mod = await import(path + `?v=${Date.now()}`);
+    return { ok:true, mod };
+  } catch (err) {
+    return { ok:false, err };
+  }
+}
 
-    <div class="panel">
-      <h2>Valuation tiles (from uiIndicators)</h2>
-      <div id="valuation-indicators"></div>
-    </div>
-  </div>
+// Expected dependency map
+const dependencies = {
+  "./js/scoring.js": [
+    "computeComposite",
+    "scaleIndicator",
+    "stressVerdictLabel",
+    "valuationStress",
+    "derivedRecessionRisk",
+    "derivedValuationRisk",
+    "derivedLaborStress",
+    "computeContributions"
+  ],
+  "./js/uiGauge.js": [
+    "derivedRecessionRisk",
+    "derivedValuationRisk",
+    "derivedLaborStress",
+    "computeContributions",
+    "stressVerdictLabel"
+  ],
+  "./js/uiIndicators.js": [
+    "scaleIndicator",
+    "stressVerdictLabel",
+    "valuationStress"
+  ],
+  "./js/uiCharts.js": [
+    "updateCompositeHistoryChart",
+    "updateRiskRadarChart"
+  ],
+  "./js/app.js": [
+    // app.js imports many modules; we detect failures globally
+  ]
+};
 
-  <!-- Tooltip for uiIndicators -->
-  <div id="indicator-tooltip"></div>
+async function runDiagnostics() {
+  out("Loading config.js…");
+  const cfg = await loadModule("./js/config.js");
+  if (cfg.ok) out("✔ config.js loaded", "ok");
+  else out("✖ config.js failed", "err");
 
-  <pre id="log"></pre>
+  out("\nLoading scoring.js…");
+  const scoring = await loadModule("./js/scoring.js");
+  if (scoring.ok) {
+    out("✔ scoring.js loaded", "ok");
+    out("Exports: " + Object.keys(scoring.mod).join(", "));
+  } else {
+    out("✖ scoring.js failed: " + scoring.err, "err");
+  }
 
-  <script type="module">
-    const logEl = document.getElementById('log');
-
-    function log(msg) {
-      const time = new Date().toISOString().split('T')[1].replace('Z','');
-      logEl.textContent += '[' + time + '] ' + msg + '\\n';
-      logEl.scrollTop = logEl.scrollHeight;
-    }
-
-    function logError(prefix, err) {
-      if (!err) {
-        log(prefix + ' (no error object)');
-        return;
-      }
-      log(prefix + ' ' + (err.message || String(err)));
-      if (err.stack) {
-        log('  stack: ' + err.stack.split('\\n')[0]);
-      }
-    }
-
-    async function runDiagnostics() {
-      log('=== CrashRadar Deep Diagnostics START ===');
-      log('Location: ' + window.location.href);
-      log('UserAgent: ' + navigator.userAgent);
-
-      // Step 1: CONFIG
-      let cfgModule;
-      try {
-        cfgModule = await import('./js/config.js');
-        const indCount = cfgModule.INDICATOR_CONFIG
-          ? Object.keys(cfgModule.INDICATOR_CONFIG).length
-          : 0;
-        const valCount = cfgModule.VALUATION_CONFIG
-          ? Object.keys(cfgModule.VALUATION_CONFIG).length
-          : 0;
-        log('✔ config.js loaded. Indicators=' + indCount + ', Valuations=' + valCount);
-      } catch (err) {
-        logError('✖ config.js FAILED:', err);
-        log('HARD STOP: if config.js fails, everything else will cascade.');
-        return;
-      }
-
-      // Step 2: dataService
-      let dataModule;
-      try {
-        dataModule = await import('./js/dataService.js');
-        log('✔ dataService.js loaded. Exports: ' + Object.keys(dataModule).join(', '));
-      } catch (err) {
-        logError('✖ dataService.js FAILED:', err);
-      }
-
-      // Step 3: scoring
-      let scoringModule;
-      try {
-        scoringModule = await import('./js/scoring.js');
-        log('✔ scoring.js loaded. Exports: ' + Object.keys(scoringModule).join(', '));
-      } catch (err) {
-        logError('✖ scoring.js FAILED:', err);
-      }
-
-      // Step 4: uiIndicators (the one you said is failing)
-      let uiIndicators;
-      try {
-        uiIndicators = await import('./js/uiIndicators.js');
-        log('✔ uiIndicators.js loaded. Exports: ' + Object.keys(uiIndicators).join(', '));
-      } catch (err) {
-        logError('✖ uiIndicators.js FAILED TO LOAD:', err);
-        log('If message contains "Unexpected token \'<\'", you are getting an HTML error page instead of JS (likely 404).');
-      }
-
-      // Step 5: uiGauge, uiCharts, uiAudit – just load status
-      try {
-        const uiGauge = await import('./js/uiGauge.js');
-        log('✔ uiGauge.js loaded. Exports: ' + Object.keys(uiGauge).join(', '));
-      } catch (err) {
-        logError('✖ uiGauge.js FAILED:', err);
-      }
-
-      try {
-        const uiCharts = await import('./js/uiCharts.js');
-        log('✔ uiCharts.js loaded. Exports: ' + Object.keys(uiCharts).join(', '));
-      } catch (err) {
-        logError('✖ uiCharts.js FAILED:', err);
-      }
-
-      try {
-        const uiAudit = await import('./js/uiAudit.js');
-        log('✔ uiAudit.js loaded. Exports: ' + Object.keys(uiAudit).join(', '));
-      } catch (err) {
-        logError('✖ uiAudit.js FAILED:', err);
-      }
-
-      // Step 6: test FRED cache load (if dataService is present)
-      if (dataModule && typeof dataModule.loadCurrentIndicatorValues === 'function') {
-        try {
-          log('… calling loadCurrentIndicatorValues() …');
-          const { valuesByKey, cacheMeta } = await dataModule.loadCurrentIndicatorValues();
-          const nonNull = Object.values(valuesByKey || {}).filter(v => Number.isFinite(v)).length;
-          log('✔ loadCurrentIndicatorValues OK. Non-null indicators: ' + nonNull);
-          log('   cacheMeta: ' + JSON.stringify(cacheMeta));
-        } catch (err) {
-          logError('✖ loadCurrentIndicatorValues THREW:', err);
-        }
-      } else {
-        log('⚠ dataService.loadCurrentIndicatorValues not available – cannot test FRED layer.');
-      }
-
-      // Step 7: test computeComposite if scoring is present
-      if (scoringModule && typeof scoringModule.computeComposite === 'function') {
-        try {
-          const indicatorValuesByKey = {};
-          const valuationValuesByKey = {};
-
-          for (const key of Object.keys(cfgModule.INDICATOR_CONFIG || {})) {
-            indicatorValuesByKey[key] = 50; // dummy mid-stress
-          }
-          for (const key of Object.keys(cfgModule.VALUATION_CONFIG || {})) {
-            valuationValuesByKey[key] = 50;
-          }
-
-          const comp = scoringModule.computeComposite(
-            indicatorValuesByKey,
-            valuationValuesByKey
-          );
-          log('✔ computeComposite() returned: ' + comp);
-        } catch (err) {
-          logError('✖ computeComposite() THREW:', err);
-        }
-      } else {
-        log('⚠ scoring.computeComposite not available – skip composite test.');
-      }
-
-      // Step 8: test uiIndicators rendering (this is the key part)
-      if (uiIndicators && typeof uiIndicators.renderMacroIndicators === 'function') {
-        try {
-          const indicatorValuesByKey = {};
-          const valuationValuesByKey = {};
-
-          for (const key of Object.keys(cfgModule.INDICATOR_CONFIG || {})) {
-            indicatorValuesByKey[key] = 0;
-          }
-          for (const key of Object.keys(cfgModule.VALUATION_CONFIG || {})) {
-            valuationValuesByKey[key] = 0;
-          }
-
-          log('… calling uiIndicators.renderMacroIndicators() …');
-          uiIndicators.renderMacroIndicators({
-            indicatorValuesByKey,
-            onManualChange: () => {},
-            onExpandIndicator: () => {}
-          });
-
-          log('… calling uiIndicators.renderValuationIndicators() …');
-          uiIndicators.renderValuationIndicators({
-            valuationValuesByKey,
-            onManualChange: () => {}
-          });
-
-          const tier1Count = document.querySelectorAll('#tier1-indicators .indicator').length;
-          const tier2Count = document.querySelectorAll('#tier2-indicators .indicator').length;
-          const valCount = document.querySelectorAll('#valuation-indicators .indicator').length;
-
-          log('✔ uiIndicators rendered tiles. Tier1=' + tier1Count +
-              ', Tier2=' + tier2Count + ', Valuation=' + valCount);
-        } catch (err) {
-          logError('✖ uiIndicators render THREW:', err);
-        }
-      } else {
-        log('⚠ uiIndicators.renderMacroIndicators not available – import failed or wrong export name.');
-      }
-
-      log('=== Diagnostics COMPLETE ===');
-    }
-
-    document.getElementById('run-diag').addEventListener('click', runDiagnostics);
-    document.getElementById('clear-log').addEventListener('click', () => {
-      logEl.textContent = '';
+  out("\nChecking required scoring.js exports…");
+  if (scoring.ok) {
+    const exported = Object.keys(scoring.mod);
+    dependencies["./js/scoring.js"].forEach(fn => {
+      if (exported.includes(fn)) out("✔ " + fn, "ok");
+      else out("✖ MISSING → " + fn, "err");
     });
-  </script>
+  }
+
+  out("\nLoading uiGauge.js…");
+  const gauge = await loadModule("./js/uiGauge.js");
+  if (gauge.ok) {
+    out("✔ uiGauge.js loaded", "ok");
+  } else {
+    out("✖ uiGauge.js FAILED: " + gauge.err, "err");
+  }
+
+  out("\nResolving uiGauge.js imports…");
+  if (gauge.ok && scoring.ok) {
+    const scoringExports = Object.keys(scoring.mod);
+    dependencies["./js/uiGauge.js"].forEach(fn => {
+      if (scoringExports.includes(fn)) out("✔ found: " + fn, "ok");
+      else out("✖ missing import: " + fn, "err");
+    });
+  }
+
+  out("\nLoading uiIndicators.js…");
+  const ind = await loadModule("./js/uiIndicators.js");
+  if (ind.ok) out("✔ uiIndicators.js loaded", "ok");
+  else out("✖ uiIndicators FAILED: " + ind.err, "err");
+
+  out("\nChecking uiIndicators imports from scoring.js…");
+  if (ind.ok && scoring.ok) {
+    const scoringExports = Object.keys(scoring.mod);
+    dependencies["./js/uiIndicators.js"].forEach(fn => {
+      if (scoringExports.includes(fn)) out("✔ found: " + fn, "ok");
+      else out("✖ missing import: " + fn, "err");
+    });
+  }
+
+  out("\nLoading uiCharts.js…");
+  const charts = await loadModule("./js/uiCharts.js");
+  if (charts.ok) out("✔ uiCharts.js loaded", "ok");
+  else out("✖ uiCharts FAILED: " + charts.err, "err");
+
+  out("\nAll diagnostics completed.");
+}
+
+runDiagnostics();
+</script>
 </body>
 </html>
