@@ -1,134 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>CrashRadar Deep Diagnostic</title>
-<style>
-  body { background:#000;color:#0f0;font-family:monospace;padding:20px; }
-  .err { color:#f55; }
-  .ok { color:#5f5; }
-  h2 { color:#6bf; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CrashRadar Diagnostic Engine</title>
+  <style>
+    body { background:#000; color:#0f0; font-family:monospace; padding:20px; }
+    h1 { color:#0f0; }
+    .ok { color:#0f0; }
+    .fail { color:#f00; }
+    .warn { color:#ff0; }
+    pre { white-space:pre-wrap; }
+  </style>
 </head>
 
 <body>
-<h2>CrashRadar Deep Diagnostic</h2>
-<pre id="log">Starting…</pre>
+  <h1>CrashRadar Diagnostic Engine</h1>
+  <p>This page loads NO UI. It only verifies the JS module chain.</p>
 
-<script>
-// Utility to log to screen
-function out(msg, cls="") {
-  const log = document.getElementById("log");
-  log.innerHTML += (cls ? `<span class="${cls}">${msg}</span>` : msg) + "\n";
-}
+  <h2>Results</h2>
+  <pre id="diag"></pre>
 
-// Wrapper to load modules and inspect exports
-async function loadModule(path) {
-  try {
-    const mod = await import(path + `?v=${Date.now()}`);
-    return { ok:true, mod };
-  } catch (err) {
-    return { ok:false, err };
-  }
-}
+  <script type="module">
+    const out = document.getElementById("diag");
+    function log(msg, cls="") {
+      out.innerHTML += `<span class="${cls}">${msg}</span>\n`;
+    }
 
-// Expected dependency map
-const dependencies = {
-  "./js/scoring.js": [
-    "computeComposite",
-    "scaleIndicator",
-    "stressVerdictLabel",
-    "valuationStress",
-    "derivedRecessionRisk",
-    "derivedValuationRisk",
-    "derivedLaborStress",
-    "computeContributions"
-  ],
-  "./js/uiGauge.js": [
-    "derivedRecessionRisk",
-    "derivedValuationRisk",
-    "derivedLaborStress",
-    "computeContributions",
-    "stressVerdictLabel"
-  ],
-  "./js/uiIndicators.js": [
-    "scaleIndicator",
-    "stressVerdictLabel",
-    "valuationStress"
-  ],
-  "./js/uiCharts.js": [
-    "updateCompositeHistoryChart",
-    "updateRiskRadarChart"
-  ],
-  "./js/app.js": [
-    // app.js imports many modules; we detect failures globally
-  ]
-};
+    async function testModule(path, expectedExports = []) {
+      log(`\nTesting: ${path}`, "warn");
+      try {
+        const mod = await import(path);
+        log(`Loaded ✔`, "ok");
 
-async function runDiagnostics() {
-  out("Loading config.js…");
-  const cfg = await loadModule("./js/config.js");
-  if (cfg.ok) out("✔ config.js loaded", "ok");
-  else out("✖ config.js failed", "err");
+        expectedExports.forEach(name => {
+          if (mod[name] !== undefined) {
+            log(`  ✔ export found: ${name}`, "ok");
+          } else {
+            log(`  ✖ missing export: ${name}`, "fail");
+          }
+        });
 
-  out("\nLoading scoring.js…");
-  const scoring = await loadModule("./js/scoring.js");
-  if (scoring.ok) {
-    out("✔ scoring.js loaded", "ok");
-    out("Exports: " + Object.keys(scoring.mod).join(", "));
-  } else {
-    out("✖ scoring.js failed: " + scoring.err, "err");
-  }
+        return mod;
+      } catch (err) {
+        log(`  ✖ FAILED to load: ${err.message}`, "fail");
+        return null;
+      }
+    }
 
-  out("\nChecking required scoring.js exports…");
-  if (scoring.ok) {
-    const exported = Object.keys(scoring.mod);
-    dependencies["./js/scoring.js"].forEach(fn => {
-      if (exported.includes(fn)) out("✔ " + fn, "ok");
-      else out("✖ MISSING → " + fn, "err");
-    });
-  }
+    async function runDiagnostics() {
+      log("Starting dependency checks...\n");
 
-  out("\nLoading uiGauge.js…");
-  const gauge = await loadModule("./js/uiGauge.js");
-  if (gauge.ok) {
-    out("✔ uiGauge.js loaded", "ok");
-  } else {
-    out("✖ uiGauge.js FAILED: " + gauge.err, "err");
-  }
+      const config = await testModule("./js/config.js", [
+        "INDICATOR_CONFIG", "VALUATION_CONFIG",
+        "MACRO_BLOCK_WEIGHT", "VALUATION_BLOCK_WEIGHT"
+      ]);
 
-  out("\nResolving uiGauge.js imports…");
-  if (gauge.ok && scoring.ok) {
-    const scoringExports = Object.keys(scoring.mod);
-    dependencies["./js/uiGauge.js"].forEach(fn => {
-      if (scoringExports.includes(fn)) out("✔ found: " + fn, "ok");
-      else out("✖ missing import: " + fn, "err");
-    });
-  }
+      const scoring = await testModule("./js/scoring.js", [
+        "scaleIndicator",
+        "valuationStress",
+        "stressVerdictLabel",
+        "derivedRecessionRisk",
+        "derivedValuationRisk",
+        "derivedLaborStress",
+        "computeComposite",
+        "computeContributions"
+      ]);
 
-  out("\nLoading uiIndicators.js…");
-  const ind = await loadModule("./js/uiIndicators.js");
-  if (ind.ok) out("✔ uiIndicators.js loaded", "ok");
-  else out("✖ uiIndicators FAILED: " + ind.err, "err");
+      const data = await testModule("./js/dataService.js", [
+        "loadFredCache",
+        "loadCurrentIndicatorValues",
+        "getSeries",
+        "computeCurrentForIndicator"
+      ]);
 
-  out("\nChecking uiIndicators imports from scoring.js…");
-  if (ind.ok && scoring.ok) {
-    const scoringExports = Object.keys(scoring.mod);
-    dependencies["./js/uiIndicators.js"].forEach(fn => {
-      if (scoringExports.includes(fn)) out("✔ found: " + fn, "ok");
-      else out("✖ missing import: " + fn, "err");
-    });
-  }
+      const uiInd = await testModule("./js/uiIndicators.js", [
+        "renderMacroIndicators",
+        "renderValuationIndicators"
+      ]);
 
-  out("\nLoading uiCharts.js…");
-  const charts = await loadModule("./js/uiCharts.js");
-  if (charts.ok) out("✔ uiCharts.js loaded", "ok");
-  else out("✖ uiCharts FAILED: " + charts.err, "err");
+      const uiCharts = await testModule("./js/uiCharts.js", [
+        "updateCompositeHistoryChart",
+        "updateRiskRadarChart",
+        "toggleIndicatorExpansion",
+        "handleHistoryPeriodClick"
+      ]);
 
-  out("\nAll diagnostics completed.");
-}
+      const uiGauge = await testModule("./js/uiGauge.js", [
+        "updateGaugeAndStatus",
+        "syncValuationSummary",
+        "updateInsightText",
+        "updateContributions"
+      ]);
 
-runDiagnostics();
-</script>
+      const uiAudit = await testModule("./js/uiAudit.js", [
+        "updateDataAudit"
+      ]);
+
+      const exp = await testModule("./js/exports.js");
+
+      const app = await testModule("./js/app.js");
+
+      log("\nDiagnostics complete.", "ok");
+    }
+
+    runDiagnostics();
+  </script>
 </body>
 </html>
