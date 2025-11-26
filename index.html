@@ -5,149 +5,155 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Economic Crash Radar Pro</title>
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="css/main.css" />
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="./css/main.css" />
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Base path override for GitHub Pages (important) -->
+  <!-- Base path fix for GitHub Pages -->
   <script>
     window.__APP_BASE = "";
   </script>
 </head>
 
 <body>
+<div class="container">
 
-  <!-- HEADER -->
-  <header class="header">
-    <h1>Economic Crash Radar Pro</h1>
-    <p class="subtitle">Macro risk · Valuation stress · Market fragility</p>
+  <!-- ============================================================
+       HEADER
+  ============================================================ -->
+  <h1>Economic Crash Radar Pro</h1>
+  <p style="color: var(--text-secondary); margin-bottom: 16px;">
+    Macro risk · Valuation stress · Market fragility
+  </p>
 
-    <div id="cache-badge" class="cache-badge">FRED cache: --</div>
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+    <span id="cache-badge" style="color: var(--text-secondary); font-size:14px;">
+      FRED cache: --
+    </span>
 
-    <div class="header-buttons">
-      <button id="refresh-data" class="btn">Refresh</button>
-      <button id="reset-inputs" class="btn">Reset</button>
-      <button id="show-help" class="btn">Help</button>
-    </div>
-  </header>
-
-  <!-- LOADING OVERLAY -->
-  <div id="loading-overlay">
-    <div id="loading-text">Loading…</div>
+    <button id="refresh-data" class="btn">Refresh</button>
+    <button id="reset-inputs" class="btn btn-secondary">Reset</button>
+    <button id="show-help" class="btn btn-secondary">Help</button>
   </div>
 
-  <!-- MAIN CONTENT -->
-  <main id="app-root">
+  <!-- ============================================================
+       GAUGE + RECESSION / VALUATION / LABOUR PANELS
+  ============================================================ -->
+  <h2>Composite Stress</h2>
+  <div id="risk-fill" style="width:0%; margin-bottom:8px;"></div>
 
-    <!-- Composite Gauge -->
-    <section class="section">
-      <h2>Composite Stress</h2>
+  <div style="font-size:36px; margin-bottom:4px;" id="composite-score">--</div>
 
-      <div class="gauge-wrapper">
-        <div id="gauge-container">
-          <div id="risk-fill"></div>
-          <div id="needle"></div>
-          <div id="composite-score">--</div>
-        </div>
-      </div>
+  <div id="regime-label"
+       style="color: var(--text-secondary); font-size:14px; margin-bottom:12px;">
+    Composite Stress — --
+  </div>
 
-      <div id="regime-label" class="regime-label">COMPOSITE STRESS — --</div>
+  <div class="card" style="margin-top:12px;">
+    <div><strong>Recession Risk</strong></div>
+    <div id="recession-risk-display">--</div>
 
-      <div class="tile-row">
-        <div class="status-tile">
-          <div class="tile-label">Recession Risk</div>
-          <div id="recession-risk-display" class="tile-value">--</div>
-        </div>
+    <div style="margin-top:16px;"><strong>Valuation Risk</strong></div>
+    <div id="valuation-risk-display">--</div>
 
-        <div class="status-tile">
-          <div class="tile-label">Valuation Risk</div>
-          <div id="valuation-risk-display" class="tile-value">--</div>
-        </div>
+    <div style="margin-top:16px;"><strong>Labour Stress</strong></div>
+    <div id="labor-risk-display">--</div>
+  </div>
 
-        <div class="status-tile">
-          <div class="tile-label">Labour Stress</div>
-          <div id="labor-risk-display" class="tile-value">--</div>
-        </div>
-      </div>
+  <!-- Alert banner -->
+  <div id="alert-banner"
+       style="margin-top: 12px; color: var(--critical); font-size:14px;">
+    Loading…
+  </div>
 
-      <div id="alert-banner" class="alert-banner">Loading…</div>
-    </section>
+  <!-- ============================================================
+       INTERPRETATION
+  ============================================================ -->
+  <h2>Interpretation</h2>
+  <div id="insight-text" class="card">Loading…</div>
 
-    <!-- INTERPRETATION -->
-    <section class="section">
-      <h2>Interpretation</h2>
-      <div id="insight-text" class="insight-text">
-        Loading…
-      </div>
-    </section>
+  <!-- ============================================================
+       MACRO INDICATORS
+  ============================================================ -->
+  <h2>Macro Indicators</h2>
+  <h3>Tier 1 — Leading</h3>
+  <div id="tier1-container"></div>
 
-    <!-- MACRO INDICATORS -->
-    <section class="section">
-      <h2>Macro Indicators</h2>
+  <h3>Tier 2 — Confirming</h3>
+  <div id="tier2-container"></div>
 
-      <h3 class="tier-header">Tier 1 — Leading</h3>
-      <div id="macro-tier1" class="indicator-grid"></div>
+  <!-- ============================================================
+       VALUATIONS
+  ============================================================ -->
+  <h2>Valuations</h2>
+  <div id="valuations-container"></div>
 
-      <h3 class="tier-header">Tier 2 — Confirming</h3>
-      <div id="macro-tier2" class="indicator-grid"></div>
-    </section>
+  <div class="card" style="margin-top:20px;">
+    <div id="current-buffett-label">Buffett: --</div>
+    <div id="current-cape-label">CAPE: --</div>
+  </div>
 
-    <!-- VALUATIONS -->
-    <section class="section">
-      <h2>Valuations</h2>
+  <!-- ============================================================
+       CONTRIBUTIONS
+  ============================================================ -->
+  <h2>What's Driving the Score?</h2>
+  <div class="card" id="contrib-list">
+    Loading…
+  </div>
 
-      <div id="valuation-tiles" class="indicator-grid"></div>
+  <!-- ============================================================
+       COMPOSITE HISTORY
+  ============================================================ -->
+  <h2>Composite Stress History</h2>
+  <div class="card">
+    <canvas id="composite-history" height="200"></canvas>
+  </div>
 
-      <div class="valuation-summary">
-        <div id="current-buffett-label">Buffett: --</div>
-        <div id="current-cape-label">CAPE: --</div>
-      </div>
-    </section>
+  <!-- ============================================================
+       RADAR CHART
+  ============================================================ -->
+  <h2>Radar — Normalised Stress</h2>
+  <div class="card">
+    <canvas id="risk-radar" height="260"></canvas>
+  </div>
 
-    <!-- CONTRIBUTIONS -->
-    <section class="section">
-      <h2>What's Driving the Score?</h2>
-      <div id="contrib-list" class="contrib-list">Loading…</div>
-    </section>
+  <!-- ============================================================
+       DATA QUALITY / AUDIT
+  ============================================================ -->
+  <h2>Data Quality & Staleness</h2>
+  <div id="audit-container" class="card">
+    Loading…
+  </div>
 
-    <!-- COMPOSITE HISTORY -->
-    <section class="section">
-      <h2>Composite Stress History</h2>
-      <canvas id="composite-history"></canvas>
-    </section>
+  <!-- ============================================================
+       EXPORTS
+  ============================================================ -->
+  <h2>Exports</h2>
+  <div style="display:flex; gap:12px; flex-wrap:wrap;">
+    <button id="export-csv" class="btn">Export CSV</button>
+    <button id="export-pdf" class="btn btn-secondary">PDF</button>
+    <button id="export-snapshot" class="btn btn-secondary">Snapshot</button>
+    <button id="share-link" class="btn btn-secondary">Share Link</button>
+  </div>
 
-    <!-- RISK RADAR -->
-    <section class="section">
-      <h2>Radar — Normalised Stress</h2>
-      <canvas id="risk-radar"></canvas>
-    </section>
+</div> <!-- container -->
 
-    <!-- DATA QUALITY -->
-    <section class="section">
-      <h2>Data Quality & Staleness</h2>
-      <div id="data-audit" class="audit-container">Loading…</div>
-    </section>
+<!-- ============================================================
+     SCRIPTS (order matters)
+============================================================ -->
+<script type="module" src="./js/config.js"></script>
+<script type="module" src="./js/scoring.js"></script>
+<script type="module" src="./js/dataService.js"></script>
+<script type="module" src="./js/uiIndicators.js"></script>
+<script type="module" src="./js/uiCharts.js"></script>
+<script type="module" src="./js/uiGauge.js"></script>
+<script type="module" src="./js/uiAudit.js"></script>
+<script type="module" src="./js/exports.js"></script>
 
-    <!-- EXPORTS -->
-    <section class="section">
-      <h2>Exports</h2>
-      <div class="export-buttons">
-        <button id="export-csv" class="btn">Export CSV</button>
-        <button id="export-pdf" class="btn">PDF</button>
-        <button id="export-snapshot" class="btn">Snapshot</button>
-        <button id="share-link" class="btn">Share Link</button>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- TOOLTIP FOR INDICATORS -->
-  <div id="indicator-tooltip" class="tooltip"></div>
-
-  <!-- MODULE SCRIPTS -->
-  <script type="module" src="js/app.js"></script>
+<!-- Main app controller -->
+<script type="module" src="./js/app.js"></script>
 
 </body>
 </html>
