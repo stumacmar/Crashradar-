@@ -2,215 +2,137 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Economic Crash Radar Pro</title>
+  <title>CrashRadar Deep Diagnostic</title>
 
-  <!-- Main CSS -->
-  <link rel="stylesheet" href="css/main.css" />
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <!-- Fix module base path for GitHub Pages -->
-  <script>
-    window.__APP_BASE = "";
-  </script>
+  <style>
+    body {
+      background: #000;
+      color: #0f0;
+      font-family: monospace;
+      white-space: pre-wrap;
+      padding: 20px;
+      font-size: 14px;
+    }
+    .error { color: #f33; }
+    .ok { color: #0f0; }
+    .warn { color: #ff0; }
+  </style>
 </head>
 
 <body>
-  <div class="app-body">
-    <div class="app-shell">
+<h2>CrashRadar Deep Diagnostic</h2>
+<div id="out">Starting…</div>
 
-      <!-- ============================================================
-           HEADER
-      ============================================================ -->
-      <header class="app-header">
-        <div>
-          <h1 class="brand-title">Economic Crash Radar Pro</h1>
-          <p class="brand-subtitle">Macro risk · Valuation stress · Market fragility</p>
-        </div>
+<script type="module">
+const out = document.getElementById("out");
+function log(msg, cls="ok") {
+  const span = document.createElement("div");
+  span.className = cls;
+  span.textContent = msg;
+  out.appendChild(span);
+}
 
-        <div class="header-right">
-          <div class="meta-badges">
-            <span id="cache-badge" class="badge">FRED cache: --</span>
-          </div>
+async function loadModule(path) {
+  try {
+    const m = await import(path);
+    log(`✓ Loaded: ${path}`);
+    return m;
+  } catch (e) {
+    log(`✗ FAILED to load ${path}`, "error");
+    log(String(e), "error");
+    return null;
+  }
+}
 
-          <div class="header-actions">
-            <button id="refresh-data" class="btn-primary">Refresh</button>
-            <button id="reset-inputs" class="btn">Reset</button>
-            <button id="show-help" class="btn">Help</button>
-          </div>
-        </div>
-      </header>
+/* REQUIRED EXPORTS PER FILE */
+const EXPORTS = {
+  "./js/config.js": [
+    "INDICATOR_CONFIG",
+    "VALUATION_CONFIG",
+    "MACRO_BLOCK_WEIGHT",
+    "VALUATION_BLOCK_WEIGHT"
+  ],
+  "./js/scoring.js": [
+    "computeComposite",
+    "scaleIndicator",
+    "stressVerdictLabel",
+    "valuationStress",
+    "derivedRecessionRisk",
+    "derivedValuationRisk",
+    "derivedLaborStress",
+    "computeContributions"
+  ],
+  "./js/dataService.js": [
+    "getSeries",
+    "computeCurrentForIndicator",
+    "loadFredCache",
+    "loadCurrentIndicatorValues"
+  ],
+  "./js/uiIndicators.js": [
+    "renderMacroIndicators",
+    "renderValuationIndicators"
+  ],
+  "./js/uiCharts.js": [
+    "updateCompositeHistoryChart",
+    "updateRiskRadarChart",
+    "toggleIndicatorExpansion",
+    "handleHistoryPeriodClick"
+  ],
+  "./js/uiGauge.js": [
+    "updateGaugeAndStatus",
+    "syncValuationSummary",
+    "updateInsightText",
+    "updateContributions"
+  ],
+  "./js/uiAudit.js": [
+    "updateDataAudit"
+  ],
+  "./js/exports.js": [
+    "exportToCSV",
+    "exportToPDF",
+    "saveSnapshot",
+    "shareLink"
+  ],
+  "./js/app.js": []  // We will test AFTER all modules load
+};
 
-      <!-- ============================================================
-           ALERT BANNER
-      ============================================================ -->
-      <div class="alert-row">
-        <div id="alert-banner" class="alert-banner">Loading…</div>
-      </div>
+async function run() {
+  log("Loading modules…\n");
 
-      <!-- ============================================================
-           GAUGE + SUMMARY
-      ============================================================ -->
-      <section class="glass-card">
-        <div class="card-header compact">
-          <div class="card-title-main">
-            Composite Stress
-          </div>
-        </div>
+  const loaded = {};
+  for (const path of Object.keys(EXPORTS)) {
+    const mod = await loadModule(path);
+    loaded[path] = mod;
 
-        <div class="gauge-container">
-          <div class="gauge">
-            <div class="gauge-background"></div>
-            <div id="needle" class="gauge-needle"></div>
-            <div class="gauge-center">
-              <div id="composite-score" class="gauge-score">--</div>
-              <div class="gauge-label">Score</div>
-            </div>
-          </div>
+    if (!mod) continue;
 
-          <div class="risk-meter">
-            <div class="risk-bar">
-              <div id="risk-fill" class="risk-fill"></div>
-            </div>
-            <div class="risk-labels">
-              <span>Low</span><span>High</span><span>Critical</span>
-            </div>
-          </div>
-        </div>
+    // Verify exports
+    for (const ex of EXPORTS[path]) {
+      if (mod[ex] === undefined) {
+        log(`  ✗ missing export: ${ex}`, "error");
+      } else {
+        log(`  ✓ export found: ${ex}`);
+      }
+    }
 
-        <div id="regime-label" class="card-subtitle">COMPOSITE STRESS — --</div>
+    log("");
+  }
 
-        <div class="indicator-grid" style="margin-top:8px;">
-          <div>
-            <div class="contrib-tag">Recession Risk</div>
-            <div id="recession-risk-display" class="indicator-value">--</div>
-          </div>
-          <div>
-            <div class="contrib-tag">Valuation Risk</div>
-            <div id="valuation-risk-display" class="indicator-value">--</div>
-          </div>
-          <div>
-            <div class="contrib-tag">Labour Stress</div>
-            <div id="labor-risk-display" class="indicator-value">--</div>
-          </div>
-        </div>
-      </section>
+  log("\nTesting app.js separately…\n");
 
-      <!-- ============================================================
-           INTERPRETATION
-      ============================================================ -->
-      <section class="glass-card">
-        <div class="card-header">
-          <div class="card-title-main">Interpretation</div>
-        </div>
-        <p id="insight-text">Loading…</p>
-      </section>
+  try {
+    await import("./js/app.js");
+    log("✓ app.js loaded OK");
+  } catch (e) {
+    log("✗ app.js FAILED to load", "error");
+    log(String(e), "error");
+  }
 
-      <!-- ============================================================
-           MACRO INDICATORS
-      ============================================================ -->
-      <section class="glass-card">
-        <div class="card-header">
-          <div class="card-title-main">Macro Indicators</div>
-        </div>
+  log("\nDiagnostics complete.\n");
+}
 
-        <h3>Tier 1 — Leading</h3>
-        <div id="tier1-indicators" class="indicator-grid"></div>
-
-        <h3 style="margin-top:20px;">Tier 2 — Confirming</h3>
-        <div id="tier2-indicators" class="indicator-grid"></div>
-      </section>
-
-      <!-- ============================================================
-           VALUATIONS
-      ============================================================ -->
-      <section class="glass-card">
-        <div class="card-header">
-          <div class="card-title-main">Valuations</div>
-        </div>
-
-        <div id="valuation-indicators" class="indicator-grid"></div>
-
-        <div class="valuation-summary">
-          <div id="current-buffett-label">Buffett: --</div>
-          <div id="current-cape-label">CAPE: --</div>
-        </div>
-      </section>
-
-      <!-- ============================================================
-           CONTRIBUTIONS
-      ============================================================ -->
-      <section class="glass-card">
-        <div class="card-header">
-          <div class="card-title-main">What's Driving the Score?</div>
-        </div>
-        <div id="contrib-list" class="contrib-list"></div>
-      </section>
-
-      <!-- ============================================================
-           COMPOSITE HISTORY
-      ============================================================ -->
-      <section class="glass-card">
-        <div class="card-header">
-          <div class="card-title-main">Composite Stress History</div>
-        </div>
-        <canvas id="composite-history" height="200"></canvas>
-      </section>
-
-      <!-- ============================================================
-           RADAR
-      ============================================================ -->
-      <section class="glass-card">
-        <div class="card-header">
-          <div class="card-title-main">Radar — Normalised Stress</div>
-        </div>
-        <canvas id="risk-radar" height="200"></canvas>
-      </section>
-
-      <!-- ============================================================
-           DATA AUDIT
-      ============================================================ -->
-      <section class="glass-card">
-        <div class="card-header">
-          <div class="card-title-main">Data Quality & Staleness</div>
-        </div>
-        <div id="data-audit"></div>
-      </section>
-
-      <!-- ============================================================
-           EXPORTS
-      ============================================================ -->
-      <section class="glass-card">
-        <div class="card-header">
-          <div class="card-title-main">Exports</div>
-        </div>
-
-        <div class="export-options">
-          <button id="export-csv" class="btn">Export CSV</button>
-          <button id="export-pdf" class="btn">PDF</button>
-          <button id="export-snapshot" class="btn">Snapshot</button>
-          <button id="share-link" class="btn">Share Link</button>
-        </div>
-      </section>
-
-    </div>
-  </div>
-
-  <!-- Tooltip -->
-  <div id="indicator-tooltip" class="indicator-tooltip"></div>
-
-  <!-- Loading overlay -->
-  <div id="loading-overlay" class="loading-overlay">
-    <div>
-      <div class="loading-spinner"></div>
-      <div id="loading-text" class="loading-text">Loading…</div>
-    </div>
-  </div>
-
-  <!-- JS ENTRYPOINT -->
-  <script type="module" src="js/app.js"></script>
+run();
+</script>
 
 </body>
 </html>
