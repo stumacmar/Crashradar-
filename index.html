@@ -2,137 +2,152 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>CrashRadar Deep Diagnostic</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Economic Crash Radar Pro</title>
 
-  <style>
-    body {
-      background: #000;
-      color: #0f0;
-      font-family: monospace;
-      white-space: pre-wrap;
-      padding: 20px;
-      font-size: 14px;
-    }
-    .error { color: #f33; }
-    .ok { color: #0f0; }
-    .warn { color: #ff0; }
-  </style>
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/main.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Base path override for GitHub Pages (important) -->
+  <script>
+    window.__APP_BASE = "";
+  </script>
 </head>
 
 <body>
-<h2>CrashRadar Deep Diagnostic</h2>
-<div id="out">Starting…</div>
 
-<script type="module">
-const out = document.getElementById("out");
-function log(msg, cls="ok") {
-  const span = document.createElement("div");
-  span.className = cls;
-  span.textContent = msg;
-  out.appendChild(span);
-}
+  <!-- HEADER -->
+  <header class="header">
+    <h1>Economic Crash Radar Pro</h1>
+    <p class="subtitle">Macro risk · Valuation stress · Market fragility</p>
 
-async function loadModule(path) {
-  try {
-    const m = await import(path);
-    log(`✓ Loaded: ${path}`);
-    return m;
-  } catch (e) {
-    log(`✗ FAILED to load ${path}`, "error");
-    log(String(e), "error");
-    return null;
-  }
-}
+    <div id="cache-badge" class="cache-badge">FRED cache: --</div>
 
-/* REQUIRED EXPORTS PER FILE */
-const EXPORTS = {
-  "./js/config.js": [
-    "INDICATOR_CONFIG",
-    "VALUATION_CONFIG",
-    "MACRO_BLOCK_WEIGHT",
-    "VALUATION_BLOCK_WEIGHT"
-  ],
-  "./js/scoring.js": [
-    "computeComposite",
-    "scaleIndicator",
-    "stressVerdictLabel",
-    "valuationStress",
-    "derivedRecessionRisk",
-    "derivedValuationRisk",
-    "derivedLaborStress",
-    "computeContributions"
-  ],
-  "./js/dataService.js": [
-    "getSeries",
-    "computeCurrentForIndicator",
-    "loadFredCache",
-    "loadCurrentIndicatorValues"
-  ],
-  "./js/uiIndicators.js": [
-    "renderMacroIndicators",
-    "renderValuationIndicators"
-  ],
-  "./js/uiCharts.js": [
-    "updateCompositeHistoryChart",
-    "updateRiskRadarChart",
-    "toggleIndicatorExpansion",
-    "handleHistoryPeriodClick"
-  ],
-  "./js/uiGauge.js": [
-    "updateGaugeAndStatus",
-    "syncValuationSummary",
-    "updateInsightText",
-    "updateContributions"
-  ],
-  "./js/uiAudit.js": [
-    "updateDataAudit"
-  ],
-  "./js/exports.js": [
-    "exportToCSV",
-    "exportToPDF",
-    "saveSnapshot",
-    "shareLink"
-  ],
-  "./js/app.js": []  // We will test AFTER all modules load
-};
+    <div class="header-buttons">
+      <button id="refresh-data" class="btn">Refresh</button>
+      <button id="reset-inputs" class="btn">Reset</button>
+      <button id="show-help" class="btn">Help</button>
+    </div>
+  </header>
 
-async function run() {
-  log("Loading modules…\n");
+  <!-- LOADING OVERLAY -->
+  <div id="loading-overlay">
+    <div id="loading-text">Loading…</div>
+  </div>
 
-  const loaded = {};
-  for (const path of Object.keys(EXPORTS)) {
-    const mod = await loadModule(path);
-    loaded[path] = mod;
+  <!-- MAIN CONTENT -->
+  <main id="app-root">
 
-    if (!mod) continue;
+    <!-- Composite Gauge -->
+    <section class="section">
+      <h2>Composite Stress</h2>
 
-    // Verify exports
-    for (const ex of EXPORTS[path]) {
-      if (mod[ex] === undefined) {
-        log(`  ✗ missing export: ${ex}`, "error");
-      } else {
-        log(`  ✓ export found: ${ex}`);
-      }
-    }
+      <div class="gauge-wrapper">
+        <div id="gauge-container">
+          <div id="risk-fill"></div>
+          <div id="needle"></div>
+          <div id="composite-score">--</div>
+        </div>
+      </div>
 
-    log("");
-  }
+      <div id="regime-label" class="regime-label">COMPOSITE STRESS — --</div>
 
-  log("\nTesting app.js separately…\n");
+      <div class="tile-row">
+        <div class="status-tile">
+          <div class="tile-label">Recession Risk</div>
+          <div id="recession-risk-display" class="tile-value">--</div>
+        </div>
 
-  try {
-    await import("./js/app.js");
-    log("✓ app.js loaded OK");
-  } catch (e) {
-    log("✗ app.js FAILED to load", "error");
-    log(String(e), "error");
-  }
+        <div class="status-tile">
+          <div class="tile-label">Valuation Risk</div>
+          <div id="valuation-risk-display" class="tile-value">--</div>
+        </div>
 
-  log("\nDiagnostics complete.\n");
-}
+        <div class="status-tile">
+          <div class="tile-label">Labour Stress</div>
+          <div id="labor-risk-display" class="tile-value">--</div>
+        </div>
+      </div>
 
-run();
-</script>
+      <div id="alert-banner" class="alert-banner">Loading…</div>
+    </section>
+
+    <!-- INTERPRETATION -->
+    <section class="section">
+      <h2>Interpretation</h2>
+      <div id="insight-text" class="insight-text">
+        Loading…
+      </div>
+    </section>
+
+    <!-- MACRO INDICATORS -->
+    <section class="section">
+      <h2>Macro Indicators</h2>
+
+      <h3 class="tier-header">Tier 1 — Leading</h3>
+      <div id="macro-tier1" class="indicator-grid"></div>
+
+      <h3 class="tier-header">Tier 2 — Confirming</h3>
+      <div id="macro-tier2" class="indicator-grid"></div>
+    </section>
+
+    <!-- VALUATIONS -->
+    <section class="section">
+      <h2>Valuations</h2>
+
+      <div id="valuation-tiles" class="indicator-grid"></div>
+
+      <div class="valuation-summary">
+        <div id="current-buffett-label">Buffett: --</div>
+        <div id="current-cape-label">CAPE: --</div>
+      </div>
+    </section>
+
+    <!-- CONTRIBUTIONS -->
+    <section class="section">
+      <h2>What's Driving the Score?</h2>
+      <div id="contrib-list" class="contrib-list">Loading…</div>
+    </section>
+
+    <!-- COMPOSITE HISTORY -->
+    <section class="section">
+      <h2>Composite Stress History</h2>
+      <canvas id="composite-history"></canvas>
+    </section>
+
+    <!-- RISK RADAR -->
+    <section class="section">
+      <h2>Radar — Normalised Stress</h2>
+      <canvas id="risk-radar"></canvas>
+    </section>
+
+    <!-- DATA QUALITY -->
+    <section class="section">
+      <h2>Data Quality & Staleness</h2>
+      <div id="data-audit" class="audit-container">Loading…</div>
+    </section>
+
+    <!-- EXPORTS -->
+    <section class="section">
+      <h2>Exports</h2>
+      <div class="export-buttons">
+        <button id="export-csv" class="btn">Export CSV</button>
+        <button id="export-pdf" class="btn">PDF</button>
+        <button id="export-snapshot" class="btn">Snapshot</button>
+        <button id="share-link" class="btn">Share Link</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- TOOLTIP FOR INDICATORS -->
+  <div id="indicator-tooltip" class="tooltip"></div>
+
+  <!-- MODULE SCRIPTS -->
+  <script type="module" src="js/app.js"></script>
 
 </body>
 </html>
