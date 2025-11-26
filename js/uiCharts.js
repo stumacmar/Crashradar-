@@ -1,36 +1,27 @@
 // js/uiCharts.js
-// -----------------------------------------------------------------------------
-// Provides:
-// - updateCompositeHistoryChart()
-// - updateRiskRadarChart()
-// - toggleIndicatorExpansion()
-// - handleHistoryPeriodClick()
-// -----------------------------------------------------------------------------
+// ------------------------------------------------------------
+// Renders:
+// 1. Composite History Line Chart
+// 2. Risk Radar Chart
+// 3. Handles indicator tile expansion + history charts
+// ------------------------------------------------------------
 
 import { INDICATOR_CONFIG } from './config.js';
-import { getSeriesHistory } from './historyService.js';
 
-// -----------------------------------------------------------------------------
-// STATE FOR EXPANDED INDICATOR
-// -----------------------------------------------------------------------------
-let expandedKey = null;
-
-// -----------------------------------------------------------------------------
-// COMPOSITE HISTORY CHART
-// -----------------------------------------------------------------------------
+// Cached Chart.js instances
 let compositeChart = null;
+let radarChart = null;
+const historyCharts = {};   // per-indicator mini-charts
 
-export function updateCompositeHistoryChart(history = [], currentScore = null) {
+/* ------------------------------------------------------------
+   1. Composite History — main line chart
+------------------------------------------------------------ */
+export function updateCompositeHistoryChart(history = [], latest = null) {
   const ctx = document.getElementById('composite-history');
   if (!ctx) return;
 
   const labels = history.map(d => d.date);
   const values = history.map(d => d.score);
-
-  if (currentScore != null) {
-    labels.push('Now');
-    values.push(currentScore);
-  }
 
   if (compositeChart) compositeChart.destroy();
 
@@ -41,34 +32,34 @@ export function updateCompositeHistoryChart(history = [], currentScore = null) {
       datasets: [{
         label: 'Composite Stress',
         data: values,
-        tension: 0.25,
+        borderWidth: 2,
+        tension: 0.2
       }]
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { maxTicksLimit: 6 } },
         y: { min: 0, max: 100 }
       }
     }
   });
 }
 
-// -----------------------------------------------------------------------------
-// RISK RADAR CHART
-// -----------------------------------------------------------------------------
-let radarChart = null;
-
-export function updateRiskRadarChart(indicatorValuesByKey = {}, valuationValuesByKey = {}) {
+/* ------------------------------------------------------------
+   2. Radar Chart — normalised indicator stress
+------------------------------------------------------------ */
+export function updateRiskRadarChart(indicatorValuesByKey, valuationValuesByKey) {
   const ctx = document.getElementById('risk-radar');
   if (!ctx) return;
 
-  const labels = Object.keys(INDICATOR_CONFIG);
-  const values = labels.map(key => {
+  const labels = [];
+  const data = [];
+
+  Object.entries(INDICATOR_CONFIG).forEach(([key, cfg]) => {
+    labels.push(cfg.label);
     const v = indicatorValuesByKey[key];
-    return Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : 0;
+    data.push(Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : 0);
   });
 
   if (radarChart) radarChart.destroy();
@@ -79,117 +70,107 @@ export function updateRiskRadarChart(indicatorValuesByKey = {}, valuationValuesB
       labels,
       datasets: [{
         label: 'Normalised Stress',
-        data: values,
-        fill: true,
-        tension: 0.1,
+        data,
+        borderWidth: 2,
+        pointRadius: 3
       }]
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        r: {
-          min: 0,
-          max: 100,
-          ticks: { display: false }
-        }
+        r: { min: 0, max: 100 }
       }
     }
   });
 }
 
-// -----------------------------------------------------------------------------
-// INDICATOR EXPANSION (History when clicking tile)
-// -----------------------------------------------------------------------------
+/* ------------------------------------------------------------
+   3. Expand indicator tile + render per-indicator history
+------------------------------------------------------------ */
 export function toggleIndicatorExpansion(key) {
-  // collapse previous
-  if (expandedKey && expandedKey !== key) {
-    const prev = document.querySelector(`[data-ind-card="${expandedKey}"]`);
-    if (prev) prev.classList.remove('expanded');
-  }
-
-  expandedKey = expandedKey === key ? null : key;
-
   const card = document.querySelector(`[data-ind-card="${key}"]`);
   if (!card) return;
 
-  if (!expandedKey) {
-    card.classList.remove('expanded');
-    return;
-  }
-
-  card.classList.add('expanded');
-
-  // now load history for this indicator
-  const cfg = INDICATOR_CONFIG[key];
-  if (!cfg || !cfg.fromFred) return;
-
-  const histBox = card.querySelector('.indicator-history');
-  if (!histBox) return;
+  const expanded = card.classList.toggle('expanded');
+  if (!expanded) return;
 
   const canvas = card.querySelector('.history-chart');
   if (!canvas) return;
 
-  const { values, dates } = getSeriesHistory(key, '12M');
+  const cfg = INDICATOR_CONFIG[key];
+  if (!cfg || !cfg.historySeries) return;
 
-  // render chart
-  new Chart(canvas, {
+  const { dates, values } = cfg.historySeries;
+
+  if (historyCharts[key]) historyCharts[key].destroy();
+
+  historyCharts[key] = new Chart(canvas, {
     type: 'line',
     data: {
       labels: dates,
       datasets: [{
         label: cfg.label + ' history',
         data: values,
-        tension: 0.25
+        borderWidth: 1,
+        tension: 0.15
       }]
     },
     options: {
-      responsive: true,
-      plugins: { legend: { display: false } }
+      plugins: { legend: { display: false } },
+      scales: { y: { display: true } }
     }
   });
 }
 
-// -----------------------------------------------------------------------------
-// HISTORY PERIOD SWITCHING (12M / 5Y / MAX)
-// -----------------------------------------------------------------------------
+/* ------------------------------------------------------------
+   4. Handle history period buttons (12M / 5Y / MAX)
+------------------------------------------------------------ */
 export function handleHistoryPeriodClick(e) {
   const btn = e.target.closest('.period-btn');
   if (!btn) return;
 
   const period = btn.dataset.period;
-  if (!period) return;
-
-  const card = btn.closest('.indicator.expanded');
+  const card = btn.closest('[data-history-key]');
   if (!card) return;
 
-  const key = card.getAttribute('data-ind-card');
+  const key = card.dataset.historyKey;
   const cfg = INDICATOR_CONFIG[key];
-  if (!cfg || !cfg.fromFred) return;
+  if (!cfg || !cfg.historySeries) return;
 
-  // update active button state
-  card.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  let { dates, values } = cfg.historySeries;
+
+  const cutoff = {
+    '12M': 365,
+    '5Y': 365 * 5,
+    'MAX': null,
+  }[period];
+
+  if (cutoff) {
+    const start = dates.length - cutoff;
+    dates = dates.slice(start);
+    values = values.slice(start);
+  }
 
   const canvas = card.querySelector('.history-chart');
   if (!canvas) return;
 
-  const { values, dates } = getSeriesHistory(key, period);
+  if (historyCharts[key]) historyCharts[key].destroy();
 
-  new Chart(canvas, {
+  historyCharts[key] = new Chart(canvas, {
     type: 'line',
     data: {
       labels: dates,
       datasets: [{
-        label: cfg.label + ` (${period})`,
+        label: cfg.label + ' history',
         data: values,
-        tension: 0.25
+        borderWidth: 1,
+        tension: 0.15
       }]
     },
     options: {
-      responsive: true,
-      plugins: { legend: { display: false } }
+      plugins: { legend: { display: false } },
+      scales: { y: { display: true } }
     }
   });
 }
