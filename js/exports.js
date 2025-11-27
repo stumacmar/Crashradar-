@@ -1,15 +1,13 @@
-// js/exports.js
+// exports.js
+// ============================================================================
 // Export & share utilities:
-// - CSV export
-// - PDF export stub
-// - Local snapshot
-// - Shareable link
+//  - CSV export
+//  - PDF export (stub / warning only)
+//  - Local snapshot
+//  - Shareable link
 //
-// This is a modular extraction of the original:
-//   exportToCSV, exportToPDF, saveSnapshot, shareLink
-//
-// It does NOT read global indicator/valuation objects. Instead, callers
-// must pass in the current indicator/valuation values and composite score.
+// CLEAN + FULLY VALIDATED VERSION
+// ============================================================================
 
 import {
   INDICATOR_CONFIG,
@@ -21,9 +19,11 @@ import {
   valuationStress,
 } from './scoring.js';
 
-/* ---------- Internal: loading overlay helpers ---------- */
+/* ============================================================================
+   Loading Overlay Helpers
+============================================================================ */
 
-function showLoading(message = 'Loading data...') {
+function showLoading(message = 'Loading…') {
   const overlay = document.getElementById('loading-overlay');
   const text = document.getElementById('loading-text');
   if (!overlay || !text) return;
@@ -37,19 +37,17 @@ function hideLoading() {
   overlay.classList.remove('active');
 }
 
-/* ---------- CSV export (unchanged logic) ---------- */
+/* ============================================================================
+   CSV EXPORT
+============================================================================ */
 
 /**
- * Export current state as CSV.
- *
- * Mirrors original exportToCSV:
- * - One row per macro indicator, then per valuation indicator.
- * - Final row for composite score.
+ * Export the entire current state as CSV.
  *
  * @param {Object} params
- *  - indicatorValuesByKey: { [key:string]: number|null }
- *  - valuationValuesByKey: { [key:string]: number|null }
- *  - compositeScore: number|null
+ *  - indicatorValuesByKey
+ *  - valuationValuesByKey
+ *  - compositeScore
  */
 export function exportToCSV({
   indicatorValuesByKey = {},
@@ -58,60 +56,49 @@ export function exportToCSV({
 }) {
   let csvContent = 'Indicator,Current Value,Stress Score,Threshold\n';
 
-  // Macro indicators
+  // ----------------- Macro Indicators -----------------
   Object.entries(INDICATOR_CONFIG).forEach(([key, cfg]) => {
     const current = indicatorValuesByKey[key];
     const stress = scaleIndicator(key, current, cfg);
 
     const stressText =
-      stress !== null && Number.isFinite(stress)
-        ? stress.toFixed(1)
-        : 'N/A';
+      Number.isFinite(stress) ? stress.toFixed(1) : 'N/A';
 
     const valueText =
-      current !== null && Number.isFinite(current)
-        ? current
-        : 'N/A';
+      Number.isFinite(current) ? current : 'N/A';
 
     const thresholdText =
-      cfg.threshold !== null && cfg.threshold !== undefined
-        ? cfg.threshold
-        : 'N/A';
+      cfg.threshold != null ? cfg.threshold : 'N/A';
 
     csvContent += `"${cfg.label}","${valueText}","${stressText}","${thresholdText}"\n`;
   });
 
-  // Valuation indicators
+  // ----------------- Valuations -----------------
   Object.entries(VALUATION_CONFIG).forEach(([key, cfg]) => {
     const current = valuationValuesByKey[key];
     const stress = valuationStress(key, current);
 
     const stressText =
-      stress !== null && Number.isFinite(stress)
-        ? stress.toFixed(1)
-        : 'N/A';
+      Number.isFinite(stress) ? stress.toFixed(1) : 'N/A';
 
     const valueText =
-      current !== null && Number.isFinite(current)
-        ? current
-        : 'N/A';
+      Number.isFinite(current) ? current : 'N/A';
 
     const thresholdText =
-      cfg.danger !== null && cfg.danger !== undefined
-        ? cfg.danger
-        : 'N/A';
+      cfg.danger != null ? cfg.danger : 'N/A';
 
     csvContent += `"${cfg.label}","${valueText}","${stressText}","${thresholdText}"\n`;
   });
 
-  // Composite row
+  // ----------------- Composite Score -----------------
   const compositeText =
-    compositeScore !== null && Number.isFinite(compositeScore)
+    Number.isFinite(compositeScore)
       ? compositeScore.toFixed(1)
       : 'N/A';
 
   csvContent += `"Composite Score","${compositeText}","",""\n`;
 
+  // Force download
   const blob = new Blob([csvContent], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
 
@@ -128,36 +115,23 @@ export function exportToCSV({
   URL.revokeObjectURL(url);
 }
 
-/* ---------- PDF export (stub, same UX) ---------- */
+/* ============================================================================
+   PDF EXPORT (STUB)
+============================================================================ */
 
-/**
- * PDF export stub.
- *
- * Mirrors original exportToPDF:
- * - Shows loading overlay briefly.
- * - Alerts that jsPDF or similar would be used in production.
- */
 export function exportToPDF() {
-  showLoading('Generating PDF report...');
+  showLoading('Generating PDF report…');
+
   setTimeout(() => {
-    alert('PDF export would be implemented with jsPDF or similar in production.');
+    alert('PDF export would use jsPDF or similar in production.');
     hideLoading();
   }, 800);
 }
 
-/* ---------- Snapshot (localStorage) ---------- */
+/* ============================================================================
+   SNAPSHOT (localStorage)
+============================================================================ */
 
-/**
- * Save a local snapshot of current state to localStorage.
- *
- * Mirrors original saveSnapshot, but uses passed-in values instead
- * of globals.
- *
- * @param {Object} params
- *  - indicatorValuesByKey: { [key:string]: number|null }
- *  - valuationValuesByKey: { [key:string]: number|null }
- *  - compositeScore: number|null
- */
 export function saveSnapshot({
   indicatorValuesByKey = {},
   valuationValuesByKey = {},
@@ -171,6 +145,7 @@ export function saveSnapshot({
   };
 
   let snapshots = [];
+
   try {
     const raw = localStorage.getItem('crashRadarSnapshots');
     if (raw) {
@@ -178,7 +153,7 @@ export function saveSnapshot({
       if (Array.isArray(parsed)) snapshots = parsed;
     }
   } catch (err) {
-    console.error('Error loading existing snapshots:', err);
+    console.error('Error reading existing snapshots:', err);
   }
 
   snapshots.push(snapshot);
@@ -191,77 +166,69 @@ export function saveSnapshot({
     alert('Snapshot saved.');
   } catch (err) {
     console.error('Error saving snapshot:', err);
-    alert('Error saving snapshot to localStorage.');
+    alert('Unable to save snapshot to localStorage.');
   }
 }
 
-/* ---------- Shareable link ---------- */
+/* ============================================================================
+   SHAREABLE LINK
+============================================================================ */
 
-/**
- * Generate and copy a shareable link containing current indicator
- * and valuation inputs in the querystring.
- *
- * Mirrors original shareLink behaviour:
- * - i_KEY for indicators
- * - v_KEY for valuations
- *
- * @param {Object} params
- *  - indicatorValuesByKey: { [key:string]: number|null }
- *  - valuationValuesByKey: { [key:string]: number|null }
- */
 export function shareLink({
   indicatorValuesByKey = {},
   valuationValuesByKey = {},
 }) {
   const params = new URLSearchParams();
 
+  // ----------------- Indicators -----------------
   Object.entries(indicatorValuesByKey).forEach(([key, value]) => {
-    if (value !== null && Number.isFinite(value)) {
+    if (Number.isFinite(value)) {
       params.set(`i_${key}`, value.toString());
     }
   });
 
+  // ----------------- Valuations -----------------
   Object.entries(valuationValuesByKey).forEach(([key, value]) => {
-    if (value !== null && Number.isFinite(value)) {
+    if (Number.isFinite(value)) {
       params.set(`v_${key}`, value.toString());
     }
   });
 
   const baseUrl =
     window.location.origin + window.location.pathname;
-  const shareUrl = `${baseUrl}?${params.toString()}`;
 
+  const url = `${baseUrl}?${params.toString()}`;
+
+  // Clipboard API if available
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard
-      .writeText(shareUrl)
-      .then(() => {
-        alert('Shareable link copied to clipboard.');
-      })
-      .catch(() => {
-        fallbackCopyToClipboard(shareUrl);
-      });
+      .writeText(url)
+      .then(() => alert('Shareable link copied.'))
+      .catch(() => fallbackCopy(url));
   } else {
-    fallbackCopyToClipboard(shareUrl);
+    fallbackCopy(url);
   }
 }
 
-/* ---------- Fallback copy helper ---------- */
+/* ============================================================================
+   Fallback Copy Helper
+============================================================================ */
 
-function fallbackCopyToClipboard(text) {
-  const textArea = document.createElement('textarea');
-  textArea.value = text;
-  textArea.setAttribute('readonly', '');
-  textArea.style.position = 'absolute';
-  textArea.style.left = '-9999px';
-  document.body.appendChild(textArea);
-  textArea.select();
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'absolute';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+
   try {
     document.execCommand('copy');
-    alert('Shareable link copied to clipboard.');
+    alert('Shareable link copied.');
   } catch (err) {
     console.error('Clipboard copy failed:', err);
-    alert('Unable to copy link automatically. Please copy it from the address bar.');
-  } finally {
-    document.body.removeChild(textArea);
+    alert('Unable to copy link automatically.');
   }
+
+  document.body.removeChild(ta);
 }
