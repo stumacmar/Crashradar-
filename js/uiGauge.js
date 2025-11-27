@@ -1,14 +1,14 @@
-// js/uiGauge.js
-// ------------------------------------------------------------
-// Gauge, sidebar status tiles, alert banner, valuation summary,
-// insight text, and "What's Driving the Score?" list.
-//
-// DOM is wired to the IDs in index.html:
-// - composite-score, regime-label, needle, risk-fill
-// - recession-risk-display, valuation-risk-display, labor-risk-display
-// - quality-display, inputs-badge
-// - insight-text, contrib-list
-// ------------------------------------------------------------
+// uiGauge.js
+// ============================================================================
+// Updates:
+//   - Composite gauge (value, needle, fill)
+//   - Regime label
+//   - Recession / valuation / labour panels
+//   - Coverage badge + data-quality tile
+//   - Alert banner
+//   - Insight text
+//   - Contribution list
+// ============================================================================
 
 import {
   INDICATOR_CONFIG,
@@ -23,9 +23,9 @@ import {
   stressVerdictLabel,
 } from './scoring.js';
 
-/* ------------------------------------------------------------
-   Internal: coverage computation
------------------------------------------------------------- */
+/* ============================================================================
+   Coverage calculation
+============================================================================ */
 
 function computeCoverage(indicatorValuesByKey, valuationValuesByKey) {
   const total =
@@ -59,13 +59,10 @@ function computeCoverage(indicatorValuesByKey, valuationValuesByKey) {
   };
 }
 
-/* ------------------------------------------------------------
-   Gauge + tiles + alert
------------------------------------------------------------- */
+/* ============================================================================
+   Main gauge + tiles + alert
+============================================================================ */
 
-/**
- * Update main composite gauge, sidebar status tiles, coverage badge, and alert.
- */
 export function updateGaugeAndStatus({
   compositeScore,
   indicatorValuesByKey = {},
@@ -86,8 +83,7 @@ export function updateGaugeAndStatus({
   const qualityDisplay = document.getElementById('quality-display');
 
   if (!scoreEl || !needle || !fill || !regimeEl || !alert ||
-      !recessionRiskEl || !valuationRiskEl || !laborRiskEl ||
-      !inputsBadge || !qualityDisplay) {
+      !recessionRiskEl || !valuationRiskEl || !laborRiskEl) {
     return;
   }
 
@@ -98,11 +94,15 @@ export function updateGaugeAndStatus({
 
   const coveragePct = total ? Math.round(coverageRatio * 100) : null;
 
-  // Inputs badge + data coverage tile
-  inputsBadge.textContent = `Inputs: ${used}/${total} populated`;
-  qualityDisplay.textContent = total ? `${coveragePct}%` : '--';
+  // Inputs badge + tile
+  if (inputsBadge) {
+    inputsBadge.textContent = `Inputs: ${used}/${total} populated`;
+  }
+  if (qualityDisplay) {
+    qualityDisplay.textContent = total ? `${coveragePct}%` : '--';
+  }
 
-  // No composite yet
+  // No composite available
   if (compositeScore == null || !Number.isFinite(compositeScore)) {
     scoreEl.textContent = '--';
     fill.style.width = '0%';
@@ -114,15 +114,18 @@ export function updateGaugeAndStatus({
     laborRiskEl.textContent = '--';
 
     let msg = 'No composite yet. Check FRED cache and manual LEI / valuation inputs.';
+
     if (cacheAgeDays != null && cacheAgeDays > 10) {
-      msg = 'Data warning: FRED cache is ' +
-        cacheAgeDays.toFixed(1) +
-        ' days old. Update fred_cache.json. ' +
-        msg;
+      msg = `Data warning: FRED cache is ${cacheAgeDays.toFixed(1)} days old. Update fred_cache.json. ${msg}`;
     }
+
     alert.textContent = msg;
     return;
   }
+
+  /* ------------------------------------------------------------------------
+     Composite stress gauge
+  ------------------------------------------------------------------------ */
 
   const v = Math.round(compositeScore);
   scoreEl.textContent = v.toString();
@@ -137,7 +140,11 @@ export function updateGaugeAndStatus({
   else if (v <= 70) regime = 'High — defensive bias';
   else regime = 'Critical regime';
 
-  regimeEl.textContent = 'COMPOSITE STRESS — ' + regime;
+  regimeEl.textContent = `COMPOSITE STRESS — ${regime}`;
+
+  /* ------------------------------------------------------------------------
+     Risk tiles
+  ------------------------------------------------------------------------ */
 
   const recessionLabel = derivedRecessionRisk(v);
   const valuationLabel = derivedValuationRisk(valuationValuesByKey);
@@ -147,38 +154,36 @@ export function updateGaugeAndStatus({
   valuationRiskEl.textContent = valuationLabel;
   laborRiskEl.textContent = laborLabel;
 
+  /* ------------------------------------------------------------------------
+     Alert banner logic
+  ------------------------------------------------------------------------ */
+
   let prefix = '';
+
   if (cacheAgeDays != null && cacheAgeDays > 10) {
-    prefix += 'Data warning: FRED cache is ' +
-      cacheAgeDays.toFixed(1) +
-      ' days old. Update fred_cache.json. ';
+    prefix += `Data warning: FRED cache is ${cacheAgeDays.toFixed(1)} days old. Update fred_cache.json. `;
   }
+
   if (coverageRatio < 0.8) {
     prefix += 'Coverage below 80%. Treat composite as tentative. ';
   }
 
   if (v >= 70) {
-    alert.innerHTML = prefix +
-      '<strong>Critical:</strong> Composite = ' + v +
-      '. Macro + valuations in historical danger cluster.';
+    alert.innerHTML =
+      `${prefix}<strong>Critical:</strong> Composite = ${v}. Macro + valuations in historical danger cluster.`;
   } else if (v >= 50) {
-    alert.innerHTML = prefix +
-      '<strong>Warning:</strong> Composite = ' + v +
-      '. Elevated risk — inspect indicator tiles.';
+    alert.innerHTML =
+      `${prefix}<strong>Warning:</strong> Composite = ${v}. Elevated risk — inspect indicator tiles.`;
   } else {
-    alert.textContent = prefix +
-      'Composite = ' + v +
-      '. No classic crash cluster on this configuration; still consider exogenous shocks.';
+    alert.textContent =
+      `${prefix}Composite = ${v}. No classic crash cluster on this configuration; still consider exogenous shocks.`;
   }
 }
 
-/* ------------------------------------------------------------
-   Valuation current box
------------------------------------------------------------- */
+/* ============================================================================
+   Valuation summary box
+============================================================================ */
 
-/**
- * Update the "Current (your inputs)" valuation comparison box.
- */
 export function syncValuationSummary(valuationValuesByKey = {}) {
   const buffett = valuationValuesByKey.BUFFETT;
   const cape = valuationValuesByKey.SHILLER_PE;
@@ -188,24 +193,21 @@ export function syncValuationSummary(valuationValuesByKey = {}) {
 
   if (bEl) {
     bEl.textContent = Number.isFinite(buffett)
-      ? 'Buffett: ' + buffett.toFixed(1) + '%'
+      ? `Buffett: ${buffett.toFixed(1)}%`
       : 'Buffett: --';
   }
 
   if (cEl) {
     cEl.textContent = Number.isFinite(cape)
-      ? 'CAPE: ' + cape.toFixed(1)
+      ? `CAPE: ${cape.toFixed(1)}`
       : 'CAPE: --';
   }
 }
 
-/* ------------------------------------------------------------
-   Insight microcopy
------------------------------------------------------------- */
+/* ============================================================================
+   Insight text (Interpretation)
+============================================================================ */
 
-/**
- * Update the insight micro-copy above the composite-history chart.
- */
 export function updateInsightText({
   compositeScore,
   valuationValuesByKey = {},
@@ -216,7 +218,7 @@ export function updateInsightText({
   const c = compositeScore;
   const vRisk = derivedValuationRisk(valuationValuesByKey);
 
-  if (c == null || !Number.isFinite(c)) {
+  if (!Number.isFinite(c)) {
     el.textContent =
       'No composite yet. Ensure fred_cache.json is fresh and LEI / Buffett / CAPE are populated.';
   } else if (c >= 70 && vRisk === 'High') {
@@ -237,13 +239,10 @@ export function updateInsightText({
   }
 }
 
-/* ------------------------------------------------------------
-   Contributions sidebar
------------------------------------------------------------- */
+/* ============================================================================
+   Contribution list
+============================================================================ */
 
-/**
- * Render the "What’s Driving the Score?" contribution list.
- */
 export function updateContributions({
   compositeScore,
   indicatorValuesByKey = {},
@@ -276,7 +275,6 @@ export function updateContributions({
 
   top.forEach(item => {
     const verdict = stressVerdictLabel(item.stress);
-    const pctOfComposite = item.pctOfComposite;
 
     const row = document.createElement('div');
     row.className = 'contrib-item';
@@ -289,7 +287,7 @@ export function updateContributions({
       <div class="contrib-meta">
         <span class="contrib-tag">${item.block}${item.tier ? ' · ' + item.tier : ''}</span>
         <span class="contrib-tag contrib-tag-${verdict.toLowerCase()}">${verdict}</span>
-        <span class="contrib-tag contrib-tag-share">${pctOfComposite.toFixed(0)}% of composite</span>
+        <span class="contrib-tag contrib-tag-share">${item.pctOfComposite.toFixed(0)}% of composite</span>
       </div>
     `;
 
