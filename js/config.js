@@ -1,7 +1,29 @@
-// config.js — FIXED to match your fred_cache.json exactly
+// config.js
+// ============================================================================
+// Central configuration for Economic Crash Radar Pro (Full Historical Mode)
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// INDICATOR CONFIG
+// ---------------------------------------------------------------------------
+// Every indicator MUST have:
+// - label
+// - fromFred (true/false)
+// - either fredId OR manual input
+// - format: pct1 | pct0 | plain0 | plain1 | plain2
+// - threshold: numerical pivot level
+// - direction: "above" = worse above threshold, "below" = worse below threshold
+// - span: scaling range around threshold for stress calc
+// - tier: 1 or 2 (leading/confirming)
+// - weight: macro weight for composite
+// - description: short explanation
 
 export const INDICATOR_CONFIG = {
-  // ---- TIER 1 ----
+
+  // -------------------------------------------------------------------------
+  // TIER 1 — LEADING INDICATORS
+  // -------------------------------------------------------------------------
+
   YIELD_CURVE: {
     label: "Yield Curve (10Y–3M, %)",
     fromFred: true,
@@ -55,7 +77,22 @@ export const INDICATOR_CONFIG = {
     description: "YoY change in M2 money supply."
   },
 
-  // ---- TIER 2 ----
+  LEI: {
+    label: "Leading Economic Index (6m %Δ)",
+    fromFred: false,
+    format: "pct1",
+    threshold: -4.1,
+    direction: "below",
+    span: 3.0,
+    tier: 1,
+    weight: 1.0,
+    description: "Six-month percentage change in the Conference Board LEI."
+  },
+
+  // -------------------------------------------------------------------------
+  // TIER 2 — CONFIRMING INDICATORS
+  // -------------------------------------------------------------------------
+
   FIN_STRESS: {
     label: "Financial Stress (NFCI)",
     fromFred: true,
@@ -122,31 +159,21 @@ export const INDICATOR_CONFIG = {
     tier: 2,
     weight: 1.0,
     description: "US building permits, YoY."
-  },
-
-  // ---- MANUAL ----
-  LEI: {
-    label: "Leading Economic Index (6m %Δ)",
-    fromFred: false,
-    format: "pct1",
-    threshold: -4.1,
-    direction: "below",
-    span: 3.0,
-    tier: 1,
-    weight: 1.0,
-    description: "Six-month percentage change in the Conference Board LEI."
   }
 };
 
 
-// ---- VALUATIONS ----
+// ---------------------------------------------------------------------------
+// VALUATION CONFIG
+// ---------------------------------------------------------------------------
+
 export const VALUATION_CONFIG = {
   BUFFETT: {
     label: "Buffett Indicator (Mkt Cap / GDP, %)",
     weight: 1.0,
     format: "pct0",
     danger: "> 200%",
-    tooltip: "Total US market cap / GDP."
+    tooltip: "Total US market cap divided by GDP."
   },
 
   SHILLER_PE: {
@@ -159,9 +186,15 @@ export const VALUATION_CONFIG = {
 };
 
 
-// Composite block weights
+// ---------------------------------------------------------------------------
+// COMPOSITE WEIGHTS
+// ---------------------------------------------------------------------------
+
 export const MACRO_BLOCK_WEIGHT = 0.65;
 export const VALUATION_BLOCK_WEIGHT = 0.35;
 
-// Stress turning point
+// ---------------------------------------------------------------------------
+// WARN MAX — turn amber at ~40
+// ---------------------------------------------------------------------------
+
 export const WARN_MAX = 40;
