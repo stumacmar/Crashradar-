@@ -1,13 +1,16 @@
-// js/app.js
-// Central orchestrator for Economic Crash Radar Pro.
+// app.js
+// ============================================================================
+// Main orchestrator for Economic Crash Radar Pro
+// ============================================================================
 //
 // Responsibilities:
-// - Runtime state for indicators, valuations, composite score, cacheMeta.
-// - Load FRED cache (via dataService) and compute auto indicator values.
-// - Apply manual inputs (LEI, Buffett, CAPE) with localStorage persistence.
-// - Maintain composite history in localStorage.
-// - Read URL params for i_KEY / v_KEY overrides.
-// - Wire all UI modules and button handlers.
+//  - Load FRED cache + compute current values
+//  - Load full historical per-indicator series
+//  - Maintain composite score + history in localStorage
+//  - Apply manual inputs + URL parameters
+//  - Wire UI renderers (tiles, charts, gauge, audit, exports)
+//  - Provide full page lifecycle: initial render → refresh → expand → export
+// ============================================================================
 
 import {
   INDICATOR_CONFIG,
@@ -17,6 +20,11 @@ import {
 import {
   computeComposite,
 } from './scoring.js';
+
+import {
+  loadCurrentIndicatorValues,
+  loadProcessedHistory,
+} from './dataService.js';
 
 import {
   renderMacroIndicators,
@@ -48,45 +56,40 @@ import {
   shareLink,
 } from './exports.js';
 
-import {
-  loadCurrentIndicatorValues,
-} from './dataService.js';
-
-// -----------------------------------------------------------------------------
-// Constants / keys
-// -----------------------------------------------------------------------------
+// ============================================================================
+// CONSTANTS
+// ============================================================================
 
 const LOCAL_STORAGE_KEY = 'crashRadarManualInputs_v1';
-const COMPOSITE_HISTORY_KEY = 'crashRadarCompositeHistory_v1';
+const HISTORY_KEY = 'crashRadarCompositeHistory_v1';
 
-// -----------------------------------------------------------------------------
-// App state
-// -----------------------------------------------------------------------------
+// ============================================================================
+// STATE
+// ============================================================================
 
-// indicatorValuesByKey: e.g. { LEI: -4.1, YIELD_CURVE: -0.5, ... }
+// Current indicator values
 const indicatorValuesByKey = {};
-// valuationValuesByKey: e.g. { BUFFETT: 195, SHILLER_PE: 32 }
 const valuationValuesByKey = {};
 
-// Composite + history
+// Composite score + history
 let compositeScore = null;
 let compositeHistory = [];
 
-// FRED cache metadata (actual cache lives in dataService)
+// Cache metadata
 const cacheMeta = {
-  generatedAt: null,   // string or null
-  cacheAgeDays: null,  // number or null
+  generatedAt: null,
+  cacheAgeDays: null,
 };
 
-// -----------------------------------------------------------------------------
-// Loading overlay
-// -----------------------------------------------------------------------------
+// ============================================================================
+// LOADING OVERLAY
+// ============================================================================
 
-function showLoading(message = 'Loading data...') {
+function showLoading(msg = 'Loading…') {
   const overlay = document.getElementById('loading-overlay');
   const text = document.getElementById('loading-text');
   if (!overlay || !text) return;
-  text.textContent = message;
+  text.textContent = msg;
   overlay.classList.add('active');
 }
 
@@ -96,203 +99,156 @@ function hideLoading() {
   overlay.classList.remove('active');
 }
 
-// -----------------------------------------------------------------------------
-// LocalStorage: manual inputs
-// -----------------------------------------------------------------------------
+// ============================================================================
+// LOCAL STORAGE — Manual Inputs
+// ============================================================================
 
-function loadManualInputsFromStorage() {
-  let parsed = null;
+function loadManualInputs() {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!raw) return;
-    parsed = JSON.parse(raw);
-  } catch (err) {
-    console.error('Error loading manual inputs from localStorage:', err);
-    return;
-  }
-  if (!parsed || typeof parsed !== 'object') return;
+    const parsed = JSON.parse(raw);
 
-  if (typeof parsed.LEI === 'number') {
-    indicatorValuesByKey.LEI = parsed.LEI;
-  }
-  if (typeof parsed.BUFFETT === 'number') {
-    valuationValuesByKey.BUFFETT = parsed.BUFFETT;
-  }
-  if (typeof parsed.SHILLER_PE === 'number') {
-    valuationValuesByKey.SHILLER_PE = parsed.SHILLER_PE;
+    if (typeof parsed.LEI === 'number') indicatorValuesByKey.LEI = parsed.LEI;
+    if (typeof parsed.BUFFETT === 'number') valuationValuesByKey.BUFFETT = parsed.BUFFETT;
+    if (typeof parsed.SHILLER_PE === 'number') valuationValuesByKey.SHILLER_PE = parsed.SHILLER_PE;
+
+  } catch (e) {
+    console.error('Error loading manual inputs:', e);
   }
 }
 
-function saveManualInputsToStorage() {
+function saveManualInputs() {
   const payload = {
-    LEI: Number.isFinite(indicatorValuesByKey.LEI)
-      ? indicatorValuesByKey.LEI
-      : null,
-    BUFFETT: Number.isFinite(valuationValuesByKey.BUFFETT)
-      ? valuationValuesByKey.BUFFETT
-      : null,
-    SHILLER_PE: Number.isFinite(valuationValuesByKey.SHILLER_PE)
-      ? valuationValuesByKey.SHILLER_PE
-      : null,
+    LEI: Number.isFinite(indicatorValuesByKey.LEI) ? indicatorValuesByKey.LEI : null,
+    BUFFETT: Number.isFinite(valuationValuesByKey.BUFFETT) ? valuationValuesByKey.BUFFETT : null,
+    SHILLER_PE: Number.isFinite(valuationValuesByKey.SHILLER_PE) ? valuationValuesByKey.SHILLER_PE : null,
   };
+
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
-  } catch (err) {
-    console.error('Error saving manual inputs to localStorage:', err);
+  } catch (e) {
+    console.error('Error saving manual inputs:', e);
   }
 }
 
-// -----------------------------------------------------------------------------
-// LocalStorage: composite history
-// -----------------------------------------------------------------------------
+// ============================================================================
+// LOCAL STORAGE — Composite History
+// ============================================================================
 
-function loadCompositeHistoryFromStorage() {
+function loadCompositeHistory() {
   try {
-    const raw = localStorage.getItem(COMPOSITE_HISTORY_KEY);
+    const raw = localStorage.getItem(HISTORY_KEY);
     if (!raw) return [];
-    const data = JSON.parse(raw);
-    if (!Array.isArray(data)) return [];
-    return data
-      .filter(
-        d =>
-          d &&
-          typeof d.date === 'string' &&
-          Number.isFinite(d.score),
-      )
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .filter(x => x && typeof x.date === 'string' && Number.isFinite(x.score))
       .sort((a, b) => a.date.localeCompare(b.date));
-  } catch (err) {
-    console.error('Error loading composite history:', err);
+  } catch (e) {
+    console.error('Error loading history:', e);
     return [];
   }
 }
 
-function saveCompositeHistoryToStorage() {
+function saveCompositeHistory() {
   try {
-    localStorage.setItem(
-      COMPOSITE_HISTORY_KEY,
-      JSON.stringify(compositeHistory),
-    );
-  } catch (err) {
-    console.error('Error saving composite history:', err);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(compositeHistory));
+  } catch (e) {
+    console.error('Error saving history:', e);
   }
 }
 
-function recordCompositeHistory() {
+function recordDailyComposite() {
   if (!Number.isFinite(compositeScore)) return;
 
-  const today = new Date();
-  const dateStr = today.toISOString().slice(0, 10);
-  let changed = false;
+  const today = new Date().toISOString().slice(0, 10);
+  const idx = compositeHistory.findIndex(x => x.date === today);
 
-  const idx = compositeHistory.findIndex(d => d.date === dateStr);
   if (idx >= 0) {
     if (compositeHistory[idx].score !== compositeScore) {
       compositeHistory[idx].score = compositeScore;
-      changed = true;
+      saveCompositeHistory();
     }
   } else {
-    compositeHistory.push({ date: dateStr, score: compositeScore });
-    changed = true;
+    compositeHistory.push({ date: today, score: compositeScore });
+    compositeHistory.sort((a, b) => a.date.localeCompare(b.date));
+    saveCompositeHistory();
   }
-
-  compositeHistory = compositeHistory
-    .filter(
-      d =>
-        d &&
-        typeof d.date === 'string' &&
-        Number.isFinite(d.score),
-    )
-    .sort((a, b) => a.date.localeCompare(b.date));
-
-  const MAX_POINTS = 730; // ~2 years of daily points
-  if (compositeHistory.length > MAX_POINTS) {
-    compositeHistory = compositeHistory.slice(
-      compositeHistory.length - MAX_POINTS,
-    );
-    changed = true;
-  }
-
-  if (changed) saveCompositeHistoryToStorage();
 }
 
-// -----------------------------------------------------------------------------
-// URL params
-// -----------------------------------------------------------------------------
+// ============================================================================
+// URL PARAMS
+// ============================================================================
 
 function applyUrlParams() {
-  const urlParams = new URLSearchParams(window.location.search);
-  if (!urlParams) return;
+  const params = new URLSearchParams(location.search);
 
-  // Indicators: i_KEY
   Object.keys(INDICATOR_CONFIG).forEach(key => {
-    const raw = urlParams.get(`i_${key}`);
-    if (raw === null) return;
-    const num = parseFloat(raw);
-    if (Number.isFinite(num)) {
-      indicatorValuesByKey[key] = num;
+    const raw = params.get(`i_${key}`);
+    if (raw !== null) {
+      const n = parseFloat(raw);
+      if (Number.isFinite(n)) indicatorValuesByKey[key] = n;
     }
   });
 
-  // Valuations: v_KEY
   Object.keys(VALUATION_CONFIG).forEach(key => {
-    const raw = urlParams.get(`v_${key}`);
-    if (raw === null) return;
-    const num = parseFloat(raw);
-    if (Number.isFinite(num)) {
-      valuationValuesByKey[key] = num;
+    const raw = params.get(`v_${key}`);
+    if (raw !== null) {
+      const n = parseFloat(raw);
+      if (Number.isFinite(n)) valuationValuesByKey[key] = n;
     }
   });
 }
 
-// -----------------------------------------------------------------------------
-// FRED: apply current cache values to indicators (via dataService)
-// -----------------------------------------------------------------------------
+// ============================================================================
+// LOAD FRED → APPLY INDICATOR VALUES
+// ============================================================================
 
-async function applyFredToIndicators() {
-  const { valuesByKey, cacheMeta: meta } =
-    await loadCurrentIndicatorValues();
+async function loadFredValues() {
+  const { valuesByKey, cacheMeta: meta } = await loadCurrentIndicatorValues();
 
-  // Merge FRED-backed values into indicatorValuesByKey.
   Object.keys(valuesByKey).forEach(key => {
     indicatorValuesByKey[key] = valuesByKey[key];
   });
 
-  // Update cache metadata.
-  if (meta) {
-    cacheMeta.generatedAt =
-      typeof meta.generatedAt === 'string'
-        ? meta.generatedAt
-        : cacheMeta.generatedAt;
-    cacheMeta.cacheAgeDays =
-      Number.isFinite(meta.cacheAgeDays)
-        ? meta.cacheAgeDays
-        : cacheMeta.cacheAgeDays;
-  }
+  if (meta.generatedAt) cacheMeta.generatedAt = meta.generatedAt;
+  if (Number.isFinite(meta.cacheAgeDays)) cacheMeta.cacheAgeDays = meta.cacheAgeDays;
 
-  // Update header badge.
-  const cacheBadge = document.getElementById('cache-badge');
-  if (cacheBadge && cacheMeta.generatedAt) {
-    cacheBadge.textContent = 'FRED cache: ' + cacheMeta.generatedAt;
+  const badge = document.getElementById('cache-badge');
+  if (badge && cacheMeta.generatedAt) {
+    badge.textContent = 'FRED cache: ' + cacheMeta.generatedAt;
   }
 }
 
-// -----------------------------------------------------------------------------
-// Core recompute + render pipeline
-// -----------------------------------------------------------------------------
+// ============================================================================
+// LOAD FULL HISTORICAL SERIES FOR EACH AUTO INDICATOR
+// ============================================================================
 
-function recomputeComposite() {
-  compositeScore = computeComposite(
-    indicatorValuesByKey,
-    valuationValuesByKey,
-  );
+async function loadHistoricalSeries() {
+  const tasks = Object.entries(INDICATOR_CONFIG)
+    .filter(([_, cfg]) => cfg.fromFred)
+    .map(async ([key, cfg]) => {
+      const hist = await loadProcessedHistory(cfg);
+      if (!hist || hist.length === 0) return;
+
+      cfg.historySeries = {
+        dates: hist.map(x => x.date),
+        values: hist.map(x => x.value),
+      };
+    });
+
+  await Promise.all(tasks);
 }
 
-function refreshAllUI() {
-  // 1) Composite score + history
-  recomputeComposite();
-  recordCompositeHistory();
+// ============================================================================
+// RECOMPUTE + RENDER UI
+// ============================================================================
 
-  // 2) Gauge + sidebar tiles + insight + contributions
+function computeAndRenderAll() {
+  compositeScore = computeComposite(indicatorValuesByKey, valuationValuesByKey);
+  recordDailyComposite();
+
   updateGaugeAndStatus({
     compositeScore,
     indicatorValuesByKey,
@@ -301,25 +257,16 @@ function refreshAllUI() {
   });
 
   syncValuationSummary(valuationValuesByKey);
-  updateInsightText({
-    compositeScore,
-    valuationValuesByKey,
-  });
-
+  updateInsightText({ compositeScore, valuationValuesByKey });
   updateContributions({
     compositeScore,
     indicatorValuesByKey,
     valuationValuesByKey,
   });
 
-  // 3) Charts
   updateCompositeHistoryChart(compositeHistory, compositeScore);
-  updateRiskRadarChart(
-    indicatorValuesByKey,
-    valuationValuesByKey,
-  );
+  updateRiskRadarChart(indicatorValuesByKey, valuationValuesByKey);
 
-  // 4) Audit / data quality
   updateDataAudit({
     indicatorValuesByKey,
     valuationValuesByKey,
@@ -327,234 +274,133 @@ function refreshAllUI() {
   });
 }
 
-function renderAllTiles() {
+function renderTiles() {
   renderMacroIndicators({
     indicatorValuesByKey,
-    onManualChange: (key, value) => {
-      indicatorValuesByKey[key] =
-        Number.isFinite(value) ? value : null;
-      saveManualInputsToStorage();
-      refreshAllUI();
+    onManualChange: (key, v) => {
+      indicatorValuesByKey[key] = Number.isFinite(v) ? v : null;
+      saveManualInputs();
+      computeAndRenderAll();
     },
-    onExpandIndicator: key => {
-      toggleIndicatorExpansion(key);
-    },
+    onExpandIndicator: key => toggleIndicatorExpansion(key),
   });
 
   renderValuationIndicators({
     valuationValuesByKey,
-    onManualChange: (key, value) => {
-      valuationValuesByKey[key] =
-        Number.isFinite(value) ? value : null;
-      saveManualInputsToStorage();
-      refreshAllUI();
+    onManualChange: (key, v) => {
+      valuationValuesByKey[key] = Number.isFinite(v) ? v : null;
+      saveManualInputs();
+      computeAndRenderAll();
     },
   });
 }
 
-// -----------------------------------------------------------------------------
-// Button handlers
-// -----------------------------------------------------------------------------
+// ============================================================================
+// BUTTON HANDLERS
+// ============================================================================
 
-function handleRefreshData() {
-  showLoading('Loading FRED data...');
-  applyFredToIndicators()
-    .then(() => {
-      renderAllTiles();
-      refreshAllUI();
-    })
-    .catch(err => {
-      console.error('Refresh error:', err);
-      const cacheBadge = document.getElementById('cache-badge');
-      if (cacheBadge) {
-        cacheBadge.textContent = 'FRED cache: LOAD ERROR';
-      }
-      refreshAllUI();
-      alert(
-        'Error refreshing from data/fred_cache.json. ' +
-        'Check the file exists in /data and is valid JSON.'
-      );
-    })
-    .finally(() => {
+function wireButtons() {
+  document.getElementById('refresh-data')?.addEventListener('click', async () => {
+    showLoading('Refreshing FRED data…');
+    try {
+      await loadFredValues();
+      await loadHistoricalSeries();
+      renderTiles();
+      computeAndRenderAll();
+    } catch (e) {
+      console.error('Refresh error:', e);
+      alert('Failed to refresh FRED data.');
+    } finally {
       hideLoading();
-    });
-}
-
-function handleResetInputs() {
-  if (
-    !confirm(
-      'Reset all manual inputs (LEI / Buffett / CAPE)?',
-    )
-  ) {
-    return;
-  }
-
-  // Clear only manual indicators and valuations.
-  Object.entries(INDICATOR_CONFIG).forEach(([key, cfg]) => {
-    if (!cfg.fromFred) {
-      indicatorValuesByKey[key] = null;
     }
   });
 
-  Object.keys(VALUATION_CONFIG).forEach(key => {
-    valuationValuesByKey[key] = null;
+  document.getElementById('reset-inputs')?.addEventListener('click', () => {
+    if (!confirm('Reset manual LEI / Buffett / CAPE inputs?')) return;
+
+    Object.entries(INDICATOR_CONFIG).forEach(([key, cfg]) => {
+      if (!cfg.fromFred) indicatorValuesByKey[key] = null;
+    });
+
+    Object.keys(VALUATION_CONFIG).forEach(key => {
+      valuationValuesByKey[key] = null;
+    });
+
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+
+    renderTiles();
+    computeAndRenderAll();
   });
 
-  try {
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
-  } catch (err) {
-    console.error('Error clearing manual inputs:', err);
-  }
+  document.getElementById('show-help')?.addEventListener('click', () => {
+    alert(
+`Economic Crash Radar Pro
 
-  renderAllTiles();
-  refreshAllUI();
+This dashboard blends:
+• Leading macro indicators
+• Confirming indicators
+• Valuation gauges
+• Composite stress history
+• Labour stress
+• Data quality + staleness audit`
+    );
+  });
+
+  // Exports
+  document.getElementById('export-csv')?.addEventListener('click', () =>
+    exportToCSV({ indicatorValuesByKey, valuationValuesByKey, compositeScore })
+  );
+
+  document.getElementById('export-pdf')?.addEventListener('click', () =>
+    exportToPDF()
+  );
+
+  document.getElementById('export-snapshot')?.addEventListener('click', () =>
+    saveSnapshot({ indicatorValuesByKey, valuationValuesByKey, compositeScore })
+  );
+
+  document.getElementById('share-link')?.addEventListener('click', () =>
+    shareLink({ indicatorValuesByKey, valuationValuesByKey })
+  );
 }
 
-function handleShowHelp() {
-  const helpContent = `
-Economic Crash Radar Pro
-
-Macro indicators (10):
-- Tier 1 (Leading): LEI, Yield Curve, Credit Spread, Financial Stress, Consumer Sentiment, M2 Growth
-- Tier 2 (Confirming): Industrial Production, Building Permits, Initial Claims, Sahm Rule
-
-Valuation indicators (2):
-- Buffett Indicator (Market Cap / GDP)
-- Shiller CAPE (cyclically adjusted P/E)
-
-How to use:
-1. Press "Refresh Data" to pull the latest FRED cache (auto tiles).
-2. Manually input LEI 6m %Δ, Buffett, and CAPE.
-3. Monitor the composite score and tile stress levels.
-4. Click any FRED-based tile to expand history.
-5. Use 12M / 5Y / MAX buttons to change lookback.
-
-Interpretation:
-- 0–30: Low stress
-- 30–50: Elevated – monitor
-- 50–70: High – defensive bias
-- 70–100: Critical – historical danger zone
-`;
-  alert(helpContent);
-}
-
-function wireButtons() {
-  const refreshBtn = document.getElementById('refresh-data');
-  const resetBtn = document.getElementById('reset-inputs');
-  const helpBtn = document.getElementById('show-help');
-  const csvBtn = document.getElementById('export-csv');
-  const pdfBtn = document.getElementById('export-pdf');
-  const snapshotBtn = document.getElementById('export-snapshot');
-  const shareBtn = document.getElementById('share-link');
-
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', handleRefreshData);
-  }
-  if (resetBtn) {
-    resetBtn.addEventListener('click', handleResetInputs);
-  }
-  if (helpBtn) {
-    helpBtn.addEventListener('click', handleShowHelp);
-  }
-  if (csvBtn) {
-    csvBtn.addEventListener('click', () => {
-      exportToCSV({
-        indicatorValuesByKey,
-        valuationValuesByKey,
-        compositeScore,
-      });
-    });
-  }
-  if (pdfBtn) {
-    pdfBtn.addEventListener('click', () => {
-      exportToPDF();
-    });
-  }
-  if (snapshotBtn) {
-    snapshotBtn.addEventListener('click', () => {
-      saveSnapshot({
-        indicatorValuesByKey,
-        valuationValuesByKey,
-        compositeScore,
-      });
-    });
-  }
-  if (shareBtn) {
-    shareBtn.addEventListener('click', () => {
-      shareLink({
-        indicatorValuesByKey,
-        valuationValuesByKey,
-      });
-    });
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Global event wiring
-// -----------------------------------------------------------------------------
-
-function wireGlobalEvents() {
-  // History period buttons (12M / 5Y / MAX)
+function wireGlobalClicks() {
   document.addEventListener('click', e => {
     handleHistoryPeriodClick(e);
   });
 }
 
-// -----------------------------------------------------------------------------
-// Init
-// -----------------------------------------------------------------------------
+// ============================================================================
+// INITIALISE APP
+// ============================================================================
 
-document.addEventListener('DOMContentLoaded', () => {
-  // 1) Initialise indicatorValuesByKey / valuationValuesByKey with nulls.
-  Object.keys(INDICATOR_CONFIG).forEach(key => {
-    if (!(key in indicatorValuesByKey)) {
-      indicatorValuesByKey[key] = null;
-    }
-  });
-  Object.keys(VALUATION_CONFIG).forEach(key => {
-    if (!(key in valuationValuesByKey)) {
-      valuationValuesByKey[key] = null;
-    }
-  });
+document.addEventListener('DOMContentLoaded', async () => {
+  // Init all keys to null
+  Object.keys(INDICATOR_CONFIG).forEach(k => (indicatorValuesByKey[k] = null));
+  Object.keys(VALUATION_CONFIG).forEach(k => (valuationValuesByKey[k] = null));
 
-  // 2) Load composite history.
-  compositeHistory = loadCompositeHistoryFromStorage();
+  compositeHistory = loadCompositeHistory();
 
-  // 3) Local manual inputs (LEI, Buffett, CAPE).
-  loadManualInputsFromStorage();
-
-  // 4) URL params override.
+  loadManualInputs();
   applyUrlParams();
 
-  // 5) First render of tiles with whatever we have so far.
-  renderAllTiles();
-  refreshAllUI();
+  renderTiles();
+  computeAndRenderAll();
 
-  // 6) Initial FRED load and full refresh.
-  showLoading('Loading FRED data...');
-  applyFredToIndicators()
-    .then(() => {
-      renderAllTiles();
-      refreshAllUI();
-    })
-    .catch(err => {
-      console.error('Init error loading FRED cache:', err);
-      const cacheBadge = document.getElementById('cache-badge');
-      if (cacheBadge) {
-        cacheBadge.textContent = 'FRED cache: LOAD ERROR';
-      }
-      refreshAllUI();
-      alert(
-        'Could not load data/fred_cache.json. ' +
-        'Check that the file exists at /data/fred_cache.json in your GitHub repo ' +
-        'and that the JSON has { "series": { ... }, "generated_at": "..." }.'
-      );
-    })
-    .finally(() => {
-      hideLoading();
-    });
+  showLoading('Loading FRED data…');
 
-  // 7) Wire buttons + global events.
+  try {
+    await loadFredValues();
+    await loadHistoricalSeries();
+    renderTiles();
+    computeAndRenderAll();
+  } catch (e) {
+    console.error('Init load error:', e);
+    alert('Could not load fred_cache.json or historical data.');
+  } finally {
+    hideLoading();
+  }
+
   wireButtons();
-  wireGlobalEvents();
+  wireGlobalClicks();
 });
