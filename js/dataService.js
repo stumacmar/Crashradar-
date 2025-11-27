@@ -1,20 +1,22 @@
+//
 // ============================================================================
 // dataService.js
-// Unified FRED cache loader + historical loader compatible with app.js
+// Fully rebuilt FRED cache + historical loader compatible with app.js
 // ============================================================================
 
 import { INDICATOR_CONFIG } from './config.js';
 
-// Paths for GitHub Pages
+// GitHub Pages paths (exactly what your index expects)
 const FRED_CACHE_URL = './data/fred_cache.json';
 const FRED_HIST_URL  = './data/fred_historical_cache.json';
 
-// In-memory cache (prevents repeated network hits)
+// In-memory caches to prevent repeated fetches
 let fredCache = null;
 let fredHistCache = null;
 
+//
 // ============================================================================
-// Load fred_cache.json (current values only)
+// Load fred_cache.json (latest values)
 // ============================================================================
 export async function loadFredCache() {
   if (fredCache) return fredCache;
@@ -26,10 +28,11 @@ export async function loadFredCache() {
   return fredCache;
 }
 
+//
 // ============================================================================
-// Load fred_historical_cache.json (full time series)
+// Load fred_historical_cache.json (full series)
 // ============================================================================
-async function loadFredHistoricalCache() {
+export async function loadFredHistorical() {
   if (fredHistCache) return fredHistCache;
 
   const res = await fetch(FRED_HIST_URL, { cache: 'no-store' });
@@ -39,110 +42,71 @@ async function loadFredHistoricalCache() {
   return fredHistCache;
 }
 
+//
 // ============================================================================
-// Extract the most recent numeric value from a FRED series
-// ============================================================================
-function getLatestNumericValue(series) {
-  if (!series?.observations?.length) return null;
-
-  const obs = series.observations;
-  for (let i = obs.length - 1; i >= 0; i--) {
-    const v = Number(obs[i].value);
-    if (Number.isFinite(v)) return v;
-  }
-  return null;
-}
-
-// ============================================================================
-// NEW — loadCurrentIndicatorValues()
-// Required by app.js
-// Reads fred_cache.json and maps values to indicator keys
+// Extract latest values from fred_cache.json
 // ============================================================================
 export async function loadCurrentIndicatorValues() {
   const cache = await loadFredCache();
-  const valuesByKey = {};
-  const now = Date.now();
 
+  const valuesByKey = {};
+  const meta = {};
+
+  // Extract values for each indicator
   for (const [key, cfg] of Object.entries(INDICATOR_CONFIG)) {
     if (!cfg.fromFred) {
       valuesByKey[key] = null;
       continue;
     }
 
-    const series = cache[cfg.seriesId];
-    if (!series) {
+    const series = cache.series?.[key];
+    if (!series || !series.observations || series.observations.length === 0) {
       valuesByKey[key] = null;
       continue;
     }
 
-    valuesByKey[key] = getLatestNumericValue(series);
-  }
-
-  // Cache metadata
-  const generatedAt = cache.generatedAt || null;
-  let cacheAgeDays = null;
-
-  if (generatedAt) {
-    cacheAgeDays = Math.round(
-      (now - new Date(generatedAt).getTime()) / 86400000
-    );
-  }
-
-  return {
-    valuesByKey,
-    cacheMeta: {
-      generatedAt,
-      cacheAgeDays,
+    // last numeric observation
+    let val = null;
+    for (let i = series.observations.length - 1; i >= 0; i--) {
+      const v = parseFloat(series.observations[i].value);
+      if (Number.isFinite(v)) {
+        val = v;
+        break;
+      }
     }
-  };
+
+    valuesByKey[key] = val;
+  }
+
+  // meta
+  meta.generatedAt   = cache.generated_at || null;
+  meta.cacheAgeDays  = cache.cache_age_days || null;
+
+  return { valuesByKey, cacheMeta: meta };
 }
 
+//
 // ============================================================================
-// NEW — loadProcessedHistory(cfg)
-// Required by app.js
-// Returns array: [{date, value}, ...]
+// Return cleaned historical series for 1 indicator
 // ============================================================================
 export async function loadProcessedHistory(cfg) {
-  const hist = await loadFredHistoricalCache();
-  const series = hist[cfg.seriesId];
+  const hist = await loadFredHistorical();
 
-  if (!series || !series.observations) return [];
-
-  const out = [];
-
-  for (const row of series.observations) {
-    const v = Number(row.value);
-    if (!Number.isFinite(v)) continue;
-
-    out.push({
-      date: row.date,
-      value: v,
-    });
-  }
-
-  return out;
-}
-
-// ============================================================================
-// OPTIONAL HELPERS — used by diagnostics/index if needed later
-// ============================================================================
-
-// Get full raw series from fred_cache.json
-export async function getSeries(seriesId) {
-  const cache = await loadFredCache();
-  return cache[seriesId] || null;
-}
-
-// Return array of numeric {date,value}
-export async function getObservationHistory(seriesId) {
-  const cache = await loadFredHistoricalCache();
-  const series = cache[seriesId];
+  const series = hist.series?.[cfg.key];
   if (!series || !series.observations) return [];
 
   return series.observations
-    .map(o => ({
-      date: o.date,
-      value: Number(o.value),
-    }))
-    .filter(o => Number.isFinite(o.value));
+    .map(o => {
+      const v = parseFloat(o.value);
+      return {
+        date: o.date,
+        value: Number.isFinite(v) ? v : null,
+      };
+    })
+    .filter(x => x.value !== null);
 }
+
+//
+// ============================================================================
+// END OF FILE
+// ============================================================================
