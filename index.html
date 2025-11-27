@@ -3,173 +3,91 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Economic Crash Radar Pro</title>
+  <title>CrashRadar Diagnostics</title>
 
-  <!-- Main CSS -->
-  <link rel="stylesheet" href="./css/main.css" />
+  <style>
+    body {
+      background: #0b0f16;
+      color: #d0d8f0;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 20px;
+    }
+    #log {
+      white-space: pre-wrap;
+      background: #121826;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid #334;
+      font-size: 14px;
+      height: 80vh;
+      overflow-y: scroll;
+    }
+  </style>
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <!-- Base path fix for GitHub Pages -->
   <script>
     window.__APP_BASE = "";
+    const log = (msg) => {
+      const el = document.getElementById("log");
+      el.textContent += msg + "\n";
+      console.log(msg);
+    };
   </script>
 </head>
 
 <body>
-<div class="container">
 
-  <!-- ============================================================
-       HEADER
-  ============================================================ -->
-  <h1>Economic Crash Radar Pro</h1>
-  <p style="color: var(--text-secondary); margin-bottom: 16px;">
-    Macro risk · Valuation stress · Market fragility
-  </p>
+<h1>CrashRadar Diagnostics</h1>
+<p>This page loads each module individually and logs success/failure.</p>
 
-  <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
-    <span id="cache-badge" style="color: var(--text-secondary); font-size:14px;">
-      FRED cache: --
-    </span>
+<div id="log">Starting diagnostics…\n</div>
 
-    <button id="refresh-data" class="btn">Refresh</button>
-    <button id="reset-inputs" class="btn btn-secondary">Reset</button>
-    <button id="show-help" class="btn btn-secondary">Help</button>
-  </div>
+<script type="module">
+  const log = (msg) => {
+    const el = document.getElementById("log");
+    el.textContent += msg + "\n";
+    console.log(msg);
+  };
 
-  <!-- ============================================================
-       GAUGE + PANELS
-  ============================================================ -->
-  <h2>Composite Stress</h2>
-  <div id="risk-fill" style="width:0%; margin-bottom:8px;"></div>
+  log("STEP 1 — Checking fetch for data/fred_cache.json…");
 
-  <div id="composite-score" style="font-size:36px; margin-bottom:4px;">--</div>
+  try {
+    const res = await fetch("./data/fred_cache.json?ts=" + Date.now());
+    log("Fetch status: " + res.status);
 
-  <div id="regime-label"
-       style="color: var(--text-secondary); font-size:14px; margin-bottom:12px;">
-    Composite Stress — --
-  </div>
-
-  <div class="card" style="margin-top:12px;">
-    <div><strong>Recession Risk</strong></div>
-    <div id="recession-risk-display">--</div>
-
-    <div style="margin-top:16px;"><strong>Valuation Risk</strong></div>
-    <div id="valuation-risk-display">--</div>
-
-    <div style="margin-top:16px;"><strong>Labour Stress</strong></div>
-    <div id="labor-risk-display">--</div>
-  </div>
-
-  <!-- Alert banner -->
-  <div id="alert-banner"
-       style="margin-top: 12px; color: var(--critical); font-size:14px;">
-    Loading…
-  </div>
-
-  <!-- ============================================================
-       INTERPRETATION
-  ============================================================ -->
-  <h2>Interpretation</h2>
-  <div id="insight-text" class="card">Loading…</div>
-
-  <!-- ============================================================
-       MACRO INDICATORS
-  ============================================================ -->
-  <h2>Macro Indicators</h2>
-  <h3>Tier 1 — Leading</h3>
-  <div id="tier1-container"></div>
-
-  <h3>Tier 2 — Confirming</h3>
-  <div id="tier2-container"></div>
-
-  <div id="indicator-tooltip"></div>
-
-  <!-- ============================================================
-       VALUATIONS
-  ============================================================ -->
-  <h2>Valuations</h2>
-  <div id="valuations-container"></div>
-
-  <div class="card" style="margin-top:20px;">
-    <div id="current-buffett-label">Buffett: --</div>
-    <div id="current-cape-label">CAPE: --</div>
-  </div>
-
-  <!-- ============================================================
-       CONTRIBUTIONS
-  ============================================================ -->
-  <h2>What's Driving the Score?</h2>
-  <div class="card" id="contrib-list">
-    Loading…
-  </div>
-
-  <!-- ============================================================
-       COMPOSITE HISTORY
-  ============================================================ -->
-  <h2>Composite Stress History</h2>
-  <div class="card">
-    <canvas id="composite-history" height="200"></canvas>
-  </div>
-
-  <!-- ============================================================
-       RADAR CHART
-  ============================================================ -->
-  <h2>Radar — Normalised Stress</h2>
-  <div class="card">
-    <canvas id="risk-radar" height="260"></canvas>
-  </div>
-
-  <!-- ============================================================
-       DATA QUALITY
-  ============================================================ -->
-  <h2>Data Quality & Staleness</h2>
-  <div id="audit-container" class="card">
-    Loading…
-  </div>
-
-  <!-- ============================================================
-       EXPORTS
-  ============================================================ -->
-  <h2>Exports</h2>
-  <div style="display:flex; gap:12px; flex-wrap:wrap;">
-    <button id="export-csv" class="btn">Export CSV</button>
-    <button id="export-pdf" class="btn btn-secondary">PDF</button>
-    <button id="export-snapshot" class="btn btn-secondary">Snapshot</button>
-    <button id="share-link" class="btn btn-secondary">Share Link</button>
-  </div>
-
-</div>
-
-<!-- ============================================================
-     LOADING OVERLAY
-============================================================ -->
-<div id="loading-overlay"
-     style="
-       position:fixed; inset:0;
-       background:rgba(0,0,0,0.55);
-       backdrop-filter: blur(6px);
-       color:#fff; display:flex;
-       align-items:center; justify-content:center;
-       font-size:18px; z-index:9999;
-       opacity:0; pointer-events:none;
-       transition: opacity 0.25s ease;
-     ">
-  <div id="loading-text">Loading…</div>
-</div>
-
-<style>
-  #loading-overlay.active {
-    opacity: 1;
-    pointer-events: auto;
+    if (!res.ok) {
+      log("❌ fred_cache.json NOT FOUND or NOT ACCESSIBLE");
+    } else {
+      const j = await res.json();
+      log("✔ fred_cache.json loaded. Keys: " + Object.keys(j.series).length);
+    }
+  } catch (e) {
+    log("❌ Exception fetching fred_cache.json: " + e.message);
   }
-</style>
 
-<!-- ============================================================
-     ONLY ONE MODULE SHOULD LOAD
-============================================================ -->
-<script type="module" src="./js/app.js"></script>
+  log("\nSTEP 2 — Testing module import paths…");
+
+  async function testModule(path) {
+    try {
+      log("⏳ Loading " + path);
+      await import(path);
+      log("✔ Loaded " + path);
+    } catch (e) {
+      log("❌ FAILED to load " + path + "\n" + e.message + "\n");
+    }
+  }
+
+  await testModule("./js/config.js");
+  await testModule("./js/scoring.js");
+  await testModule("./js/dataService.js");
+  await testModule("./js/uiIndicators.js");
+  await testModule("./js/uiCharts.js");
+  await testModule("./js/uiGauge.js");
+  await testModule("./js/uiAudit.js");
+  await testModule("./js/exports.js");
+  await testModule("./js/app.js");
+
+  log("\nDiagnostics complete.\nScroll up to see any failures.");
+</script>
 
 </body>
 </html>
