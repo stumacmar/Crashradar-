@@ -1,298 +1,148 @@
-// dataService.js
 // ============================================================================
-// Loads FRED cache, normalises observation arrays, extracts latest values,
-// computes freshness (days old), and provides unified access for the app.
+// dataService.js
+// Unified FRED cache loader + historical loader compatible with app.js
 // ============================================================================
 
 import { INDICATOR_CONFIG } from './config.js';
 
-const FRED_CACHE_URL = 'data/fred_cache.json';
-const FRED_HISTORICAL_URL = 'data/fred_historical_cache.json';
+// Paths for GitHub Pages
+const FRED_CACHE_URL = './data/fred_cache.json';
+const FRED_HIST_URL  = './data/fred_historical_cache.json';
 
+// In-memory cache (prevents repeated network hits)
 let fredCache = null;
-let fredHistoricalCache = null;
+let fredHistCache = null;
 
 // ============================================================================
-// 1. LOAD FRED CACHE (CURRENT SNAPSHOT)
+// Load fred_cache.json (current values only)
 // ============================================================================
-
 export async function loadFredCache() {
   if (fredCache) return fredCache;
 
   const res = await fetch(FRED_CACHE_URL, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`Failed to load ${FRED_CACHE_URL}`);
+  if (!res.ok) throw new Error(`Failed to load fred_cache.json`);
 
-  const json = await res.json();
-
-  fredCache = normaliseCache(json);
+  fredCache = await res.json();
   return fredCache;
 }
 
 // ============================================================================
-// 2. LOAD HISTORICAL FRED CACHE (FULL HISTORY FOR CHARTS)
+// Load fred_historical_cache.json (full time series)
 // ============================================================================
+async function loadFredHistoricalCache() {
+  if (fredHistCache) return fredHistCache;
 
-export async function loadFredHistoricalCache() {
-  if (fredHistoricalCache) return fredHistoricalCache;
+  const res = await fetch(FRED_HIST_URL, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Failed to load fred_historical_cache.json`);
 
-  const res = await fetch(FRED_HISTORICAL_URL, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`Failed to load ${FRED_HISTORICAL_URL}`);
-
-  const json = await res.json();
-
-  fredHistoricalCache = normaliseHistoricalCache(json);
-  return fredHistoricalCache;
+  fredHistCache = await res.json();
+  return fredHistCache;
 }
 
 // ============================================================================
-// 3. NORMALISERS
+// Extract the most recent numeric value from a FRED series
 // ============================================================================
+function getLatestNumericValue(series) {
+  if (!series?.observations?.length) return null;
 
-function normaliseCache(raw) {
-  if (!raw || !raw.series) return { generated_at: null, series: {} };
-
-  const out = { generated_at: raw.generated_at, series: {} };
-
-  for (const [id, s] of Object.entries(raw.series)) {
-    if (!s || !Array.isArray(s.observations)) continue;
-
-    const observations = s.observations.map(o => ({
-      date: o.date,
-      value: Number.isFinite(o.value) ? o.value : null,
-    }));
-
-    let latest = null;
-    for (let i = observations.length - 1; i >= 0; i--) {
-      if (Number.isFinite(observations[i].value)) {
-        latest = observations[i].value;
-        break;
-      }
-    }
-
-    out.series[id] = {
-      id,
-      last_updated: s.last_updated || null,
-      observations,
-      latest,
-    };
+  const obs = series.observations;
+  for (let i = obs.length - 1; i >= 0; i--) {
+    const v = Number(obs[i].value);
+    if (Number.isFinite(v)) return v;
   }
-
-  return out;
-}
-
-function normaliseHistoricalCache(raw) {
-  if (!raw || !raw.series) return { generated_at: null, series: {} };
-
-  const out = { generated_at: raw.generated_at, series: {} };
-
-  for (const [id, s] of Object.entries(raw.series)) {
-    if (!s || !Array.isArray(s.observations)) continue;
-
-    const observations = s.observations.map(o => ({
-      date: o.date,
-      value: parseFloat(o.value),
-    }));
-
-    let latest = null;
-    for (let i = observations.length - 1; i >= 0; i--) {
-      const v = observations[i].value;
-      if (Number.isFinite(v)) {
-        latest = v;
-        break;
-      }
-    }
-
-    out.series[id] = {
-      id,
-      last_updated: s.last_updated || null,
-      observations,
-      latest,
-    };
-  }
-
-  return out;
+  return null;
 }
 
 // ============================================================================
-// 4. HELPER — ACCESS A SERIES FROM CACHE
+// NEW — loadCurrentIndicatorValues()
+// Required by app.js
+// Reads fred_cache.json and maps values to indicator keys
 // ============================================================================
-
-export function getSeriesCurrent(id) {
-  if (!fredCache || !fredCache.series[id]) return null;
-  return fredCache.series[id];
-}
-
-export function getSeriesHistorical(id) {
-  if (!fredHistoricalCache || !fredHistoricalCache.series[id]) return null;
-  return fredHistoricalCache.series[id];
-}
-
-// ============================================================================
-// 5. COMPUTE INDICATOR DERIVED VALUES
-// ============================================================================
-
-export function computeIndicatorValues() {
-  const out = {};
+export async function loadCurrentIndicatorValues() {
+  const cache = await loadFredCache();
+  const valuesByKey = {};
+  const now = Date.now();
 
   for (const [key, cfg] of Object.entries(INDICATOR_CONFIG)) {
     if (!cfg.fromFred) {
-      out[key] = null;
+      valuesByKey[key] = null;
       continue;
     }
 
-    const s = getSeriesCurrent(cfg.fredId);
-    if (!s) {
-      out[key] = null;
+    const series = cache[cfg.seriesId];
+    if (!series) {
+      valuesByKey[key] = null;
       continue;
     }
 
-    // Simple case — direct latest value
-    if (!cfg.transform) {
-      out[key] = Number.isFinite(s.latest) ? s.latest : null;
-      continue;
-    }
+    valuesByKey[key] = getLatestNumericValue(series);
+  }
 
-    // Transform: YoY, MoM, 6m delta, 4w MA, etc.
-    out[key] = applyTransform(cfg.transform, s.observations);
+  // Cache metadata
+  const generatedAt = cache.generatedAt || null;
+  let cacheAgeDays = null;
+
+  if (generatedAt) {
+    cacheAgeDays = Math.round(
+      (now - new Date(generatedAt).getTime()) / 86400000
+    );
+  }
+
+  return {
+    valuesByKey,
+    cacheMeta: {
+      generatedAt,
+      cacheAgeDays,
+    }
+  };
+}
+
+// ============================================================================
+// NEW — loadProcessedHistory(cfg)
+// Required by app.js
+// Returns array: [{date, value}, ...]
+// ============================================================================
+export async function loadProcessedHistory(cfg) {
+  const hist = await loadFredHistoricalCache();
+  const series = hist[cfg.seriesId];
+
+  if (!series || !series.observations) return [];
+
+  const out = [];
+
+  for (const row of series.observations) {
+    const v = Number(row.value);
+    if (!Number.isFinite(v)) continue;
+
+    out.push({
+      date: row.date,
+      value: v,
+    });
   }
 
   return out;
 }
 
 // ============================================================================
-// 6. TRANSFORM DISPATCHER
+// OPTIONAL HELPERS — used by diagnostics/index if needed later
 // ============================================================================
 
-function applyTransform(name, obs) {
-  if (!Array.isArray(obs) || obs.length === 0) return null;
-
-  switch (name) {
-    case 'yoy':
-      return yoy(obs);
-    case 'mom':
-      return mom(obs);
-    case 'yoy_pct':
-      return yoyPct(obs);
-    case 'six_month_delta_pct':
-      return sixMonthDeltaPct(obs);
-    case 'ma_4wk':
-      return ma4wk(obs);
-    default:
-      return null;
-  }
+// Get full raw series from fred_cache.json
+export async function getSeries(seriesId) {
+  const cache = await loadFredCache();
+  return cache[seriesId] || null;
 }
 
-// ============================================================================
-// 7. TRANSFORM FUNCTIONS
-// ============================================================================
+// Return array of numeric {date,value}
+export async function getObservationHistory(seriesId) {
+  const cache = await loadFredHistoricalCache();
+  const series = cache[seriesId];
+  if (!series || !series.observations) return [];
 
-function latestN(obs, n) {
-  const arr = [];
-  for (let i = obs.length - 1; i >= 0 && arr.length < n; i--) {
-    const v = obs[i].value;
-    if (Number.isFinite(v)) arr.push(v);
-  }
-  return arr.reverse();
-}
-
-function yoy(obs) {
-  if (obs.length < 13) return null;
-
-  let latest = null;
-  let old = null;
-
-  for (let i = obs.length - 1; i >= 0; i--) {
-    if (Number.isFinite(obs[i].value)) {
-      latest = obs[i].value;
-      break;
-    }
-  }
-
-  for (let i = obs.length - 13; i >= 0; i--) {
-    if (Number.isFinite(obs[i].value)) {
-      old = obs[i].value;
-      break;
-    }
-  }
-
-  if (!Number.isFinite(latest) || !Number.isFinite(old)) return null;
-
-  return ((latest / old) - 1) * 100;
-}
-
-function mom(obs) {
-  if (obs.length < 2) return null;
-
-  const last2 = latestN(obs, 2);
-  if (last2.length < 2) return null;
-
-  const prev = last2[0];
-  const curr = last2[1];
-  if (!Number.isFinite(prev) || !Number.isFinite(curr)) return null;
-
-  return (curr - prev);
-}
-
-function yoyPct(obs) {
-  const y = yoy(obs);
-  return Number.isFinite(y) ? y : null;
-}
-
-function sixMonthDeltaPct(obs) {
-  if (obs.length < 7) return null;
-
-  let latest = null;
-  let old = null;
-
-  for (let i = obs.length - 1; i >= 0; i--) {
-    if (Number.isFinite(obs[i].value)) {
-      latest = obs[i].value;
-      break;
-    }
-  }
-
-  for (let i = obs.length - 7; i >= 0; i--) {
-    if (Number.isFinite(obs[i].value)) {
-      old = obs[i].value;
-      break;
-    }
-  }
-
-  if (!Number.isFinite(latest) || !Number.isFinite(old)) return null;
-
-  return ((latest / old) - 1) * 100;
-}
-
-function ma4wk(obs) {
-  const vals = latestN(obs, 4);
-  if (vals.length < 4) return null;
-
-  const sum = vals.reduce((a, b) => a + b, 0);
-  return sum / 4;
-}
-
-// ============================================================================
-// 8. FRESHNESS CALCULATOR
-// ============================================================================
-
-export function computeCacheMeta(rawGeneratedAt) {
-  if (!rawGeneratedAt) return { cacheAgeDays: null };
-
-  const t0 = new Date(rawGeneratedAt).getTime();
-  if (!Number.isFinite(t0)) return { cacheAgeDays: null };
-
-  const now = Date.now();
-  const diff = now - t0;
-  return { cacheAgeDays: diff / (1000 * 3600 * 24) };
-}
-
-// ============================================================================
-// 9. EXPORT RAW DATA SNAPSHOT
-// ============================================================================
-
-export function exportRawSnapshot() {
-  return {
-    fredCache,
-    fredHistoricalCache,
-  };
+  return series.observations
+    .map(o => ({
+      date: o.date,
+      value: Number(o.value),
+    }))
+    .filter(o => Number.isFinite(o.value));
 }
