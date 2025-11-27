@@ -1,133 +1,92 @@
+// ============================================================================
+// historyService.js
+// Full historical series loader (clean, modern, no conflicts)
+// ============================================================================
+//
+// Purpose:
+//   Provide *optional* access to historical series for any indicator,
+//   pulling only from fred_historical_cache.json.
+//
+//   This does NOT override dataService.js and does NOT interfere with app.js.
+//   app.js does NOT import from here unless YOU explicitly choose to.
+// ============================================================================
+
 import { INDICATOR_CONFIG } from './config.js';
 
-const CACHE_PATH = 'data/fred_cache.json';
+// Path to your GitHub Pages historical cache
+const HIST_CACHE_URL = './data/fred_historical_cache.json';
 
-/**
- * Load entire FRED cache.
- */
-async function loadCache() {
-  const res = await fetch(CACHE_PATH);
-  if (!res.ok) throw new Error(`Failed to load ${CACHE_PATH}`);
-  return res.json();
-}
+// Internal cache so repeated calls don't re-fetch
+let histCache = null;
 
-/**
- * Get a FRED series from cache.series
- */
-export function findSeries(cache, fredId) {
-  if (!cache?.series) return null;
+// ============================================================================
+// Load the entire historical cache file
+// ============================================================================
+async function loadHistoricalCache() {
+  if (histCache) return histCache;
 
-  if (cache.series[fredId]) return cache.series[fredId];
-
-  const lower = fredId.toLowerCase();
-  for (const key of Object.keys(cache.series)) {
-    if (key.toLowerCase() === lower) return cache.series[key];
-  }
-  return null;
-}
-
-/**
- * Apply transforms to raw observation array.
- */
-function applyTransform(seriesObj, cfg) {
-  const obs = seriesObj?.observations || [];
-  const base = obs
-    .map(o => ({ date: o.date, value: Number(o.value) }))
-    .filter(o => Number.isFinite(o.value));
-
-  switch (cfg.transform) {
-    case 'raw':
-      return base;
-
-    case 'yoy_percent': {
-      const out = [];
-      for (let i = 12; i < base.length; i++) {
-        const prev = base[i - 12].value;
-        if (prev === 0) continue;
-        const v = ((base[i].value - prev) / prev) * 100;
-        out.push({ date: base[i].date, value: v });
-      }
-      return out;
-    }
-
-    case 'ma4_thousands': {
-      const out = [];
-      for (let i = 3; i < base.length; i++) {
-        const avg =
-          (base[i].value +
-            base[i - 1].value +
-            base[i - 2].value +
-            base[i - 3].value) /
-          4;
-        out.push({ date: base[i].date, value: avg / 1000 });
-      }
-      return out;
-    }
-
-    default:
-      return base;
-  }
-}
-
-/**
- * Main: processed history
- */
-export async function loadProcessedHistory(cfg) {
-  if (!cfg.fromFred || !cfg.fredId) return [];
-
-  const cache = await loadCache();
-  const series = findSeries(cache, cfg.fredId);
-  if (!series) return [];
-
-  return applyTransform(series, cfg);
-}
-
-/**
- * Get period subset (3M, 6M, 12M, MAX)
- */
-export function getPeriodSubset(history, period) {
-  if (!history.length) return [];
-
-  if (period === 'MAX') return history;
-
-  const months = period === '3M' ? 3 : period === '6M' ? 6 : 12;
-
-  const cutoff = new Date();
-  cutoff.setMonth(cutoff.getMonth() - months);
-
-  return history.filter(h => new Date(h.date) >= cutoff);
-}
-
-/**
- * Stats on transformed data
- */
-export function computeHistoryStats(history) {
-  if (history.length < 2) return null;
-
-  const last = history[history.length - 1];
-  const lastVal = last.value;
-
-  function pctChange(months) {
-    const cutoff = new Date(last.date);
-    cutoff.setMonth(cutoff.getMonth() - months);
-
-    let baseline = null;
-    for (let i = history.length - 1; i >= 0; i--) {
-      const d = new Date(history[i].date);
-      if (d <= cutoff) {
-        baseline = history[i].value;
-        break;
-      }
-    }
-    if (!Number.isFinite(baseline) || baseline === 0) return null;
-
-    return ((lastVal - baseline) / baseline) * 100;
+  const res = await fetch(HIST_CACHE_URL, { cache: 'no-store' });
+  if (!res.ok) {
+    throw new Error(`historyService: Failed to load fred_historical_cache.json`);
   }
 
-  return {
-    current: lastVal,
-    threeChangePct: pctChange(3),
-    sixChangePct: pctChange(6),
-    twelveChangePct: pctChange(12)
-  };
+  histCache = await res.json();
+  return histCache;
 }
+
+// ============================================================================
+// Utility — clean a raw series: convert to structure of {date, value}
+// ============================================================================
+function normaliseSeries(observations) {
+  if (!Array.isArray(observations)) return [];
+
+  return observations
+    .map(o => {
+      const v = Number(o.value);
+      return {
+        date: o.date,
+        value: Number.isFinite(v) ? v : null
+      };
+    })
+    .filter(x => x.value !== null);
+}
+
+// ============================================================================
+// Get historical data by FRED ID (direct)
+// ============================================================================
+export async function getHistoricalSeriesById(fredId) {
+  const cache = await loadHistoricalCache();
+  const s = cache.series?.[fredId];
+
+  if (!s || !s.observations) return [];
+
+  return normaliseSeries(s.observations);
+}
+
+// ============================================================================
+// Get historical series for a config entry:
+// e.g., cfg = INDICATOR_CONFIG.YIELD_CURVE
+// ============================================================================
+export async function getHistoricalSeries(cfg) {
+  if (!cfg) return [];
+
+  // If indicator is not from FRED → no history available
+  if (!cfg.fromFred) return [];
+
+  const fredId = cfg.fredId;
+  if (!fredId) return [];
+
+  return getHistoricalSeriesById(fredId);
+}
+
+// ============================================================================
+// Optional diagnostic: list all available series
+// ============================================================================
+export async function listHistoricalSeries() {
+  const cache = await loadHistoricalCache();
+  return Object.keys(cache.series ?? {});
+}
+
+// ============================================================================
+// End of file
+// ============================================================================
