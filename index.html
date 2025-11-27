@@ -1,72 +1,142 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Diagnostics</title>
-<style>
-body { background:#000; color:#0ff; font-family:monospace; padding:10px; }
-pre { white-space:pre-wrap; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Economic Crash Radar Pro</title>
+  
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="./css/main.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Base path fix for GitHub Pages -->
+  <script>
+    window.__APP_BASE = "";
+  </script>
 </head>
 
 <body>
-<h2>CrashRadar Diagnostics</h2>
-<pre id="log">Starting…</pre>
+  <div class="container">
 
-<script>
-function log(msg){ 
-  const el=document.getElementById('log'); 
-  el.textContent += "\n"+msg; 
-}
+    <h1>Economic Crash Radar Pro</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+      Macro risk · Valuation stress · Market fragility
+    </p>
 
-// global error capture
-window.onerror = function(msg,src,line,col,err){
-  log("ERROR: "+msg);
-  if(err && err.stack) log(err.stack);
-};
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+      <span id="cache-badge" style="color: var(--text-secondary); font-size:14px;">
+        FRED cache: --
+      </span>
 
-window.onunhandledrejection = function(e){
-  log("UNHANDLED: "+e.reason);
-  if(e.reason && e.reason.stack) log(e.reason.stack);
-};
+      <button id="refresh-data" class="btn">Refresh</button>
+      <button id="reset-inputs" class="btn btn-secondary">Reset</button>
+      <button id="show-help" class="btn btn-secondary">Help</button>
+    </div>
 
-// main async runner
-(async function run(){
-  log("Running diagnostics…");
+    <h2>Composite Stress</h2>
+    <div id="risk-fill" style="width:0%; margin-bottom:8px;"></div>
+    <div id="composite-score" style="font-size:36px; margin-bottom:4px;">--</div>
+    <div id="regime-label"
+         style="color: var(--text-secondary); font-size:14px; margin-bottom:12px;">
+      Composite Stress — --
+    </div>
 
-  // fetch fred_cache
-  try {
-    const r = await fetch("./data/fred_cache.json?x="+Date.now());
-    log("fred_cache status: "+r.status);
-    const t = await r.text();
-    log("fred_cache length: "+t.length);
-  } catch(e){ log("fred_cache ERROR: "+e); }
+    <div class="card" style="margin-top:12px;">
+      <div><strong>Recession Risk</strong></div>
+      <div id="recession-risk-display">--</div>
 
-  // test module imports
-  async function test(mod){
-    log("Importing "+mod);
-    try {
-      const m = await import(mod+"?v="+Date.now());
-      log("OK exports: "+Object.keys(m).join(", "));
-    } catch(e){
-      log("FAIL "+mod+" : "+e.message);
-      if(e.stack) log(e.stack);
+      <div style="margin-top:16px;"><strong>Valuation Risk</strong></div>
+      <div id="valuation-risk-display">--</div>
+
+      <div style="margin-top:16px;"><strong>Labour Stress</strong></div>
+      <div id="labor-risk-display">--</div>
+    </div>
+
+    <div id="alert-banner"
+         style="margin-top: 12px; color: var(--critical); font-size:14px;">
+      Loading…
+    </div>
+
+    <h2>Interpretation</h2>
+    <div id="insight-text" class="card">Loading…</div>
+
+    <h2>Macro Indicators</h2>
+    <h3>Tier 1 — Leading</h3>
+    <div id="tier1-container"></div>
+
+    <h3>Tier 2 — Confirming</h3>
+    <div id="tier2-container"></div>
+
+    <!-- Tooltip container required by uiIndicators.js -->
+    <div id="indicator-tooltip"></div>
+
+    <h2>Valuations</h2>
+    <div id="valuations-container"></div>
+
+    <div class="card" style="margin-top:20px;">
+      <div id="current-buffett-label">Buffett: --</div>
+      <div id="current-cape-label">CAPE: --</div>
+    </div>
+
+    <h2>What's Driving the Score?</h2>
+    <div class="card" id="contrib-list">Loading…</div>
+
+    <h2>Composite Stress History</h2>
+    <div class="card">
+      <canvas id="composite-history" height="200"></canvas>
+    </div>
+
+    <h2>Radar — Normalised Stress</h2>
+    <div class="card">
+      <canvas id="risk-radar" height="260"></canvas>
+    </div>
+
+    <h2>Data Quality & Staleness</h2>
+    <div id="audit-container" class="card">Loading…</div>
+
+    <h2>Exports</h2>
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <button id="export-csv" class="btn">Export CSV</button>
+      <button id="export-pdf" class="btn btn-secondary">PDF</button>
+      <button id="export-snapshot" class="btn btn-secondary">Snapshot</button>
+      <button id="share-link" class="btn btn-secondary">Share Link</button>
+    </div>
+
+  </div> <!-- container -->
+
+  <div id="loading-overlay"
+       style="
+         position:fixed; inset:0;
+         background:rgba(0,0,0,0.55);
+         backdrop-filter: blur(6px);
+         color:#fff; display:flex;
+         align-items:center; justify-content:center;
+         font-size:18px; z-index:9999;
+         opacity:0; pointer-events:none;
+         transition: opacity 0.25s ease;
+       ">
+    <div id="loading-text">Loading…</div>
+  </div>
+
+  <style>
+    #loading-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
     }
-  }
+  </style>
 
-  await test("./js/config.js");
-  await test("./js/scoring.js");
-  await test("./js/dataService.js");
-  await test("./js/uiIndicators.js");
-  await test("./js/uiCharts.js");
-  await test("./js/uiGauge.js");
-  await test("./js/uiAudit.js");
-  await test("./js/exports.js");
-  await test("./js/app.js");
+  <!-- SCRIPTS (module order must match dependency chain) -->
+  <script type="module" src="./js/config.js"></script>
+  <script type="module" src="./js/scoring.js"></script>
+  <script type="module" src="./js/dataService.js"></script>
+  <script type="module" src="./js/uiIndicators.js"></script>
+  <script type="module" src="./js/uiCharts.js"></script>
+  <script type="module" src="./js/uiGauge.js"></script>
+  <script type="module" src="./js/uiAudit.js"></script>
+  <script type="module" src="./js/exports.js"></script>
+  <script type="module" src="./js/app.js"></script>
 
-  log("DONE.");
-})();
-</script>
 </body>
 </html>
