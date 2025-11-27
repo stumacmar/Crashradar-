@@ -1,23 +1,29 @@
-// js/uiCharts.js
-// ------------------------------------------------------------
-// Renders:
-// 1. Composite History Line Chart
-// 2. Risk Radar Chart
-// 3. Handles indicator tile expansion + history charts
-// 4. Handles history-period click events
-// ------------------------------------------------------------
+// uiCharts.js
+// ============================================================================
+// Handles:
+//   1. Composite history line chart
+//   2. Radar chart (normalised stress)
+//   3. Expanded indicator tile history rendering
+//   4. History-period selector logic (12M / 5Y / MAX)
+//
+// IMPORTANT:
+// - This module NEVER reads raw FRED data.
+// - It uses the processed series that app.js attaches to INDICATOR_CONFIG[key].historySeries:
+//       { dates: [...], values: [...] }
+// ============================================================================
 
 import { INDICATOR_CONFIG } from './config.js';
 
 // Cached Chart.js instances
 let compositeChart = null;
 let radarChart = null;
-const historyCharts = {};   // per-indicator mini-charts
+const historyCharts = {};   // per-indicator chart instance cache
 
-/* ------------------------------------------------------------
-   1. Composite History — main line chart
------------------------------------------------------------- */
-export function updateCompositeHistoryChart(history = [], latest = null) {
+/* ============================================================================
+   1. Composite Stress — main line chart
+============================================================================ */
+
+export function updateCompositeHistoryChart(history = []) {
   const ctx = document.getElementById('composite-history');
   if (!ctx) return;
 
@@ -34,12 +40,14 @@ export function updateCompositeHistoryChart(history = [], latest = null) {
         label: 'Composite Stress',
         data: values,
         borderWidth: 2,
-        tension: 0.2
+        tension: 0.25
       }]
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false }
+      },
       scales: {
         y: { min: 0, max: 100 }
       }
@@ -47,9 +55,10 @@ export function updateCompositeHistoryChart(history = [], latest = null) {
   });
 }
 
-/* ------------------------------------------------------------
-   2. Radar Chart — normalised indicator stress
------------------------------------------------------------- */
+/* ============================================================================
+   2. Radar Chart — normalised macro stress
+============================================================================ */
+
 export function updateRiskRadarChart(indicatorValuesByKey, valuationValuesByKey) {
   const ctx = document.getElementById('risk-radar');
   if (!ctx) return;
@@ -86,9 +95,10 @@ export function updateRiskRadarChart(indicatorValuesByKey, valuationValuesByKey)
   });
 }
 
-/* ------------------------------------------------------------
-   3. Expand indicator tile + render per-indicator history
------------------------------------------------------------- */
+/* ============================================================================
+   3. Expand indicator tile + render mini history chart
+============================================================================ */
+
 export function toggleIndicatorExpansion(key) {
   const card = document.querySelector(`[data-ind-card="${key}"]`);
   if (!card) return;
@@ -96,11 +106,11 @@ export function toggleIndicatorExpansion(key) {
   const expanded = card.classList.toggle('expanded');
   if (!expanded) return;
 
-  const canvas = card.querySelector('.history-chart');
-  if (!canvas) return;
-
   const cfg = INDICATOR_CONFIG[key];
   if (!cfg || !cfg.historySeries) return;
+
+  const canvas = card.querySelector('.history-chart');
+  if (!canvas) return;
 
   const { dates, values } = cfg.historySeries;
 
@@ -111,10 +121,10 @@ export function toggleIndicatorExpansion(key) {
     data: {
       labels: dates,
       datasets: [{
-        label: cfg.label + ' history',
+        label: `${cfg.label} history`,
         data: values,
         borderWidth: 1,
-        tension: 0.15
+        tension: 0.2
       }]
     },
     options: {
@@ -124,9 +134,10 @@ export function toggleIndicatorExpansion(key) {
   });
 }
 
-/* ------------------------------------------------------------
-   4. Handle history period buttons (12M / 5Y / MAX)
------------------------------------------------------------- */
+/* ============================================================================
+   4. History period selector (12M / 5Y / MAX)
+============================================================================ */
+
 export function handleHistoryPeriodClick(e) {
   const btn = e.target.closest('.period-btn');
   if (!btn) return;
@@ -139,18 +150,24 @@ export function handleHistoryPeriodClick(e) {
   const cfg = INDICATOR_CONFIG[key];
   if (!cfg || !cfg.historySeries) return;
 
-  let { dates, values } = cfg.historySeries;
+  const allDates = cfg.historySeries.dates;
+  const allValues = cfg.historySeries.values;
 
-  const cutoff = {
-    '12M': 365,
-    '5Y': 365 * 5,
-    'MAX': null,
-  }[period];
+  let dates = allDates;
+  let values = allValues;
 
-  if (cutoff) {
-    const start = dates.length - cutoff;
-    dates = dates.slice(start);
-    values = values.slice(start);
+  // Determine period window
+  if (period !== 'MAX') {
+    const cutoffDays =
+      period === '12M' ? 365 :
+      period === '5Y'  ? 365 * 5 :
+      null;
+
+    if (cutoffDays) {
+      const start = Math.max(0, dates.length - cutoffDays);
+      dates = dates.slice(start);
+      values = values.slice(start);
+    }
   }
 
   const canvas = card.querySelector('.history-chart');
@@ -163,10 +180,10 @@ export function handleHistoryPeriodClick(e) {
     data: {
       labels: dates,
       datasets: [{
-        label: cfg.label + ' history',
+        label: `${cfg.label} history`,
         data: values,
         borderWidth: 1,
-        tension: 0.15
+        tension: 0.2
       }]
     },
     options: {
@@ -174,4 +191,8 @@ export function handleHistoryPeriodClick(e) {
       scales: { y: { display: true } }
     }
   });
+
+  // Activate button highlight
+  card.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
 }
