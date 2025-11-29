@@ -1,9 +1,9 @@
 {
-  "generated_at": "2025-11-28T06:14:16.665Z",
+  "generated_at": "2025-11-29T06:01:06.270Z",
   "series": {
     "T10Y3M": {
       "id": "T10Y3M",
-      "last_updated": "2025-11-28T06:14:17.107Z",
+      "last_updated": "2025-11-29T06:01:06.941Z",
       "observations": [
         {
           "date": "1982-01-04",
@@ -45816,13 +45816,21 @@
         {
           "date": "2025-11-26",
           "value": 0.08
+        },
+        {
+          "date": "2025-11-27",
+          "value": null
+        },
+        {
+          "date": "2025-11-28",
+          "value": 0.14
         }
       ],
-      "value": 0.08
+      "value": 0.14
     },
     "BAMLH0A0HYM2": {
       "id": "BAMLH0A0HYM2",
-      "last_updated": "2025-11-28T06:14:17.449Z",
+      "last_updated": "2025-11-29T06:01:07.130Z",
       "observations": [
         {
           "date": "1996-12-31",
@@ -76375,13 +76383,21 @@
         {
           "date": "2025-11-25",
           "value": 3.1
+        },
+        {
+          "date": "2025-11-26",
+          "value": 3
+        },
+        {
+          "date": "2025-11-27",
+          "value": 3
         }
       ],
-      "value": 3.1
+      "value": 3
     },
     "UMCSENT": {
       "id": "UMCSENT",
-      "last_updated": "2025-11-28T06:14:17.799Z",
+      "last_updated": "2025-11-29T06:01:07.282Z",
       "observations": [
         {
           "date": "1952-11-01",
@@ -79892,7 +79908,7 @@
     },
     "M2SL": {
       "id": "M2SL",
-      "last_updated": "2025-11-28T06:14:18.361Z",
+      "last_updated": "2025-11-29T06:01:07.404Z",
       "observations": [
         {
           "date": "1959-01-01",
@@ -83107,7 +83123,7 @@
     },
     "NFCI": {
       "id": "NFCI",
-      "last_updated": "2025-11-28T06:14:18.488Z",
+      "last_updated": "2025-11-29T06:01:07.546Z",
       "observations": [
         {
           "date": "1971-01-08",
@@ -94570,7 +94586,7 @@
     },
     "ICSA": {
       "id": "ICSA",
-      "last_updated": "2025-11-28T06:14:18.591Z",
+      "last_updated": "2025-11-29T06:01:07.633Z",
       "observations": [
         {
           "date": "1967-01-07",
@@ -106869,7 +106885,7 @@
     },
     "SAHMREALTIME": {
       "id": "SAHMREALTIME",
-      "last_updated": "2025-11-28T06:14:19.377Z",
+      "last_updated": "2025-11-29T06:01:07.711Z",
       "observations": [
         {
           "date": "1959-12-01",
@@ -110036,7 +110052,7 @@
     },
     "INDPRO": {
       "id": "INDPRO",
-      "last_updated": "2025-11-28T06:14:19.468Z",
+      "last_updated": "2025-11-29T06:01:07.814Z",
       "observations": [
         {
           "date": "1950-01-01",
@@ -113675,7 +113691,7 @@
     },
     "PERMIT": {
       "id": "PERMIT",
-      "last_updated": "2025-11-28T06:14:19.639Z",
+      "last_updated": "2025-11-29T06:01:07.939Z",
       "observations": [
         {
           "date": "1960-01-01",
