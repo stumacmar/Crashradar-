@@ -1,9 +1,9 @@
 {
-  "generated_at": "2025-12-02T06:14:50.213Z",
+  "generated_at": "2025-12-03T06:14:29.000Z",
   "series": {
     "T10Y3M": {
       "id": "T10Y3M",
-      "last_updated": "2025-12-02T06:14:50.933Z",
+      "last_updated": "2025-12-03T06:14:29.496Z",
       "observations": [
         {
           "date": "1982-01-04",
@@ -45824,13 +45824,21 @@
         {
           "date": "2025-11-28",
           "value": 0.14
+        },
+        {
+          "date": "2025-12-01",
+          "value": 0.28
+        },
+        {
+          "date": "2025-12-02",
+          "value": 0.32
         }
       ],
-      "value": 0.14
+      "value": 0.32
     },
     "BAMLH0A0HYM2": {
       "id": "BAMLH0A0HYM2",
-      "last_updated": "2025-12-02T06:14:51.144Z",
+      "last_updated": "2025-12-03T06:14:29.743Z",
       "observations": [
         {
           "date": "1996-12-31",
@@ -76399,13 +76407,17 @@
         {
           "date": "2025-11-30",
           "value": 2.92
+        },
+        {
+          "date": "2025-12-01",
+          "value": 2.94
         }
       ],
-      "value": 2.92
+      "value": 2.94
     },
     "UMCSENT": {
       "id": "UMCSENT",
-      "last_updated": "2025-12-02T06:14:51.305Z",
+      "last_updated": "2025-12-03T06:14:29.915Z",
       "observations": [
         {
           "date": "1952-11-01",
@@ -79916,7 +79928,7 @@
     },
     "M2SL": {
       "id": "M2SL",
-      "last_updated": "2025-12-02T06:14:51.429Z",
+      "last_updated": "2025-12-03T06:14:30.145Z",
       "observations": [
         {
           "date": "1959-01-01",
@@ -83131,7 +83143,7 @@
     },
     "NFCI": {
       "id": "NFCI",
-      "last_updated": "2025-12-02T06:14:51.658Z",
+      "last_updated": "2025-12-03T06:14:30.439Z",
       "observations": [
         {
           "date": "1971-01-08",
@@ -94594,7 +94606,7 @@
     },
     "ICSA": {
       "id": "ICSA",
-      "last_updated": "2025-12-02T06:14:51.817Z",
+      "last_updated": "2025-12-03T06:14:30.597Z",
       "observations": [
         {
           "date": "1967-01-07",
@@ -106893,7 +106905,7 @@
     },
     "SAHMREALTIME": {
       "id": "SAHMREALTIME",
-      "last_updated": "2025-12-02T06:14:51.996Z",
+      "last_updated": "2025-12-03T06:14:30.751Z",
       "observations": [
         {
           "date": "1959-12-01",
@@ -110060,7 +110072,7 @@
     },
     "INDPRO": {
       "id": "INDPRO",
-      "last_updated": "2025-12-02T06:14:52.154Z",
+      "last_updated": "2025-12-03T06:14:30.892Z",
       "observations": [
         {
           "date": "1950-01-01",
@@ -113699,7 +113711,7 @@
     },
     "PERMIT": {
       "id": "PERMIT",
-      "last_updated": "2025-12-02T06:14:52.279Z",
+      "last_updated": "2025-12-03T06:14:31.080Z",
       "observations": [
         {
           "date": "1960-01-01",
