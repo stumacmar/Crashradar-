@@ -1,9 +1,9 @@
 {
-  "generated_at": "2025-12-04T06:00:59.252Z",
+  "generated_at": "2025-12-05T06:01:21.469Z",
   "series": {
     "T10Y3M": {
       "id": "T10Y3M",
-      "last_updated": "2025-12-04T06:00:59.633Z",
+      "last_updated": "2025-12-05T06:01:23.469Z",
       "observations": [
         {
           "date": "1982-01-04",
@@ -45836,13 +45836,17 @@
         {
           "date": "2025-12-03",
           "value": 0.34
+        },
+        {
+          "date": "2025-12-04",
+          "value": 0.4
         }
       ],
-      "value": 0.34
+      "value": 0.4
     },
     "BAMLH0A0HYM2": {
       "id": "BAMLH0A0HYM2",
-      "last_updated": "2025-12-04T06:00:59.797Z",
+      "last_updated": "2025-12-05T06:01:23.598Z",
       "observations": [
         {
           "date": "1996-12-31",
@@ -76419,13 +76423,17 @@
         {
           "date": "2025-12-02",
           "value": 2.92
+        },
+        {
+          "date": "2025-12-03",
+          "value": 2.89
         }
       ],
-      "value": 2.92
+      "value": 2.89
     },
     "UMCSENT": {
       "id": "UMCSENT",
-      "last_updated": "2025-12-04T06:00:59.912Z",
+      "last_updated": "2025-12-05T06:01:23.679Z",
       "observations": [
         {
           "date": "1952-11-01",
@@ -79936,7 +79944,7 @@
     },
     "M2SL": {
       "id": "M2SL",
-      "last_updated": "2025-12-04T06:00:59.988Z",
+      "last_updated": "2025-12-05T06:01:24.115Z",
       "observations": [
         {
           "date": "1959-01-01",
@@ -83151,7 +83159,7 @@
     },
     "NFCI": {
       "id": "NFCI",
-      "last_updated": "2025-12-04T06:01:03.661Z",
+      "last_updated": "2025-12-05T06:01:24.280Z",
       "observations": [
         {
           "date": "1971-01-08",
@@ -94618,7 +94626,7 @@
     },
     "ICSA": {
       "id": "ICSA",
-      "last_updated": "2025-12-04T06:01:03.744Z",
+      "last_updated": "2025-12-05T06:01:24.698Z",
       "observations": [
         {
           "date": "1967-01-07",
@@ -106910,14 +106918,18 @@
         },
         {
           "date": "2025-11-22",
-          "value": 216000
+          "value": 218000
+        },
+        {
+          "date": "2025-11-29",
+          "value": 191000
         }
       ],
-      "value": 216000
+      "value": 191000
     },
     "SAHMREALTIME": {
       "id": "SAHMREALTIME",
-      "last_updated": "2025-12-04T06:01:03.809Z",
+      "last_updated": "2025-12-05T06:01:24.961Z",
       "observations": [
         {
           "date": "1959-12-01",
@@ -110084,7 +110096,7 @@
     },
     "INDPRO": {
       "id": "INDPRO",
-      "last_updated": "2025-12-04T06:01:03.890Z",
+      "last_updated": "2025-12-05T06:01:25.281Z",
       "observations": [
         {
           "date": "1950-01-01",
@@ -113727,7 +113739,7 @@
     },
     "PERMIT": {
       "id": "PERMIT",
-      "last_updated": "2025-12-04T06:01:03.993Z",
+      "last_updated": "2025-12-05T06:01:25.520Z",
       "observations": [
         {
           "date": "1960-01-01",
